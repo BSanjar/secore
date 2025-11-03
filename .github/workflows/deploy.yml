@@ -36,7 +36,7 @@ jobs:
       # 3️⃣ Строим Docker образ
       - name: Build Docker image
         run: |
-          docker build -t $IMAGE_TAG .
+          docker build -t $IMAGE_TAG ./repo
 
       # 4️⃣ Логинимся в Docker Hub
       - name: Docker login
