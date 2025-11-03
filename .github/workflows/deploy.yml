@@ -17,7 +17,7 @@ jobs:
       # 2️⃣ Строим Docker образ
       - name: Build Docker image
         run: |
-          docker build -t bsanjar/secore:test .
+          docker build -t sanjar883448/secore:test .
 
       # 3️⃣ Логинимся в Docker Hub
       - name: Docker login
@@ -27,7 +27,7 @@ jobs:
       # 4️⃣ Пушим образ в Docker Hub
       - name: Push Docker image
         run: |
-          docker push bsanjar/secore:test
+          docker push sanjar883448/secore:test
 
       # 5️⃣ Деплой на сервер через SSH
       - name: Deploy to VPS
@@ -42,7 +42,7 @@ jobs:
             docker rm secore_test || true
 
             # Забираем новый образ с Docker Hub
-            docker pull bsanjar/secore:test
+            docker pull sanjar883448/secore:test
 
             # Запускаем контейнер на порту 8081
-            docker run -d --name secore_test -p 8081:80 bsanjar/secore:test
+            docker run -d --name secore_test -p 8081:80 sanjar883448/secore:test
