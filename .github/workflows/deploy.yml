@@ -1,26 +1,35 @@
-﻿name: Deploy Test Branch to VPS
+﻿name: Deploy Test Branch to VPS via Docker Hub
 
-# Запуск только при пуше в ветку test
 on:
   push:
     branches:
       - test
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # Сначала забираем код
+      # 1️⃣ Забираем код
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Строим Docker образ
+      # 2️⃣ Строим Docker образ
       - name: Build Docker image
         run: |
-          docker build -t secore:test .
+          docker build -t bsanjar/secore:test .
 
-      # Деплой на сервер через SSH
+      # 3️⃣ Логинимся в Docker Hub
+      - name: Docker login
+        run: |
+          echo "${{ secrets.DOCKER_PASS }}" | docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
+
+      # 4️⃣ Пушим образ в Docker Hub
+      - name: Push Docker image
+        run: |
+          docker push bsanjar/secore:test
+
+      # 5️⃣ Деплой на сервер через SSH
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -28,13 +37,12 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # Останавливаем и удаляем старый контейнер, если есть
+            # Останавливаем и удаляем старый контейнер
             docker stop secore_test || true
             docker rm secore_test || true
-            docker rmi secore:test || true
 
-            # Переходим в папку проекта (если нужно)
-            cd /root/secore || true
+            # Забираем новый образ с Docker Hub
+            docker pull bsanjar/secore:test
 
-            # Запускаем новый контейнер на порту 8081
-            docker run -d --name secore_test -p 8081:80 secore:test
+            # Запускаем контейнер на порту 8081
+            docker run -d --name secore_test -p 8081:80 bsanjar/secore:test
