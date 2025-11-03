@@ -1,34 +1,40 @@
-﻿name: Build and Deploy
+﻿name: Deploy Test Branch to VPS
 
+# Запуск только при пуше в ветку test
 on:
   push:
     branches:
       - test
-      - prod
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # Сначала забираем код
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Строим Docker образ
       - name: Build Docker image
         run: |
-          docker build -t secore:${{ github.ref_name }} .
+          docker build -t secore:test .
 
-      - name: Deploy to server via SSH
+      # Деплой на сервер через SSH
+      - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            docker stop secore || true
-            docker rm secore || true
-            docker rmi secore:${{ github.ref_name }} || true
-            cd /root/secore
-            git pull || true
-            docker build -t secore:${{ github.ref_name }} .
-            docker run -d --name secore -p 80:80 secore:${{ github.ref_name }}
+            # Останавливаем и удаляем старый контейнер, если есть
+            docker stop secore_test || true
+            docker rm secore_test || true
+            docker rmi secore:test || true
+
+            # Переходим в папку проекта (если нужно)
+            cd /root/secore || true
+
+            # Запускаем новый контейнер на порту 8081
+            docker run -d --name secore_test -p 8081:80 secore:test
