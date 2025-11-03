@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "5bhAuaN0QWwAKhA69sRIjdM76FYaRJZLsCMeCC4zW39ZKuoGiWI3lIdx0YTyJrF+AJyEi4VAveAyE4FLbbdE9A==",
+  "success": true,
+  "projectFilePath": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\WebApplication1.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Sanjar\\.nuget\\packages\\microsoft.visualstudio.azure.containers.tools.targets\\1.18.1\\microsoft.visualstudio.azure.containers.tools.targets.1.18.1.nupkg.sha512"
+  ],
+  "logs": []
+}
