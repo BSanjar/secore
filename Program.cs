@@ -1,7 +1,25 @@
+using Microsoft.EntityFrameworkCore;
+using WebApplication1.Models.BaseModels;
+using WebApplication1.Models.DBModels;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+
+//Подключение к БД
+builder.Services.AddDbContext<AppDbContext>(
+    options =>
+    {
+        options
+        .UseLoggerFactory(LoggerFactory.Create(builder => { }))
+        .UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+    });
+
+//Конфиги
+builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
+
 
 var app = builder.Build();
 

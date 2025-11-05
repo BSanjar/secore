@@ -245,6 +245,18 @@
       "PackagePath": "staticwebassets\\lib\\jquery\\dist\\jquery.min.map"
     },
     {
+      "Id": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\wwwroot\\web\\css\\cabinet.css",
+      "PackagePath": "staticwebassets\\web\\css\\cabinet.css"
+    },
+    {
+      "Id": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\wwwroot\\web\\js\\cabinet.js",
+      "PackagePath": "staticwebassets\\web\\js\\cabinet.js"
+    },
+    {
+      "Id": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\wwwroot\\web\\js\\payment-history.js",
+      "PackagePath": "staticwebassets\\web\\js\\payment-history.js"
+    },
+    {
       "Id": "obj\\Debug\\net7.0\\staticwebassets\\msbuild.WebApplication1.Microsoft.AspNetCore.StaticWebAssets.props",
       "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
     },

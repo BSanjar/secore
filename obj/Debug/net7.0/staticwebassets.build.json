@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "RKzg6Iivf1z8+TP8YII38DAa3ugs2J+SVKyLx6CEFmM=",
+  "Hash": "6Q6/dS4NZ39noDMUuGWYbVk5KjyebK/f2Y0X2iNPiIY=",
   "Source": "WebApplication1",
   "BasePath": "_content/WebApplication1",
   "Mode": "Default",
@@ -1069,6 +1069,57 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\lib\\jquery-validation-unobtrusive\\LICENSE.txt"
+    },
+    {
+      "Identity": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\wwwroot\\web\\css\\cabinet.css",
+      "SourceId": "WebApplication1",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\wwwroot\\",
+      "BasePath": "_content/WebApplication1",
+      "RelativePath": "web/css/cabinet.css",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\web\\css\\cabinet.css"
+    },
+    {
+      "Identity": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\wwwroot\\web\\js\\cabinet.js",
+      "SourceId": "WebApplication1",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\wwwroot\\",
+      "BasePath": "_content/WebApplication1",
+      "RelativePath": "web/js/cabinet.js",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\web\\js\\cabinet.js"
+    },
+    {
+      "Identity": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\wwwroot\\web\\js\\payment-history.js",
+      "SourceId": "WebApplication1",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\wwwroot\\",
+      "BasePath": "_content/WebApplication1",
+      "RelativePath": "web/js/payment-history.js",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\web\\js\\payment-history.js"
     }
   ]
 }
