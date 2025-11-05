@@ -56,6 +56,8 @@ jobs:
                 --restart always \
                 --network bridge \
                 -p 8081:80 \
+                -e ASPNETCORE_ENVIRONMENT=Development \
+                -e ASPNETCORE_URLS=http://+:80 \
                 sanjar883448/secore:test
 
             elif [ "${GITHUB_REF_NAME}" == "prod" ]; then
@@ -68,5 +70,7 @@ jobs:
                 --restart always \
                 --network bridge \
                 -p 8080:80 \
+                -e ASPNETCORE_ENVIRONMENT=Development \
+                -e ASPNETCORE_URLS=http://+:80 \
                 sanjar883448/secore:prod
             fi
