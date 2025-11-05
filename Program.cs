@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Diagnostics;
 using WebApplication1.Models.BaseModels;
 using WebApplication1.Models.DBModels;
 
@@ -24,12 +25,15 @@ builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSet
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+// Обработка ошибок должна быть первой в pipeline
 if (app.Environment.IsDevelopment())
 {
+    // Детальная страница ошибок для режима разработки - показывает полный стек вызовов
     app.UseDeveloperExceptionPage();
 }
 else
 {
+    // Обработка ошибок для продакшена - перенаправляет на страницу ошибки
     app.UseExceptionHandler("/Home/Error");
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
