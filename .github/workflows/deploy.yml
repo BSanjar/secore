@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Забираем код из репозитория
+      #1️⃣ Забираем код
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -45,35 +45,15 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          debug: true
           script: |
             if [ "${GITHUB_REF_NAME}" == "test" ]; then
-              echo "🚀 Deploying TEST build..."
               docker stop secore_test || true
               docker rm secore_test || true
-              docker rmi sanjar883448/secore:test || true
               docker pull sanjar883448/secore:test
-              docker run -d \
-                --name secore_test \
-                --restart always \
-                --network bridge \
-                -p 8081:80 \
-                -e ASPNETCORE_ENVIRONMENT=Development \
-                -e ASPNETCORE_URLS=http://+:80 \
-                sanjar883448/secore:test
-
+              docker run -d --name secore_test -p 8081:80 sanjar883448/secore:test
             elif [ "${GITHUB_REF_NAME}" == "prod" ]; then
-              echo "🚀 Deploying PROD build..."
               docker stop secore_prod || true
               docker rm secore_prod || true
-              docker rmi sanjar883448/secore:prod || true
               docker pull sanjar883448/secore:prod
-              docker run -d \
-                --name secore_prod \
-                --restart always \
-                --network bridge \
-                -p 8080:80 \
-                -e ASPNETCORE_ENVIRONMENT=Development \
-                -e ASPNETCORE_URLS=http://+:80 \
-                sanjar883448/secore:prod
+              docker run -d --name secore_prod -p 8080:80 sanjar883448/secore:prod
             fi
