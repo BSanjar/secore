@@ -11,34 +11,33 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Забираем код из репозитория
+      # 1️⃣ Забираем код
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2️⃣ Строим Docker образ
+      # 2️⃣ Генерируем уникальный тег образа
+      - name: Set image tag
+        run: |
+          IMAGE_TAG=sanjar883448/secore:${GITHUB_REF_NAME}-${GITHUB_SHA::7}
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+          echo "✅ Using image tag: $IMAGE_TAG"
+
+      # 3️⃣ Собираем Docker образ
       - name: Build Docker image
         run: |
-          if [ "${GITHUB_REF_NAME}" == "test" ]; then
-            docker build -t sanjar883448/secore:test .
-          elif [ "${GITHUB_REF_NAME}" == "prod" ]; then
-            docker build -t sanjar883448/secore:prod .
-          fi
+          docker build -t $IMAGE_TAG .
 
-      # 3️⃣ Логинимся в Docker Hub
+      # 4️⃣ Логинимся в Docker Hub
       - name: Docker login
         run: |
           echo "${{ secrets.DOCKER_PASS }}" | docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
 
-      # 4️⃣ Пушим образ в Docker Hub
+      # 5️⃣ Публикуем образ
       - name: Push Docker image
         run: |
-          if [ "${GITHUB_REF_NAME}" == "test" ]; then
-            docker push sanjar883448/secore:test
-          elif [ "${GITHUB_REF_NAME}" == "prod" ]; then
-            docker push sanjar883448/secore:prod
-          fi
+          docker push $IMAGE_TAG
 
-      # 5️⃣ Деплой на сервер через SSH
+      # 6️⃣ Деплой на сервер
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -47,33 +46,35 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
+
             if [ "${GITHUB_REF_NAME}" == "test" ]; then
-              echo "🚀 Deploying TEST build..."
-              docker stop secore_test || true
-              docker rm secore_test || true
-              docker rmi sanjar883448/secore:test || true
-              docker pull sanjar883448/secore:test
-              docker run -d \
-                --name secore_test \
-                --restart always \
-                -p 8081:80 \
-                -e ASPNETCORE_ENVIRONMENT=Development \
-                -e ASPNETCORE_URLS=http://+:80 \
-                sanjar883448/secore:test
+              PORT=8081
+              CONTAINER=secore_test
+              ENVIRONMENT=Development
             elif [ "${GITHUB_REF_NAME}" == "prod" ]; then
-              echo "🚀 Deploying PROD build..."
-              docker stop secore_prod || true
-              docker rm secore_prod || true
-              docker rmi sanjar883448/secore:prod || true
-              docker pull sanjar883448/secore:prod
-              docker run -d \
-                --name secore_prod \
-                --restart always \
-                -p 8080:80 \
-                -e ASPNETCORE_ENVIRONMENT=Production \
-                -e ASPNETCORE_URLS=http://+:80 \
-                sanjar883448/secore:prod
+              PORT=8080
+              CONTAINER=secore_prod
+              ENVIRONMENT=Production
             fi
 
+            echo "🚀 Deploying $GITHUB_REF_NAME build on port $PORT ..."
+            echo "🧹 Cleaning up old containers and images..."
+
+            docker stop $CONTAINER || true
+            docker rm $CONTAINER || true
+            docker image prune -af || true
+
+            echo "⬇️ Pulling latest image..."
+            docker pull $IMAGE_TAG
+
+            echo "🧩 Starting new container..."
+            docker run -d \
+              --name $CONTAINER \
+              --restart always \
+              -p $PORT:80 \
+              -e ASPNETCORE_ENVIRONMENT=$ENVIRONMENT \
+              -e ASPNETCORE_URLS=http://+:80 \
+              $IMAGE_TAG
+
             echo "✅ Deployment finished."
-            docker ps
+            docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
