@@ -11,11 +11,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout code
+      # 1️⃣ Забираем код из репозитория
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2️⃣ Build Docker image
+      # 2️⃣ Строим Docker образ
       - name: Build Docker image
         run: |
           if [ "${GITHUB_REF_NAME}" == "test" ]; then
@@ -24,12 +24,12 @@ jobs:
             docker build -t sanjar883448/secore:prod .
           fi
 
-      # 3️⃣ Docker login
+      # 3️⃣ Логинимся в Docker Hub
       - name: Docker login
         run: |
           echo "${{ secrets.DOCKER_PASS }}" | docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
 
-      # 4️⃣ Push Docker image
+      # 4️⃣ Пушим образ в Docker Hub
       - name: Push Docker image
         run: |
           if [ "${GITHUB_REF_NAME}" == "test" ]; then
@@ -38,7 +38,7 @@ jobs:
             docker push sanjar883448/secore:prod
           fi
 
-      # 5️⃣ Deploy to VPS via SSH
+      # 5️⃣ Деплой на сервер через SSH
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -73,6 +73,7 @@ jobs:
                 -e ASPNETCORE_ENVIRONMENT=Production \
                 -e ASPNETCORE_URLS=http://+:80 \
                 sanjar883448/secore:prod
+            fi
 
             echo "✅ Deployment finished."
             docker ps
