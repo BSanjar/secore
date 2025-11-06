@@ -1,0 +1,18 @@
+﻿name: 🔐 Test SSH Connection
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-ssh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test SSH to VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 77.73.69.143
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "✅ Connected to $(hostname)"
+            docker ps
