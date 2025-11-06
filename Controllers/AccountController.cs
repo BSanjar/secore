@@ -10,6 +10,7 @@ namespace WebApplication1.Controllers
         public AccountController(AppDbContext db)
         {
             _db = db;
+
         }        
     }
 }
