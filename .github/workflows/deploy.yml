@@ -11,11 +11,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      #1️⃣ Забираем код
+      # 1️⃣ Checkout code
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2️⃣ Строим Docker образ
+      # 2️⃣ Build Docker image
       - name: Build Docker image
         run: |
           if [ "${GITHUB_REF_NAME}" == "test" ]; then
@@ -24,12 +24,12 @@ jobs:
             docker build -t sanjar883448/secore:prod .
           fi
 
-      # 3️⃣ Логинимся в Docker Hub
+      # 3️⃣ Docker login
       - name: Docker login
         run: |
           echo "${{ secrets.DOCKER_PASS }}" | docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
 
-      # 4️⃣ Пушим образ в Docker Hub
+      # 4️⃣ Push Docker image
       - name: Push Docker image
         run: |
           if [ "${GITHUB_REF_NAME}" == "test" ]; then
@@ -38,7 +38,7 @@ jobs:
             docker push sanjar883448/secore:prod
           fi
 
-      # 5️⃣ Деплой на сервер через SSH
+      # 5️⃣ Deploy to VPS via SSH
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -46,14 +46,33 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            set -e
             if [ "${GITHUB_REF_NAME}" == "test" ]; then
+              echo "🚀 Deploying TEST build..."
               docker stop secore_test || true
               docker rm secore_test || true
+              docker rmi sanjar883448/secore:test || true
               docker pull sanjar883448/secore:test
-              docker run -d --name secore_test -p 8081:80 sanjar883448/secore:test
+              docker run -d \
+                --name secore_test \
+                --restart always \
+                -p 8081:80 \
+                -e ASPNETCORE_ENVIRONMENT=Development \
+                -e ASPNETCORE_URLS=http://+:80 \
+                sanjar883448/secore:test
             elif [ "${GITHUB_REF_NAME}" == "prod" ]; then
+              echo "🚀 Deploying PROD build..."
               docker stop secore_prod || true
               docker rm secore_prod || true
+              docker rmi sanjar883448/secore:prod || true
               docker pull sanjar883448/secore:prod
-              docker run -d --name secore_prod -p 8080:80 sanjar883448/secore:prod
-            fi
+              docker run -d \
+                --name secore_prod \
+                --restart always \
+                -p 8080:80 \
+                -e ASPNETCORE_ENVIRONMENT=Production \
+                -e ASPNETCORE_URLS=http://+:80 \
+                sanjar883448/secore:prod
+
+            echo "✅ Deployment finished."
+            docker ps
