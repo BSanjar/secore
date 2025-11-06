@@ -45,6 +45,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          debug: true
           script: |
             if [ "${GITHUB_REF_NAME}" == "test" ]; then
               echo "🚀 Deploying TEST build..."
