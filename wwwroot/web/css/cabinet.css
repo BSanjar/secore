@@ -75,11 +75,130 @@ body.cabinet-body {
     transition: all 0.2s ease;
     border-radius: var(--radius-sm);
     margin: 0 0.25rem;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.cabinet-header .nav-link svg {
+    flex-shrink: 0;
 }
 
 .cabinet-header .nav-link:hover {
     color: white !important;
     background-color: rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
+}
+
+/* Кнопка "Выставить счет" */
+.cabinet-header .btn-create-invoice {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    color: white !important;
+    font-weight: 600 !important;
+    padding: 0.625rem 1.5rem !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+    margin-right: 0.5rem !important;
+}
+
+.cabinet-header .btn-create-invoice:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4);
+    transform: translateY(-2px);
+    color: white !important;
+}
+
+.cabinet-header .btn-create-invoice:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+}
+
+/* Меню пользователя */
+.cabinet-header .user-menu {
+    margin-left: 1rem;
+}
+
+.cabinet-header .user-profile {
+    display: flex !important;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 1rem !important;
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+}
+
+.cabinet-header .user-profile:hover {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.cabinet-header .user-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    flex-shrink: 0;
+}
+
+.cabinet-header .user-name {
+    font-weight: 500;
+    color: white;
+    font-size: 0.9375rem;
+}
+
+.cabinet-header .dropdown-arrow {
+    transition: transform 0.2s ease;
+    margin-left: 0.25rem;
+}
+
+.cabinet-header .user-profile[aria-expanded="true"] .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+/* Выпадающее меню пользователя */
+.cabinet-header .dropdown-menu {
+    margin-top: 0.5rem;
+    border: none;
+    box-shadow: var(--shadow-lg);
+    border-radius: var(--radius-md);
+    padding: 0.5rem 0;
+    min-width: 200px;
+    background: var(--surface);
+}
+
+.cabinet-header .dropdown-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1.25rem;
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.cabinet-header .dropdown-item svg {
+    flex-shrink: 0;
+}
+
+.cabinet-header .dropdown-item:hover {
+    background-color: var(--background);
+    color: var(--primary-color);
+}
+
+.cabinet-header .dropdown-item.text-danger {
+    color: var(--error-color);
+}
+
+.cabinet-header .dropdown-item.text-danger:hover {
+    background-color: #fee2e2;
+    color: #dc2626;
+}
+
+.cabinet-header .dropdown-divider {
+    margin: 0.5rem 0;
+    border-color: var(--border-color);
 }
 
 /* ============================================
@@ -549,6 +668,25 @@ body.cabinet-body {
 
     .page-title {
         font-size: 1.5rem;
+    }
+
+    /* Адаптивное меню */
+    .cabinet-header .nav-link {
+        padding: 0.5rem 0.75rem !important;
+        font-size: 0.875rem;
+    }
+
+    .cabinet-header .btn-create-invoice {
+        padding: 0.5rem 1rem !important;
+        font-size: 0.875rem;
+    }
+
+    .cabinet-header .user-name {
+        display: none;
+    }
+
+    .cabinet-header .user-profile {
+        padding: 0.5rem !important;
     }
 }
 
