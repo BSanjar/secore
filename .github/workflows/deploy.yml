@@ -50,6 +50,7 @@ jobs:
               echo "🚀 Deploying TEST build..."
               docker stop secore_test || true
               docker rm secore_test || true
+              docker rmi sanjar883448/secore:test || true
               docker pull sanjar883448/secore:test
               docker run -d \
                 --name secore_test \
@@ -64,6 +65,7 @@ jobs:
               echo "🚀 Deploying PROD build..."
               docker stop secore_prod || true
               docker rm secore_prod || true
+              docker rmi sanjar883448/secore:prod || true
               docker pull sanjar883448/secore:prod
               docker run -d \
                 --name secore_prod \
