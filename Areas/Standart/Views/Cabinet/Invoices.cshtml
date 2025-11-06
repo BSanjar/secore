@@ -1,0 +1,163 @@
+@model List<WebApplication1.Models.DBModels.Invoice>
+@{
+    ViewData["Title"] = "Счета на оплату";
+}
+
+<div class="invoices-page">
+    <div class="page-header">
+        <h1 class="page-title">Счета на оплату</h1>
+        <p class="page-subtitle">Все выставленные счета</p>
+    </div>
+
+    <div class="invoices-container">
+        @if (Model != null && Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="invoices-table">
+                    <thead>
+                        <tr>
+                            <th>Дата создания</th>
+                            <th>Клиент</th>
+                            <th>За какие услуги</th>
+                            <th>Сумма</th>
+                            <th>Статус</th>
+                            <th>Периодичность</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var invoice in Model)
+                        {
+                            <tr class="invoice-row">
+                                <td class="invoice-date">
+                                    @if (invoice.DateCreated.HasValue)
+                                    {
+                                        @invoice.DateCreated.Value.ToString("dd.MM.yyyy HH:mm")
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td class="invoice-client">
+                                    @if (invoice.ClientNavigation != null)
+                                    {
+                                        <div class="client-info">
+                                            <div class="client-name">@invoice.ClientNavigation.ClientName</div>
+                                            @if (!string.IsNullOrEmpty(invoice.ClientNavigation.ClientPhone))
+                                            {
+                                                <div class="client-phone">@invoice.ClientNavigation.ClientPhone</div>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td class="invoice-services">
+                                    @if (invoice.InvoiceServices != null && invoice.InvoiceServices.Any())
+                                    {
+                                        <div class="services-labels">
+                                            @foreach (var invoiceService in invoice.InvoiceServices)
+                                            {
+                                                @if (invoiceService.ServiceNavigation != null)
+                                                {
+                                                    <span class="service-label service-label-@(invoiceService.ServiceNavigation.Id.GetHashCode() % 6)">
+                                                        @invoiceService.ServiceNavigation.Name
+                                                    </span>
+                                                }
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Нет услуг</span>
+                                    }
+                                </td>
+                                <td class="invoice-amount">
+                                    @if (invoice.Balance.HasValue)
+                                    {
+                                        var amount = invoice.Balance.Value / 100;
+                                        <span class="amount-value @(amount < 0 ? "amount-debt" : "")">
+                                            @amount.ToString("N2") <span>сом</span>
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td class="invoice-status">
+                                    @if (invoice.InvoiceStatus == "actual")
+                                    {
+                                        <span class="status-badge status-actual">Активный</span>
+                                    }
+                                    else if (invoice.InvoiceStatus == "closed")
+                                    {
+                                        <span class="status-badge status-closed">Закрыт</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="status-badge status-unknown">@invoice.InvoiceStatus</span>
+                                    }
+                                </td>
+                                <td class="invoice-periodicity">
+                                    @if (!string.IsNullOrEmpty(invoice.Periodicity))
+                                    {
+                                        <span class="periodicity-badge">
+                                            @switch (invoice.Periodicity.ToLower())
+                                            {
+                                                case "daily":
+                                                    <text>Ежедневно</text>
+                                                    break;
+                                                case "weekly":
+                                                    <text>Еженедельно</text>
+                                                    break;
+                                                case "monthly":
+                                                    <text>Ежемесячно</text>
+                                                    break;
+                                                case "yearly":
+                                                    <text>Ежегодно</text>
+                                                    break;
+                                                case "onetime":
+                                                    <text>Одноразовый</text>
+                                                    break;
+                                                case "any":
+                                                    <text>Любая</text>
+                                                    break;
+                                                default:
+                                                    <text>@invoice.Periodicity</text>
+                                                    break;
+                                            }
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" fill="currentColor"/>
+                    </svg>
+                </div>
+                <h3 class="empty-state-title">Счетов не найдено</h3>
+                <p class="empty-state-description">У вас пока нет выставленных счетов</p>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/web/js/invoices.js" asp-append-version="true"></script>
+}
+

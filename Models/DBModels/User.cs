@@ -32,5 +32,5 @@ public partial class User
 
     public virtual Organization? OrganizationNavigation { get; set; }
 
-    public virtual ICollection<UserRight> UserRights { get; set; } = new List<UserRight>();
+    public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
 }

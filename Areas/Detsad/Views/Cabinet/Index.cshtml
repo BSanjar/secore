@@ -1,0 +1,185 @@
+@{
+    ViewData["Title"] = "Главная";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/web/css/detsad-dashboard.css" asp-append-version="true" />
+}
+
+<div class="detsad-dashboard">
+    <div class="dashboard-header">
+        <h1 class="dashboard-title">Добро пожаловать!</h1>
+        <p class="dashboard-subtitle">Панель управления детским садом</p>
+    </div>
+
+    <!-- Статистика -->
+    <div class="statistics-section">
+        <div class="statistics-grid">
+            <!-- Приходы за месяц -->
+            <div class="stat-card stat-card-primary" data-value="@ViewBag.MonthIncome">
+                <div class="stat-card-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="stat-card-content">
+                    <div class="stat-card-label">Приходы за месяц</div>
+                    <div class="stat-card-value">
+                        <span class="stat-value-number">@ViewBag.MonthIncome.ToString("N2")</span>
+                        <span class="stat-value-currency">сом</span>
+                    </div>
+                    <div class="stat-card-trend">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z" fill="currentColor"/>
+                        </svg>
+                        <span>Текущий месяц</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Приходы за год -->
+            <div class="stat-card stat-card-success" data-value="@ViewBag.YearIncome">
+                <div class="stat-card-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.87 0 .53-.39 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-1.67c1.52-.29 2.72-1.16 2.73-2.77-.01-2.2-1.9-2.96-3.66-3.42z" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="stat-card-content">
+                    <div class="stat-card-label">Приходы за год</div>
+                    <div class="stat-card-value">
+                        <span class="stat-value-number">@ViewBag.YearIncome.ToString("N2")</span>
+                        <span class="stat-value-currency">сом</span>
+                    </div>
+                    <div class="stat-card-trend">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z" fill="currentColor"/>
+                        </svg>
+                        <span>@DateTime.Now.Year год</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Должники -->
+            <div class="stat-card stat-card-warning" data-value="@ViewBag.DebtorsCount">
+                <div class="stat-card-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="stat-card-content">
+                    <div class="stat-card-label">Должники</div>
+                    <div class="stat-card-value">
+                        <span class="stat-value-number">@ViewBag.DebtorsCount</span>
+                        <span class="stat-value-unit">чел.</span>
+                    </div>
+                    <div class="stat-card-trend">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.87 0 .53-.39 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-1.67c1.52-.29 2.72-1.16 2.73-2.77-.01-2.2-1.9-2.96-3.66-3.42z" fill="currentColor"/>
+                        </svg>
+                        <span>@ViewBag.DebtorsAmount.ToString("N2") сом</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Количество клиентов -->
+            <div class="stat-card stat-card-info" data-value="@ViewBag.TotalClients">
+                <div class="stat-card-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="stat-card-content">
+                    <div class="stat-card-label">Количество клиентов</div>
+                    <div class="stat-card-value">
+                        <span class="stat-value-number">@ViewBag.TotalClients</span>
+                        <span class="stat-value-unit">чел.</span>
+                    </div>
+                    <div class="stat-card-trend">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" fill="currentColor"/>
+                        </svg>
+                        <span>Активных</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Приходы за сегодня -->
+            <div class="stat-card stat-card-secondary" data-value="@ViewBag.TodayIncome">
+                <div class="stat-card-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="stat-card-content">
+                    <div class="stat-card-label">Приходы за сегодня</div>
+                    <div class="stat-card-value">
+                        <span class="stat-value-number">@ViewBag.TodayIncome.ToString("N2")</span>
+                        <span class="stat-value-currency">сом</span>
+                    </div>
+                    <div class="stat-card-trend">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" fill="currentColor"/>
+                        </svg>
+                        <span>Сегодня</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Активные счета -->
+            <div class="stat-card stat-card-accent" data-value="@ViewBag.ActiveInvoices">
+                <div class="stat-card-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="stat-card-content">
+                    <div class="stat-card-label">Активные счета</div>
+                    <div class="stat-card-value">
+                        <span class="stat-value-number">@ViewBag.ActiveInvoices</span>
+                        <span class="stat-value-unit">шт.</span>
+                    </div>
+                    <div class="stat-card-trend">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" fill="currentColor"/>
+                        </svg>
+                        <span>Требуют внимания</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Быстрые действия -->
+    <div class="quick-actions-section">
+        <h2 class="section-title">Быстрые действия</h2>
+        <div class="quick-actions-grid">
+            <a href="@Url.Action("Children", "Cabinet", new { area = "Detsad" })" class="quick-action-card">
+                <div class="quick-action-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="quick-action-content">
+                    <h3 class="quick-action-title">Дети</h3>
+                    <p class="quick-action-description">Просмотр списка детей</p>
+                </div>
+            </a>
+
+            <a href="@Url.Action("Payments", "Cabinet", new { area = "Detsad" })" class="quick-action-card">
+                <div class="quick-action-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.87 0 .53-.39 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-1.67c1.52-.29 2.72-1.16 2.73-2.77-.01-2.2-1.9-2.96-3.66-3.42z" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="quick-action-content">
+                    <h3 class="quick-action-title">Платежи</h3>
+                    <p class="quick-action-description">История платежей</p>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/web/js/detsad-dashboard.js" asp-append-version="true"></script>
+}

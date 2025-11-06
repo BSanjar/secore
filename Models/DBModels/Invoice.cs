@@ -55,6 +55,8 @@ public partial class Invoice
 
     public virtual OrganizationClient? ClientNavigation { get; set; }
 
+    public virtual ICollection<InvoicePayment> InvoicePayments { get; set; } = new List<InvoicePayment>();
+
     public virtual ICollection<InvoiceService> InvoiceServices { get; set; } = new List<InvoiceService>();
 
     public virtual ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();

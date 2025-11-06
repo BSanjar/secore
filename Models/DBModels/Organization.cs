@@ -9,6 +9,15 @@ public partial class Organization
 
     public string? Name { get; set; }
 
+    /// <summary>
+    /// detsad
+    /// school
+    /// medclinic
+    /// </summary>
+    public string? Organizationtype { get; set; }
+
+    public virtual ICollection<OrganizationClient> OrganizationClients { get; set; } = new List<OrganizationClient>();
+
     public virtual ICollection<OrganizationField> OrganizationFields { get; set; } = new List<OrganizationField>();
 
     public virtual ICollection<OrganizationService> OrganizationServices { get; set; } = new List<OrganizationService>();

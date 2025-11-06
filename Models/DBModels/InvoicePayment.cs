@@ -26,4 +26,6 @@ public partial class InvoicePayment
     /// 
     /// </summary>
     public string? PaymentStatus { get; set; }
+
+    public virtual Invoice? InvoiceNavigation { get; set; }
 }

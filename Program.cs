@@ -46,6 +46,11 @@ app.UseRouting();
 
 app.UseAuthorization();
 
+// Маршрутизация для Areas
+app.MapControllerRoute(
+    name: "areas",
+    pattern: "{area:exists}/{controller=Cabinet}/{action=Index}/{id?}");
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");

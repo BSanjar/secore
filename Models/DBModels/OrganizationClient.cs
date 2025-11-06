@@ -47,5 +47,7 @@ public partial class OrganizationClient
 
     public virtual ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
 
+    public virtual Organization? OrganizationNavigation { get; set; }
+
     public virtual User? UserCreaterNavigation { get; set; }
 }

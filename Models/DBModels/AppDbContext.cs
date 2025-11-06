@@ -37,7 +37,7 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<User> Users { get; set; }
 
-    public virtual DbSet<UserRight> UserRights { get; set; }
+    public virtual DbSet<UserRole> UserRoles { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
@@ -124,16 +124,16 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<InvoicePayment>(entity =>
         {
-            entity
-                .HasNoKey()
-                .ToTable("invoice_payments", tb => tb.HasComment("график долгов клиента по инвойсу"));
+            entity.HasKey(e => e.Id).HasName("invoice_payments_pk");
 
-            entity.Property(e => e.DeadlinePayDate)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("deadline_pay_date");
+            entity.ToTable("invoice_payments", tb => tb.HasComment("график долгов клиента по инвойсу"));
+
             entity.Property(e => e.Id)
                 .HasColumnType("character varying")
                 .HasColumnName("id");
+            entity.Property(e => e.DeadlinePayDate)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("deadline_pay_date");
             entity.Property(e => e.Invoice)
                 .HasColumnType("character varying")
                 .HasColumnName("invoice");
@@ -145,6 +145,10 @@ public partial class AppDbContext : DbContext
                 .HasComment("сумма долга")
                 .HasColumnType("character varying")
                 .HasColumnName("payment_summ");
+
+            entity.HasOne(d => d.InvoiceNavigation).WithMany(p => p.InvoicePayments)
+                .HasForeignKey(d => d.Invoice)
+                .HasConstraintName("invoice_payments_fk");
         });
 
         modelBuilder.Entity<InvoiceService>(entity =>
@@ -187,6 +191,10 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Name)
                 .HasColumnType("character varying")
                 .HasColumnName("name");
+            entity.Property(e => e.Organizationtype)
+                .HasComment("detsad\r\nschool\r\nmedclinic")
+                .HasColumnType("character varying")
+                .HasColumnName("organizationtype");
         });
 
         modelBuilder.Entity<OrganizationClient>(entity =>
@@ -241,9 +249,13 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("character varying")
                 .HasColumnName("user_creater");
 
+            entity.HasOne(d => d.OrganizationNavigation).WithMany(p => p.OrganizationClients)
+                .HasForeignKey(d => d.Organization)
+                .HasConstraintName("organization_clients_fk");
+
             entity.HasOne(d => d.UserCreaterNavigation).WithMany(p => p.OrganizationClients)
                 .HasForeignKey(d => d.UserCreater)
-                .HasConstraintName("organization_cients_fk");
+                .HasConstraintName("organization_clients_fk2");
         });
 
         modelBuilder.Entity<OrganizationField>(entity =>
@@ -412,11 +424,11 @@ public partial class AppDbContext : DbContext
                 .HasConstraintName("users_fk");
         });
 
-        modelBuilder.Entity<UserRight>(entity =>
+        modelBuilder.Entity<UserRole>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("user_roles_pk");
 
-            entity.ToTable("user_rights");
+            entity.ToTable("user_roles");
 
             entity.Property(e => e.Id)
                 .HasColumnType("character varying")
@@ -431,11 +443,11 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("character varying")
                 .HasColumnName("user");
 
-            entity.HasOne(d => d.RoleNavigation).WithMany(p => p.UserRights)
+            entity.HasOne(d => d.RoleNavigation).WithMany(p => p.UserRoles)
                 .HasForeignKey(d => d.Role)
                 .HasConstraintName("user_roles_fk_1");
 
-            entity.HasOne(d => d.UserNavigation).WithMany(p => p.UserRights)
+            entity.HasOne(d => d.UserNavigation).WithMany(p => p.UserRoles)
                 .HasForeignKey(d => d.User)
                 .HasConstraintName("user_roles_fk");
         });

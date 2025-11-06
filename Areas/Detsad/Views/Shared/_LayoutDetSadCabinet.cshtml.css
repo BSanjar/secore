@@ -1,0 +1,250 @@
+﻿/* ============================================
+   Detsad Cabinet Layout Styles
+   Современный компактный стиль для детского сада
+   ============================================ */
+
+/* Компактная шапка для детсада */
+.detsad-header {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15), 0 1px 3px rgba(16, 185, 129, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.detsad-header .navbar {
+    padding: 0.5rem 0;
+    min-height: 56px;
+}
+
+.detsad-header .container {
+    max-width: 1200px;
+}
+
+/* Компактное центральное меню */
+.detsad-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+}
+
+.detsad-nav .nav-item {
+    position: relative;
+}
+
+.detsad-nav .nav-link {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem !important;
+    min-width: auto;
+    border-radius: 8px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.95) !important;
+    font-weight: 500;
+    font-size: 0.875rem;
+    white-space: nowrap;
+}
+
+.detsad-nav .nav-link::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.12);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    border-radius: 8px;
+}
+
+.detsad-nav .nav-link:hover::before {
+    opacity: 1;
+}
+
+.detsad-nav .nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 2px;
+    background: white;
+    border-radius: 2px 2px 0 0;
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.detsad-nav .nav-link:hover,
+.detsad-nav .nav-link.active {
+    color: white !important;
+    transform: translateY(-1px);
+}
+
+.detsad-nav .nav-link:hover::after,
+.detsad-nav .nav-link.active::after {
+    width: 70%;
+}
+
+.detsad-nav .nav-link.active {
+    background: rgba(255, 255, 255, 0.18);
+    font-weight: 600;
+}
+
+.detsad-nav .nav-link.active::before {
+    opacity: 1;
+}
+
+.detsad-nav .nav-icon {
+    width: 18px;
+    height: 18px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+}
+
+.detsad-nav .nav-link:hover .nav-icon,
+.detsad-nav .nav-link.active .nav-icon {
+    transform: scale(1.1);
+}
+
+.detsad-nav .nav-text {
+    font-size: 0.875rem;
+    letter-spacing: 0.01em;
+    transition: all 0.25s ease;
+}
+
+.detsad-nav .nav-link:hover .nav-text,
+.detsad-nav .nav-link.active .nav-text {
+    font-weight: 600;
+}
+
+/* Убираем стандартные стили для детсада */
+.detsad-header .navbar-brand {
+    display: none;
+}
+
+/* Компактная правая часть меню */
+.detsad-header .navbar-nav.ms-auto {
+    gap: 0.25rem;
+    align-items: center;
+}
+
+.detsad-header .navbar-nav.ms-auto .nav-link {
+    padding: 0.4rem 0.75rem !important;
+    border-radius: 8px;
+    transition: all 0.25s ease;
+    font-size: 0.8125rem;
+}
+
+.detsad-header .navbar-nav.ms-auto .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
+}
+
+.detsad-header .user-profile {
+    padding: 0.35rem 0.75rem !important;
+    gap: 0.5rem;
+}
+
+.detsad-header .user-avatar {
+    width: 28px;
+    height: 28px;
+}
+
+.detsad-header .user-name {
+    font-size: 0.8125rem;
+}
+
+.detsad-header .dropdown-arrow {
+    width: 14px;
+    height: 14px;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 991px) {
+    .detsad-header .navbar {
+        padding: 0.5rem 0;
+        min-height: auto;
+    }
+    
+    .detsad-nav {
+        width: 100%;
+        flex-direction: column;
+        gap: 0.25rem;
+        margin-top: 0.75rem;
+    }
+    
+    .detsad-nav .nav-link {
+        width: 100%;
+        justify-content: flex-start;
+        padding: 0.625rem 1rem !important;
+        gap: 0.625rem;
+    }
+    
+    .detsad-nav .nav-icon {
+        width: 18px;
+        height: 18px;
+    }
+    
+    .detsad-nav .nav-text {
+        font-size: 0.875rem;
+    }
+    
+    .detsad-header .navbar-nav.ms-auto {
+        width: 100%;
+        margin-top: 0.5rem;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+}
+
+/* Планшеты */
+@media (min-width: 992px) and (max-width: 1199px) {
+    .detsad-nav .nav-link {
+        padding: 0.5rem 0.875rem !important;
+        gap: 0.5rem;
+    }
+    
+    .detsad-nav .nav-icon {
+        width: 18px;
+        height: 18px;
+    }
+}
+
+/* Убираем анимацию появления для более быстрой загрузки */
+.detsad-nav .nav-item {
+    animation: none;
+}
+
+/* Компактный main */
+.cabinet-main {
+    padding: 1.5rem 0;
+}
+
+.cabinet-main .container {
+    max-width: 1200px;
+}
+
+/* Компактный footer */
+.cabinet-footer {
+    padding: 1rem 0;
+    margin-top: 2rem;
+    border-top: 1px solid var(--border-color);
+    background: var(--surface);
+}
+
+.cabinet-footer .container {
+    max-width: 1200px;
+}
+
+.cabinet-footer p {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    margin: 0;
+}

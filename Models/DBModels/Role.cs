@@ -21,5 +21,5 @@ public partial class Role
     /// </summary>
     public string? AvilableServices { get; set; }
 
-    public virtual ICollection<UserRight> UserRights { get; set; } = new List<UserRight>();
+    public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
 }

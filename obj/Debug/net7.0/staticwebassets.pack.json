@@ -249,8 +249,32 @@
       "PackagePath": "staticwebassets\\web\\css\\cabinet.css"
     },
     {
+      "Id": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\wwwroot\\web\\css\\detsad-dashboard.css",
+      "PackagePath": "staticwebassets\\web\\css\\detsad-dashboard.css"
+    },
+    {
       "Id": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\wwwroot\\web\\js\\cabinet.js",
       "PackagePath": "staticwebassets\\web\\js\\cabinet.js"
+    },
+    {
+      "Id": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\wwwroot\\web\\js\\children.js",
+      "PackagePath": "staticwebassets\\web\\js\\children.js"
+    },
+    {
+      "Id": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\wwwroot\\web\\js\\create-child.js",
+      "PackagePath": "staticwebassets\\web\\js\\create-child.js"
+    },
+    {
+      "Id": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\wwwroot\\web\\js\\detsad-dashboard.js",
+      "PackagePath": "staticwebassets\\web\\js\\detsad-dashboard.js"
+    },
+    {
+      "Id": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\wwwroot\\web\\js\\detsad.js",
+      "PackagePath": "staticwebassets\\web\\js\\detsad.js"
+    },
+    {
+      "Id": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\wwwroot\\web\\js\\invoices.js",
+      "PackagePath": "staticwebassets\\web\\js\\invoices.js"
     },
     {
       "Id": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\wwwroot\\web\\js\\payment-history.js",

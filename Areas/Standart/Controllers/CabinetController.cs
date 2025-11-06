@@ -1,9 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Models.DBModels;
 
-namespace WebApplication1.Controllers
+namespace WebApplication1.Areas.Standart.Controllers
 {
+    [Area("Standart")]
     public class CabinetController : Controller
     {
         private readonly AppDbContext _db;
@@ -66,5 +67,22 @@ namespace WebApplication1.Controllers
 
             return View(transactions);
         }
+
+        public async Task<IActionResult> Invoices()
+        {
+            // TODO: Получить ID организации текущего пользователя из сессии
+            // string? organizationId = HttpContext.Session.GetString("OrganizationId");
+            // Для примера показываем все счета, но нужно фильтровать по организации
+            
+            var invoices = await _db.Invoices
+                .Include(i => i.ClientNavigation)
+                .Include(i => i.InvoiceServices)
+                    .ThenInclude(isv => isv.ServiceNavigation)
+                .OrderByDescending(i => i.DateCreated)
+                .ToListAsync();
+
+            return View(invoices);
+        }
     }
 }
+
