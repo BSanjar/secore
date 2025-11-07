@@ -27,5 +27,9 @@ public partial class OrganizationField
 
     public string? Organization { get; set; }
 
+    public bool? Filterbyfield { get; set; }
+
+    public virtual ICollection<OrganizationClientsAdditionalField> OrganizationClientsAdditionalFields { get; set; } = new List<OrganizationClientsAdditionalField>();
+
     public virtual Organization? OrganizationNavigation { get; set; }
 }

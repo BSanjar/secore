@@ -10,6 +10,7 @@ public partial class Organization
     public string? Name { get; set; }
 
     /// <summary>
+    /// standart
     /// detsad
     /// school
     /// medclinic

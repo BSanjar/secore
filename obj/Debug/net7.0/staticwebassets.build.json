@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "PAoEtJ2JiaZlzcwm6ZdoKUuQBb38iDHx+oCdy69K6U0=",
+  "Hash": "Vkp2rHG0Ergj85e90lQpv+ul+M4iZEpoRmcm6zX4sro=",
   "Source": "WebApplication1",
   "BasePath": "_content/WebApplication1",
   "Mode": "Default",
@@ -1088,6 +1088,23 @@
       "OriginalItemSpec": "wwwroot\\web\\css\\cabinet.css"
     },
     {
+      "Identity": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\wwwroot\\web\\css\\detsad-children.css",
+      "SourceId": "WebApplication1",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\wwwroot\\",
+      "BasePath": "_content/WebApplication1",
+      "RelativePath": "web/css/detsad-children.css",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\web\\css\\detsad-children.css"
+    },
+    {
       "Identity": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\wwwroot\\web\\css\\detsad-dashboard.css",
       "SourceId": "WebApplication1",
       "SourceType": "Discovered",
@@ -1171,6 +1188,23 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\web\\js\\detsad.js"
+    },
+    {
+      "Identity": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\wwwroot\\web\\js\\detsad-children.js",
+      "SourceId": "WebApplication1",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\wwwroot\\",
+      "BasePath": "_content/WebApplication1",
+      "RelativePath": "web/js/detsad-children.js",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\web\\js\\detsad-children.js"
     },
     {
       "Identity": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\wwwroot\\web\\js\\detsad-dashboard.js",

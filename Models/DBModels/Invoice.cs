@@ -13,6 +13,7 @@ public partial class Invoice
 
     /// <summary>
     /// actual
+    /// suspended
     /// closed
     /// </summary>
     public string? InvoiceStatus { get; set; }
@@ -23,6 +24,8 @@ public partial class Invoice
     /// weekly - еженедельно
     /// monthly - ежемесячно
     /// yearly - ежегодно
+    /// если указывается конкретное число то значит каждые указанное число дней. 
+    /// т.е если к примеру 30 то каждые 30 дней.
     /// oneTime - однаразовый и прием в любой момент
     /// any - прием в любой момент
     /// </summary>
@@ -52,6 +55,13 @@ public partial class Invoice
     /// автопролонгация, если указан true - то при оплате за этот инвойс автоматом создается след запись в табилице графика платежей
     /// </summary>
     public bool? AutoProlongation { get; set; }
+
+    /// <summary>
+    /// Дата начала следующего периода инвойса, если автопролонгация или инвойс установлен на несколько периодов
+    /// </summary>
+    public DateTime? NextStartInvoice { get; set; }
+
+    public string? NameInvoice { get; set; }
 
     public virtual OrganizationClient? ClientNavigation { get; set; }
 

@@ -38,14 +38,13 @@ public partial class OrganizationClient
 
     public DateTime? UpdatedDate { get; set; }
 
-    /// <summary>
-    /// тут заполненные доп поля клиента.
-    /// </summary>
-    public string? ClientFields { get; set; }
-
     public string? UserCreater { get; set; }
 
+    public string? ClientLogo { get; set; }
+
     public virtual ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
+
+    public virtual ICollection<OrganizationClientsAdditionalField> OrganizationClientsAdditionalFields { get; set; } = new List<OrganizationClientsAdditionalField>();
 
     public virtual Organization? OrganizationNavigation { get; set; }
 

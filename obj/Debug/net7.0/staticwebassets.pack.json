@@ -249,6 +249,10 @@
       "PackagePath": "staticwebassets\\web\\css\\cabinet.css"
     },
     {
+      "Id": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\wwwroot\\web\\css\\detsad-children.css",
+      "PackagePath": "staticwebassets\\web\\css\\detsad-children.css"
+    },
+    {
       "Id": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\wwwroot\\web\\css\\detsad-dashboard.css",
       "PackagePath": "staticwebassets\\web\\css\\detsad-dashboard.css"
     },
@@ -263,6 +267,10 @@
     {
       "Id": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\wwwroot\\web\\js\\create-child.js",
       "PackagePath": "staticwebassets\\web\\js\\create-child.js"
+    },
+    {
+      "Id": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\wwwroot\\web\\js\\detsad-children.js",
+      "PackagePath": "staticwebassets\\web\\js\\detsad-children.js"
     },
     {
       "Id": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\wwwroot\\web\\js\\detsad-dashboard.js",

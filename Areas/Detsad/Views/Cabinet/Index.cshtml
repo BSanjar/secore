@@ -15,6 +15,31 @@
     <!-- Статистика -->
     <div class="statistics-section">
         <div class="statistics-grid">
+
+            <!-- Приходы за сегодня -->
+            <div class="stat-card stat-card-secondary" data-value="@ViewBag.TodayIncome">
+                <div class="stat-card-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" fill="currentColor" />
+                    </svg>
+                </div>
+                <div class="stat-card-content">
+                    <div class="stat-card-label">Приходы за сегодня</div>
+                    <div class="stat-card-value">
+                        <span class="stat-value-number">@ViewBag.TodayIncome.ToString("N2")</span>
+                        <span class="stat-value-currency">сом</span>
+                    </div>
+                    <div class="stat-card-trend">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" fill="currentColor" />
+                        </svg>
+                        <span>Сегодня</span>
+                    </div>
+                </div>
+            </div>
+
+
+
             <!-- Приходы за месяц -->
             <div class="stat-card stat-card-primary" data-value="@ViewBag.MonthIncome">
                 <div class="stat-card-icon">
@@ -58,6 +83,8 @@
                     </div>
                 </div>
             </div>
+
+           
 
             <!-- Должники -->
             <div class="stat-card stat-card-warning" data-value="@ViewBag.DebtorsCount">
@@ -103,27 +130,7 @@
                 </div>
             </div>
 
-            <!-- Приходы за сегодня -->
-            <div class="stat-card stat-card-secondary" data-value="@ViewBag.TodayIncome">
-                <div class="stat-card-icon">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" fill="currentColor"/>
-                    </svg>
-                </div>
-                <div class="stat-card-content">
-                    <div class="stat-card-label">Приходы за сегодня</div>
-                    <div class="stat-card-value">
-                        <span class="stat-value-number">@ViewBag.TodayIncome.ToString("N2")</span>
-                        <span class="stat-value-currency">сом</span>
-                    </div>
-                    <div class="stat-card-trend">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" fill="currentColor"/>
-                        </svg>
-                        <span>Сегодня</span>
-                    </div>
-                </div>
-            </div>
+           
 
             <!-- Активные счета -->
             <div class="stat-card stat-card-accent" data-value="@ViewBag.ActiveInvoices">

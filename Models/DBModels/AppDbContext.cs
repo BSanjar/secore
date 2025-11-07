@@ -27,6 +27,8 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<OrganizationClient> OrganizationClients { get; set; }
 
+    public virtual DbSet<OrganizationClientsAdditionalField> OrganizationClientsAdditionalFields { get; set; }
+
     public virtual DbSet<OrganizationField> OrganizationFields { get; set; }
 
     public virtual DbSet<OrganizationService> OrganizationServices { get; set; }
@@ -99,14 +101,21 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("character varying")
                 .HasColumnName("fixed_summ");
             entity.Property(e => e.InvoiceStatus)
-                .HasComment("actual\r\nclosed")
+                .HasComment("actual\r\nsuspended\r\nclosed")
                 .HasColumnType("character varying")
                 .HasColumnName("invoice_status");
+            entity.Property(e => e.NameInvoice)
+                .HasColumnType("character varying")
+                .HasColumnName("name_invoice");
+            entity.Property(e => e.NextStartInvoice)
+                .HasComment("Дата начала следующего периода инвойса, если автопролонгация или инвойс установлен на несколько периодов")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("next_start_invoice");
             entity.Property(e => e.PayCode)
                 .HasColumnType("character varying")
                 .HasColumnName("pay_code");
             entity.Property(e => e.Periodicity)
-                .HasComment("периодичность оплаты:\r\ndaily - ежедневно\r\nweekly - еженедельно\r\nmonthly - ежемесячно\r\nyearly - ежегодно\r\noneTime - однаразовый и прием в любой момент\r\nany - прием в любой момент")
+                .HasComment("периодичность оплаты:\r\ndaily - ежедневно\r\nweekly - еженедельно\r\nmonthly - ежемесячно\r\nyearly - ежегодно\r\nесли указывается конкретное число то значит каждые указанное число дней. \r\nт.е если к примеру 30 то каждые 30 дней.\r\noneTime - однаразовый и прием в любой момент\r\nany - прием в любой момент")
                 .HasColumnType("character varying")
                 .HasColumnName("periodicity");
             entity.Property(e => e.UserCreater)
@@ -126,25 +135,32 @@ public partial class AppDbContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("invoice_payments_pk");
 
-            entity.ToTable("invoice_payments", tb => tb.HasComment("график долгов клиента по инвойсу"));
+            entity.ToTable("invoice_payments", tb => tb.HasComment("записи - за какие периоды оплачены"));
 
             entity.Property(e => e.Id)
                 .HasColumnType("character varying")
                 .HasColumnName("id");
-            entity.Property(e => e.DeadlinePayDate)
+            entity.Property(e => e.DateFrom)
                 .HasColumnType("timestamp without time zone")
-                .HasColumnName("deadline_pay_date");
+                .HasColumnName("date_from");
+            entity.Property(e => e.DateTo)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("date_to");
             entity.Property(e => e.Invoice)
                 .HasColumnType("character varying")
                 .HasColumnName("invoice");
             entity.Property(e => e.PaymentStatus)
-                .HasComment("paid\r\nnon_paid\r\nanulated - в таком случае д\\с возвращается обратно на баланс по инвойсу\r\n")
+                .HasComment("paid - уже оплатил\r\nnon_paid - еще не оплатил\r\nanulated - в таком случае д\\с возвращается обратно на баланс по инвойсу")
                 .HasColumnType("character varying")
                 .HasColumnName("payment_status");
             entity.Property(e => e.PaymentSumm)
-                .HasComment("сумма долга")
+                .HasComment("сумма оплаты")
                 .HasColumnType("character varying")
                 .HasColumnName("payment_summ");
+            entity.Property(e => e.PeriodValue)
+                .HasComment("какой месяц или год\r\nесли периодичность месяц или год")
+                .HasColumnType("character varying")
+                .HasColumnName("period_value");
 
             entity.HasOne(d => d.InvoiceNavigation).WithMany(p => p.InvoicePayments)
                 .HasForeignKey(d => d.Invoice)
@@ -192,7 +208,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("character varying")
                 .HasColumnName("name");
             entity.Property(e => e.Organizationtype)
-                .HasComment("detsad\r\nschool\r\nmedclinic")
+                .HasComment("standart\r\ndetsad\r\nschool\r\nmedclinic")
                 .HasColumnType("character varying")
                 .HasColumnName("organizationtype");
         });
@@ -215,13 +231,12 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.ClientEmail)
                 .HasColumnType("character varying")
                 .HasColumnName("client_email");
-            entity.Property(e => e.ClientFields)
-                .HasComment("тут заполненные доп поля клиента.")
-                .HasColumnType("json")
-                .HasColumnName("client_fields");
             entity.Property(e => e.ClientInn)
                 .HasColumnType("character varying")
                 .HasColumnName("client_inn");
+            entity.Property(e => e.ClientLogo)
+                .HasColumnType("character varying")
+                .HasColumnName("client_logo");
             entity.Property(e => e.ClientName)
                 .HasColumnType("character varying")
                 .HasColumnName("client_name");
@@ -258,6 +273,37 @@ public partial class AppDbContext : DbContext
                 .HasConstraintName("organization_clients_fk2");
         });
 
+        modelBuilder.Entity<OrganizationClientsAdditionalField>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("organization_clients_additional_fields_pk");
+
+            entity.ToTable("organization_clients_additional_fields");
+
+            entity.Property(e => e.Id)
+                .HasColumnType("character varying")
+                .HasColumnName("id");
+            entity.Property(e => e.Field)
+                .HasComment("ссылка на organization_fields")
+                .HasColumnType("character varying")
+                .HasColumnName("field");
+            entity.Property(e => e.OrganizationClient)
+                .HasComment("ссылка на клиента")
+                .HasColumnType("character varying")
+                .HasColumnName("organization_client");
+            entity.Property(e => e.Value)
+                .HasComment("значение переменной\\поля")
+                .HasColumnType("character varying")
+                .HasColumnName("value");
+
+            entity.HasOne(d => d.FieldNavigation).WithMany(p => p.OrganizationClientsAdditionalFields)
+                .HasForeignKey(d => d.Field)
+                .HasConstraintName("organization_clients_additional_fields_fk");
+
+            entity.HasOne(d => d.OrganizationClientNavigation).WithMany(p => p.OrganizationClientsAdditionalFields)
+                .HasForeignKey(d => d.OrganizationClient)
+                .HasConstraintName("organization_clients_additional_fields_fk_1");
+        });
+
         modelBuilder.Entity<OrganizationField>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("organization_fields_pk");
@@ -278,6 +324,9 @@ public partial class AppDbContext : DbContext
                 .HasComment("int\r\nstring\r\nmoney\r\nselected\r\ndatetime")
                 .HasColumnType("character varying")
                 .HasColumnName("field_type");
+            entity.Property(e => e.Filterbyfield)
+                .HasDefaultValueSql("false")
+                .HasColumnName("filterbyfield");
             entity.Property(e => e.Isdeleted)
                 .HasDefaultValueSql("0")
                 .HasColumnName("isdeleted");

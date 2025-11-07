@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace WebApplication1.Models.DBModels;
 
 /// <summary>
-/// график долгов клиента по инвойсу
+/// записи - за какие периоды оплачены
 /// </summary>
 public partial class InvoicePayment
 {
@@ -12,20 +12,27 @@ public partial class InvoicePayment
 
     public string? Invoice { get; set; }
 
-    public DateTime? DeadlinePayDate { get; set; }
+    public DateTime? DateTo { get; set; }
 
     /// <summary>
-    /// сумма долга
+    /// сумма оплаты
     /// </summary>
     public string? PaymentSumm { get; set; }
 
     /// <summary>
-    /// paid
-    /// non_paid
+    /// paid - уже оплатил
+    /// non_paid - еще не оплатил
     /// anulated - в таком случае д\с возвращается обратно на баланс по инвойсу
-    /// 
     /// </summary>
     public string? PaymentStatus { get; set; }
+
+    public DateTime? DateFrom { get; set; }
+
+    /// <summary>
+    /// какой месяц или год
+    /// если периодичность месяц или год
+    /// </summary>
+    public string? PeriodValue { get; set; }
 
     public virtual Invoice? InvoiceNavigation { get; set; }
 }
