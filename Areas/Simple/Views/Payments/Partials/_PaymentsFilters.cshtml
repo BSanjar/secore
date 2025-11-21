@@ -1,0 +1,26 @@
+@model WebApplication1.Areas.Simple.ViewModels.SimplePaymentsFilterParams
+
+@{
+    var status = Model?.Status?.ToLower();
+    string FormatDate(DateTime? date) => date?.ToString("yyyy-MM-dd") ?? string.Empty;
+}
+
+<div class="form-group">
+    <label for="statusFilter">Статус</label>
+    <select id="statusFilter" name="Status">
+        <option value="">Все</option>
+        <option value="success" selected="@((status == "success") ? "selected" : null)">Успешные</option>
+        <option value="error" selected="@((status == "error") ? "selected" : null)">Ошибочные</option>
+    </select>
+</div>
+
+<div class="form-group">
+    <label for="dateFrom">С</label>
+    <input type="date" id="dateFrom" name="DateFrom" value="@FormatDate(Model?.DateFrom)" />
+</div>
+
+<div class="form-group">
+    <label for="dateTo">По</label>
+    <input type="date" id="dateTo" name="DateTo" value="@FormatDate(Model?.DateTo)" />
+</div>
+

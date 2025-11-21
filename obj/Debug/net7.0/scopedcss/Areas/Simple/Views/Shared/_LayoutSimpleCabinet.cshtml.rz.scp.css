@@ -1,0 +1,251 @@
+/* ============================================
+   Simple Cabinet Layout Styles
+   Стили для Simple организации на основе Detsad
+   ============================================ */
+
+/* Компактная шапка для Simple */
+.simple-header[b-u3hw5ew1cp] {
+    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15), 0 1px 3px rgba(37, 99, 235, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.simple-header .navbar[b-u3hw5ew1cp] {
+    padding: 0.5rem 0;
+    min-height: 56px;
+}
+
+.simple-header .container[b-u3hw5ew1cp] {
+    max-width: 1200px;
+}
+
+/* Компактное центральное меню */
+.simple-nav[b-u3hw5ew1cp] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+}
+
+.simple-nav .nav-item[b-u3hw5ew1cp] {
+    position: relative;
+}
+
+.simple-nav .nav-link[b-u3hw5ew1cp] {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem !important;
+    min-width: auto;
+    border-radius: 8px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.95) !important;
+    font-weight: 500;
+    font-size: 0.875rem;
+    white-space: nowrap;
+}
+
+.simple-nav .nav-link[b-u3hw5ew1cp]::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.12);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    border-radius: 8px;
+}
+
+.simple-nav .nav-link:hover[b-u3hw5ew1cp]::before {
+    opacity: 1;
+}
+
+.simple-nav .nav-link[b-u3hw5ew1cp]::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 2px;
+    background: white;
+    border-radius: 2px 2px 0 0;
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.simple-nav .nav-link:hover[b-u3hw5ew1cp],
+.simple-nav .nav-link.active[b-u3hw5ew1cp] {
+    color: white !important;
+    transform: translateY(-1px);
+}
+
+.simple-nav .nav-link:hover[b-u3hw5ew1cp]::after,
+.simple-nav .nav-link.active[b-u3hw5ew1cp]::after {
+    width: 70%;
+}
+
+.simple-nav .nav-link.active[b-u3hw5ew1cp] {
+    background: rgba(255, 255, 255, 0.18);
+    font-weight: 600;
+}
+
+.simple-nav .nav-link.active[b-u3hw5ew1cp]::before {
+    opacity: 1;
+}
+
+.simple-nav .nav-icon[b-u3hw5ew1cp] {
+    width: 18px;
+    height: 18px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+}
+
+.simple-nav .nav-link:hover .nav-icon[b-u3hw5ew1cp],
+.simple-nav .nav-link.active .nav-icon[b-u3hw5ew1cp] {
+    transform: scale(1.1);
+}
+
+.simple-nav .nav-text[b-u3hw5ew1cp] {
+    font-size: 0.875rem;
+    letter-spacing: 0.01em;
+    transition: all 0.25s ease;
+}
+
+.simple-nav .nav-link:hover .nav-text[b-u3hw5ew1cp],
+.simple-nav .nav-link.active .nav-text[b-u3hw5ew1cp] {
+    font-weight: 600;
+}
+
+/* Убираем стандартные стили для Simple */
+.simple-header .navbar-brand[b-u3hw5ew1cp] {
+    display: none;
+}
+
+/* Компактная правая часть меню */
+.simple-header .navbar-nav.ms-auto[b-u3hw5ew1cp] {
+    gap: 0.25rem;
+    align-items: center;
+}
+
+.simple-header .navbar-nav.ms-auto .nav-link[b-u3hw5ew1cp] {
+    padding: 0.4rem 0.75rem !important;
+    border-radius: 8px;
+    transition: all 0.25s ease;
+    font-size: 0.8125rem;
+}
+
+.simple-header .navbar-nav.ms-auto .nav-link:hover[b-u3hw5ew1cp] {
+    background-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
+}
+
+.simple-header .user-profile[b-u3hw5ew1cp] {
+    padding: 0.35rem 0.75rem !important;
+    gap: 0.5rem;
+}
+
+.simple-header .user-avatar[b-u3hw5ew1cp] {
+    width: 28px;
+    height: 28px;
+}
+
+.simple-header .user-name[b-u3hw5ew1cp] {
+    font-size: 0.8125rem;
+}
+
+.simple-header .dropdown-arrow[b-u3hw5ew1cp] {
+    width: 14px;
+    height: 14px;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 991px) {
+    .simple-header .navbar[b-u3hw5ew1cp] {
+        padding: 0.5rem 0;
+        min-height: auto;
+    }
+    
+    .simple-nav[b-u3hw5ew1cp] {
+        width: 100%;
+        flex-direction: column;
+        gap: 0.25rem;
+        margin-top: 0.75rem;
+    }
+    
+    .simple-nav .nav-link[b-u3hw5ew1cp] {
+        width: 100%;
+        justify-content: flex-start;
+        padding: 0.625rem 1rem !important;
+        gap: 0.625rem;
+    }
+    
+    .simple-nav .nav-icon[b-u3hw5ew1cp] {
+        width: 18px;
+        height: 18px;
+    }
+    
+    .simple-nav .nav-text[b-u3hw5ew1cp] {
+        font-size: 0.875rem;
+    }
+    
+    .simple-header .navbar-nav.ms-auto[b-u3hw5ew1cp] {
+        width: 100%;
+        margin-top: 0.5rem;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+}
+
+/* Планшеты */
+@media (min-width: 992px) and (max-width: 1199px) {
+    .simple-nav .nav-link[b-u3hw5ew1cp] {
+        padding: 0.5rem 0.875rem !important;
+        gap: 0.5rem;
+    }
+    
+    .simple-nav .nav-icon[b-u3hw5ew1cp] {
+        width: 18px;
+        height: 18px;
+    }
+}
+
+/* Убираем анимацию появления для более быстрой загрузки */
+.simple-nav .nav-item[b-u3hw5ew1cp] {
+    animation: none;
+}
+
+/* Компактный main */
+.cabinet-main[b-u3hw5ew1cp] {
+    padding: 1.5rem 0;
+}
+
+.cabinet-main .container[b-u3hw5ew1cp] {
+    max-width: 1200px;
+}
+
+/* Компактный footer */
+.cabinet-footer[b-u3hw5ew1cp] {
+    padding: 1rem 0;
+    margin-top: 2rem;
+    border-top: 1px solid var(--border-color);
+    background: var(--surface);
+}
+
+.cabinet-footer .container[b-u3hw5ew1cp] {
+    max-width: 1200px;
+}
+
+.cabinet-footer p[b-u3hw5ew1cp] {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+

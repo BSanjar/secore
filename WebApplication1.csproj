@@ -40,7 +40,6 @@
     <Folder Include="Models\CommonModels\" />
     <Folder Include="wwwroot\mobile\css\" />
     <Folder Include="wwwroot\mobile\js\" />
-    <Folder Include="Modules\" />
   </ItemGroup>
 
 </Project>

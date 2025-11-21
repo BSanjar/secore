@@ -1,0 +1,42 @@
+﻿@model WebApplication1.Areas.Simple.ViewModels.CreatePaymentViewModel
+@{
+    var clients = (IEnumerable<dynamic>)ViewBag.Clients;
+}
+<h2>Создать одноразовый платёж</h2>
+<form asp-action="Create" method="post">
+    <div class="mb-3">
+        <label class="form-label">Клиент</label>
+        <select asp-for="ClientId" class="form-select">
+            <option value="">— выберите —</option>
+            @foreach (var c in clients)
+            {
+                <option value="@c.Id">@c.ClientName</option>
+            }
+        </select>
+        <span asp-validation-for="ClientId" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Сумма (сом)</label>
+        <input asp-for="AmountSom" class="form-control" />
+        <span asp-validation-for="AmountSom" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Название счёта (опц.)</label>
+        <input asp-for="InvoiceName" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">PayCode (опц.)</label>
+        <input asp-for="PayCode" class="form-control" />
+        <div class="form-text">Если пусто — сгенерируем автоматически.</div>
+    </div>
+
+    <button type="submit" class="btn btn-success">Создать</button>
+    <a asp-action="Index" class="btn btn-secondary">Отмена</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -2,14 +2,16 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Diagnostics;
 using WebApplication1.Models.BaseModels;
 using WebApplication1.Models.DBModels;
+using WebApplication1.Modules.GenericModule.Services;
+using WebApplication1.Areas.Simple.ViewModels;
+using WebApplication1.Areas.Simple.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<ITableSource<PaymentListItemVm>, SimplePaymentsTableSource>();
 
-
-//����������� � ��
 builder.Services.AddDbContext<AppDbContext>(
     options =>
     {
@@ -18,7 +20,7 @@ builder.Services.AddDbContext<AppDbContext>(
         .UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
     });
 
-//�������
+
 builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
 
 

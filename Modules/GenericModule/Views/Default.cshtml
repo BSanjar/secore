@@ -1,0 +1,180 @@
+@using Microsoft.AspNetCore.WebUtilities
+@using WebApplication1.Modules.GenericModule.Models
+@model GenericTableViewModel<dynamic>
+
+@{
+    var filters = Model.Filters ?? new BaseFilterParams();
+    Dictionary<string, string?> requestQuery = ViewContext.HttpContext.Request.Query
+        .ToDictionary(kvp => kvp.Key, kvp => (string?)kvp.Value.ToString(), StringComparer.OrdinalIgnoreCase);
+
+    if (!requestQuery.ContainsKey(nameof(filters.PageNumber)))
+    {
+        requestQuery[nameof(filters.PageNumber)] = Model.PageNumber.ToString();
+    }
+
+    if (!requestQuery.ContainsKey(nameof(filters.PageSize)))
+    {
+        requestQuery[nameof(filters.PageSize)] = Model.PageSize.ToString();
+    }
+
+    string BuildUrl(Dictionary<string, string?> overrides)
+    {
+        var merged = new Dictionary<string, string?>(requestQuery, StringComparer.OrdinalIgnoreCase);
+        foreach (var kvp in overrides)
+        {
+            if (string.IsNullOrWhiteSpace(kvp.Value))
+            {
+                merged.Remove(kvp.Key);
+            }
+            else
+            {
+                merged[kvp.Key] = kvp.Value;
+            }
+        }
+
+        var baseUrl = string.IsNullOrWhiteSpace(Model.LoadUrl)
+            ? ViewContext.HttpContext.Request.Path.Value ?? string.Empty
+            : Model.LoadUrl;
+
+        return QueryHelpers.AddQueryString(baseUrl, merged!);
+    }
+
+    var items = Model.Items ?? new List<dynamic>();
+    var hasItems = items.Any();
+    var sizeOptions = new[] { 10, 25, 50 };
+    var firstItemIndex = (Model.PageNumber - 1) * Model.PageSize + 1;
+    var lastItemIndex = Math.Min(Model.PageNumber * Model.PageSize, Model.TotalItems);
+}
+
+<div class="generic-table">
+    <div class="generic-table__toolbar">
+        <div>
+            <h2 class="mb-3">@Model.TableTitle</h2>
+        </div>
+
+        <form method="get" action="@Model.LoadUrl" class="generic-table__filters">
+            <input type="hidden" name="SortColumn" value="@filters.SortColumn" />
+            <input type="hidden" name="SortDirection" value="@filters.SortDirection" />
+            <input type="hidden" name="PageSize" value="@Model.PageSize" />
+            <input type="hidden" name="PageNumber" value="1" />
+
+            <div class="form-group">
+                <label for="generic-table-search">Поиск</label>
+                <input id="generic-table-search"
+                       type="text"
+                       name="SearchTerm"
+                       value="@filters.SearchTerm"
+                       placeholder="Введите запрос" />
+            </div>
+
+            <div class="form-group">
+                <label for="generic-table-column">Поле</label>
+                <select id="generic-table-column" name="SearchColumn">
+                    <option value="">Все</option>
+                    @foreach (var column in Model.SearchableColumns)
+                    {
+                        <option value="@column.Key"
+                                selected="@(string.Equals(filters.SearchColumn, column.Key, StringComparison.OrdinalIgnoreCase))">
+                            @column.Value
+                        </option>
+                    }
+                </select>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(Model.FilterPartialViewName))
+            {
+                @await Html.PartialAsync(Model.FilterPartialViewName, Model.Filters)
+            }
+
+            <button type="submit" class="btn btn-primary btn-apply">Применить</button>
+        </form>
+
+        @if (!string.IsNullOrWhiteSpace(Model.ExportUrl))
+        {
+            <form method="get" action="@Model.ExportUrl">
+                <input type="hidden" name="SearchTerm" value="@filters.SearchTerm" />
+                <input type="hidden" name="SearchColumn" value="@filters.SearchColumn" />
+                <input type="hidden" name="SortColumn" value="@filters.SortColumn" />
+                <input type="hidden" name="SortDirection" value="@filters.SortDirection" />
+                <input type="hidden" name="PageSize" value="@Model.PageSize" />
+                <input type="hidden" name="PageNumber" value="@Model.PageNumber" />
+                <button type="submit" class="btn btn-outline-primary">
+                    📥 Экспорт в Excel
+                </button>
+            </form>
+        }
+    </div>
+
+    <div class="table-responsive">
+        <table class="transactions-table generic-table__table">
+            <thead>
+                @if (!string.IsNullOrWhiteSpace(Model.PartialHeaderViewName))
+                {
+                    @await Html.PartialAsync(Model.PartialHeaderViewName, Model)
+                }
+            </thead>
+            <tbody>
+                @if (hasItems)
+                {
+                    foreach (var item in items)
+                    {
+                        @await Html.PartialAsync(Model.PartialRowViewName, (object)item)
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="100%">
+                            <div class="generic-table__empty">
+                                <h4>@(Model.EmptyStateTitle ?? "Нет данных")</h4>
+                                <p>@(Model.EmptyStateDescription ?? "Попробуйте изменить фильтры поиска.")</p>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (hasItems)
+    {
+        <div class="generic-table__pagination">
+            <div>
+                Показано @firstItemIndex&ndash;@lastItemIndex из @Model.TotalItems
+            </div>
+
+            <div class="generic-table__pagination-pages">
+                @for (var pageNumber = 1; pageNumber <= Model.TotalPages; pageNumber++)
+                {
+                    if (pageNumber == Model.PageNumber)
+                    {
+                        <span class="current">@pageNumber</span>
+                    }
+                    else
+                    {
+                        <a href="@BuildUrl(new Dictionary<string, string?> {
+                            [nameof(filters.PageNumber)] = pageNumber.ToString()
+                        })">@pageNumber</a>
+                    }
+                }
+            </div>
+
+            <div class="generic-table__pagination page-size-select">
+                <label for="generic-table-page-size">На странице</label>
+                <select id="generic-table-page-size" onchange="window.location.href=this.value;">
+                    @foreach (var size in sizeOptions)
+                    {
+                        var optionUrl = BuildUrl(new Dictionary<string, string?>
+                        {
+                            [nameof(filters.PageSize)] = size.ToString(),
+                            [nameof(filters.PageNumber)] = "1"
+                        });
+                        <option value="@optionUrl" selected="@(Model.PageSize == size)">
+                            @size
+                        </option>
+                    }
+                </select>
+            </div>
+        </div>
+    }
+</div>

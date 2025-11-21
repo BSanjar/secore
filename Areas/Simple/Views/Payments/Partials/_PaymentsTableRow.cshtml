@@ -1,0 +1,36 @@
+@model object
+
+@{
+    var item = (WebApplication1.Areas.Simple.ViewModels.PaymentListItemVm)Model;
+
+    var statusClass = item.Status?.ToLower() switch
+    {
+        "success" => "status-success",
+        "error" => "status-error",
+        _ => "status-unknown"
+    };
+}
+
+<tr class="transaction-row">
+    <td class="transaction-date" data-label="Дата">
+        @((item.Date)?.ToString("dd.MM.yyyy HH:mm") ?? "—")
+    </td>
+
+    <td data-label="Клиент">
+        @(item.ClientName ?? "—")
+    </td>
+
+    <td data-label="Счёт">
+        @(item.InvoiceName ?? "—")
+    </td>
+
+    <td class="transaction-amount" data-label="Сумма">
+        @item.AmountSom.ToString("N2") сом
+    </td>
+
+    <td class="transaction-status text-end" data-label="Статус">
+        <span class="status-badge @statusClass">
+            @(item.Status ?? "—")
+        </span>
+    </td>
+</tr>
