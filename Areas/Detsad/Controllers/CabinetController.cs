@@ -88,10 +88,177 @@ namespace WebApplication1.Areas.Detsad.Controllers
             return View();
         }
 
-        public IActionResult CreateChild()
+        [HttpPost]
+        public async Task<IActionResult> CreateChild([FromBody] CreateChildRequest request)
         {
-            // Создание записи нового ребенка
-            return View();
+            try
+            {
+                // ID организации (пока зашит id = 1)
+                string organizationId = "1";
+                // TODO: Получить ID пользователя из сессии
+                string? userId = null; // HttpContext.Session.GetString("UserId");
+
+                using var transaction = await _db.Database.BeginTransactionAsync();
+
+                try
+                {
+                    // Генерируем ID для OrganizationClient (последний ID + 1)
+                    // Получаем все ID и находим максимальный числовой ID
+                    var allClientIds = await _db.OrganizationClients
+                        .Select(c => c.Id)
+                        .ToListAsync();
+
+                    int newClientId = 1;
+                    foreach (var idStr in allClientIds)
+                    {
+                        if (int.TryParse(idStr, out int id) && id >= newClientId)
+                        {
+                            newClientId = id + 1;
+                        }
+                    }
+
+                    // Создаем OrganizationClient
+                    var organizationClient = new OrganizationClient
+                    {
+                        Id = newClientId.ToString(),
+                        Organization = organizationId,
+                        ClientName = request.ClientName,
+                        ClinetType = "fiz", // Всегда физическое лицо
+                        ClientInn = request.ClientInn,
+                        ClientPhone = request.ClientPhone, // Сохраняем с маской +996(***) *** ***
+                        ClientAdres = request.ClientAdres,
+                        ClientEmail = request.ClientEmail,
+                        ClientBalance = 0,
+                        ClientStatus = 1,
+                        CreatedDate = DateTime.Now,
+                        UpdatedDate = DateTime.Now,
+                        UserCreater = userId
+                    };
+
+                    _db.OrganizationClients.Add(organizationClient);
+
+                    // Генерируем ID для Invoice
+                    var allInvoiceIds = await _db.Invoices
+                        .Select(i => i.Id)
+                        .ToListAsync();
+
+                    int newInvoiceId = 1;
+                    foreach (var idStr in allInvoiceIds)
+                    {
+                        if (int.TryParse(idStr, out int id) && id >= newInvoiceId)
+                        {
+                            newInvoiceId = id + 1;
+                        }
+                    }
+
+                    // Конвертируем сумму в копейки (Int)
+                    int fixedSumInKopecks = (int)(request.PaymentAmount * 100);
+
+                    // Генерируем PayCode: id организации + id OrganizationClient + 6 значное случайное число
+                    var random = new Random();
+                    int randomNumber = random.Next(100000, 999999);
+                    string payCode = $"{organizationId}{newClientId}{randomNumber}";
+
+                    // Вычисляем даты
+                    DateTime dateStartInvoice = request.StartDate.Date;
+                    DateTime nextStartInvoice = dateStartInvoice.AddDays(30);
+
+                    // Создаем Invoice
+                    var invoice = new Invoice
+                    {
+                        Id = newInvoiceId.ToString(),
+                        DateCreated = DateTime.Now,
+                        UserCreater = userId,
+                        InvoiceStatus = "actual",
+                        Periodicity = "monthly",
+                        DateStartInvoice = dateStartInvoice,
+                        Balance = 0,
+                        PayCode = payCode,
+                        Client = newClientId.ToString(),
+                        FixedSumm = fixedSumInKopecks.ToString(),
+                        AutoProlongation = true,
+                        NextStartInvoice = nextStartInvoice,
+                        NameInvoice = "оплата за детсад"
+                    };
+
+                    _db.Invoices.Add(invoice);
+
+                    // Генерируем ID для InvoicePayment
+                    var allPaymentIds = await _db.InvoicePayments
+                        .Select(ip => ip.Id)
+                        .ToListAsync();
+
+                    int newPaymentId = 1;
+                    foreach (var idStr in allPaymentIds)
+                    {
+                        if (int.TryParse(idStr, out int id) && id >= newPaymentId)
+                        {
+                            newPaymentId = id + 1;
+                        }
+                    }
+
+                    // Вычисляем даты для платежа
+                    DateTime dateFrom = dateStartInvoice;
+                    DateTime dateTo = dateStartInvoice.AddDays(29);
+
+                    // Определяем месяц для period_value
+                    string monthName = GetMonthName(dateFrom, dateTo);
+
+                    // Создаем InvoicePayment
+                    var invoicePayment = new InvoicePayment
+                    {
+                        Id = newPaymentId.ToString(),
+                        Invoice = newInvoiceId.ToString(),
+                        DateFrom = dateFrom,
+                        DateTo = dateTo,
+                        PaymentSumm = fixedSumInKopecks.ToString(),
+                        PaymentStatus = "non_paid",
+                        PeriodValue = monthName
+                    };
+
+                    _db.InvoicePayments.Add(invoicePayment);
+
+                    await _db.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    return Json(new { success = true, message = "Ребенок успешно добавлен", clientId = newClientId.ToString() });
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Ошибка при добавлении ребенка: {ex.Message}" });
+            }
+        }
+
+        private string GetMonthName(DateTime dateFrom, DateTime dateTo)
+        {
+            // Определяем, к какому месяцу больше относится период
+            // Если период больше относится к началу, берем месяц dateFrom, иначе dateTo
+            int daysFromStart = (dateTo - dateFrom).Days / 2;
+            DateTime middleDate = dateFrom.AddDays(daysFromStart);
+
+            string[] months = {
+                "январь", "февраль", "март", "апрель", "май", "июнь",
+                "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"
+            };
+
+            return months[middleDate.Month - 1];
+        }
+
+        public class CreateChildRequest
+        {
+            public string? ClientName { get; set; }
+            public string? ClientInn { get; set; }
+            public string? ClientPhone { get; set; }
+            public string? ClientAdres { get; set; }
+            public string? ClientEmail { get; set; }
+            public decimal PaymentAmount { get; set; }
+            public DateTime StartDate { get; set; }
         }
 
         public async Task<IActionResult> Children(string search = "", string statusFilter = "active", bool debtorsOnly = false)

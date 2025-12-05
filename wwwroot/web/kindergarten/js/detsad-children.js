@@ -505,3 +505,328 @@ async function showClientTransactions(clientId) {
 window.showChildInfo = showChildInfo;
 window.showInvoicesInfo = showInvoicesInfo;
 window.showClientTransactions = showClientTransactions;
+
+// Функции для модального окна добавления ребенка
+let currentStep = 1;
+const totalSteps = 2;
+
+function openAddChildModal() {
+    currentStep = 1;
+    const modal = new bootstrap.Modal(document.getElementById('addChildModal'));
+    resetModal();
+    updateStepIndicator();
+    updateButtons();
+    
+    // Инициализируем маски после показа модального окна
+    modal.show();
+    setTimeout(() => {
+        initPhoneMask();
+        initInnValidation();
+    }, 300);
+}
+
+function resetModal() {
+    document.getElementById('childForm').reset();
+    document.getElementById('invoiceForm').reset();
+    document.getElementById('errorMessage').style.display = 'none';
+    document.getElementById('step1').style.display = 'block';
+    document.getElementById('step2').style.display = 'none';
+    currentStep = 1;
+    
+    // Убираем классы валидации
+    const forms = [document.getElementById('childForm'), document.getElementById('invoiceForm')];
+    forms.forEach(form => {
+        if (form) {
+            form.classList.remove('was-validated');
+            const inputs = form.querySelectorAll('.form-control');
+            inputs.forEach(input => {
+                input.classList.remove('is-invalid', 'is-valid');
+            });
+        }
+    });
+    
+    // Инициализируем маску телефона
+    initPhoneMask();
+}
+
+function nextStep() {
+    if (currentStep === 1) {
+        // Валидация первого шага
+        const form = document.getElementById('childForm');
+        
+        // Валидация ИНН
+        const innInput = document.getElementById('clientInn');
+        const innValue = innInput.value.replace(/\D/g, ''); // Убираем все нецифровые символы
+        if (innValue.length !== 14) {
+            innInput.classList.add('is-invalid');
+            innInput.classList.remove('is-valid');
+            form.classList.add('was-validated');
+            return;
+        } else {
+            innInput.classList.remove('is-invalid');
+            innInput.classList.add('is-valid');
+        }
+        
+        // Валидация телефона
+        const phoneInput = document.getElementById('clientPhone');
+        const phoneValue = phoneInput.value;
+        // Проверяем формат +996(***) *** ***
+        const phoneRegex = /^\+996\(\d{3}\) \d{3} \d{3}$/;
+        if (!phoneRegex.test(phoneValue)) {
+            phoneInput.classList.add('is-invalid');
+            phoneInput.classList.remove('is-valid');
+            form.classList.add('was-validated');
+            return;
+        } else {
+            phoneInput.classList.remove('is-invalid');
+            phoneInput.classList.add('is-valid');
+        }
+        
+        if (!form.checkValidity()) {
+            form.classList.add('was-validated');
+            form.reportValidity();
+            return;
+        }
+        
+        form.classList.add('was-validated');
+        currentStep = 2;
+        document.getElementById('step1').style.display = 'none';
+        document.getElementById('step2').style.display = 'block';
+    }
+    updateStepIndicator();
+    updateButtons();
+}
+
+function prevStep() {
+    if (currentStep === 2) {
+        currentStep = 1;
+        document.getElementById('step1').style.display = 'block';
+        document.getElementById('step2').style.display = 'none';
+    }
+    updateStepIndicator();
+    updateButtons();
+}
+
+function updateStepIndicator() {
+    const stepItems = document.querySelectorAll('.step-item');
+    stepItems.forEach((item, index) => {
+        const stepNum = index + 1;
+        if (stepNum <= currentStep) {
+            item.classList.add('active');
+        } else {
+            item.classList.remove('active');
+        }
+    });
+}
+
+function updateButtons() {
+    const prevBtn = document.getElementById('prevStepBtn');
+    const nextBtn = document.getElementById('nextStepBtn');
+    const submitBtn = document.getElementById('submitBtn');
+
+    if (currentStep === 1) {
+        prevBtn.style.display = 'none';
+        nextBtn.style.display = 'inline-block';
+        submitBtn.style.display = 'none';
+    } else if (currentStep === 2) {
+        prevBtn.style.display = 'inline-block';
+        nextBtn.style.display = 'none';
+        submitBtn.style.display = 'inline-block';
+    }
+}
+
+async function submitChild() {
+    const errorDiv = document.getElementById('errorMessage');
+    errorDiv.style.display = 'none';
+
+    // Валидация второго шага
+    const invoiceForm = document.getElementById('invoiceForm');
+    
+    // Валидация суммы
+    const amountInput = document.getElementById('paymentAmount');
+    const amount = parseFloat(amountInput.value);
+    if (isNaN(amount) || amount < 1 || amount > 100000) {
+        amountInput.classList.add('is-invalid');
+        amountInput.classList.remove('is-valid');
+        invoiceForm.classList.add('was-validated');
+        return;
+    } else {
+        amountInput.classList.remove('is-invalid');
+        amountInput.classList.add('is-valid');
+    }
+    
+    if (!invoiceForm.checkValidity()) {
+        invoiceForm.classList.add('was-validated');
+        invoiceForm.reportValidity();
+        return;
+    }
+    
+    invoiceForm.classList.add('was-validated');
+
+    // Собираем данные
+    const childData = {
+        clientName: document.getElementById('clientName').value.trim(),
+        clientInn: document.getElementById('clientInn').value.replace(/\D/g, ''), // Только цифры
+        clientPhone: document.getElementById('clientPhone').value, // Сохраняем с маской
+        clientEmail: document.getElementById('clientEmail').value.trim(),
+        clientAdres: document.getElementById('clientAdres').value.trim(),
+        paymentAmount: amount,
+        startDate: document.getElementById('startDate').value
+    };
+
+    // Валидация даты
+    if (!childData.startDate) {
+        showError('Пожалуйста, укажите дату начала действия');
+        return;
+    }
+
+    const startDate = new Date(childData.startDate);
+    if (isNaN(startDate.getTime())) {
+        showError('Некорректная дата начала действия');
+        return;
+    }
+
+    // Отправляем данные
+    try {
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Регистрация...';
+
+        const response = await fetch('/Detsad/Cabinet/CreateChild', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(childData)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Закрываем модальное окно
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addChildModal'));
+            modal.hide();
+
+            // Обновляем страницу
+            window.location.reload();
+        } else {
+            showError(result.message || 'Ошибка при добавлении ребенка');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Зарегистрировать';
+        }
+    } catch (error) {
+        console.error('Error submitting child:', error);
+        showError('Ошибка при отправке данных. Попробуйте позже.');
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Зарегистрировать';
+    }
+}
+
+function showError(message) {
+    const errorDiv = document.getElementById('errorMessage');
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+}
+
+// Маска для телефона +996(***) *** ***
+function initPhoneMask() {
+    const phoneInput = document.getElementById('clientPhone');
+    if (!phoneInput) return;
+    
+    // Удаляем старые обработчики событий
+    const newPhoneInput = phoneInput.cloneNode(true);
+    phoneInput.parentNode.replaceChild(newPhoneInput, phoneInput);
+    const phoneInputEl = document.getElementById('clientPhone');
+    
+    phoneInputEl.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, ''); // Убираем все нецифровые символы
+        
+        // Если начинается не с 996, добавляем 996
+        if (value.length > 0 && !value.startsWith('996')) {
+            value = '996' + value;
+        }
+        
+        // Ограничиваем до 12 цифр (996 + 9 цифр)
+        if (value.length > 12) {
+            value = value.substring(0, 12);
+        }
+        
+        // Форматируем: +996(***) *** ***
+        let formatted = '+996';
+        if (value.length > 3) {
+            formatted += '(' + value.substring(3, 6);
+            if (value.length > 6) {
+                formatted += ') ' + value.substring(6, 9);
+                if (value.length > 9) {
+                    formatted += ' ' + value.substring(9, 12);
+                }
+            } else {
+                formatted += ')';
+            }
+        }
+        
+        e.target.value = formatted;
+    });
+    
+    phoneInputEl.addEventListener('keypress', function(e) {
+        // Разрешаем только цифры
+        const char = String.fromCharCode(e.which);
+        if (!/[0-9]/.test(char)) {
+            e.preventDefault();
+        }
+    });
+    
+    // При фокусе, если поле пустое, начинаем с +996(
+    phoneInputEl.addEventListener('focus', function(e) {
+        if (!e.target.value || e.target.value === '') {
+            e.target.value = '+996(';
+            e.target.setSelectionRange(5, 5);
+        }
+    });
+}
+
+// Валидация ИНН при вводе
+function initInnValidation() {
+    const innInput = document.getElementById('clientInn');
+    if (!innInput) return;
+    
+    innInput.addEventListener('input', function(e) {
+        // Оставляем только цифры
+        let value = e.target.value.replace(/\D/g, '');
+        // Ограничиваем до 14 цифр
+        if (value.length > 14) {
+            value = value.substring(0, 14);
+        }
+        e.target.value = value;
+        
+        // Валидация
+        if (value.length === 14) {
+            e.target.classList.remove('is-invalid');
+            e.target.classList.add('is-valid');
+        } else if (value.length > 0) {
+            e.target.classList.remove('is-valid');
+            e.target.classList.add('is-invalid');
+        } else {
+            e.target.classList.remove('is-invalid', 'is-valid');
+        }
+    });
+}
+
+// Инициализация при загрузке страницы (для повторного использования)
+document.addEventListener('DOMContentLoaded', function() {
+    // Инициализируем маски и валидацию при открытии модального окна
+    const addChildModal = document.getElementById('addChildModal');
+    if (addChildModal) {
+        addChildModal.addEventListener('shown.bs.modal', function() {
+            initPhoneMask();
+            initInnValidation();
+        });
+    }
+});
+
+// Экспортируем функции для глобального доступа
+window.openAddChildModal = openAddChildModal;
+window.nextStep = nextStep;
+window.prevStep = prevStep;
+window.submitChild = submitChild;

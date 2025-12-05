@@ -14,8 +14,18 @@
 
 <div class="children-page">
     <div class="page-header">
-        <h1 class="page-title">Дети</h1>
-        <p class="page-subtitle">Список всех детей в детском саду</p>
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">Дети</h1>
+                <p class="page-subtitle">Список всех детей в детском саду</p>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="openAddChildModal()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px; vertical-align: middle;">
+                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
+                </svg>
+                Добавить нового ребенка
+            </button>
+        </div>
     </div>
 
     <!-- Поиск и фильтры -->
@@ -246,6 +256,102 @@
                         <span class="visually-hidden">Загрузка...</span>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно "Добавить нового ребенка" -->
+<div class="modal fade" id="addChildModal" tabindex="-1" aria-labelledby="addChildModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addChildModalLabel">Добавить нового ребенка</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Индикатор шагов -->
+                <div class="step-indicator mb-4">
+                    <div class="step-item active" data-step="1">
+                        <div class="step-number">1</div>
+                        <div class="step-label">Данные ребенка</div>
+                    </div>
+                    <div class="step-item" data-step="2">
+                        <div class="step-number">2</div>
+                        <div class="step-label">Данные счета</div>
+                    </div>
+                </div>
+
+                <!-- Шаг 1: Данные OrganizationClient -->
+                <div id="step1" class="step-content">
+                    <form id="childForm" novalidate>
+                        <!-- ФИО и ИНН в одной строке -->
+                        <div class="row mb-3">
+                            <div class="col-8">
+                                <label for="clientName" class="form-label">ФИО ребенка <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="clientName" name="clientName" required>
+                                <div class="invalid-feedback">Пожалуйста, укажите ФИО ребенка</div>
+                            </div>
+                            <div class="col-4">
+                                <label for="clientInn" class="form-label">ИНН <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="clientInn" name="clientInn" maxlength="14" pattern="[0-9]{14}" required>
+                                <div class="invalid-feedback">ИНН должен содержать 14 цифр</div>
+                            </div>
+                        </div>
+
+                        <!-- Разделитель -->
+                        <div class="form-section-divider mb-3">
+                            <span class="divider-text">Контактные данные (родителей)</span>
+                        </div>
+
+                        <!-- Телефон и Email в одной строке (компактные) -->
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label for="clientPhone" class="form-label">Телефон <span class="text-danger">*</span></label>
+                                <input type="tel" class="form-control form-control-compact" id="clientPhone" name="clientPhone" placeholder="+996(***) *** ***" required>
+                                <div class="invalid-feedback">Пожалуйста, укажите корректный номер телефона</div>
+                            </div>
+                            <div class="col-6">
+                                <label for="clientEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control form-control-compact" id="clientEmail" name="clientEmail">
+                                <div class="invalid-feedback">Пожалуйста, укажите корректный email</div>
+                            </div>
+                        </div>
+
+                        <!-- Адрес -->
+                        <div class="mb-3">
+                            <label for="clientAdres" class="form-label">Адрес</label>
+                            <input type="text" class="form-control form-control-compact" id="clientAdres" name="clientAdres">
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Шаг 2: Данные Invoice -->
+                <div id="step2" class="step-content" style="display: none;">
+                    <form id="invoiceForm" novalidate>
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label for="paymentAmount" class="form-label">Сумма ежемесячной оплаты (сом) <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control form-control-compact" id="paymentAmount" name="paymentAmount" step="0.01" min="1" max="100000" required>
+                                <div class="invalid-feedback">Сумма должна быть от 1 до 100 000 сом</div>
+                            </div>
+                            <div class="col-6">
+                                <label for="startDate" class="form-label">Дата начала действия <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control form-control-compact" id="startDate" name="startDate" required>
+                                <div class="invalid-feedback">Пожалуйста, укажите дату начала действия</div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Сообщения об ошибках -->
+                <div id="errorMessage" class="alert alert-danger" style="display: none;" role="alert"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-secondary" id="prevStepBtn" style="display: none;" onclick="prevStep()">Назад</button>
+                <button type="button" class="btn btn-primary" id="nextStepBtn" onclick="nextStep()">Далее</button>
+                <button type="button" class="btn btn-success" id="submitBtn" style="display: none;" onclick="submitChild()">Зарегистрировать</button>
             </div>
         </div>
     </div>
