@@ -109,3 +109,5 @@ C:\Users\AzatAdmin\Documents\SECORE\secore\obj\Debug\net7.0\WebApplication1.pdb
 C:\Users\AzatAdmin\Documents\SECORE\secore\obj\Debug\net7.0\WebApplication1.genruntimeconfig.cache
 C:\Users\AzatAdmin\Documents\SECORE\secore\obj\Debug\net7.0\ref\WebApplication1.dll
 C:\Users\AzatAdmin\Documents\SECORE\secore\obj\Debug\net7.0\staticwebassets.upToDateCheck.txt
+C:\disk\sanjar\BillingCom\secore\WebApplication1\obj\Debug\net7.0\scopedcss\Areas\Simple\Views\Shared\_LayoutSimpleCabinet.cshtml.rz.scp.css
+C:\disk\sanjar\BillingCom\secore\WebApplication1\bin\Debug\net7.0\BCrypt.Net-Next.dll

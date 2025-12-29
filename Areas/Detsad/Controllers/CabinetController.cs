@@ -175,7 +175,7 @@ namespace WebApplication1.Areas.Detsad.Controllers
                         Balance = 0,
                         PayCode = payCode,
                         Client = newClientId.ToString(),
-                        FixedSumm = fixedSumInKopecks.ToString(),
+                        FixedSumm = fixedSumInKopecks,
                         AutoProlongation = true,
                         NextStartInvoice = nextStartInvoice,
                         NameInvoice = "оплата за детсад"

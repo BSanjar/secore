@@ -114,17 +114,17 @@ namespace WebApplication1.Areas.Simple.Controllers
                 var invoice = new Invoice
                 {
                     Id = invoiceId,
-                    DateCreated = DateHelper.NowForTimestamp(),
+                    DateCreated = ParsersHelper.NowForTimestamp(),
                     UserCreater = User?.Identity?.Name, // или id пользователя из claims
                     InvoiceStatus = "actual",
                     Periodicity = "oneTime",
-                    DateStartInvoice = DateHelper.NowForTimestamp(),
+                    DateStartInvoice = ParsersHelper.NowForTimestamp(),
                     Balance = null,               // !!! не трогаем баланс
                     PayCode = string.IsNullOrWhiteSpace(model.PayCode)
                         ? new Random().Next(100000, 999999).ToString()
                         : model.PayCode,
                     Client = model.ClientId,
-                    FixedSumm = model.AmountSom.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    FixedSumm = model.AmountSom,
                     AutoProlongation = false,
                     NextStartInvoice = null,
                     NameInvoice = string.IsNullOrWhiteSpace(model.InvoiceName)
@@ -139,7 +139,7 @@ namespace WebApplication1.Areas.Simple.Controllers
                 var transaction = new Transaction
                 {
                     Id = Guid.NewGuid().ToString(),
-                    TransactionDate = DateHelper.NowForTimestamp(),
+                    TransactionDate = ParsersHelper.NowForTimestamp(),
                     TransactionStatus = "success",      // или in_process, если нужна внешняя проверка
                     Summ = tyiyn,
                     TransactionSumm = tyiyn,            // если без комиссии — равны
