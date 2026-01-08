@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Models.DBModels;
+using WebApplication1.Helpers;
 
 namespace WebApplication1.Areas.Standart.Controllers
 {
     [Area("Standart")]
+    [RequireAuth]
     public class CabinetController : Controller
     {
         private readonly AppDbContext _db;
@@ -14,6 +16,7 @@ namespace WebApplication1.Areas.Standart.Controllers
             _db = db;
         }
 
+        [RequirePermission("dashboard.view")]
         public async Task<IActionResult> Index()
         {
             // TODO: Получить ID организации текущего пользователя из сессии
@@ -55,6 +58,7 @@ namespace WebApplication1.Areas.Standart.Controllers
             return View();
         }
 
+        [RequirePermission("transactions.view")]
         public async Task<IActionResult> PaymentHistory()
         {
             // TODO: Получить ID организации текущего пользователя из сессии
@@ -68,6 +72,7 @@ namespace WebApplication1.Areas.Standart.Controllers
             return View(transactions);
         }
 
+        [RequirePermission("invoices.view")]
         public async Task<IActionResult> Invoices()
         {
             // TODO: Получить ID организации текущего пользователя из сессии

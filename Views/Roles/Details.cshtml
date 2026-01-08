@@ -1,0 +1,60 @@
+@model WebApplication1.Models.DBModels.Role
+@{
+    ViewData["Title"] = "Детали роли";
+    var rolePermissions = Model.RolePermissions?
+        .Where(rp => rp.Isdeleted == null || rp.Isdeleted == 0)
+        .ToList() ?? new List<WebApplication1.Models.DBModels.RolePermission>();
+}
+
+<div class="container mt-4">
+    <h2>Детали роли</h2>
+    <hr />
+
+    <dl class="row">
+        <dt class="col-sm-2">Название</dt>
+        <dd class="col-sm-10">@Model.Name</dd>
+
+        <dt class="col-sm-2">Права доступа</dt>
+        <dd class="col-sm-10">
+            @if (rolePermissions.Any())
+            {
+                <ul class="list-group">
+                    @foreach (var rolePermission in rolePermissions)
+                    {
+                        <li class="list-group-item">
+                            <strong>@rolePermission.PermissionNavigation?.Name</strong>
+                            @if (!string.IsNullOrEmpty(rolePermission.PermissionNavigation?.Description))
+                            {
+                                <br />
+                                <small class="text-muted">@rolePermission.PermissionNavigation.Description</small>
+                            }
+                            @if (!string.IsNullOrEmpty(rolePermission.PermissionNavigation?.Category))
+                            {
+                                <span class="badge bg-secondary ms-2">@rolePermission.PermissionNavigation.Category</span>
+                            }
+                            @if (!string.IsNullOrEmpty(rolePermission.PermissionNavigation?.Area))
+                            {
+                                <span class="badge bg-info ms-2">@rolePermission.PermissionNavigation.Area</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-success ms-2">Общее</span>
+                            }
+                        </li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <span class="text-muted">Права не назначены</span>
+            }
+        </dd>
+    </dl>
+
+    <div class="mt-3">
+        <a asp-action="ManagePermissions" asp-route-id="@Model.Id" class="btn btn-success">Настроить права</a>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Редактировать</a>
+        <a asp-action="Index" class="btn btn-secondary">Назад к списку</a>
+    </div>
+</div>
+

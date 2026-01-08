@@ -17,6 +17,14 @@
         },
         "runtime": {
           "WebApplication1.dll": {}
+        },
+        "resources": {
+          "en/WebApplication1.resources.dll": {
+            "locale": "en"
+          },
+          "ky/WebApplication1.resources.dll": {
+            "locale": "ky"
+          }
         }
       },
       "Humanizer.Core/2.14.1": {

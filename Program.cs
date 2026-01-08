@@ -1,16 +1,57 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Localization;
+using Microsoft.Extensions.Options;
 using WebApplication1.Models.BaseModels;
 using WebApplication1.Models.DBModels;
 using WebApplication1.Modules.GenericModule.Services;
 using WebApplication1.Areas.Simple.ViewModels;
 using WebApplication1.Areas.Simple.Services;
+using WebApplication1.Services;
+using WebApplication1.Services.ChannelWorkers;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Настройка локализации
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+builder.Services.Configure<RequestLocalizationOptions>(options =>
+{
+    var supportedCultures = new[] { "ru", "en", "ky" };
+    var supportedUICultures = new[] { "ru", "en", "ky" };
+
+    options.SetDefaultCulture("ru")
+        .AddSupportedCultures(supportedCultures)
+        .AddSupportedUICultures(supportedUICultures)
+        .RequestCultureProviders.Insert(0, new CookieRequestCultureProvider());
+});
+
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews()
+    .AddViewLocalization(Microsoft.AspNetCore.Mvc.Razor.LanguageViewLocationExpanderFormat.Suffix)
+    .AddDataAnnotationsLocalization(); // Добавляем поддержку локализации представлений и аннотаций данных
+
 builder.Services.AddScoped<ITableSource<PaymentListItemVm>, SimplePaymentsTableSource>();
+
+// Регистрация сервисов уведомлений
+builder.Services.AddHttpClient();
+builder.Services.AddSingleton<IRabbitMQService, RabbitMQService>();
+builder.Services.AddScoped<NotificationService>();
+builder.Services.AddScoped<InvoicePaymentService>();
+
+// Регистрация фоновых воркеров
+builder.Services.AddHostedService<NotificationWorker>();
+builder.Services.AddHostedService<EmailChannelWorker>();
+builder.Services.AddHostedService<TelegramChannelWorker>();
+builder.Services.AddHostedService<WhatsAppChannelWorker>();
+
+// Добавление поддержки сессий
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
 
 builder.Services.AddDbContext<AppDbContext>(
     options =>
@@ -44,15 +85,34 @@ else
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
+app.UseSession();
+
+// Настройка локализации (должна быть до UseRouting)
+var localizationOptions = app.Services.GetRequiredService<IOptions<RequestLocalizationOptions>>().Value;
+app.UseRequestLocalization(localizationOptions);
+
 app.UseRouting();
 
 app.UseAuthorization();
+
+// Маршрутизация для Language (должен быть до маршрута Areas)
+app.MapControllerRoute(
+    name: "language",
+    pattern: "Language/{action=SetLanguage}",
+    defaults: new { controller = "Language" });
+
+// Маршрутизация для Account (должен быть до маршрута Areas, более специфичный)
+app.MapControllerRoute(
+    name: "account",
+    pattern: "Account/{action=Login}/{id?}",
+    defaults: new { controller = "Account", action = "Login" });
 
 // Маршрутизация для Areas
 app.MapControllerRoute(
     name: "areas",
     pattern: "{area:exists}/{controller=Cabinet}/{action=Index}/{id?}");
 
+// Маршрутизация по умолчанию (должен быть последним)
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");

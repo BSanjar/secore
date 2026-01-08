@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Models.DBModels;
+using WebApplication1.Helpers;
 
 namespace WebApplication1.Areas.Detsad.Controllers
 {
     [Area("Detsad")]
+    [RequireAuth]
     public class CabinetController : Controller
     {
         private readonly AppDbContext _db;
@@ -14,6 +16,7 @@ namespace WebApplication1.Areas.Detsad.Controllers
             _db = db;
         }
 
+        [RequirePermission("dashboard.view")]
         public async Task<IActionResult> Index()
         {
             // TODO: Получить ID организации текущего пользователя из сессии
@@ -89,6 +92,7 @@ namespace WebApplication1.Areas.Detsad.Controllers
         }
 
         [HttpPost]
+        [RequirePermission("children.create")]
         public async Task<IActionResult> CreateChild([FromBody] CreateChildRequest request)
         {
             try
@@ -261,6 +265,7 @@ namespace WebApplication1.Areas.Detsad.Controllers
             public DateTime StartDate { get; set; }
         }
 
+        [RequirePermission("children.view")]
         public async Task<IActionResult> Children(string search = "", string statusFilter = "active", bool debtorsOnly = false)
         {
             // ID организации (пока зашит id = 1)
@@ -330,6 +335,7 @@ namespace WebApplication1.Areas.Detsad.Controllers
             return View();
         }
 
+        [RequirePermission("children.view")]
         public async Task<IActionResult> GetChildInfo(string clientId)
         {
             // ID организации (пока зашит id = 1)
@@ -376,6 +382,7 @@ namespace WebApplication1.Areas.Detsad.Controllers
             });
         }
 
+        [RequirePermission("invoices.view")]
         public async Task<IActionResult> GetInvoicesInfo(string clientId, string? invoiceId = null)
         {
             // ID организации (пока зашит id = 1)
@@ -484,6 +491,7 @@ namespace WebApplication1.Areas.Detsad.Controllers
             };
         }
 
+        [RequirePermission("children.view")]
         public async Task<IActionResult> GetChildDetails(string clientId)
         {
             // ID организации (пока зашит id = 1)
@@ -553,6 +561,7 @@ namespace WebApplication1.Areas.Detsad.Controllers
             });
         }
 
+        [RequirePermission("transactions.view")]
         public async Task<IActionResult> GetClientTransactions(string clientId)
         {
             // ID организации (пока зашит id = 1)
@@ -597,6 +606,7 @@ namespace WebApplication1.Areas.Detsad.Controllers
             });
         }
 
+        [RequirePermission("transactions.view")]
         public async Task<IActionResult> Payments()
         {
             // Платежи для детского сада

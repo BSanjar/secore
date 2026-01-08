@@ -1,0 +1,53 @@
+@model WebApplication1.Models.DBModels.User
+@{
+    ViewData["Title"] = "Назначить роли";
+    var roles = ViewBag.Roles as List<WebApplication1.Models.DBModels.Role> ?? new List<WebApplication1.Models.DBModels.Role>();
+    var selectedRoleIds = ViewBag.SelectedRoleIds as List<string> ?? new List<string>();
+}
+
+<div class="container mt-4">
+    <h2>Назначить роли пользователю</h2>
+    <hr />
+
+    <dl class="row mb-4">
+        <dt class="col-sm-2">Пользователь</dt>
+        <dd class="col-sm-10">@Model.Name</dd>
+        <dt class="col-sm-2">Email</dt>
+        <dd class="col-sm-10">@Model.Email</dd>
+    </dl>
+
+    <form asp-action="Assign" method="post">
+        <input type="hidden" asp-for="Id" />
+        
+        <div class="mb-3">
+            <label class="form-label">Выберите роли</label>
+            <div class="border p-3" style="max-height: 400px; overflow-y: auto;">
+                @if (roles.Any())
+                {
+                    @foreach (var role in roles)
+                    {
+                        var isChecked = selectedRoleIds.Contains(role.Id);
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="selectedRoles" value="@role.Id" id="role_@role.Id" @(isChecked ? "checked" : "") />
+                            <label class="form-check-label" for="role_@role.Id">
+                                <strong>@role.Name</strong>
+                            </label>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="alert alert-warning">
+                        Роли не найдены. <a asp-controller="Roles" asp-action="Create">Создайте первую роль</a>.
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+            <a asp-action="Index" class="btn btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+

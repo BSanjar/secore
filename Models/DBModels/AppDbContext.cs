@@ -41,6 +41,12 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<UserRole> UserRoles { get; set; }
 
+    public virtual DbSet<Permission> Permissions { get; set; }
+
+    public virtual DbSet<RolePermission> RolePermissions { get; set; }
+
+    public virtual DbSet<Notification> Notifications { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
         => optionsBuilder.UseNpgsql("Host=77.73.69.143;Port=5432;Database=secore;Username=secore;Password=secore");
@@ -166,6 +172,8 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.AvilableServices).HasComment("перечисляется id сервисов чз ;");
             entity.Property(e => e.Isdeleted).HasDefaultValueSql("0");
             entity.Property(e => e.Rights).HasComment("права пользователей");
+
+            entity.HasOne(d => d.OrganizationNavigation).WithMany(p => p.Roles).HasConstraintName("roles_fk_organization");
         });
 
         modelBuilder.Entity<Transaction>(entity =>
@@ -199,6 +207,36 @@ public partial class AppDbContext : DbContext
             entity.HasOne(d => d.RoleNavigation).WithMany(p => p.UserRoles).HasConstraintName("user_roles_fk_1");
 
             entity.HasOne(d => d.UserNavigation).WithMany(p => p.UserRoles).HasConstraintName("user_roles_fk");
+        });
+
+        modelBuilder.Entity<Permission>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("permissions_pk");
+
+            entity.Property(e => e.Isdeleted).HasDefaultValueSql("0");
+        });
+
+        modelBuilder.Entity<RolePermission>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("role_permissions_pk");
+
+            entity.Property(e => e.Isdeleted).HasDefaultValueSql("0");
+
+            entity.HasOne(d => d.RoleNavigation).WithMany(p => p.RolePermissions).HasConstraintName("role_permissions_fk");
+
+            entity.HasOne(d => d.PermissionNavigation).WithMany(p => p.RolePermissions).HasConstraintName("role_permissions_fk_1");
+        });
+
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("notifications_pk");
+
+            entity.Property(e => e.Status).HasDefaultValueSql("'new'").HasComment("new - новое, ожидает обработки\r\nprocessing - в процессе обработки\r\nsent - отправлено\r\nfailed - ошибка отправки");
+            entity.Property(e => e.RetryCount).HasDefaultValueSql("0");
+            entity.Property(e => e.Channel).HasComment("email, telegram, whatsapp");
+            entity.Property(e => e.ContactInfo).HasComment("email, телефон, telegram chat_id");
+
+            entity.HasOne(d => d.ClientNavigation).WithMany(p => p.Notifications).HasConstraintName("notifications_fk");
         });
 
         OnModelCreatingPartial(modelBuilder);

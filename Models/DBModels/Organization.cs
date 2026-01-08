@@ -36,4 +36,7 @@ public partial class Organization
 
     [InverseProperty("OrganizationNavigation")]
     public virtual ICollection<User> Users { get; set; } = new List<User>();
+
+    [InverseProperty("OrganizationNavigation")]
+    public virtual ICollection<Role> Roles { get; set; } = new List<Role>();
 }

@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Login" xml:space="preserve">
+    <value>Кирүү</value>
+  </data>
+  <data name="Email" xml:space="preserve">
+    <value>Электрондук почта</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>Сырсөз</value>
+  </data>
+  <data name="RememberMe" xml:space="preserve">
+    <value>Мени эстеп калуу</value>
+  </data>
+  <data name="SignIn" xml:space="preserve">
+    <value>Кирүү</value>
+  </data>
+  <data name="Logout" xml:space="preserve">
+    <value>Чыгуу</value>
+  </data>
+  <data name="Roles" xml:space="preserve">
+    <value>Ролдор</value>
+  </data>
+  <data name="Permissions" xml:space="preserve">
+    <value>Укуктар</value>
+  </data>
+  <data name="AssignRoles" xml:space="preserve">
+    <value>Ролдорду ыйгаруу</value>
+  </data>
+  <data name="Create" xml:space="preserve">
+    <value>Түзүү</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>Оңдоо</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Жок кылуу</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Сактоо</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Жокко чыгаруу</value>
+  </data>
+  <data name="Name" xml:space="preserve">
+    <value>Аты</value>
+  </data>
+  <data name="Description" xml:space="preserve">
+    <value>Сыпаттама</value>
+  </data>
+  <data name="Category" xml:space="preserve">
+    <value>Категория</value>
+  </data>
+  <data name="Actions" xml:space="preserve">
+    <value>Аракеттер</value>
+  </data>
+  <data name="Details" xml:space="preserve">
+    <value>Деталдар</value>
+  </data>
+  <data name="ManagePermissions" xml:space="preserve">
+    <value>Укуктарды башкаруу</value>
+  </data>
+  <data name="SelectOrganization" xml:space="preserve">
+    <value>Уюмду тандаңыз</value>
+  </data>
+  <data name="PermissionsForOrganization" xml:space="preserve">
+    <value>Тандалган уюм үчүн укуктар</value>
+  </data>
+  <data name="SelectRoles" xml:space="preserve">
+    <value>Ролдорду тандаңыз</value>
+  </data>
+  <data name="User" xml:space="preserve">
+    <value>Колдонуучу</value>
+  </data>
+  <data name="Code" xml:space="preserve">
+    <value>Код</value>
+  </data>
+  <data name="Area" xml:space="preserve">
+    <value>Колдонуу аймагы</value>
+  </data>
+  <data name="GeneralPermission" xml:space="preserve">
+    <value>Жалпы укук (бардык уюм түрлөрү үчүн)</value>
+  </data>
+  <data name="SelectArea" xml:space="preserve">
+    <value>Уюм түрүн тандаңыз же жалпы укук үчүн бош калтырыңыз</value>
+  </data>
+  <data name="Organization" xml:space="preserve">
+    <value>Уюм</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>Тил</value>
+  </data>
+  <data name="Home" xml:space="preserve">
+    <value>Башкы</value>
+  </data>
+  <data name="Children" xml:space="preserve">
+    <value>Балдар</value>
+  </data>
+  <data name="Payments" xml:space="preserve">
+    <value>Төлөмдөр</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Жөндөөлөр</value>
+  </data>
+  <data name="Invoices" xml:space="preserve">
+    <value>Эсептер</value>
+  </data>
+  <data name="Clients" xml:space="preserve">
+    <value>Кардарлар</value>
+  </data>
+  <data name="PaymentHistory" xml:space="preserve">
+    <value>Төлөм тарыхы</value>
+  </data>
+  <data name="CreateInvoice" xml:space="preserve">
+    <value>Эсеп түзүү</value>
+  </data>
+  <data name="PersonalCabinet" xml:space="preserve">
+    <value>Жеке кабинет</value>
+  </data>
+  <data name="AllRightsReserved" xml:space="preserve">
+    <value>Бардык укуктар корголгон</value>
+  </data>
+  <data name="OrganizationCabinet" xml:space="preserve">
+    <value>Уюм кабинети</value>
+  </data>
+  <data name="Welcome" xml:space="preserve">
+    <value>Кош келиңиз</value>
+  </data>
+  <data name="Support" xml:space="preserve">
+    <value>Тех-колдоо</value>
+  </data>
+  <data name="Instructions" xml:space="preserve">
+    <value>Колдонмо</value>
+  </data>
+  <data name="RolesAndPermissions" xml:space="preserve">
+    <value>Ролдор жана укуктар</value>
+  </data>
+  <data name="UsersAndFields" xml:space="preserve">
+    <value>Колдонуучулар жана талаалар</value>
+  </data>
+  <data name="AdditionalFields" xml:space="preserve">
+    <value>Кошумча талаалар</value>
+  </data>
+  <data name="Users" xml:space="preserve">
+    <value>Колдонуучулар</value>
+  </data>
+  <data name="Phone" xml:space="preserve">
+    <value>Телефон</value>
+  </data>
+  <data name="NoRolesAssigned" xml:space="preserve">
+    <value>Ролдор берилген жок</value>
+  </data>
+  <data name="NoUsersFound" xml:space="preserve">
+    <value>Колдонуучулар табылган жок</value>
+  </data>
+  <data name="CreateFirstUser" xml:space="preserve">
+    <value>Биринчи колдонуучуну түзүңүз</value>
+  </data>
+  <data name="CreateUser" xml:space="preserve">
+    <value>Колдонуучуну түзүү</value>
+  </data>
+  <data name="EditUser" xml:space="preserve">
+    <value>Колдонуучуну түзөтүү</value>
+  </data>
+  <data name="DeleteUser" xml:space="preserve">
+    <value>Колдонуучуну жок кылуу</value>
+  </data>
+  <data name="AreYouSure" xml:space="preserve">
+    <value>Сиз так эле?</value>
+  </data>
+  <data name="DeleteUserWarning" xml:space="preserve">
+    <value>Сиз чынында эле бул колдонуучуну жок кылгыңыз келеби? Бул аракетти кайтарып алуу мүмкүн эмес.</value>
+  </data>
+  <data name="NewPassword" xml:space="preserve">
+    <value>Жаңы пароль</value>
+  </data>
+  <data name="LeaveEmptyToKeepCurrent" xml:space="preserve">
+    <value>Учурдагы парольду сакташ үчүн бош калтырыңыз</value>
+  </data>
+  <data name="LeavePasswordEmpty" xml:space="preserve">
+    <value>Парольду өзгөртүүнү каалабасаңыз, пароль талаасын бош калтырыңыз</value>
+  </data>
+  <data name="FieldName" xml:space="preserve">
+    <value>Талаанын аты</value>
+  </data>
+  <data name="FieldType" xml:space="preserve">
+    <value>Талаанын түрү</value>
+  </data>
+  <data name="SelectValues" xml:space="preserve">
+    <value>Тандоо варианттары</value>
+  </data>
+  <data name="FilterByField" xml:space="preserve">
+    <value>Чыпкалоо үчүн колдонуу</value>
+  </data>
+  <data name="NoFieldsFound" xml:space="preserve">
+    <value>Кошумча талаалар табылган жок</value>
+  </data>
+  <data name="CreateFirstField" xml:space="preserve">
+    <value>Биринчи талааны түзүңүз</value>
+  </data>
+  <data name="CreateField" xml:space="preserve">
+    <value>Талааны түзүү</value>
+  </data>
+  <data name="EditField" xml:space="preserve">
+    <value>Талааны түзөтүү</value>
+  </data>
+  <data name="DeleteField" xml:space="preserve">
+    <value>Талааны жок кылуу</value>
+  </data>
+  <data name="DeleteFieldWarning" xml:space="preserve">
+    <value>Сиз чынында эле бул талааны жок кылгыңыз келеби? Бул аракетти кайтарып алуу мүмкүн эмес.</value>
+  </data>
+  <data name="SelectFieldType" xml:space="preserve">
+    <value>Талаанын түрүн тандаңыз</value>
+  </data>
+  <data name="String" xml:space="preserve">
+    <value>Сап</value>
+  </data>
+  <data name="Integer" xml:space="preserve">
+    <value>Сан</value>
+  </data>
+  <data name="Money" xml:space="preserve">
+    <value>Акча</value>
+  </data>
+  <data name="Selected" xml:space="preserve">
+    <value>Тизмеден тандоо</value>
+  </data>
+  <data name="DateTime" xml:space="preserve">
+    <value>Дата жана убакыт</value>
+  </data>
+  <data name="SelectValuesPlaceholder" xml:space="preserve">
+    <value>Вариант1;Вариант2;Вариант3</value>
+  </data>
+  <data name="SelectValuesHint" xml:space="preserve">
+    <value>Тандоо варианттарын чекит менен бөлүп көрсөтүңүз (;). "Тизмеден тандоо" түрү үчүн гана колдонулат</value>
+  </data>
+  <data name="Yes" xml:space="preserve">
+    <value>Ооба</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>Жок</value>
+  </data>
+</root>

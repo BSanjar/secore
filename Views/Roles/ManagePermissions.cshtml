@@ -1,0 +1,90 @@
+@model WebApplication1.Models.DBModels.Role
+@{
+    ViewData["Title"] = "Настроить права роли";
+    var permissions = ViewBag.Permissions as List<WebApplication1.Models.DBModels.Permission> ?? new List<WebApplication1.Models.DBModels.Permission>();
+    var categories = ViewBag.PermissionCategories as List<string> ?? new List<string>();
+    var selectedPermissionIds = ViewBag.SelectedPermissionIds as List<string> ?? new List<string>();
+    var organization = ViewBag.Organization as WebApplication1.Models.DBModels.Organization;
+}
+
+<div class="container mt-4">
+    <h2>Настроить права для роли: @Model.Name</h2>
+    <hr />
+    @if (organization != null)
+    {
+        <div class="alert alert-info mb-3">
+            <strong>Организация:</strong> @organization.Name (@organization.Organizationtype)
+        </div>
+    }
+
+    <form asp-action="ManagePermissions" method="post">
+        <input type="hidden" asp-for="Id" />
+
+        <div class="mb-3">
+            <label class="form-label">Права доступа для выбранной организации</label>
+            <div class="border p-3" style="max-height: 500px; overflow-y: auto;">
+                @if (categories.Any())
+                {
+                    @foreach (var category in categories)
+                    {
+                        <div class="mb-4">
+                            <h5 class="text-primary">@category</h5>
+                            <div class="ms-3">
+                                @foreach (var permission in permissions.Where(p => p.Category == category))
+                                {
+                                    var isChecked = selectedPermissionIds.Contains(permission.Id);
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="selectedPermissions" value="@permission.Id" id="permission_@permission.Id" @(isChecked ? "checked" : "") />
+                                        <label class="form-check-label" for="permission_@permission.Id">
+                                            <strong>@permission.Name</strong>
+                                            @if (!string.IsNullOrEmpty(permission.Description))
+                                            {
+                                                <br />
+                                                <small class="text-muted">@permission.Description</small>
+                                            }
+                                        </label>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    @foreach (var permission in permissions)
+                    {
+                        var isChecked = selectedPermissionIds.Contains(permission.Id);
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="selectedPermissions" value="@permission.Id" id="permission_@permission.Id" @(isChecked ? "checked" : "") />
+                            <label class="form-check-label" for="permission_@permission.Id">
+                                <strong>@permission.Name</strong>
+                                @if (!string.IsNullOrEmpty(permission.Description))
+                                {
+                                    <br />
+                                    <small class="text-muted">@permission.Description</small>
+                                }
+                            </label>
+                        </div>
+                    }
+                }
+
+                @if (!permissions.Any())
+                {
+                    <div class="alert alert-warning">
+                        Права доступа не найдены. <a asp-controller="Permissions" asp-action="Create">Создайте первое право</a>.
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <button type="submit" class="btn btn-primary">Сохранить права</button>
+            <a asp-action="Index" class="btn btn-secondary">Назад к списку</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+

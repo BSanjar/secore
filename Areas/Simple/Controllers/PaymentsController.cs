@@ -9,6 +9,7 @@ using WebApplication1.Modules.GenericModule.Services;
 namespace WebApplication1.Areas.Simple.Controllers
 {
     [Area("Simple")]
+    [RequireAuth]
     public class PaymentsController : Controller
     {
         private readonly AppDbContext _db;
@@ -23,6 +24,7 @@ namespace WebApplication1.Areas.Simple.Controllers
         }
 
         [HttpGet]
+        [RequirePermission("transactions.view")]
         public async Task<IActionResult> Index([FromQuery] SimplePaymentsFilterParams filters)
         {
             filters ??= new SimplePaymentsFilterParams();
@@ -74,6 +76,7 @@ namespace WebApplication1.Areas.Simple.Controllers
         }
 
         [HttpGet]
+        [RequirePermission("payments.create")]
         public async Task<IActionResult> Create()
         {
             // список клиентов для выбора
@@ -88,6 +91,7 @@ namespace WebApplication1.Areas.Simple.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequirePermission("payments.create")]
         public async Task<IActionResult> Create(CreatePaymentViewModel model)
         {
             // валидация

@@ -16,6 +16,9 @@ public partial class Role
     [Column("name", TypeName = "character varying")]
     public string? Name { get; set; }
 
+    [Column("organization", TypeName = "character varying")]
+    public string? Organization { get; set; }
+
     [Column("isdeleted")]
     public int? Isdeleted { get; set; }
 
@@ -33,4 +36,11 @@ public partial class Role
 
     [InverseProperty("RoleNavigation")]
     public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
+
+    [InverseProperty("RoleNavigation")]
+    public virtual ICollection<RolePermission> RolePermissions { get; set; } = new List<RolePermission>();
+
+    [ForeignKey("Organization")]
+    [InverseProperty("Roles")]
+    public virtual Organization? OrganizationNavigation { get; set; }
 }

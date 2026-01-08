@@ -1,5 +1,6 @@
 @{
     ViewData["Title"] = "Главная";
+    @using System.Globalization
 }
 
 @section Styles {
@@ -8,7 +9,7 @@
 
 <div class="detsad-dashboard">
     <div class="dashboard-header">
-        <h1 class="dashboard-title">Добро пожаловать!</h1>
+        <h1 class="dashboard-title">   TEST: @Localizer["Welcome"] (@CultureInfo.CurrentUICulture.Name)</h1>
         <p class="dashboard-subtitle">Панель управления детским садом</p>
     </div>
 

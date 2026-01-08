@@ -1,16 +1,19 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Models.DBModels;
+using WebApplication1.Helpers;
 
 namespace WebApplication1.Areas.Simple.Controllers
 {
     [Area("Simple")]
+    [RequireAuth]
     public class CabinetController : Controller
     {
 
         private readonly AppDbContext _db;
         public CabinetController(AppDbContext db) => _db = db;
 
+        [RequirePermission("dashboard.view")]
         public async Task<IActionResult> Index()
         {
             // Короткая сводка по последним операциям (только debit, success)

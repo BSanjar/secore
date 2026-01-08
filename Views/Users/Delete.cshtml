@@ -1,0 +1,36 @@
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IHtmlLocalizer<WebApplication1.SharedResources> Localizer
+@model WebApplication1.Models.DBModels.User
+@{
+    ViewData["Title"] = Localizer["DeleteUser"].Value;
+}
+
+<div class="container mt-4">
+    <h2>@Localizer["DeleteUser"]</h2>
+    <hr />
+
+    <div class="alert alert-warning">
+        <h4>@Localizer["AreYouSure"]</h4>
+        <p>@Localizer["DeleteUserWarning"]</p>
+    </div>
+
+    <dl class="row">
+        <dt class="col-sm-2">@Localizer["Name"]</dt>
+        <dd class="col-sm-10">@Model.Name</dd>
+
+        <dt class="col-sm-2">Email</dt>
+        <dd class="col-sm-10">@Model.Email</dd>
+
+        <dt class="col-sm-2">@Localizer["Phone"]</dt>
+        <dd class="col-sm-10">@Model.Phone</dd>
+    </dl>
+
+    <form asp-action="Delete" method="post">
+        <input type="hidden" asp-for="Id" />
+        <div class="mb-3">
+            <button type="submit" class="btn btn-danger">@Localizer["Delete"]</button>
+            <a asp-action="Index" class="btn btn-secondary">@Localizer["Cancel"]</a>
+        </div>
+    </form>
+</div>
+

@@ -1,0 +1,55 @@
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IHtmlLocalizer<WebApplication1.SharedResources> Localizer
+@model WebApplication1.Models.DBModels.User
+@{
+    ViewData["Title"] = Localizer["EditUser"].Value;
+}
+
+<div class="container mt-4">
+    <h2>@Localizer["EditUser"]</h2>
+    <hr />
+
+    <div class="alert alert-info">
+        @Localizer["LeavePasswordEmpty"]
+    </div>
+
+    <form asp-action="Edit" method="post">
+        <input type="hidden" asp-for="Id" />
+        <div asp-validation-summary="All" class="text-danger"></div>
+
+        <div class="mb-3">
+            <label asp-for="Name" class="form-label">@Localizer["Name"]</label>
+            <input asp-for="Name" class="form-control" />
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Email" class="form-label">Email</label>
+            <input asp-for="Email" type="email" class="form-control" />
+            <span asp-validation-for="Email" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Phone" class="form-label">@Localizer["Phone"]</label>
+            <input asp-for="Phone" class="form-control" />
+            <span asp-validation-for="Phone" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Password" class="form-label">@Localizer["NewPassword"]</label>
+            <input asp-for="Password" type="password" class="form-control" placeholder="@Localizer["LeaveEmptyToKeepCurrent"]" />
+            <span asp-validation-for="Password" class="text-danger"></span>
+            <small class="form-text text-muted">@Localizer["LeaveEmptyToKeepCurrent"]</small>
+        </div>
+
+        <div class="mb-3">
+            <button type="submit" class="btn btn-primary">@Localizer["Save"]</button>
+            <a asp-action="Index" class="btn btn-secondary">@Localizer["Cancel"]</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+

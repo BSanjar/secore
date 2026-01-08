@@ -1,0 +1,80 @@
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IHtmlLocalizer<WebApplication1.SharedResources> Localizer
+@model IEnumerable<WebApplication1.Models.DBModels.OrganizationField>
+@{
+    ViewData["Title"] = Localizer["AdditionalFields"].Value;
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>@Localizer["AdditionalFields"]</h2>
+        <a asp-action="Create" class="btn btn-primary">@Localizer["Create"]</a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (Model.Any())
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>@Localizer["FieldName"]</th>
+                        <th>@Localizer["FieldType"]</th>
+                        <th>@Localizer["SelectValues"]</th>
+                        <th>@Localizer["FilterByField"]</th>
+                        <th>@Localizer["Actions"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var field in Model)
+                    {
+                        <tr>
+                            <td>@field.FieldName</td>
+                            <td>
+                                <span class="badge bg-info">@field.FieldType</span>
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(field.FieldSelectValues))
+                                {
+                                    <small>@field.FieldSelectValues</small>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+                            <td>
+                                @if (field.Filterbyfield == true)
+                                {
+                                    <span class="badge bg-success">@Localizer["Yes"]</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">@Localizer["No"]</span>
+                                }
+                            </td>
+                            <td>
+                                <a asp-action="Edit" asp-route-id="@field.Id" class="btn btn-sm btn-warning">@Localizer["Edit"]</a>
+                                <a asp-action="Delete" asp-route-id="@field.Id" class="btn btn-sm btn-danger">@Localizer["Delete"]</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            @Localizer["NoFieldsFound"]. <a asp-action="Create">@Localizer["CreateFirstField"]</a>.
+        </div>
+    }
+</div>
+

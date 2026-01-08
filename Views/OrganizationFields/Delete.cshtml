@@ -1,0 +1,53 @@
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IHtmlLocalizer<WebApplication1.SharedResources> Localizer
+@model WebApplication1.Models.DBModels.OrganizationField
+@{
+    ViewData["Title"] = Localizer["DeleteField"].Value;
+}
+
+<div class="container mt-4">
+    <h2>@Localizer["DeleteField"]</h2>
+    <hr />
+
+    <div class="alert alert-warning">
+        <h4>@Localizer["AreYouSure"]</h4>
+        <p>@Localizer["DeleteFieldWarning"]</p>
+    </div>
+
+    <dl class="row">
+        <dt class="col-sm-2">@Localizer["FieldName"]</dt>
+        <dd class="col-sm-10">@Model.FieldName</dd>
+
+        <dt class="col-sm-2">@Localizer["FieldType"]</dt>
+        <dd class="col-sm-10">
+            <span class="badge bg-info">@Model.FieldType</span>
+        </dd>
+
+        @if (!string.IsNullOrEmpty(Model.FieldSelectValues))
+        {
+            <dt class="col-sm-2">@Localizer["SelectValues"]</dt>
+            <dd class="col-sm-10">@Model.FieldSelectValues</dd>
+        }
+
+        <dt class="col-sm-2">@Localizer["FilterByField"]</dt>
+        <dd class="col-sm-10">
+            @if (Model.Filterbyfield == true)
+            {
+                <span class="badge bg-success">@Localizer["Yes"]</span>
+            }
+            else
+            {
+                <span class="badge bg-secondary">@Localizer["No"]</span>
+            }
+        </dd>
+    </dl>
+
+    <form asp-action="Delete" method="post">
+        <input type="hidden" asp-for="Id" />
+        <div class="mb-3">
+            <button type="submit" class="btn btn-danger">@Localizer["Delete"]</button>
+            <a asp-action="Index" class="btn btn-secondary">@Localizer["Cancel"]</a>
+        </div>
+    </form>
+</div>
+

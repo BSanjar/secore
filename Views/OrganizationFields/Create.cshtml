@@ -1,0 +1,56 @@
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IHtmlLocalizer<WebApplication1.SharedResources> Localizer
+@model WebApplication1.Models.DBModels.OrganizationField
+@{
+    ViewData["Title"] = Localizer["CreateField"].Value;
+}
+
+<div class="container mt-4">
+    <h2>@Localizer["CreateField"]</h2>
+    <hr />
+
+    <form asp-action="Create" method="post">
+        <div asp-validation-summary="All" class="text-danger"></div>
+
+        <div class="mb-3">
+            <label asp-for="FieldName" class="form-label">@Localizer["FieldName"]</label>
+            <input asp-for="FieldName" class="form-control" />
+            <span asp-validation-for="FieldName" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="FieldType" class="form-label">@Localizer["FieldType"]</label>
+            <select asp-for="FieldType" class="form-select">
+                <option value="">@Localizer["SelectFieldType"]</option>
+                <option value="string">@Localizer["String"]</option>
+                <option value="int">@Localizer["Integer"]</option>
+                <option value="money">@Localizer["Money"]</option>
+                <option value="selected">@Localizer["Selected"]</option>
+                <option value="datetime">@Localizer["DateTime"]</option>
+            </select>
+            <span asp-validation-for="FieldType" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="FieldSelectValues" class="form-label">@Localizer["SelectValues"]</label>
+            <input asp-for="FieldSelectValues" class="form-control" placeholder="@Localizer["SelectValuesPlaceholder"]" />
+            <small class="form-text text-muted">@Localizer["SelectValuesHint"]</small>
+            <span asp-validation-for="FieldSelectValues" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3 form-check">
+            <input asp-for="Filterbyfield" class="form-check-input" type="checkbox" />
+            <label asp-for="Filterbyfield" class="form-check-label">@Localizer["FilterByField"]</label>
+        </div>
+
+        <div class="mb-3">
+            <button type="submit" class="btn btn-primary">@Localizer["Create"]</button>
+            <a asp-action="Index" class="btn btn-secondary">@Localizer["Cancel"]</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+

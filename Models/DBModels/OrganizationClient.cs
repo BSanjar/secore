@@ -45,7 +45,7 @@ public partial class OrganizationClient
 
     /// <summary>
     /// 0\1
-    /// </summary>
+    /// </summary>  
     [Column("client_status")]
     public int? ClientStatus { get; set; }
 
@@ -66,6 +66,9 @@ public partial class OrganizationClient
 
     [InverseProperty("OrganizationClientNavigation")]
     public virtual ICollection<OrganizationClientsAdditionalField> OrganizationClientsAdditionalFields { get; set; } = new List<OrganizationClientsAdditionalField>();
+
+    [InverseProperty("ClientNavigation")]
+    public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 
     [ForeignKey("Organization")]
     [InverseProperty("OrganizationClients")]

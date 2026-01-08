@@ -1,0 +1,27 @@
+@{
+    ViewData["Title"] = "Доступ запрещен";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="alert alert-danger text-center">
+                <h1 class="display-4">🚫</h1>
+                <h2>Доступ запрещен</h2>
+                <p class="lead">У вас нет прав для доступа к этой странице.</p>
+                @if (!string.IsNullOrEmpty(ViewBag.PermissionCode as string))
+                {
+                    <p class="text-muted">Требуемое право: <code>@ViewBag.PermissionCode</code></p>
+                }
+                <hr>
+                <p>Обратитесь к администратору для получения необходимых прав доступа.</p>
+                <a href="javascript:history.back()" class="btn btn-primary">Вернуться назад</a>
+                @if (WebApplication1.Helpers.AuthorizationHelper.IsAuthenticated(Context))
+                {
+                    <a href="/" class="btn btn-secondary">На главную</a>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+

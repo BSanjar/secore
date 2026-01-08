@@ -1,0 +1,64 @@
+@model WebApplication1.Models.DBModels.Permission
+@{
+    ViewData["Title"] = "Редактировать право";
+    var areas = ViewBag.Areas as List<string> ?? new List<string>();
+    var organizationType = ViewBag.OrganizationType as string;
+}
+
+<div class="container mt-4">
+    <h2>Редактировать право доступа</h2>
+    <hr />
+
+    <form asp-action="Edit" method="post">
+        <input type="hidden" asp-for="Id" />
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="mb-3">
+            <label asp-for="Name" class="form-label">Название</label>
+            <input asp-for="Name" class="form-control" />
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Code" class="form-label">Код (уникальный идентификатор)</label>
+            <input asp-for="Code" class="form-control" />
+            <span asp-validation-for="Code" class="text-danger"></span>
+            <small class="form-text text-muted">Используется для программной проверки прав доступа</small>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Category" class="form-label">Категория</label>
+            <input asp-for="Category" class="form-control" />
+            <span asp-validation-for="Category" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Area" class="form-label">Область применения (Area)</label>
+            <select asp-for="Area" class="form-select">
+                <option value="">Общее право (для всех типов организаций)</option>
+                @foreach (var area in areas)
+                {
+                    <option value="@area" selected="@(area == Model.Area)">@area</option>
+                }
+            </select>
+            <span asp-validation-for="Area" class="text-danger"></span>
+            <small class="form-text text-muted">Выберите тип организации или оставьте пустым для общего права</small>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Description" class="form-label">Описание</label>
+            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+            <span asp-validation-for="Description" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+            <a asp-action="Index" class="btn btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+

@@ -1,0 +1,21 @@
+@using WebApplication1.Helpers
+@{
+    var userName = AuthorizationHelper.GetUserName(Context);
+}
+
+<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+    <li>
+        <h6 class="dropdown-header">@(userName ?? "Пользователь")</h6>
+    </li>
+    <li><hr class="dropdown-divider"></li>
+    <li>
+        <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+            <button type="submit" class="dropdown-item text-danger">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="me-2">
+                    <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.59L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" fill="currentColor"/>
+                </svg>
+                Выйти
+            </button>
+        </form>
+    </li>
+</ul>

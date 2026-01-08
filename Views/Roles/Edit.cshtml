@@ -1,0 +1,34 @@
+@model WebApplication1.Models.DBModels.Role
+@{
+    ViewData["Title"] = "Редактировать роль";
+}
+
+<div class="container mt-4">
+    <h2>Редактировать роль</h2>
+    <hr />
+    <div class="alert alert-info">
+        Для настройки прав доступа для организаций используйте кнопку "Настроить права" в списке ролей.
+    </div>
+
+    <form asp-action="Edit" method="post">
+        <input type="hidden" asp-for="Id" />
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="mb-3">
+            <label asp-for="Name" class="form-label">Название роли</label>
+            <input asp-for="Name" class="form-control" />
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+            <a asp-action="Index" class="btn btn-secondary">Отмена</a>
+            <a asp-action="ManagePermissions" asp-route-id="@Model.Id" class="btn btn-success">Настроить права</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+

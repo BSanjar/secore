@@ -1,0 +1,50 @@
+@model IEnumerable<WebApplication1.Models.DBModels.Role>
+@{
+    ViewData["Title"] = "Управление ролями";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Управление ролями</h2>
+        <a asp-action="Create" class="btn btn-primary">Создать новую роль</a>
+    </div>
+
+    @if (Model.Any())
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Название</th>
+                        <th>Количество прав</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var role in Model)
+                    {
+                        <tr>
+                            <td>@role.Name</td>
+                            <td>
+                                @(role.RolePermissions?.Count(rp => rp.Isdeleted == null || rp.Isdeleted == 0) ?? 0)
+                            </td>
+                            <td>
+                                <a asp-action="ManagePermissions" asp-route-id="@role.Id" class="btn btn-sm btn-success">Настроить права</a>
+                                <a asp-action="Details" asp-route-id="@role.Id" class="btn btn-sm btn-info">Детали</a>
+                                <a asp-action="Edit" asp-route-id="@role.Id" class="btn btn-sm btn-warning">Редактировать</a>
+                                <a asp-action="Delete" asp-route-id="@role.Id" class="btn btn-sm btn-danger">Удалить</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            Роли не найдены. <a asp-action="Create">Создайте первую роль</a>.
+        </div>
+    }
+</div>
+
