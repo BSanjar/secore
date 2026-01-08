@@ -1,9 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "nY51hiio3jo=",
+  "dgSpecHash": "auukYzq2AZE=",
   "success": true,
   "projectFilePath": "C:\\Users\\AzatAdmin\\Documents\\SECORE\\secore\\WebApplication1.csproj",
   "expectedPackageFiles": [
+    "C:\\Users\\AzatAdmin\\.nuget\\packages\\bcrypt.net-next\\4.0.3\\bcrypt.net-next.4.0.3.nupkg.sha512",
     "C:\\Users\\AzatAdmin\\.nuget\\packages\\humanizer.core\\2.14.1\\humanizer.core.2.14.1.nupkg.sha512",
     "C:\\Users\\AzatAdmin\\.nuget\\packages\\microsoft.entityframeworkcore\\7.0.10\\microsoft.entityframeworkcore.7.0.10.nupkg.sha512",
     "C:\\Users\\AzatAdmin\\.nuget\\packages\\microsoft.entityframeworkcore.abstractions\\7.0.10\\microsoft.entityframeworkcore.abstractions.7.0.10.nupkg.sha512",
