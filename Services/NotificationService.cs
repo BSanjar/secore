@@ -125,7 +125,7 @@ namespace WebApplication1.Services
                     Subject = subject,
                     Message = message,
                     Status = "new",
-                    CreatedAt = DateHelper.NowForTimestamp()
+                    CreatedAt = ParsersHelper.NowForTimestamp()
                 });
             }
 
@@ -141,7 +141,7 @@ namespace WebApplication1.Services
                     Subject = subject,
                     Message = message,
                     Status = "new",
-                    CreatedAt = DateHelper.NowForTimestamp()
+                    CreatedAt = ParsersHelper.NowForTimestamp()
                 });
             }
 
@@ -157,7 +157,7 @@ namespace WebApplication1.Services
                     Subject = subject,
                     Message = message,
                     Status = "new",
-                    CreatedAt = DateHelper.NowForTimestamp()
+                    CreatedAt = ParsersHelper.NowForTimestamp()
                 });
             }
 
@@ -199,7 +199,7 @@ namespace WebApplication1.Services
                 Subject = subject,
                 Message = message,
                 Status = "new",
-                CreatedAt = DateHelper.NowForTimestamp(),
+                CreatedAt = ParsersHelper   .NowForTimestamp(),
                 RetryCount = 0,
                 Metadata = metadata
             };

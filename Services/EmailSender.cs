@@ -1,37 +1,28 @@
 using System.Net;
 using System.Net.Mail;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace WebApplication1.Services
 {
     /// <summary>
-    /// Канал уведомлений через Email
+    /// Сервис для отправки Email уведомлений
     /// </summary>
-    public class EmailNotificationChannel : INotificationChannel
+    public class EmailSender
     {
-        private readonly ILogger<EmailNotificationChannel> _logger;
+        private readonly ILogger<EmailSender> _logger;
         private readonly IConfiguration _configuration;
 
-        public EmailNotificationChannel(ILogger<EmailNotificationChannel> logger, IConfiguration configuration)
+        public EmailSender(
+            ILogger<EmailSender> logger,
+            IConfiguration configuration)
         {
             _logger = logger;
             _configuration = configuration;
         }
 
-        public bool IsAvailable(string? contactInfo)
+        public async Task<bool> SendAsync(string to, string? subject, string message)
         {
-            return !string.IsNullOrWhiteSpace(contactInfo) && 
-                   contactInfo.Contains("@") && 
-                   IsValidEmail(contactInfo);
-        }
-
-        public async Task<bool> SendAsync(string? contactInfo, string subject, string message)
-        {
-            if (!IsAvailable(contactInfo))
-            {
-                _logger.LogWarning("Email не доступен для отправки: {Email}", contactInfo);
-                return false;
-            }
-
             try
             {
                 var smtpHost = _configuration["NotificationSettings:Email:SmtpHost"] ?? "smtp.gmail.com";
@@ -42,7 +33,7 @@ namespace WebApplication1.Services
 
                 if (string.IsNullOrWhiteSpace(smtpUser) || string.IsNullOrWhiteSpace(smtpPassword))
                 {
-                    _logger.LogWarning("SMTP настройки не настроены. Уведомление не отправлено.");
+                    _logger.LogWarning("SMTP настройки не настроены. Email не отправлен на {Email}", to);
                     return false;
                 }
 
@@ -55,33 +46,21 @@ namespace WebApplication1.Services
                 using var mailMessage = new MailMessage
                 {
                     From = new MailAddress(fromEmail ?? "noreply@secore.kg"),
-                    Subject = subject,
+                    Subject = subject ?? "Уведомление",
                     Body = message,
                     IsBodyHtml = true
                 };
 
-                mailMessage.To.Add(contactInfo!);
+                mailMessage.To.Add(to);
 
                 await client.SendMailAsync(mailMessage);
-                _logger.LogInformation("Email уведомление отправлено на {Email}", contactInfo);
+
+                _logger.LogInformation("Email уведомление отправлено на {Email}", to);
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Ошибка при отправке email на {Email}", contactInfo);
-                return false;
-            }
-        }
-
-        private bool IsValidEmail(string email)
-        {
-            try
-            {
-                var addr = new MailAddress(email);
-                return addr.Address == email;
-            }
-            catch
-            {
+                _logger.LogError(ex, "Ошибка при отправке email на {Email}", to);
                 return false;
             }
         }

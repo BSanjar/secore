@@ -1,1 +1,94 @@
-[]
+[
+  {
+    "ContainingType": "WebApplication1.Controllers.SchedulerApiController",
+    "Method": "Health",
+    "RelativePath": "api/SchedulerApi/health",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "WebApplication1.Controllers.SchedulerApiController",
+    "Method": "ProcessPayments",
+    "RelativePath": "api/SchedulerApi/process-payments",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "WebApplication1.Controllers.WebApiController",
+    "Method": "check",
+    "RelativePath": "WebApi/check",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "WebApplication1.Models.WebApiModels.CheckRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "WebApplication1.Models.WebApiModels.CheckResponse",
+        "MediaTypes": [
+          "application/xml"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "WebApplication1.Controllers.WebApiController",
+    "Method": "pay",
+    "RelativePath": "WebApi/pay",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "WebApplication1.Models.WebApiModels.PayRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "WebApplication1.Models.WebApiModels.PayResponse",
+        "MediaTypes": [
+          "application/xml"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "WebApplication1.Controllers.WebApiController",
+    "Method": "payInfo",
+    "RelativePath": "WebApi/payInfo",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "WebApplication1.Models.WebApiModels.PaymentInfoRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "WebApplication1.Models.WebApiModels.PaymentInfoResponse",
+        "MediaTypes": [
+          "application/xml"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  }
+]

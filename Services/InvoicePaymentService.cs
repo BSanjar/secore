@@ -28,7 +28,7 @@ namespace WebApplication1.Services
         /// </summary>
         public async Task ProcessScheduledPaymentsAsync()
         {
-            var now = DateHelper.NowForTimestamp();
+            var now = ParsersHelper.NowForTimestamp();
             
             // Находим все неоплаченные платежи, которые должны быть оплачены (срок подошёл или просрочен)
             var duePayments = await _db.InvoicePayments
@@ -67,12 +67,10 @@ namespace WebApplication1.Services
 
             // Определяем сумму платежа
             decimal requiredAmount;
-            if (!string.IsNullOrWhiteSpace(invoice.FixedSumm) && 
-                decimal.TryParse(invoice.FixedSumm, out var fixedSumm) && 
-                fixedSumm > 0)
+            if (invoice.FixedSumm.HasValue && invoice.FixedSumm.Value > 0)
             {
                 // Фиксированная сумма в сомах, конвертируем в тыйыны
-                requiredAmount = decimal.Round(fixedSumm * 100m, 0, MidpointRounding.AwayFromZero);
+                requiredAmount = decimal.Round(invoice.FixedSumm.Value * 100m, 0, MidpointRounding.AwayFromZero);
             }
             else if (invoice.Balance.HasValue && invoice.Balance.Value < 0)
             {
@@ -93,7 +91,7 @@ namespace WebApplication1.Services
             }
 
             var clientBalance = client.ClientBalance ?? 0m;
-            var now = DateHelper.NowForTimestamp();
+            var now = ParsersHelper.NowForTimestamp();
             var isOverdue = payment.DateTo.HasValue && payment.DateTo.Value < now;
 
             // Проверяем баланс клиента
@@ -134,7 +132,7 @@ namespace WebApplication1.Services
                 var clientCreditTransaction = new Transaction
                 {
                     Id = Guid.NewGuid().ToString(),
-                    TransactionDate = DateHelper.NowForTimestamp(),
+                    TransactionDate = ParsersHelper.NowForTimestamp(),
                     TransactionStatus = "success",
                     Summ = amount,
                     TransactionSumm = amount,
@@ -150,7 +148,7 @@ namespace WebApplication1.Services
                 var invoiceDebitTransaction = new Transaction
                 {
                     Id = Guid.NewGuid().ToString(),
-                    TransactionDate = DateHelper.NowForTimestamp(),
+                    TransactionDate = ParsersHelper.NowForTimestamp(),
                     TransactionStatus = "success",
                     Summ = amount,
                     TransactionSumm = amount,
@@ -178,9 +176,20 @@ namespace WebApplication1.Services
                     "Автоплатёж выполнен: PaymentId={PaymentId}, InvoiceId={InvoiceId}, Amount={Amount}", 
                     payment.Id, invoice.Id, amount);
 
-                // Создаём уведомление об успешном платеже
-                await _notificationService.CreateAutoPaymentSuccessNotificationAsync(
-                    client, invoice, payment, amount);
+                // Создаём уведомление об успешном платеже (после коммита транзакции)
+                // Если создание уведомления упадёт, платеж уже зафиксирован - это допустимо
+                try
+                {
+                    await _notificationService.CreateAutoPaymentSuccessNotificationAsync(
+                        client, invoice, payment, amount);
+                }
+                catch (Exception notifyEx)
+                {
+                    // Логируем ошибку, но не прерываем выполнение, так как платеж уже выполнен
+                    _logger.LogWarning(notifyEx, 
+                        "Ошибка при создании уведомления об успешном платеже {PaymentId}. Платеж выполнен.", 
+                        payment.Id);
+                }
             }
             catch (Exception ex)
             {
@@ -239,7 +248,7 @@ namespace WebApplication1.Services
                 DateFrom = nextDateFrom,
                 DateTo = nextDateTo,
                 PaymentStatus = "non_paid",
-                PaymentSumm = invoice.FixedSumm
+                PaymentSumm = invoice.FixedSumm.HasValue ? invoice.FixedSumm.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : null
             };
 
             _db.InvoicePayments.Add(nextPayment);

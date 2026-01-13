@@ -3,14 +3,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using WebApplication1.Models.DBModels;
-using WebApplication1.Services.Models;
 using WebApplication1.Helpers;
 
 namespace WebApplication1.Services
 {
     /// <summary>
     /// Фоновый воркер, который обрабатывает таблицу notifications
-    /// Выбирает записи со статусом "new" и публикует их в RabbitMQ
+    /// Выбирает записи со статусом "new", переводит на "processing" и отправляет через каналы
     /// </summary>
     public class NotificationWorker : BackgroundService
     {
@@ -50,7 +49,9 @@ namespace WebApplication1.Services
         {
             using var scope = _serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var rabbitMQService = scope.ServiceProvider.GetRequiredService<IRabbitMQService>();
+            var emailSender = scope.ServiceProvider.GetRequiredService<EmailSender>();
+            var telegramSender = scope.ServiceProvider.GetRequiredService<TelegramSender>();
+            var whatsAppSender = scope.ServiceProvider.GetRequiredService<WhatsAppSender>();
 
             // Выбираем пачку уведомлений со статусом "new"
             var notifications = await db.Notifications
@@ -72,28 +73,91 @@ namespace WebApplication1.Services
                 {
                     // Обновляем статус на "processing"
                     notification.Status = "processing";
-                    notification.ProcessedAt = DateHelper.NowForTimestamp();
+                    notification.ProcessedAt = ParsersHelper.NowForTimestamp();
                     await db.SaveChangesAsync(cancellationToken);
 
-                    // Формируем сообщение стандартного формата
-                    var message = new NotificationMessage
+                    // Отправляем уведомление в зависимости от канала
+                    bool success = false;
+                    var channel = notification.Channel?.ToLower() ?? "email";
+
+                    switch (channel)
                     {
-                        NotificationId = notification.Id,
-                        ClientId = notification.ClientId,
-                        Channel = notification.Channel ?? "email",
-                        ContactInfo = notification.ContactInfo ?? "",
-                        Subject = notification.Subject,
-                        Message = notification.Message ?? "",
-                        Metadata = notification.Metadata
-                    };
+                        case "email":
+                            if (!string.IsNullOrWhiteSpace(notification.ContactInfo))
+                            {
+                                success = await emailSender.SendAsync(
+                                    notification.ContactInfo,
+                                    notification.Subject,
+                                    notification.Message ?? "");
+                            }
+                            break;
 
-                    // Публикуем в RabbitMQ
-                    await rabbitMQService.PublishAsync(message);
+                        case "telegram":
+                            if (!string.IsNullOrWhiteSpace(notification.ContactInfo))
+                            {
+                                success = await telegramSender.SendAsync(
+                                    notification.ContactInfo,
+                                    notification.Subject,
+                                    notification.Message ?? "");
+                            }
+                            break;
 
-                    _logger.LogInformation(
-                        "Уведомление {NotificationId} опубликовано в RabbitMQ (канал: {Channel})",
-                        notification.Id,
-                        notification.Channel);
+                        case "whatsapp":
+                            if (!string.IsNullOrWhiteSpace(notification.ContactInfo))
+                            {
+                                success = await whatsAppSender.SendAsync(
+                                    notification.ContactInfo,
+                                    notification.Subject,
+                                    notification.Message ?? "");
+                            }
+                            break;
+
+                        default:
+                            _logger.LogWarning("Неизвестный канал уведомления: {Channel} для уведомления {NotificationId}", 
+                                channel, notification.Id);
+                            notification.Status = "failed";
+                            notification.ErrorMessage = $"Неизвестный канал: {channel}";
+                            break;
+                    }
+
+                    // Обновляем статус в зависимости от результата
+                    if (channel != "email" && channel != "telegram" && channel != "whatsapp")
+                    {
+                        // Уже обработано выше
+                    }
+                    else if (success)
+                    {
+                        notification.Status = "sent";
+                        notification.SentAt = ParsersHelper.NowForTimestamp();
+                        notification.ErrorMessage = null;
+                    }
+                    else
+                    {
+                        notification.Status = "failed";
+                        notification.RetryCount = (notification.RetryCount ?? 0) + 1;
+                        
+                        // Если превышен лимит попыток, оставляем как failed
+                        if (notification.RetryCount > 5)
+                        {
+                            notification.ErrorMessage = "Превышен лимит попыток отправки";
+                        }
+                        else
+                        {
+                            // Возвращаем статус на "new" для повторной попытки
+                            notification.Status = "new";
+                            notification.ProcessedAt = null;
+                        }
+                    }
+
+                    await db.SaveChangesAsync(cancellationToken);
+
+                    if (success)
+                    {
+                        _logger.LogInformation(
+                            "Уведомление {NotificationId} отправлено через канал {Channel}",
+                            notification.Id,
+                            channel);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -125,4 +189,3 @@ namespace WebApplication1.Services
         }
     }
 }
-

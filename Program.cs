@@ -9,7 +9,6 @@ using WebApplication1.Areas.Simple.ViewModels;
 using WebApplication1.Areas.Simple.Services;
 using System.Linq;
 using WebApplication1.Services;
-using WebApplication1.Services.ChannelWorkers;
 var builder = WebApplication.CreateBuilder(args);
 
 // Настройка локализации
@@ -65,15 +64,14 @@ builder.Services.AddScoped<ITableSource<PaymentListItemVm>, SimplePaymentsTableS
 
 // Регистрация сервисов уведомлений
 builder.Services.AddHttpClient();
-builder.Services.AddSingleton<IRabbitMQService, RabbitMQService>();
+builder.Services.AddScoped<EmailSender>();
+builder.Services.AddScoped<TelegramSender>();
+builder.Services.AddScoped<WhatsAppSender>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<InvoicePaymentService>();
 
-// Регистрация фоновых воркеров
+// Регистрация фонового воркера для обработки уведомлений
 builder.Services.AddHostedService<NotificationWorker>();
-builder.Services.AddHostedService<EmailChannelWorker>();
-builder.Services.AddHostedService<TelegramChannelWorker>();
-builder.Services.AddHostedService<WhatsAppChannelWorker>();
 
 // Добавление поддержки сессий
 builder.Services.AddDistributedMemoryCache();
@@ -137,13 +135,17 @@ app.MapControllerRoute(
     pattern: "Language/{action=SetLanguage}",
     defaults: new { controller = "Language" });
 
+// Регистрация API контроллеров (должно быть ПЕРВЫМ, до всех других маршрутов)
+// Это регистрирует все контроллеры с атрибутом [ApiController] и [Route]
+app.MapControllers();
+
 // Маршрутизация для Account (должен быть до маршрута Areas, более специфичный)
 app.MapControllerRoute(
     name: "account",
     pattern: "Account/{action=Login}/{id?}",
     defaults: new { controller = "Account", action = "Login" });
 
-// Маршрутизация для Areas
+// Маршрутизация для Areas (не должен перехватывать /api/*)
 app.MapControllerRoute(
     name: "areas",
     pattern: "{area:exists}/{controller=Cabinet}/{action=Index}/{id?}");
