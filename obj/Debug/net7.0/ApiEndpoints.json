@@ -1,25 +1,5 @@
 [
   {
-    "ContainingType": "WebApplication1.Controllers.SchedulerApiController",
-    "Method": "Health",
-    "RelativePath": "api/SchedulerApi/health",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "WebApplication1.Controllers.SchedulerApiController",
-    "Method": "ProcessPayments",
-    "RelativePath": "api/SchedulerApi/process-payments",
-    "HttpMethod": "POST",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
     "ContainingType": "WebApplication1.Controllers.WebApiController",
     "Method": "check",
     "RelativePath": "WebApi/check",

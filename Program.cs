@@ -62,16 +62,10 @@ builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options 
 
 builder.Services.AddScoped<ITableSource<PaymentListItemVm>, SimplePaymentsTableSource>();
 
-// Регистрация сервисов уведомлений
-builder.Services.AddHttpClient();
-builder.Services.AddScoped<EmailSender>();
-builder.Services.AddScoped<TelegramSender>();
-builder.Services.AddScoped<WhatsAppSender>();
+// Регистрация сервисов
+// NotificationService - создает уведомления в БД (отправка выполняется отдельным проектом NotificationWorker)
 builder.Services.AddScoped<NotificationService>();
-builder.Services.AddScoped<InvoicePaymentService>();
-
-// Регистрация фонового воркера для обработки уведомлений
-builder.Services.AddHostedService<NotificationWorker>();
+// InvoicePaymentService удален - обработка платежей теперь в отдельном проекте InvoiceSchedulerJob
 
 // Добавление поддержки сессий
 builder.Services.AddDistributedMemoryCache();
