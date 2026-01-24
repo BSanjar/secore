@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 
@@ -45,11 +45,12 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<UserRole> UserRoles { get; set; }
     public virtual DbSet<Notification> Notifications { get; set; }
+    public virtual DbSet<Agent> Agents { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
-        //=> optionsBuilder.UseNpgsql("Host=77.73.69.143;Database=secore;Username=secore;Password=secore");
-        => optionsBuilder.UseNpgsql("Host=localhost;Port=5433;Database=secore;Username=postgres;Password=new_password");
+        => optionsBuilder.UseNpgsql("Host=77.73.69.143;Database=secore;Username=secore;Password=secore");
+        //=> optionsBuilder.UseNpgsql("Host=localhost;Port=5433;Database=secore;Username=postgres;Password=new_password");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -518,6 +519,18 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Invoice)
                 .HasColumnType("character varying")
                 .HasColumnName("invoice");
+            entity.Property(e => e.Agent)
+                .HasColumnType("character varying")
+                .HasColumnName("agent");
+            entity.Property(e => e.PaymentInvoice)
+                .HasColumnType("character varying")
+                .HasColumnName("payment_invoice");
+            entity.Property(e => e.TxnId)
+                .HasColumnType("character varying")
+                .HasColumnName("txn_id");
+            entity.Property(e => e.TransactionSystem)
+                .HasColumnType("character varying")
+                .HasColumnName("transaction_system");
             entity.Property(e => e.Summ)
                 .HasComment("сумма в тыйынах")
                 .HasColumnName("summ");
@@ -539,6 +552,10 @@ public partial class AppDbContext : DbContext
             entity.HasOne(d => d.InvoiceNavigation).WithMany(p => p.Transactions)
                 .HasForeignKey(d => d.Invoice)
                 .HasConstraintName("transactions_fk");
+
+            entity.HasOne(d => d.AgentNavigation).WithMany(p => p.Transactions)
+                .HasForeignKey(d => d.Agent)
+                .HasConstraintName("transactions_fk_agent");
         });
 
         modelBuilder.Entity<User>(entity =>
@@ -648,6 +665,26 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.ContactInfo).HasComment("email, телефон, telegram chat_id");
 
             entity.HasOne(d => d.ClientNavigation).WithMany(p => p.Notifications).HasConstraintName("notifications_fk");
+        });
+
+        modelBuilder.Entity<Agent>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("agent_pk");
+
+            entity.ToTable("agent");
+
+            entity.Property(e => e.Id)
+                .HasColumnType("character varying")
+                .HasColumnName("id");
+            entity.Property(e => e.ApiLogin)
+                .HasColumnType("character varying")
+                .HasColumnName("api_login");
+            entity.Property(e => e.ApiPassword)
+                .HasColumnType("character varying")
+                .HasColumnName("api_password");
+            entity.Property(e => e.Name)
+                .HasColumnType("character varying")
+                .HasColumnName("name");
         });
 
         OnModelCreatingPartial(modelBuilder);

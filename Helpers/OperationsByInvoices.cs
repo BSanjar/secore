@@ -1,5 +1,6 @@
-﻿using WebApplication1.Models.DBModels;
+using WebApplication1.Models.DBModels;
 using WebApplication1.Services;
+using WebApplication1.Helpers;
 
 namespace WebApplication1.Helpers
 {
@@ -25,7 +26,7 @@ namespace WebApplication1.Helpers
                          && p.DateFrom.HasValue
                          && p.DateFrom.Value.Date <= DateTime.Today)
                 .OrderBy(p => p.DateFrom.Value)
-                .ThenBy(p => p.PaymentSumm);
+                .ThenBy(p => ParsersHelper.ParsePaymentSumm(p.PaymentSumm) ?? 0);
         }
 
 
@@ -41,7 +42,7 @@ namespace WebApplication1.Helpers
                          && p.DateFrom.HasValue
                          && p.DateFrom.Value.Date == DateTime.Today.AddDays(1))
                 .OrderBy(p => p.DateFrom.Value)
-                .ThenBy(p => p.PaymentSumm);
+                .ThenBy(p => ParsersHelper.ParsePaymentSumm(p.PaymentSumm) ?? 0);
         }
 
 
@@ -57,7 +58,7 @@ namespace WebApplication1.Helpers
                          && p.DateFrom.HasValue
                          && p.DateFrom.Value.Date > DateTime.Today.AddDays(1))
                 .OrderBy(p => p.DateFrom.Value)
-                .ThenBy(p => p.PaymentSumm);
+                .ThenBy(p => ParsersHelper.ParsePaymentSumm(p.PaymentSumm) ?? 0);
         }
 
 
@@ -68,7 +69,7 @@ namespace WebApplication1.Helpers
                     .GroupBy(p => p.InvoiceNavigation)
                     .Select(g =>
                     {
-                        var total = g.Sum(p => p.PaymentSumm);
+                        var total = g.Sum(p => ParsersHelper.ParsePaymentSumm(p.PaymentSumm) ?? 0);
 
                         return $"{g.Key.NameInvoice}: " +
                                $"за {string.Join(", ", g.Select(p => p.PeriodValue))}: " +
@@ -116,19 +117,21 @@ namespace WebApplication1.Helpers
         {
             foreach (var payment in payments)
             {
+                var paymentSumm = ParsersHelper.ParsePaymentSumm(payment.PaymentSumm) ?? 0;
+                
                 // если остатка не хватает — прекращаем
-                if (amount < payment.PaymentSumm)
+                if (amount < paymentSumm)
                     break;
 
                 // уменьшаем остаток
-                amount -= payment.PaymentSumm;
+                amount -= paymentSumm;
 
                 // помечаем платеж как оплаченный
                 payment.PaymentStatus = "paid";
 
                 // добавляем запись о транзакции
                 _db.Transactions.Add(
-                    CreateTransaction(payment.Invoice,payment.Id, agent, payment.PaymentSumm,payment.PaymentSumm, txnId, "payPaymentInvoice"));
+                    CreateTransaction(payment.Invoice, payment.Id, agent, paymentSumm, paymentSumm, txnId, "payPaymentInvoice"));
             }
 
             return amount;

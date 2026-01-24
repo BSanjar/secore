@@ -45,11 +45,25 @@ namespace WebApplication1.Controllers
                 return View(model);
             }
 
-            // Находим пользователя по email
-            var user = await _db.Users
+            // Находим пользователя по email (регистронезависимое сравнение, без пробелов)
+            var emailToSearch = model.Email?.Trim();
+            if (string.IsNullOrWhiteSpace(emailToSearch))
+            {
+                ModelState.AddModelError("", "Email не может быть пустым");
+                return View(model);
+            }
+
+            // Получаем всех не удаленных пользователей и фильтруем по email в памяти
+            // Это необходимо, так как нужно учитывать пробелы в начале/конце email в БД
+            var users = await _db.Users
                 .Include(u => u.OrganizationNavigation)
-                .FirstOrDefaultAsync(u => u.Email == model.Email && 
-                                          (u.Isdeleted == null || u.Isdeleted == 0));
+                .Where(u => u.Isdeleted == null || u.Isdeleted == 0)
+                .ToListAsync();
+
+            // Ищем пользователя с учетом регистра и пробелов
+            var user = users.FirstOrDefault(u => 
+                u.Email != null && 
+                string.Equals(u.Email.Trim(), emailToSearch, StringComparison.OrdinalIgnoreCase));
 
             if (user == null)
             {

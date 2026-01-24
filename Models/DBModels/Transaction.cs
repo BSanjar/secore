@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace WebApplication1.Models.DBModels;
@@ -27,6 +27,14 @@ public partial class Transaction
 
     public string? Invoice { get; set; }
 
+    public string? Agent { get; set; }
+
+    public string? PaymentInvoice { get; set; }
+
+    public string? TxnId { get; set; }
+
+    public string? TransactionSystem { get; set; }
+
     /// <summary>
     /// debit - приход
     /// credit - расход
@@ -34,4 +42,6 @@ public partial class Transaction
     public string? TransactionType { get; set; }
 
     public virtual Invoice? InvoiceNavigation { get; set; }
+
+    public virtual Agent? AgentNavigation { get; set; }
 }

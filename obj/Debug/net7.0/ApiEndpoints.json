@@ -25,6 +25,30 @@
   },
   {
     "ContainingType": "WebApplication1.Controllers.WebApiController",
+    "Method": "checkOld",
+    "RelativePath": "WebApi/checkOld",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "WebApplication1.Models.WebApiModels.CheckRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "WebApplication1.Models.WebApiModels.CheckResponse",
+        "MediaTypes": [
+          "application/xml"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "WebApplication1.Controllers.WebApiController",
     "Method": "pay",
     "RelativePath": "WebApi/pay",
     "HttpMethod": "POST",
@@ -64,6 +88,54 @@
     "ReturnTypes": [
       {
         "Type": "WebApplication1.Models.WebApiModels.PaymentInfoResponse",
+        "MediaTypes": [
+          "application/xml"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "WebApplication1.Controllers.WebApiController",
+    "Method": "payOld",
+    "RelativePath": "WebApi/payOld",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "WebApplication1.Models.WebApiModels.PayRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "WebApplication1.Models.WebApiModels.PayResponse",
+        "MediaTypes": [
+          "application/xml"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "WebApplication1.Controllers.WebApiController",
+    "Method": "payOld2",
+    "RelativePath": "WebApi/payOld2",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "WebApplication1.Models.WebApiModels.PayRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "WebApplication1.Models.WebApiModels.PayResponse",
         "MediaTypes": [
           "application/xml"
         ],
