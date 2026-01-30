@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace WebApplication1.Models.DBModels;
@@ -35,6 +35,8 @@ public partial class Organization
     public string? ApiPassword { get; set; }
 
     public virtual ICollection<OrganizationClient> OrganizationClients { get; set; } = new List<OrganizationClient>();
+
+    public virtual ICollection<OrgClientGroup> OrgClientGroups { get; set; } = new List<OrgClientGroup>();
 
     public virtual ICollection<OrganizationField> OrganizationFields { get; set; } = new List<OrganizationField>();
 

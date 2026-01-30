@@ -26,7 +26,7 @@ namespace WebApplication1.Helpers
                          && p.DateFrom.HasValue
                          && p.DateFrom.Value.Date <= DateTime.Today)
                 .OrderBy(p => p.DateFrom.Value)
-                .ThenBy(p => ParsersHelper.ParsePaymentSumm(p.PaymentSumm) ?? 0);
+                .ThenBy(p => p.PaymentSumm ?? 0);
         }
 
 
@@ -42,7 +42,7 @@ namespace WebApplication1.Helpers
                          && p.DateFrom.HasValue
                          && p.DateFrom.Value.Date == DateTime.Today.AddDays(1))
                 .OrderBy(p => p.DateFrom.Value)
-                .ThenBy(p => ParsersHelper.ParsePaymentSumm(p.PaymentSumm) ?? 0);
+                .ThenBy(p => p.PaymentSumm ?? 0);
         }
 
 
@@ -58,7 +58,7 @@ namespace WebApplication1.Helpers
                          && p.DateFrom.HasValue
                          && p.DateFrom.Value.Date > DateTime.Today.AddDays(1))
                 .OrderBy(p => p.DateFrom.Value)
-                .ThenBy(p => ParsersHelper.ParsePaymentSumm(p.PaymentSumm) ?? 0);
+                .ThenBy(p => p.PaymentSumm ?? 0);
         }
 
 
@@ -69,7 +69,7 @@ namespace WebApplication1.Helpers
                     .GroupBy(p => p.InvoiceNavigation)
                     .Select(g =>
                     {
-                        var total = g.Sum(p => ParsersHelper.ParsePaymentSumm(p.PaymentSumm) ?? 0);
+                        var total = g.Sum(p => p.PaymentSumm ?? 0);
 
                         return $"{g.Key.NameInvoice}: " +
                                $"за {string.Join(", ", g.Select(p => p.PeriodValue))}: " +
@@ -117,7 +117,7 @@ namespace WebApplication1.Helpers
         {
             foreach (var payment in payments)
             {
-                var paymentSumm = ParsersHelper.ParsePaymentSumm(payment.PaymentSumm) ?? 0;
+                var paymentSumm = payment.PaymentSumm ?? 0;
                 
                 // если остатка не хватает — прекращаем
                 if (amount < paymentSumm)

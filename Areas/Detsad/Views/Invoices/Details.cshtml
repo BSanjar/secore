@@ -1,0 +1,144 @@
+@model WebApplication1.Models.DBModels.Invoice
+@using System.Linq
+@{
+    ViewData["Title"] = "Счёт";
+    var balanceSoms = Model.Balance.HasValue ? Model.Balance.Value / 100m : 0m;
+    var statusText = Model.InvoiceStatus == "actual" ? "Активный" : Model.InvoiceStatus == "suspended" ? "Приостановлен" : Model.InvoiceStatus == "closed" ? "Закрыт" : Model.InvoiceStatus ?? "—";
+    var periodicityText = Model.Periodicity == "monthly" ? "Ежемесячно" : Model.Periodicity == "yearly" ? "Ежегодно" : Model.Periodicity == "weekly" ? "Еженедельно" : Model.Periodicity == "daily" ? "Ежедневно" : Model.Periodicity == "oneTime" ? "Разовая" : Model.Periodicity ?? "—";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/web/kindergarten/css/detsad-children.css" asp-append-version="true" />
+}
+
+<div class="children-page">
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Message"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h1 class="page-title">@(Model.NameInvoice ?? "Счёт без названия")</h1>
+                <p class="page-subtitle mb-0">
+                    @if (!string.IsNullOrEmpty(Model.PayCode)) { <span>Лицевой счёт: @Model.PayCode</span> }
+                    @if (Model.ClientNavigation != null) { <span class="ms-2">Клиент: @Model.ClientNavigation.ClientName</span> }
+                </p>
+            </div>
+            <div class="d-flex gap-2">
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Редактировать</a>
+                <a asp-action="Index" class="btn btn-outline-secondary">К списку счетов</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="filters-section">
+        <h5 class="mb-3">Основные данные</h5>
+        <div class="row">
+            <div class="col-md-6 col-lg-4 mb-3">
+                <label class="form-label text-muted small">Статус</label>
+                <div>
+                    @if (Model.InvoiceStatus == "actual") { <span class="badge bg-success">@statusText</span> }
+                    else if (Model.InvoiceStatus == "suspended") { <span class="badge bg-warning text-dark">@statusText</span> }
+                    else if (Model.InvoiceStatus == "closed") { <span class="badge bg-secondary">@statusText</span> }
+                    else { <span class="badge bg-light text-dark">@statusText</span> }
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4 mb-3">
+                <label class="form-label text-muted small">Периодичность</label>
+                <p class="mb-0">@periodicityText</p>
+            </div>
+            <div class="col-md-6 col-lg-4 mb-3">
+                <label class="form-label text-muted small">Баланс</label>
+                <p class="mb-0 fw-bold @(balanceSoms < 0 ? "text-danger" : "")">@balanceSoms.ToString("N2") сом</p>
+            </div>
+            <div class="col-md-6 col-lg-4 mb-3">
+                <label class="form-label text-muted small">Дата создания</label>
+                <p class="mb-0">@(Model.DateCreated?.ToString("dd.MM.yyyy HH:mm") ?? "—")</p>
+            </div>
+            <div class="col-md-6 col-lg-4 mb-3">
+                <label class="form-label text-muted small">Дата начала счёта</label>
+                <p class="mb-0">@(Model.DateStartInvoice?.ToString("dd.MM.yyyy") ?? "—")</p>
+            </div>
+            <div class="col-md-6 col-lg-4 mb-3">
+                <label class="form-label text-muted small">Создал</label>
+                <p class="mb-0">@(Model.UserCreaterNavigation?.Name ?? Model.UserCreater ?? "—")</p>
+            </div>
+            <div class="col-md-6 col-lg-4 mb-3">
+                <label class="form-label text-muted small">Фиксированная сумма</label>
+                <p class="mb-0">@(Model.FixedSumm.HasValue && Model.FixedSumm.Value > 0 ? (Model.FixedSumm.Value / 100m).ToString("N2") + " сом" : "Любая")</p>
+            </div>
+            <div class="col-md-6 col-lg-4 mb-3">
+                <label class="form-label text-muted small">Автопролонгация</label>
+                <p class="mb-0">@(Model.AutoProlongation == true ? "Да" : "Нет")</p>
+            </div>
+            @if (Model.NextStartInvoice.HasValue)
+            {
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <label class="form-label text-muted small">Дата следующего периода</label>
+                    <p class="mb-0">@Model.NextStartInvoice.Value.ToString("dd.MM.yyyy")</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    @if (Model.InvoiceServices != null && Model.InvoiceServices.Any())
+    {
+        <div class="filters-section">
+            <h5 class="mb-3">Услуги по счёту</h5>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Услуга</th>
+                            <th>Стоимость (тыйыны)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var svc in Model.InvoiceServices)
+                        {
+                            <tr>
+                                <td>@(svc.ServiceNavigation?.Name ?? svc.Service ?? "—")</td>
+                                <td>@(svc.ServiceSumm?.ToString("N0") ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    @if (Model.InvoicePayments != null && Model.InvoicePayments.Any())
+    {
+        <div class="filters-section">
+            <h5 class="mb-3">Оплаченные периоды</h5>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Период (с — по)</th>
+                            <th>Сумма</th>
+                            <th>Статус</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var pay in Model.InvoicePayments.OrderByDescending(p => p.DateFrom))
+                        {
+                            var payStatus = pay.PaymentStatus == "paid" ? "Оплачено" : pay.PaymentStatus == "non_paid" ? "Не оплачено" : pay.PaymentStatus == "anulated" ? "Анулировано" : pay.PaymentStatus ?? "—";
+                            var paySum = pay.PaymentSumm.HasValue ? pay.PaymentSumm.Value / 100m : 0m;
+                            <tr>
+                                <td>@(pay.DateFrom?.ToString("dd.MM.yyyy") ?? "—") — @(pay.DateTo?.ToString("dd.MM.yyyy") ?? "—")</td>
+                                <td>@paySum.ToString("N2") сом</td>
+                                <td>@payStatus</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>

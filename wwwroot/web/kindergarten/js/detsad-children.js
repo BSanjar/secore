@@ -5,23 +5,44 @@ document.addEventListener('DOMContentLoaded', function() {
     const debtorsFilter = document.getElementById('debtorsFilter');
     const childrenCards = document.getElementById('childrenCards');
     
+    // Выбранные группы для фильтра (мультиселект)
+    const groupFilterCheckboxes = document.querySelectorAll('.group-filter-checkbox');
+    const groupsFilterBtn = document.getElementById('groupsFilterBtn');
+    const groupsFilterMenu = document.getElementById('groupsFilterMenu');
+    const groupsFilterSearch = document.getElementById('groupsFilterSearch');
+    const groupsFilterList = document.getElementById('groupsFilterList');
+
+    function getSelectedGroupIds() {
+        if (!groupFilterCheckboxes.length) return [];
+        return Array.from(groupFilterCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+    }
+
+    function updateGroupsFilterButtonText() {
+        const btnText = groupsFilterBtn?.querySelector('.groups-filter-btn-text');
+        if (!btnText) return;
+        const ids = getSelectedGroupIds();
+        btnText.textContent = ids.length > 0 ? 'По группам (' + ids.length + ')' : 'По группам';
+    }
+
     // Функция для применения фильтров
     function applyFilters() {
         const search = searchInput.value.toLowerCase().trim();
-        const status = statusFilter.value;
-        const debtorsOnly = debtorsFilter.checked;
-        
+        const selectedGroupIds = getSelectedGroupIds();
+        const filterByGroups = selectedGroupIds.length > 0;
+
         const cards = childrenCards.querySelectorAll('.child-card');
         let visibleCount = 0;
-        
+
         cards.forEach(card => {
             const searchText = card.getAttribute('data-search-text')?.toLowerCase() || '';
-            const clientId = card.getAttribute('data-client-id');
-            
-            // Поиск
+            const groupId = card.getAttribute('data-org-client-group-id') || '';
+
             let matchesSearch = !search || searchText.includes(search);
-            
-            if (matchesSearch) {
+            let matchesGroups = !filterByGroups || selectedGroupIds.includes(groupId);
+
+            if (matchesSearch && matchesGroups) {
                 card.style.display = 'block';
                 visibleCount++;
                 card.style.animation = 'cardSlideIn 0.3s ease forwards';
@@ -88,7 +109,48 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         window.location.search = params.toString();
     });
-    
+
+    // Фильтр по группам: открытие/закрытие выпадающего списка
+    if (groupsFilterBtn && groupsFilterMenu) {
+        groupsFilterBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const isOpen = groupsFilterMenu.classList.toggle('is-open');
+            groupsFilterBtn.setAttribute('aria-expanded', isOpen);
+            if (isOpen && groupsFilterSearch) {
+                groupsFilterSearch.value = '';
+                document.querySelectorAll('.groups-filter-item').forEach(el => el.classList.remove('is-hidden'));
+                setTimeout(() => groupsFilterSearch.focus(), 50);
+            }
+        });
+        document.addEventListener('click', function() {
+            groupsFilterMenu.classList.remove('is-open');
+            groupsFilterBtn.setAttribute('aria-expanded', 'false');
+        });
+        groupsFilterMenu.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    }
+
+    // Поиск внутри списка групп
+    if (groupsFilterSearch && groupsFilterList) {
+        groupsFilterSearch.addEventListener('input', function() {
+            const term = this.value.toLowerCase().trim();
+            groupsFilterList.querySelectorAll('.groups-filter-item').forEach(item => {
+                const name = (item.querySelector('.group-filter-checkbox')?.getAttribute('data-group-name') || '').toLowerCase();
+                item.classList.toggle('is-hidden', term && !name.includes(term));
+            });
+        });
+    }
+
+    // При изменении чекбокса группы — применяем фильтр и обновляем подпись кнопки
+    groupFilterCheckboxes.forEach(cb => {
+        cb.addEventListener('change', function() {
+            applyFilters();
+            updateGroupsFilterButtonText();
+        });
+    });
+    updateGroupsFilterButtonText();
+
     // Анимация карточек при загрузке
     const cards = childrenCards.querySelectorAll('.child-card');
     cards.forEach((card, index) => {
@@ -507,183 +569,127 @@ window.showInvoicesInfo = showInvoicesInfo;
 window.showClientTransactions = showClientTransactions;
 
 // Функции для модального окна добавления ребенка
-let currentStep = 1;
-const totalSteps = 2;
-
 function openAddChildModal() {
-    currentStep = 1;
     const modal = new bootstrap.Modal(document.getElementById('addChildModal'));
     resetModal();
-    updateStepIndicator();
-    updateButtons();
     
-    // Инициализируем маски после показа модального окна
     modal.show();
     setTimeout(() => {
         initPhoneMask();
         initInnValidation();
+        initWhatsAppSync();
     }, 300);
+}
+
+function initWhatsAppSync() {
+    const phoneInput = document.getElementById('clientPhone');
+    const waInput = document.getElementById('clientWa');
+    const phoneIsWaCheck = document.getElementById('phoneIsWa');
+    if (!phoneInput || !waInput || !phoneIsWaCheck) return;
+
+    function syncWaFromPhone() {
+        if (phoneIsWaCheck.checked) {
+            waInput.value = phoneInput.value;
+        }
+    }
+
+    phoneIsWaCheck.addEventListener('change', function() {
+        if (this.checked) {
+            waInput.value = phoneInput.value;
+        } else {
+            waInput.value = '';
+        }
+    });
+    phoneInput.addEventListener('input', syncWaFromPhone);
+    phoneInput.addEventListener('change', syncWaFromPhone);
 }
 
 function resetModal() {
     document.getElementById('childForm').reset();
-    document.getElementById('invoiceForm').reset();
     document.getElementById('errorMessage').style.display = 'none';
-    document.getElementById('step1').style.display = 'block';
-    document.getElementById('step2').style.display = 'none';
-    currentStep = 1;
     
-    // Убираем классы валидации
-    const forms = [document.getElementById('childForm'), document.getElementById('invoiceForm')];
-    forms.forEach(form => {
-        if (form) {
-            form.classList.remove('was-validated');
-            const inputs = form.querySelectorAll('.form-control');
-            inputs.forEach(input => {
-                input.classList.remove('is-invalid', 'is-valid');
-            });
-        }
-    });
+    const form = document.getElementById('childForm');
+    if (form) {
+        form.classList.remove('was-validated');
+        const inputs = form.querySelectorAll('.form-control');
+        inputs.forEach(input => {
+            input.classList.remove('is-invalid', 'is-valid');
+        });
+    }
     
-    // Инициализируем маску телефона
     initPhoneMask();
-}
-
-function nextStep() {
-    if (currentStep === 1) {
-        // Валидация первого шага
-        const form = document.getElementById('childForm');
-        
-        // Валидация ИНН
-        const innInput = document.getElementById('clientInn');
-        const innValue = innInput.value.replace(/\D/g, ''); // Убираем все нецифровые символы
-        if (innValue.length !== 14) {
-            innInput.classList.add('is-invalid');
-            innInput.classList.remove('is-valid');
-            form.classList.add('was-validated');
-            return;
-        } else {
-            innInput.classList.remove('is-invalid');
-            innInput.classList.add('is-valid');
-        }
-        
-        // Валидация телефона
-        const phoneInput = document.getElementById('clientPhone');
-        const phoneValue = phoneInput.value;
-        // Проверяем формат +996(***) *** ***
-        const phoneRegex = /^\+996\(\d{3}\) \d{3} \d{3}$/;
-        if (!phoneRegex.test(phoneValue)) {
-            phoneInput.classList.add('is-invalid');
-            phoneInput.classList.remove('is-valid');
-            form.classList.add('was-validated');
-            return;
-        } else {
-            phoneInput.classList.remove('is-invalid');
-            phoneInput.classList.add('is-valid');
-        }
-        
-        if (!form.checkValidity()) {
-            form.classList.add('was-validated');
-            form.reportValidity();
-            return;
-        }
-        
-        form.classList.add('was-validated');
-        currentStep = 2;
-        document.getElementById('step1').style.display = 'none';
-        document.getElementById('step2').style.display = 'block';
-    }
-    updateStepIndicator();
-    updateButtons();
-}
-
-function prevStep() {
-    if (currentStep === 2) {
-        currentStep = 1;
-        document.getElementById('step1').style.display = 'block';
-        document.getElementById('step2').style.display = 'none';
-    }
-    updateStepIndicator();
-    updateButtons();
-}
-
-function updateStepIndicator() {
-    const stepItems = document.querySelectorAll('.step-item');
-    stepItems.forEach((item, index) => {
-        const stepNum = index + 1;
-        if (stepNum <= currentStep) {
-            item.classList.add('active');
-        } else {
-            item.classList.remove('active');
-        }
-    });
-}
-
-function updateButtons() {
-    const prevBtn = document.getElementById('prevStepBtn');
-    const nextBtn = document.getElementById('nextStepBtn');
-    const submitBtn = document.getElementById('submitBtn');
-
-    if (currentStep === 1) {
-        prevBtn.style.display = 'none';
-        nextBtn.style.display = 'inline-block';
-        submitBtn.style.display = 'none';
-    } else if (currentStep === 2) {
-        prevBtn.style.display = 'inline-block';
-        nextBtn.style.display = 'none';
-        submitBtn.style.display = 'inline-block';
-    }
 }
 
 async function submitChild() {
     const errorDiv = document.getElementById('errorMessage');
     errorDiv.style.display = 'none';
 
-    // Валидация второго шага
-    const invoiceForm = document.getElementById('invoiceForm');
+    const form = document.getElementById('childForm');
     
-    // Валидация суммы
-    const amountInput = document.getElementById('paymentAmount');
-    const amount = parseFloat(amountInput.value);
-    if (isNaN(amount) || amount < 1 || amount > 100000) {
-        amountInput.classList.add('is-invalid');
-        amountInput.classList.remove('is-valid');
-        invoiceForm.classList.add('was-validated');
+    // Валидация ИНН
+    const innInput = document.getElementById('clientInn');
+    const innValue = innInput.value.replace(/\D/g, '');
+    if (innValue.length !== 14) {
+        innInput.classList.add('is-invalid');
+        innInput.classList.remove('is-valid');
+        form.classList.add('was-validated');
         return;
     } else {
-        amountInput.classList.remove('is-invalid');
-        amountInput.classList.add('is-valid');
+        innInput.classList.remove('is-invalid');
+        innInput.classList.add('is-valid');
     }
     
-    if (!invoiceForm.checkValidity()) {
-        invoiceForm.classList.add('was-validated');
-        invoiceForm.reportValidity();
+    // Валидация телефона
+    const phoneInput = document.getElementById('clientPhone');
+    const phoneValue = phoneInput.value;
+    const phoneRegex = /^\+996\(\d{3}\) \d{3} \d{3}$/;
+    if (!phoneRegex.test(phoneValue)) {
+        phoneInput.classList.add('is-invalid');
+        phoneInput.classList.remove('is-valid');
+        form.classList.add('was-validated');
+        return;
+    } else {
+        phoneInput.classList.remove('is-invalid');
+        phoneInput.classList.add('is-valid');
+    }
+    
+    if (!form.checkValidity()) {
+        form.classList.add('was-validated');
+        form.reportValidity();
         return;
     }
     
-    invoiceForm.classList.add('was-validated');
+    form.classList.add('was-validated');
 
-    // Собираем данные
     const childData = {
         clientName: document.getElementById('clientName').value.trim(),
-        clientInn: document.getElementById('clientInn').value.replace(/\D/g, ''), // Только цифры
-        clientPhone: document.getElementById('clientPhone').value, // Сохраняем с маской
+        clientInn: document.getElementById('clientInn').value.replace(/\D/g, ''),
+        clientPhone: document.getElementById('clientPhone').value,
         clientEmail: document.getElementById('clientEmail').value.trim(),
         clientAdres: document.getElementById('clientAdres').value.trim(),
-        paymentAmount: amount,
-        startDate: document.getElementById('startDate').value
+        clientWa: (document.getElementById('clientWa') && document.getElementById('clientWa').value.trim()) || null,
+        clientTg: (document.getElementById('clientTg') && document.getElementById('clientTg').value.trim()) || null
     };
 
-    // Валидация даты
-    if (!childData.startDate) {
-        showError('Пожалуйста, укажите дату начала действия');
-        return;
+    const groupSelect = document.getElementById('orgClientGroupId');
+    if (groupSelect && groupSelect.value) {
+        childData.orgClientGroupId = groupSelect.value;
     }
 
-    const startDate = new Date(childData.startDate);
-    if (isNaN(startDate.getTime())) {
-        showError('Некорректная дата начала действия');
-        return;
+    const additionalFieldsSection = document.getElementById('additionalFieldsSection');
+    if (additionalFieldsSection) {
+        const fieldInputs = additionalFieldsSection.querySelectorAll('[data-field-id]');
+        const additionalFields = {};
+        fieldInputs.forEach(el => {
+            const fieldId = el.getAttribute('data-field-id');
+            const value = (el.value || '').trim();
+            if (fieldId && value) {
+                additionalFields[fieldId] = value;
+            }
+        });
+        if (Object.keys(additionalFields).length > 0) {
+            childData.additionalFields = additionalFields;
+        }
     }
 
     // Отправляем данные
@@ -827,6 +833,4 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Экспортируем функции для глобального доступа
 window.openAddChildModal = openAddChildModal;
-window.nextStep = nextStep;
-window.prevStep = prevStep;
 window.submitChild = submitChild;

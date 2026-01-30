@@ -97,10 +97,12 @@ namespace WebApplication1.Areas.Detsad.Controllers
         {
             try
             {
-                // ID организации (пока зашит id = 1)
-                string organizationId = "1";
-                // TODO: Получить ID пользователя из сессии
-                string? userId = null; // HttpContext.Session.GetString("UserId");
+                var organizationId = HttpContext.Session.GetString("OrganizationId");
+                var userId = HttpContext.Session.GetString("UserId");
+                if (string.IsNullOrEmpty(organizationId))
+                {
+                    return Unauthorized();
+                }
 
                 using var transaction = await _db.Database.BeginTransactionAsync();
 
@@ -126,12 +128,15 @@ namespace WebApplication1.Areas.Detsad.Controllers
                     {
                         Id = newClientId.ToString(),
                         Organization = organizationId,
+                        OrgClientGroupId = string.IsNullOrWhiteSpace(request.OrgClientGroupId) ? null : request.OrgClientGroupId,
                         ClientName = request.ClientName,
-                        ClinetType = "fiz", // Всегда физическое лицо
+                        ClientType = "fiz",
                         ClientInn = request.ClientInn,
-                        ClientPhone = request.ClientPhone, // Сохраняем с маской +996(***) *** ***
-                        ClientAdres = request.ClientAdres,
+                        ClientPhone = request.ClientPhone,
+                        ClientAddress = request.ClientAdres,
                         ClientEmail = request.ClientEmail,
+                        ClientWa = request.ClientWa,
+                        ClientTg = request.ClientTg,
                         ClientBalance = 0,
                         ClientStatus = 1,
                         CreatedDate = DateTime.Now,
@@ -141,86 +146,26 @@ namespace WebApplication1.Areas.Detsad.Controllers
 
                     _db.OrganizationClients.Add(organizationClient);
 
-                    // Генерируем ID для Invoice
-                    var allInvoiceIds = await _db.Invoices
-                        .Select(i => i.Id)
-                        .ToListAsync();
-
-                    int newInvoiceId = 1;
-                    foreach (var idStr in allInvoiceIds)
+                    // Дополнительные поля (OrganizationClientsAdditionalField)
+                    if (request.AdditionalFields != null && request.AdditionalFields.Count > 0)
                     {
-                        if (int.TryParse(idStr, out int id) && id >= newInvoiceId)
+                        var orgFieldIds = await _db.OrganizationFields
+                            .Where(f => f.Organization == organizationId && (f.Isdeleted == null || f.Isdeleted == 0))
+                            .Select(f => f.Id)
+                            .ToListAsync();
+
+                        foreach (var kv in request.AdditionalFields)
                         {
-                            newInvoiceId = id + 1;
+                            if (string.IsNullOrWhiteSpace(kv.Value) || !orgFieldIds.Contains(kv.Key)) continue;
+                            _db.OrganizationClientsAdditionalFields.Add(new OrganizationClientsAdditionalField
+                            {
+                                Id = Guid.NewGuid().ToString(),
+                                OrganizationClient = newClientId.ToString(),
+                                Field = kv.Key,
+                                Value = kv.Value.Trim()
+                            });
                         }
                     }
-
-                    // Конвертируем сумму в копейки (Int)
-                    int fixedSumInKopecks = (int)(request.PaymentAmount * 100);
-
-                    // Генерируем PayCode: id организации + id OrganizationClient + 6 значное случайное число
-                    var random = new Random();
-                    int randomNumber = random.Next(100000, 999999);
-                    string payCode = $"{organizationId}{newClientId}{randomNumber}";
-
-                    // Вычисляем даты
-                    DateTime dateStartInvoice = request.StartDate.Date;
-                    DateTime nextStartInvoice = dateStartInvoice.AddDays(30);
-
-                    // Создаем Invoice
-                    var invoice = new Invoice
-                    {
-                        Id = newInvoiceId.ToString(),
-                        DateCreated = DateTime.Now,
-                        UserCreater = userId,
-                        InvoiceStatus = "actual",
-                        Periodicity = "monthly",
-                        DateStartInvoice = dateStartInvoice,
-                        Balance = 0,
-                        PayCode = payCode,
-                        Client = newClientId.ToString(),
-                        FixedSumm = fixedSumInKopecks,
-                        AutoProlongation = true,
-                        NextStartInvoice = nextStartInvoice,
-                        NameInvoice = "оплата за детсад"
-                    };
-
-                    _db.Invoices.Add(invoice);
-
-                    // Генерируем ID для InvoicePayment
-                    var allPaymentIds = await _db.InvoicePayments
-                        .Select(ip => ip.Id)
-                        .ToListAsync();
-
-                    int newPaymentId = 1;
-                    foreach (var idStr in allPaymentIds)
-                    {
-                        if (int.TryParse(idStr, out int id) && id >= newPaymentId)
-                        {
-                            newPaymentId = id + 1;
-                        }
-                    }
-
-                    // Вычисляем даты для платежа
-                    DateTime dateFrom = dateStartInvoice;
-                    DateTime dateTo = dateStartInvoice.AddDays(29);
-
-                    // Определяем месяц для period_value
-                    string monthName = GetMonthName(dateFrom, dateTo);
-
-                    // Создаем InvoicePayment
-                    var invoicePayment = new InvoicePayment
-                    {
-                        Id = newPaymentId.ToString(),
-                        Invoice = newInvoiceId.ToString(),
-                        DateFrom = dateFrom,
-                        DateTo = dateTo,
-                        PaymentSumm = fixedSumInKopecks.ToString(),
-                        PaymentStatus = "non_paid",
-                        PeriodValue = monthName
-                    };
-
-                    _db.InvoicePayments.Add(invoicePayment);
 
                     await _db.SaveChangesAsync();
                     await transaction.CommitAsync();
@@ -239,38 +184,30 @@ namespace WebApplication1.Areas.Detsad.Controllers
             }
         }
 
-        private string GetMonthName(DateTime dateFrom, DateTime dateTo)
-        {
-            // Определяем, к какому месяцу больше относится период
-            // Если период больше относится к началу, берем месяц dateFrom, иначе dateTo
-            int daysFromStart = (dateTo - dateFrom).Days / 2;
-            DateTime middleDate = dateFrom.AddDays(daysFromStart);
-
-            string[] months = {
-                "январь", "февраль", "март", "апрель", "май", "июнь",
-                "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"
-            };
-
-            return months[middleDate.Month - 1];
-        }
-
         public class CreateChildRequest
         {
             public string? ClientName { get; set; }
             public string? ClientInn { get; set; }
+            public string? OrgClientGroupId { get; set; }
             public string? ClientPhone { get; set; }
             public string? ClientAdres { get; set; }
             public string? ClientEmail { get; set; }
-            public decimal PaymentAmount { get; set; }
-            public DateTime StartDate { get; set; }
+            public string? ClientWa { get; set; }
+            public string? ClientTg { get; set; }
+            /// <summary>Ключ — Id поля (OrganizationField), значение — введённое значение</summary>
+            public Dictionary<string, string>? AdditionalFields { get; set; }
         }
 
         [RequirePermission("children.view")]
         public async Task<IActionResult> Children(string search = "", string statusFilter = "active", bool debtorsOnly = false)
         {
-            // ID организации (пока зашит id = 1)
-            string organizationId = "1";
+           
             
+            var organizationId = HttpContext.Session.GetString("OrganizationId");
+            if (string.IsNullOrEmpty(organizationId))
+            {
+                return Unauthorized();
+            }
             // Получаем клиентов напрямую по организации
             var childrenData = await _db.OrganizationClients
                 .Include(c => c.OrganizationClientsAdditionalFields)
@@ -286,7 +223,7 @@ namespace WebApplication1.Areas.Detsad.Controllers
                     (c.ClientName != null && c.ClientName.ToLower().Contains(searchLower)) ||
                     (c.ClientPhone != null && c.ClientPhone.Contains(search)) ||
                     (c.ClientEmail != null && c.ClientEmail.ToLower().Contains(searchLower)) ||
-                    (c.ClientAdres != null && c.ClientAdres.ToLower().Contains(searchLower)) ||
+                    (c.ClientAddress != null && c.ClientAddress.ToLower().Contains(searchLower)) ||
                     (c.OrganizationClientsAdditionalFields.Any(af => 
                         af.Value != null && af.Value.ToLower().Contains(searchLower)))
                 ).ToList();
@@ -321,6 +258,13 @@ namespace WebApplication1.Areas.Detsad.Controllers
                 .Where(f => f.Organization == organizationId && (f.Isdeleted == null || f.Isdeleted == 0))
                 .ToListAsync();
 
+            // Группы клиентов организации (для модального окна добавления и фильтра)
+            var orgClientGroups = await _db.OrgClientGroups
+                .Where(g => g.OrganizationId == organizationId && g.IsDeleted == 0)
+                .OrderBy(g => g.Name)
+                .ToListAsync();
+            ViewBag.OrgClientGroups = orgClientGroups;
+
             // Создаем список данных для View
             var childrenViewData = childrenData
                 .OrderByDescending(x => x.CreatedDate)
@@ -338,8 +282,11 @@ namespace WebApplication1.Areas.Detsad.Controllers
         [RequirePermission("children.view")]
         public async Task<IActionResult> GetChildInfo(string clientId)
         {
-            // ID организации (пока зашит id = 1)
-            string organizationId = "1";
+            var organizationId = HttpContext.Session.GetString("OrganizationId");
+            if (string.IsNullOrEmpty(organizationId))
+            {
+                return Unauthorized();
+            }
 
             var client = await _db.OrganizationClients
                 .Include(c => c.OrganizationClientsAdditionalFields)
@@ -370,7 +317,7 @@ namespace WebApplication1.Areas.Detsad.Controllers
                     name = client.ClientName,
                     phone = client.ClientPhone,
                     email = client.ClientEmail,
-                    address = client.ClientAdres,
+                    address = client.ClientAddress,
                     inn = client.ClientInn,
                     balance = client.ClientBalance,
                     status = client.ClientStatus,
@@ -385,8 +332,11 @@ namespace WebApplication1.Areas.Detsad.Controllers
         [RequirePermission("invoices.view")]
         public async Task<IActionResult> GetInvoicesInfo(string clientId, string? invoiceId = null)
         {
-            // ID организации (пока зашит id = 1)
-            string organizationId = "1";
+            var organizationId = HttpContext.Session.GetString("OrganizationId");
+            if (string.IsNullOrEmpty(organizationId))
+            {
+                return Unauthorized();
+            }
 
             var client = await _db.OrganizationClients
                 .FirstOrDefaultAsync(c => c.Id == clientId && c.Organization == organizationId);
@@ -459,7 +409,8 @@ namespace WebApplication1.Areas.Detsad.Controllers
                     id = ip.Id,
                     dateFrom = ip.DateFrom,
                     dateTo = ip.DateTo,
-                    paymentSumm = ip.PaymentSumm,
+                    
+                    paymentSumm = ip.PaymentSumm.HasValue ? ip.PaymentSumm.Value * 100m : (decimal?)null,
                     paymentStatus = ip.PaymentStatus,
                     periodValue = ip.PeriodValue
                 }).ToList(),
@@ -494,8 +445,11 @@ namespace WebApplication1.Areas.Detsad.Controllers
         [RequirePermission("children.view")]
         public async Task<IActionResult> GetChildDetails(string clientId)
         {
-            // ID организации (пока зашит id = 1)
-            string organizationId = "1";
+            var organizationId = HttpContext.Session.GetString("OrganizationId");
+            if (string.IsNullOrEmpty(organizationId))
+            {
+                return Unauthorized();
+            }
 
             var client = await _db.OrganizationClients
                 .Include(c => c.OrganizationClientsAdditionalFields)
@@ -534,7 +488,7 @@ namespace WebApplication1.Areas.Detsad.Controllers
                     name = client.ClientName,
                     phone = client.ClientPhone,
                     email = client.ClientEmail,
-                    address = client.ClientAdres,
+                    address = client.ClientAddress,
                     balance = client.ClientBalance,
                     status = client.ClientStatus,
                     createdDate = client.CreatedDate,
@@ -564,8 +518,11 @@ namespace WebApplication1.Areas.Detsad.Controllers
         [RequirePermission("transactions.view")]
         public async Task<IActionResult> GetClientTransactions(string clientId)
         {
-            // ID организации (пока зашит id = 1)
-            string organizationId = "1";
+            var organizationId = HttpContext.Session.GetString("OrganizationId");
+            if (string.IsNullOrEmpty(organizationId))
+            {
+                return Unauthorized();
+            }
 
             var client = await _db.OrganizationClients
                 .FirstOrDefaultAsync(c => c.Id == clientId && c.Organization == organizationId);

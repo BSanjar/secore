@@ -1,0 +1,101 @@
+@model WebApplication1.Models.DBModels.Invoice
+@{
+    ViewData["Title"] = "Редактировать счёт";
+}
+
+<div class="children-page">
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">Редактировать счёт</h1>
+                <p class="page-subtitle">@(Model.NameInvoice ?? Model.PayCode ?? Model.Id)</p>
+            </div>
+            <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-primary">Просмотр</a>
+            <a asp-action="Index" class="btn btn-outline-secondary">К списку счетов</a>
+        </div>
+    </div>
+
+    <div class="filters-section">
+        <form asp-action="Edit" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <div class="mb-3">
+                <label asp-for="Client" class="form-label">Клиент <span class="text-danger">*</span></label>
+                <select asp-for="Client" asp-items="ViewBag.Clients" class="form-select" required>
+                    <option value="">— Выберите клиента —</option>
+                </select>
+                <span asp-validation-for="Client" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="NameInvoice" class="form-label">Название счёта</label>
+                <input asp-for="NameInvoice" class="form-control" />
+                <span asp-validation-for="NameInvoice" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="PayCode" class="form-label">Лицевой счёт (код оплаты)</label>
+                <input asp-for="PayCode" class="form-control" />
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="InvoiceStatus" class="form-label">Статус</label>
+                    <select asp-for="InvoiceStatus" class="form-select">
+                        <option value="actual">Активный</option>
+                        <option value="suspended">Приостановлен</option>
+                        <option value="closed">Закрыт</option>
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="Periodicity" class="form-label">Периодичность оплаты</label>
+                    <select asp-for="Periodicity" class="form-select">
+                        <option value="daily">Ежедневно</option>
+                        <option value="weekly">Еженедельно</option>
+                        <option value="monthly">Ежемесячно</option>
+                        <option value="yearly">Ежегодно</option>
+                        <option value="oneTime">Разовая</option>
+                        <option value="any">Любая</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="DateStartInvoice" class="form-label">Дата начала счёта</label>
+                    <input asp-for="DateStartInvoice" type="date" class="form-control" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="FixedSumm" class="form-label">Фиксированная сумма (тыйыны)</label>
+                    <input asp-for="FixedSumm" type="number" step="1" min="0" class="form-control" />
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="NextStartInvoice" class="form-label">Дата следующего периода</label>
+                    <input asp-for="NextStartInvoice" type="date" class="form-control" />
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <div class="form-check">
+                    <input asp-for="AutoProlongation" class="form-check-input" />
+                    <label asp-for="AutoProlongation" class="form-check-label">Автопролонгация</label>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Сохранить</button>
+                <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-primary">Просмотр</a>
+                <a asp-action="Index" class="btn btn-outline-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

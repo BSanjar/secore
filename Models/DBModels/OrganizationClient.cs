@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -22,8 +22,8 @@ public partial class OrganizationClient
     /// <summary>
     /// fiz\jur
     /// </summary>
-    [Column("clinet_type", TypeName = "character varying")]
-    public string? ClinetType { get; set; }
+    [Column("client_type", TypeName = "character varying")]
+    public string? ClientType { get; set; }
 
     [Column("client_inn", TypeName = "character varying")]
     public string? ClientInn { get; set; }
@@ -31,8 +31,8 @@ public partial class OrganizationClient
     [Column("client_phone", TypeName = "character varying")]
     public string? ClientPhone { get; set; }
 
-    [Column("client_adres", TypeName = "character varying")]
-    public string? ClientAdres { get; set; }
+    [Column("client_address", TypeName = "character varying")]
+    public string? ClientAddress { get; set; }
 
     [Column("client_email", TypeName = "character varying")]
     public string? ClientEmail { get; set; }
@@ -61,6 +61,14 @@ public partial class OrganizationClient
     [Column("client_logo", TypeName = "character varying")]
     public string? ClientLogo { get; set; }
 
+    [Column("client_wa", TypeName = "character varying")]
+    public string? ClientWa { get; set; }
+    [Column("client_tg", TypeName = "character varying")]
+    public string? ClientTg { get; set; }
+
+    [Column("org_client_group_id", TypeName = "character varying")]
+    public string? OrgClientGroupId { get; set; }
+
     [InverseProperty("ClientNavigation")]
     public virtual ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
 
@@ -77,4 +85,8 @@ public partial class OrganizationClient
     [ForeignKey("UserCreater")]
     [InverseProperty("OrganizationClients")]
     public virtual User? UserCreaterNavigation { get; set; }
+
+    [ForeignKey("OrgClientGroupId")]
+    [InverseProperty("OrganizationClients")]
+    public virtual OrgClientGroup? OrgClientGroup { get; set; }
 }

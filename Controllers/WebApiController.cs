@@ -118,7 +118,7 @@ namespace WebApplication1.Controllers
                     Items = new List<AdditionalItem>
                 {
                     new AdditionalItem { Name = "client_inn", Value = client.ClientInn },
-                    new AdditionalItem { Name = "client_adres", Value = client.ClientAdres },
+                    new AdditionalItem { Name = "client_adres", Value = client.ClientAddress },
                     new AdditionalItem { Name = "client_phone", Value = client.ClientPhone },
                     new AdditionalItem { Name = "client_email", Value = client.ClientEmail },
                 }
@@ -159,7 +159,7 @@ namespace WebApplication1.Controllers
                                                 .GroupBy(p => p.InvoiceNavigation)
                                                 .Select(g =>
                                                 {
-                                                    var totalAmount = g.Sum(p => ParsersHelper.ParsePaymentSumm(p.PaymentSumm) ?? 0);
+                                                    var totalAmount = g.Sum(p => p.PaymentSumm ?? 0);
 
                                                     return $"{g.Key.NameInvoice}: " +
                                                            $"за {string.Join(", ", g.Select(p => p.PeriodValue))}: " +
@@ -179,7 +179,7 @@ namespace WebApplication1.Controllers
                                                .GroupBy(p => p.InvoiceNavigation)
                                                .Select(g =>
                                                {
-                                                   var totalAmount = g.Sum(p => ParsersHelper.ParsePaymentSumm(p.PaymentSumm) ?? 0);
+                                                   var totalAmount = g.Sum(p => p.PaymentSumm ?? 0);
 
                                                    return $"{g.Key.NameInvoice}: " +
                                                           $"за {string.Join(", ", g.Select(p => p.PeriodValue))}: " +
@@ -190,8 +190,8 @@ namespace WebApplication1.Controllers
                     ivoisecForPay = ivoisecForPay+"\n" + due_invoices_pay;
                 }
 
-                    recomendedSum += duePayments.Sum(a => ParsersHelper.ParsePaymentSumm(a.PaymentSumm) ?? 0);
-                    recomendedSum += duePaymentsPlan.Sum(a => ParsersHelper.ParsePaymentSumm(a.PaymentSumm) ?? 0);
+                    recomendedSum += duePayments.Sum(a => a.PaymentSumm ?? 0);
+                    recomendedSum += duePaymentsPlan.Sum(a => a.PaymentSumm ?? 0);
 
 
                     //если долгов нет и по плану тоже нету, то рекомендуется оплатить сумму выставленных счетов на будущее
@@ -201,11 +201,11 @@ namespace WebApplication1.Controllers
                         var duePaymentsFuture = invoices.SelectMany(oper.GetDuePaymentsFuture);
 
                         future_invoices_pay = string.Join("; ",
-                                               duePaymentsFuture
+                                               duePaymentsPlan
                                                    .GroupBy(p => p.InvoiceNavigation)
                                                    .Select(g =>
                                                    {
-                                                       var totalAmount = g.Sum(p => ParsersHelper.ParsePaymentSumm(p.PaymentSumm) ?? 0);
+                                                       var totalAmount = g.Sum(p => p.PaymentSumm ?? 0);
 
                                                        return $"{g.Key.NameInvoice}: " +
                                                               $"за {string.Join(", ", g.Select(p => p.PeriodValue))}: " +
@@ -213,7 +213,7 @@ namespace WebApplication1.Controllers
                                                    })
                                            );
                     ivoisecForPay = ivoisecForPay + "\n" + future_invoices_pay;
-                    recomendedSum += duePaymentsFuture.Sum(a => ParsersHelper.ParsePaymentSumm(a.PaymentSumm) ?? 0);
+                    recomendedSum += duePaymentsFuture.Sum(a => a.PaymentSumm ?? 0);
                     }
 
 
@@ -302,7 +302,7 @@ namespace WebApplication1.Controllers
                 Items = new List<AdditionalItem>
                 {
                     new() { Name = "client_inn", Value = client?.ClientInn },
-                    new() { Name = "client_adres", Value = client?.ClientAdres },
+                    new() { Name = "client_adres", Value = client?.ClientAddress },
                     new() { Name = "client_phone", Value = client?.ClientPhone },
                     new() { Name = "client_email", Value = client?.ClientEmail }
                 }
@@ -318,7 +318,7 @@ namespace WebApplication1.Controllers
             {
                 sb.AppendLine("Задолженности:");
                 sb.AppendLine(oper.BuildInvoicesText(duePayments));
-                recommendedSum += duePayments.Sum(p => ParsersHelper.ParsePaymentSumm(p.PaymentSumm) ?? 0);
+                recommendedSum += duePayments.Sum(p => p.PaymentSumm ?? 0);
             }
 
             // === ПЛАНОВЫЕ (ЗАВТРА) ===
@@ -328,7 +328,7 @@ namespace WebApplication1.Controllers
                 if (sb.Length > 0) sb.AppendLine();
                 sb.AppendLine("Платежи на завтра:");
                 sb.AppendLine(oper.BuildInvoicesText(planPayments));
-                recommendedSum += planPayments.Sum(p => ParsersHelper.ParsePaymentSumm(p.PaymentSumm) ?? 0);
+                recommendedSum += planPayments.Sum(p => p.PaymentSumm ?? 0);
             }
 
             // === БУДУЩИЕ ===
@@ -340,7 +340,7 @@ namespace WebApplication1.Controllers
                     if (sb.Length > 0) sb.AppendLine();
                     sb.AppendLine("Ближайшие платежи:");
                     sb.AppendLine(oper.BuildInvoicesText(futurePayments));
-                    recommendedSum += futurePayments.Sum(p => ParsersHelper.ParsePaymentSumm(p.PaymentSumm) ?? 0);
+                    recommendedSum += futurePayments.Sum(p => p.PaymentSumm ?? 0);
                 }
             }
 
@@ -518,7 +518,7 @@ namespace WebApplication1.Controllers
                             foreach (var payment in inv.InvoicePayments.Where(a => a.PaymentStatus == "non_paid"
                                                                                 && a.DateFrom?.Date <= DateTime.Now.Date))
                             {
-                                var paymentSumm = ParsersHelper.ParsePaymentSumm(payment.PaymentSumm) ?? 0;
+                                var paymentSumm = payment.PaymentSumm ?? 0;
                                 toBalance = toBalance - paymentSumm;
 
                                 //обновляю payment.PaymentStatus
@@ -566,7 +566,7 @@ namespace WebApplication1.Controllers
                             foreach (var payment in inv.InvoicePayments.Where(a => a.PaymentStatus == "non_paid"
                                                                                 && a.DateFrom?.Date <= DateTime.Now.Date))
                             {
-                                    var paymentSumm = ParsersHelper.ParsePaymentSumm(payment.PaymentSumm) ?? 0;
+                                    var paymentSumm = payment.PaymentSumm ?? 0;
                                     if (paymentSumm < balance)
                                     {
                                         balance = balance - paymentSumm;
@@ -627,7 +627,7 @@ namespace WebApplication1.Controllers
                     {
                         foreach (var payment in paymentInvoicesForTomorrow)
                         {
-                            var paymentSumm = ParsersHelper.ParsePaymentSumm(payment.PaymentSumm) ?? 0;
+                            var paymentSumm = payment.PaymentSumm ?? 0;
                             if (toBalance >= paymentSumm)
                             {
                                 //обновляю payment.PaymentStatus
@@ -677,7 +677,7 @@ namespace WebApplication1.Controllers
 
                         foreach (var payment in nonpaidPayments)
                         {
-                            var paymentSumm = ParsersHelper.ParsePaymentSumm(payment.PaymentSumm) ?? 0;
+                            var paymentSumm = payment.PaymentSumm ?? 0;
                             toBalance = toBalance - paymentSumm;
 
                             //обновляю payment.PaymentStatus
@@ -706,13 +706,13 @@ namespace WebApplication1.Controllers
                         var nonpaidPayments = firstInv.InvoicePayments
                              .Where(a => a.PaymentStatus == "non_paid"
                                       && a.DateFrom?.Date <= DateTime.Now.Date)
-                             .OrderBy(a => ParsersHelper.ParsePaymentSumm(a.PaymentSumm) ?? 0);
+                             .OrderBy(a => a.PaymentSumm ?? 0);
 
                         decimal? toBalance = requestSum;
 
                         foreach (var payment in nonpaidPayments)
                         {
-                            var paymentSumm = ParsersHelper.ParsePaymentSumm(payment.PaymentSumm) ?? 0;
+                            var paymentSumm = payment.PaymentSumm ?? 0;
                             //если сумма остатка хватает на закрытие графика счета на оплаты
                             if (toBalance >= paymentSumm)
                             {
@@ -758,7 +758,7 @@ namespace WebApplication1.Controllers
                     {
                         foreach (var payment in paymentInvoicesForTomorrow)
                         {
-                            var paymentSumm = ParsersHelper.ParsePaymentSumm(payment.PaymentSumm) ?? 0;
+                            var paymentSumm = payment.PaymentSumm ?? 0;
                             if (toBalance >= paymentSumm)
                             {
                                 //обновляю payment.PaymentStatus
@@ -930,7 +930,7 @@ namespace WebApplication1.Controllers
                         .SelectMany(oper.GetDuePayments)
                         .ToList();
 
-                    var totalDebt = duePayments.Sum(p => ParsersHelper.ParsePaymentSumm(p.PaymentSumm) ?? 0);
+                    var totalDebt = duePayments.Sum(p => p.PaymentSumm ?? 0);
 
                     // Денег хватает на все долги
                     if (requestSum >= totalDebt)
@@ -978,7 +978,7 @@ namespace WebApplication1.Controllers
 
                     foreach (var payment in tomorrowPayments)
                     {
-                        var paymentSumm = ParsersHelper.ParsePaymentSumm(payment.PaymentSumm) ?? 0;
+                        var paymentSumm = payment.PaymentSumm ?? 0;
                         if (rest < paymentSumm)
                             break;
 
@@ -1144,7 +1144,7 @@ namespace WebApplication1.Controllers
                         if (rest <= 0)
                             break;
 
-                        var paymentAmount = ParsersHelper.ParsePaymentSumm(payment.PaymentSumm) ?? 0;
+                        var paymentAmount = payment.PaymentSumm ?? 0;
                         if (paymentAmount <= 0)
                             continue;
 
@@ -1223,7 +1223,7 @@ namespace WebApplication1.Controllers
                     {
                         // Данные клиента
                         new() { Name = "client_inn", Value = client?.ClientInn ?? string.Empty },
-                        new() { Name = "client_adres", Value = client?.ClientAdres ?? string.Empty },
+                        new() { Name = "client_adres", Value = client?.ClientAddress ?? string.Empty },
                         new() { Name = "client_phone", Value = client?.ClientPhone ?? string.Empty },
                         new() { Name = "client_email", Value = client?.ClientEmail ?? string.Empty },
                         
@@ -1244,7 +1244,7 @@ namespace WebApplication1.Controllers
                                         .Select(p =>
                                             $"Инвойс: {p.InvoiceNavigation?.NameInvoice}, " +
                                             $"Период: {p.PeriodValue ?? "не указан"}, " +
-                                            $"Сумма: {ParsersHelper.ToMoneyStringFromCents(ParsersHelper.ParsePaymentSumm(p.PaymentSumm))} KGS (оплачено)"
+                                            $"Сумма: {ParsersHelper.ToMoneyStringFromCents(p.PaymentSumm)} KGS (оплачено)"
                                         ))
                                 : string.Empty
                         },

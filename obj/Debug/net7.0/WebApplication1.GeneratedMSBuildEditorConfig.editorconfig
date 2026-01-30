@@ -36,6 +36,38 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXENhYmluZXRcUGF5bWVudHMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/Invoices/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXEludm9pY2VzXENyZWF0ZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/Invoices/Details.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXEludm9pY2VzXERldGFpbHMuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/Invoices/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXEludm9pY2VzXEVkaXQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/Invoices/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXEludm9pY2VzXEluZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/OrgClientGroups/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXE9yZ0NsaWVudEdyb3Vwc1xDcmVhdGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/OrgClientGroups/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXE9yZ0NsaWVudEdyb3Vwc1xFZGl0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/OrgClientGroups/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXE9yZ0NsaWVudEdyb3Vwc1xJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/OrgClientGroups/_GroupTreeItem.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXE9yZ0NsaWVudEdyb3Vwc1xfR3JvdXBUcmVlSXRlbS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/Shared/_LanguageSwitcher.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXFNoYXJlZFxfTGFuZ3VhZ2VTd2l0Y2hlci5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 

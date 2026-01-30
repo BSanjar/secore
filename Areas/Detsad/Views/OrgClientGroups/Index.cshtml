@@ -1,0 +1,161 @@
+@model List<WebApplication1.Models.DBModels.OrgClientGroup>
+@using System.Linq
+@{
+    ViewData["Title"] = "Группы";
+    var search = ViewBag.Search as string ?? "";
+    var isDeletedFilter = ViewBag.IsDeletedFilter as string ?? "active";
+    var totalCount = (int)(ViewBag.TotalCount ?? 0);
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/web/kindergarten/css/detsad-children.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/web/kindergarten/css/detsad-orgclientgroups.css" asp-append-version="true" />
+}
+
+<div class="children-page">
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">Группы</h1>
+                <p class="page-subtitle">Группы клиентов (детей) организации</p>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="openAddGroupModal()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px; vertical-align: middle;">
+                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
+                </svg>
+                Добавить группу
+            </button>
+        </div>
+    </div>
+
+    <!-- Поиск и фильтры -->
+    <div class="filters-section">
+        <div class="row g-2 mb-2">
+            <div class="col-md-6">
+                <div class="search-box">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="search-icon">
+                        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/>
+                    </svg>
+                    <input type="text" class="form-control search-input" placeholder="Поиск по названию группы..." value="@search" id="searchInput">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select id="isDeletedFilter" class="form-select filter-select">
+                    @if (isDeletedFilter == "active")
+                    {
+                        <option value="active" selected>Активный</option>
+                        <option value="deleted">Удаленный</option>
+                    }
+                    else
+                    {
+                        <option value="active">Активный</option>
+                        <option value="deleted" selected>Удаленный</option>
+                    }
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Дерево групп -->
+    <div class="groups-tree-container" id="groupsCards"
+         data-create-url="@Url.Action("Create", "OrgClientGroups", new { area = "Detsad" })"
+         data-edit-url-template="@Url.Action("Edit", "OrgClientGroups", new { area = "Detsad", id = "__ID__" })"
+         data-delete-url-template="@Url.Action("Delete", "OrgClientGroups", new { area = "Detsad", id = "__ID__" })">
+        @if (Model != null && Model.Any())
+        {
+            <ul class="groups-tree" id="groupsTree">
+                @foreach (var root in Model)
+                {
+                    @await Html.PartialAsync("_GroupTreeItem", root)
+                }
+            </ul>
+            <p class="text-muted small mt-2">Всего групп: @totalCount</p>
+        }
+        else
+        {
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z" fill="currentColor"/>
+                    </svg>
+                </div>
+                <h3 class="empty-state-title">Групп пока нет</h3>
+                <p class="empty-state-description">@(string.IsNullOrEmpty(search) ? "Создайте группу, чтобы распределять клиентов (детей) по группам" : "По вашему запросу ничего не найдено. Измените поиск.")</p>
+                @if (string.IsNullOrEmpty(search))
+                {
+                    <button type="button" class="btn btn-primary mt-3" onclick="openAddGroupModal()">Добавить группу</button>
+                }
+                else
+                {
+                    <a asp-action="Index" asp-route-isDeletedFilter="@isDeletedFilter" class="btn btn-outline-secondary mt-3">Сбросить поиск</a>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Модальное окно: Добавить / Редактировать группу -->
+<div class="modal fade" id="addEditGroupModal" tabindex="-1" aria-labelledby="addEditGroupModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addEditGroupModalLabel">Добавить группу</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="groupForm">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="groupFormId" name="Id" value="" />
+                    <input type="hidden" name="OrganizationId" value="" />
+                    <div class="mb-3">
+                        <label for="groupFormName" class="form-label">Название группы <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="groupFormName" name="Name" required placeholder="Например: Старшая группа" />
+                        <div class="invalid-feedback">Укажите название группы</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="groupFormParentId" class="form-label">Родительская группа</label>
+                        <select class="form-select" id="groupFormParentId" name="ParentGroupId">
+                            <option value="">— без родительской группы —</option>
+                            @if (ViewBag.ParentGroupsForModal != null)
+                            {
+                                @foreach (var g in ViewBag.ParentGroupsForModal)
+                                {
+                                    <option value="@g.Id">@(g.Name ?? g.Id)</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                </form>
+                <div id="groupFormError" class="alert alert-danger" style="display: none;" role="alert"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="groupFormSubmitBtn">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно: Подтверждение удаления -->
+<div class="modal fade" id="deleteGroupModal" tabindex="-1" aria-labelledby="deleteGroupModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteGroupModalLabel">Удалить группу?</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Вы уверены, что хотите удалить группу <strong id="deleteGroupName"></strong>? Клиенты группы не будут удалены, у них сбросится привязка к группе.</p>
+                <div id="deleteGroupError" class="alert alert-danger" style="display: none;" role="alert"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-danger" id="deleteGroupConfirmBtn">Удалить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/web/kindergarten/js/detsad-orgclientgroups.js" asp-append-version="true"></script>
+}

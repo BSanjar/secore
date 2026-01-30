@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace WebApplication1.Models.DBModels;
@@ -17,7 +17,7 @@ public partial class InvoicePayment
     /// <summary>
     /// сумма оплаты
     /// </summary>
-    public string? PaymentSumm { get; set; }
+    public decimal? PaymentSumm { get; set; }
 
     /// <summary>
     /// paid - уже оплатил

@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = "Дети";
     var organizationFields = ViewBag.OrganizationFields as List<WebApplication1.Models.DBModels.OrganizationField> ?? new List<WebApplication1.Models.DBModels.OrganizationField>();
+    var orgClientGroups = ViewBag.OrgClientGroups as List<WebApplication1.Models.DBModels.OrgClientGroup> ?? new List<WebApplication1.Models.DBModels.OrgClientGroup>();
     var search = ViewBag.Search as string ?? "";
     var statusFilter = ViewBag.StatusFilter as string ?? "active";
     var debtorsOnly = ViewBag.DebtorsOnly as bool? ?? false;
@@ -70,6 +71,35 @@
                 </div>
             </div>
         </div>
+        @if (orgClientGroups != null && orgClientGroups.Any())
+        {
+            <div class="row g-2 mb-0">
+                <div class="col-12">
+                    <div class="groups-filter-dropdown">
+                        <button type="button" class="btn btn-outline-secondary btn-sm groups-filter-btn" id="groupsFilterBtn" aria-expanded="false" aria-haspopup="true">
+                            <span class="groups-filter-btn-text">По группам</span>
+                            <svg class="ms-1" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M7 10l5 5 5-5H7z" fill="currentColor"/>
+                            </svg>
+                        </button>
+                        <div class="groups-filter-menu" id="groupsFilterMenu" role="menu" aria-hidden="true">
+                            <div class="groups-filter-search-wrap p-2 border-bottom">
+                                <input type="text" class="form-control form-control-sm groups-filter-search" id="groupsFilterSearch" placeholder="Поиск групп..." autocomplete="off">
+                            </div>
+                            <div class="groups-filter-list" id="groupsFilterList">
+                                @foreach (var g in orgClientGroups)
+                                {
+                                    <label class="groups-filter-item">
+                                        <input type="checkbox" class="form-check-input group-filter-checkbox" value="@g.Id" data-group-name="@(g.Name ?? "")">
+                                        <span class="groups-filter-item-text">@(g.Name ?? g.Id)</span>
+                                    </label>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
     </div>
 
     <!-- Карточки детей -->
@@ -101,7 +131,7 @@
                 var isDebtor = client.ClientBalance.HasValue && client.ClientBalance.Value < 0 && client.ClientStatus == 1;
                 var logoUrl = !string.IsNullOrEmpty(client.ClientLogo) ? $"data:image/png;base64,{client.ClientLogo}" : null;
 
-                <div class="child-card" data-client-id="@client.Id" data-search-text="@($"{client.ClientName} {client.ClientPhone} {client.ClientEmail} {client.ClientAdres} {string.Join(" ", client.OrganizationClientsAdditionalFields.Select(af => af.Value ?? ""))}")">
+                <div class="child-card" data-client-id="@client.Id" data-org-client-group-id="@(client.OrgClientGroupId ?? "")" data-search-text="@($"{client.ClientName} {client.ClientPhone} {client.ClientEmail} {client.ClientAddress} {string.Join(" ", client.OrganizationClientsAdditionalFields.Select(af => af.Value ?? ""))}")">
                     <div class="child-card-header">
                         <div class="child-avatar">
                             @if (!string.IsNullOrEmpty(logoUrl))
@@ -270,88 +300,126 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <!-- Индикатор шагов -->
-                <div class="step-indicator mb-4">
-                    <div class="step-item active" data-step="1">
-                        <div class="step-number">1</div>
-                        <div class="step-label">Данные ребенка</div>
+                <form id="childForm" novalidate>
+                    <!-- ФИО и ИНН -->
+                    <div class="row mb-3">
+                        <div class="col-8">
+                            <label for="clientName" class="form-label">ФИО ребенка <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="clientName" name="clientName" required>
+                            <div class="invalid-feedback">Пожалуйста, укажите ФИО ребенка</div>
+                        </div>
+                        <div class="col-4">
+                            <label for="clientInn" class="form-label">ИНН <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="clientInn" name="clientInn" maxlength="14" pattern="[0-9]{14}" required>
+                            <div class="invalid-feedback">ИНН должен содержать 14 цифр</div>
+                        </div>
                     </div>
-                    <div class="step-item" data-step="2">
-                        <div class="step-number">2</div>
-                        <div class="step-label">Данные счета</div>
-                    </div>
-                </div>
 
-                <!-- Шаг 1: Данные OrganizationClient -->
-                <div id="step1" class="step-content">
-                    <form id="childForm" novalidate>
-                        <!-- ФИО и ИНН в одной строке -->
-                        <div class="row mb-3">
-                            <div class="col-8">
-                                <label for="clientName" class="form-label">ФИО ребенка <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="clientName" name="clientName" required>
-                                <div class="invalid-feedback">Пожалуйста, укажите ФИО ребенка</div>
-                            </div>
-                            <div class="col-4">
-                                <label for="clientInn" class="form-label">ИНН <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="clientInn" name="clientInn" maxlength="14" pattern="[0-9]{14}" required>
-                                <div class="invalid-feedback">ИНН должен содержать 14 цифр</div>
+                    @if (orgClientGroups != null && orgClientGroups.Any())
+                    {
+                        <div class="mb-3" id="groupSelectWrapper">
+                            <label for="orgClientGroupId" class="form-label">Группа</label>
+                            <select class="form-select" id="orgClientGroupId" name="orgClientGroupId">
+                                <option value="">Без группы</option>
+                                @foreach (var g in orgClientGroups)
+                                {
+                                    <option value="@g.Id">@(g.Name ?? g.Id)</option>
+                                }
+                            </select>
+                        </div>
+                    }
+
+                    <div class="form-section-divider mb-3">
+                        <span class="divider-text">Контактные данные (родителей)</span>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label for="clientPhone" class="form-label">Телефон <span class="text-danger">*</span></label>
+                            <div class="d-flex align-items-start gap-2">
+                                <div class="flex-grow-1">
+                                    <input type="tel" class="form-control form-control-compact" id="clientPhone" name="clientPhone" placeholder="+996(***) *** ***" required>
+                                    <div class="invalid-feedback">Пожалуйста, укажите корректный номер телефона</div>
+                                </div>
+                                <div class="form-check mt-2 pt-1">
+                                    <input class="form-check-input" type="checkbox" id="phoneIsWa" name="phoneIsWa">
+                                    <label class="form-check-label small" for="phoneIsWa">WhatsApp</label>
+                                </div>
                             </div>
                         </div>
+                        <div class="col-6">
+                            <label for="clientEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control form-control-compact" id="clientEmail" name="clientEmail">
+                            <div class="invalid-feedback">Пожалуйста, укажите корректный email</div>
+                        </div>
+                    </div>
 
-                        <!-- Разделитель -->
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label for="clientWa" class="form-label">WhatsApp</label>
+                            <input type="text" class="form-control form-control-compact" id="clientWa" name="clientWa" placeholder="+996(***) *** ***">
+                        </div>
+                        <div class="col-6">
+                            <label for="clientTg" class="form-label">Telegram</label>
+                            <input type="text" class="form-control form-control-compact" id="clientTg" name="clientTg" placeholder="username или +996...">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="clientAdres" class="form-label">Адрес</label>
+                        <input type="text" class="form-control form-control-compact" id="clientAdres" name="clientAdres">
+                    </div>
+
+                    @if (organizationFields != null && organizationFields.Any())
+                    {
                         <div class="form-section-divider mb-3">
-                            <span class="divider-text">Контактные данные (родителей)</span>
+                            <span class="divider-text">Дополнительная информация</span>
                         </div>
-
-                        <!-- Телефон и Email в одной строке (компактные) -->
-                        <div class="row mb-3">
-                            <div class="col-6">
-                                <label for="clientPhone" class="form-label">Телефон <span class="text-danger">*</span></label>
-                                <input type="tel" class="form-control form-control-compact" id="clientPhone" name="clientPhone" placeholder="+996(***) *** ***" required>
-                                <div class="invalid-feedback">Пожалуйста, укажите корректный номер телефона</div>
-                            </div>
-                            <div class="col-6">
-                                <label for="clientEmail" class="form-label">Email</label>
-                                <input type="email" class="form-control form-control-compact" id="clientEmail" name="clientEmail">
-                                <div class="invalid-feedback">Пожалуйста, укажите корректный email</div>
-                            </div>
+                        <div id="additionalFieldsSection">
+                            @foreach (var f in organizationFields)
+                            {
+                                var fieldId = "af_" + f.Id;
+                                var label = f.FieldName ?? f.Id;
+                                <div class="mb-3">
+                                    <label for="@fieldId" class="form-label">@label</label>
+                                    @if (f.FieldType == "selected" && !string.IsNullOrEmpty(f.FieldSelectValues))
+                                    {
+                                        var options = (f.FieldSelectValues ?? "").Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                                        <select class="form-select form-control-compact" id="@fieldId" name="@fieldId" data-field-id="@f.Id">
+                                            <option value="">— не указано —</option>
+                                            @foreach (var opt in options)
+                                            {
+                                                <option value="@opt.Trim()">@opt.Trim()</option>
+                                            }
+                                        </select>
+                                    }
+                                    else if (f.FieldType == "int")
+                                    {
+                                        <input type="number" class="form-control form-control-compact" id="@fieldId" name="@fieldId" data-field-id="@f.Id" step="1">
+                                    }
+                                    else if (f.FieldType == "money")
+                                    {
+                                        <input type="number" class="form-control form-control-compact" id="@fieldId" name="@fieldId" data-field-id="@f.Id" step="0.01" min="0">
+                                    }
+                                    else if (f.FieldType == "datetime")
+                                    {
+                                        <input type="datetime-local" class="form-control form-control-compact" id="@fieldId" name="@fieldId" data-field-id="@f.Id">
+                                    }
+                                    else
+                                    {
+                                        <input type="text" class="form-control form-control-compact" id="@fieldId" name="@fieldId" data-field-id="@f.Id">
+                                    }
+                                </div>
+                            }
                         </div>
+                    }
+                </form>
 
-                        <!-- Адрес -->
-                        <div class="mb-3">
-                            <label for="clientAdres" class="form-label">Адрес</label>
-                            <input type="text" class="form-control form-control-compact" id="clientAdres" name="clientAdres">
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Шаг 2: Данные Invoice -->
-                <div id="step2" class="step-content" style="display: none;">
-                    <form id="invoiceForm" novalidate>
-                        <div class="row mb-3">
-                            <div class="col-6">
-                                <label for="paymentAmount" class="form-label">Сумма ежемесячной оплаты (сом) <span class="text-danger">*</span></label>
-                                <input type="number" class="form-control form-control-compact" id="paymentAmount" name="paymentAmount" step="0.01" min="1" max="100000" required>
-                                <div class="invalid-feedback">Сумма должна быть от 1 до 100 000 сом</div>
-                            </div>
-                            <div class="col-6">
-                                <label for="startDate" class="form-label">Дата начала действия <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control form-control-compact" id="startDate" name="startDate" required>
-                                <div class="invalid-feedback">Пожалуйста, укажите дату начала действия</div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Сообщения об ошибках -->
                 <div id="errorMessage" class="alert alert-danger" style="display: none;" role="alert"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-secondary" id="prevStepBtn" style="display: none;" onclick="prevStep()">Назад</button>
-                <button type="button" class="btn btn-primary" id="nextStepBtn" onclick="nextStep()">Далее</button>
-                <button type="button" class="btn btn-success" id="submitBtn" style="display: none;" onclick="submitChild()">Зарегистрировать</button>
+                <button type="button" class="btn btn-success" id="submitBtn" onclick="submitChild()">Зарегистрировать</button>
             </div>
         </div>
     </div>

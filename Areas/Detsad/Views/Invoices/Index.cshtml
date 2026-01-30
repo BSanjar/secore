@@ -1,0 +1,134 @@
+@model List<WebApplication1.Models.DBModels.Invoice>
+@using System.Linq
+@{
+    ViewData["Title"] = "Счета";
+    var search = ViewBag.Search as string ?? "";
+    var statusFilter = ViewBag.StatusFilter as string ?? "";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/web/kindergarten/css/detsad-children.css" asp-append-version="true" />
+}
+
+<div class="children-page">
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">Счета</h1>
+                <p class="page-subtitle">Счета на оплату (инвойсы) организации</p>
+            </div>
+            <a asp-action="Create" class="btn btn-primary">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px; vertical-align: middle;">
+                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
+                </svg>
+                Добавить счет
+            </a>
+        </div>
+    </div>
+
+    <div class="filters-section">
+        <form method="get" asp-action="Index" class="row g-2 mb-2">
+            <div class="col-md-5">
+                <div class="search-box">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="search-icon">
+                        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/>
+                    </svg>
+                    <input type="text" name="search" class="form-control search-input" placeholder="Поиск по названию, лицевому счёту, клиенту..." value="@search">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select name="statusFilter" class="form-select filter-select">
+                    <option value="">Все статусы</option>
+                    @if (statusFilter == "actual")
+                    {
+                        <option value="actual" selected>Активный</option>
+                    }
+                    else
+                    {
+                        <option value="actual">Активный</option>
+                    }
+                    @if (statusFilter == "suspended")
+                    {
+                        <option value="suspended" selected>Приостановлен</option>
+                    }
+                    else
+                    {
+                        <option value="suspended">Приостановлен</option>
+                    }
+                    @if (statusFilter == "closed")
+                    {
+                        <option value="closed" selected>Закрыт</option>
+                    }
+                    else
+                    {
+                        <option value="closed">Закрыт</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary">Найти</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="filters-section">
+        @if (Model != null && Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Название / Лицевой счёт</th>
+                            <th>Клиент</th>
+                            <th>Статус</th>
+                            <th>Периодичность</th>
+                            <th>Баланс</th>
+                            <th>Дата создания</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var inv in Model)
+                        {
+                            var statusText = inv.InvoiceStatus == "actual" ? "Активный" : inv.InvoiceStatus == "suspended" ? "Приостановлен" : inv.InvoiceStatus == "closed" ? "Закрыт" : inv.InvoiceStatus ?? "—";
+                            var statusClass = inv.InvoiceStatus == "actual" ? "badge bg-success" : inv.InvoiceStatus == "suspended" ? "badge bg-warning text-dark" : inv.InvoiceStatus == "closed" ? "badge bg-secondary" : "badge bg-light text-dark";
+                            var balanceSoms = inv.Balance.HasValue ? inv.Balance.Value / 100m : 0m;
+                            <tr>
+                                <td>
+                                    <strong>@(inv.NameInvoice ?? "Без названия")</strong>
+                                    @if (!string.IsNullOrEmpty(inv.PayCode))
+                                    {
+                                        <br /><span class="text-muted small">@inv.PayCode</span>
+                                    }
+                                </td>
+                                <td>@(inv.ClientNavigation?.ClientName ?? inv.Client ?? "—")</td>
+                                <td><span class="@statusClass">@statusText</span></td>
+                                <td>@(inv.Periodicity == "monthly" ? "Ежемесячно" : inv.Periodicity == "yearly" ? "Ежегодно" : inv.Periodicity == "weekly" ? "Еженедельно" : inv.Periodicity == "daily" ? "Ежедневно" : inv.Periodicity == "oneTime" ? "Разовая" : inv.Periodicity ?? "—")</td>
+                                <td class="@(balanceSoms < 0 ? "text-danger" : "")">@balanceSoms.ToString("N2") сом</td>
+                                <td>@(inv.DateCreated?.ToString("dd.MM.yyyy") ?? "—")</td>
+                                <td>
+                                    <a asp-action="Details" asp-route-id="@inv.Id" class="btn btn-sm btn-outline-primary" title="Просмотр">Просмотр</a>
+                                    <a asp-action="Edit" asp-route-id="@inv.Id" class="btn btn-sm btn-outline-secondary" title="Редактировать">Изменить</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-muted small mt-2">Всего счетов: @Model.Count</p>
+        }
+        else
+        {
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" fill="currentColor"/>
+                    </svg>
+                </div>
+                <h3 class="empty-state-title">Счетов пока нет</h3>
+                <p class="empty-state-description">Создайте счёт для приёма платежей от клиентов</p>
+                <a asp-action="Create" class="btn btn-primary mt-3">Добавить счет</a>
+            </div>
+        }
+    </div>
+</div>

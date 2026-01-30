@@ -27,6 +27,8 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<OrganizationClient> OrganizationClients { get; set; }
 
+    public virtual DbSet<OrgClientGroup> OrgClientGroups { get; set; }
+
     public virtual DbSet<OrganizationClientsAdditionalField> OrganizationClientsAdditionalFields { get; set; }
 
     public virtual DbSet<OrganizationField> OrganizationFields { get; set; }
@@ -164,7 +166,6 @@ public partial class AppDbContext : DbContext
                 .HasColumnName("payment_status");
             entity.Property(e => e.PaymentSumm)
                 .HasComment("сумма оплаты")
-                .HasColumnType("character varying")
                 .HasColumnName("payment_summ");
             entity.Property(e => e.PeriodValue)
                 .HasComment("какой месяц или год\r\nесли периодичность месяц или год")
@@ -235,6 +236,45 @@ public partial class AppDbContext : DbContext
                 .HasColumnName("paymentreminderdaysbefore");
         });
 
+        modelBuilder.Entity<OrgClientGroup>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("org_client_groups_pk");
+
+            entity.ToTable("org_client_groups");
+
+            entity.Property(e => e.Id)
+                .HasColumnType("character varying")
+                .HasColumnName("id");
+            entity.Property(e => e.Name)
+                .HasColumnType("character varying")
+                .HasColumnName("name");
+            entity.Property(e => e.ParentGroupId)
+                .HasColumnType("character varying")
+                .HasColumnName("parent_group_id");
+            entity.Property(e => e.OrganizationId)
+                .HasColumnType("character varying")
+                .HasColumnName("organization_id");
+            entity.Property(e => e.IsDeleted)
+                .HasDefaultValue(0)
+                .HasColumnName("is_deleted");
+            entity.Property(e => e.Logo)
+                .HasColumnType("character varying")
+                .HasColumnName("logo");
+            entity.Property(e => e.CreatedDate)
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("created_date");
+
+            entity.HasOne(d => d.ParentGroup).WithMany(p => p.ChildGroups)
+                .HasForeignKey(d => d.ParentGroupId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("org_client_groups_parent_fk");
+
+            entity.HasOne(d => d.Organization).WithMany(p => p.OrgClientGroups)
+                .HasForeignKey(d => d.OrganizationId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("org_client_groups_organization_fk");
+        });
+
         modelBuilder.Entity<OrganizationClient>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("organization_cients_pk");
@@ -244,9 +284,9 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Id)
                 .HasColumnType("character varying")
                 .HasColumnName("id");
-            entity.Property(e => e.ClientAdres)
+            entity.Property(e => e.ClientAddress)
                 .HasColumnType("character varying")
-                .HasColumnName("client_adres");
+                .HasColumnName("client_address");
             entity.Property(e => e.ClientBalance)
                 .HasComment("баланс в тыйынах")
                 .HasColumnName("client_balance");
@@ -269,10 +309,10 @@ public partial class AppDbContext : DbContext
                 .HasDefaultValueSql("0")
                 .HasComment("0\\1")
                 .HasColumnName("client_status");
-            entity.Property(e => e.ClinetType)
+            entity.Property(e => e.ClientType)
                 .HasComment("fiz\\jur")
                 .HasColumnType("character varying")
-                .HasColumnName("clinet_type");
+                .HasColumnName("client_type");
             entity.Property(e => e.CreatedDate)
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("created_date");
@@ -285,6 +325,9 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.UserCreater)
                 .HasColumnType("character varying")
                 .HasColumnName("user_creater");
+            entity.Property(e => e.OrgClientGroupId)
+                .HasColumnType("character varying")
+                .HasColumnName("org_client_group_id");
 
             entity.HasOne(d => d.OrganizationNavigation).WithMany(p => p.OrganizationClients)
                 .HasForeignKey(d => d.Organization)
@@ -293,6 +336,11 @@ public partial class AppDbContext : DbContext
             entity.HasOne(d => d.UserCreaterNavigation).WithMany(p => p.OrganizationClients)
                 .HasForeignKey(d => d.UserCreater)
                 .HasConstraintName("organization_clients_fk2");
+
+            entity.HasOne(d => d.OrgClientGroup).WithMany(p => p.OrganizationClients)
+                .HasForeignKey(d => d.OrgClientGroupId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("organization_clients_org_client_group_fk");
         });
 
         modelBuilder.Entity<OrganizationClientsAdditionalField>(entity =>

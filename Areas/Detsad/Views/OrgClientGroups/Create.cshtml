@@ -1,0 +1,41 @@
+@model WebApplication1.Models.DBModels.OrgClientGroup
+@{
+    ViewData["Title"] = "Добавить группу";
+}
+
+<div class="page-header mb-4">
+    <h1 class="page-title">Добавить группу</h1>
+    <p class="page-subtitle">Новая группа клиентов организации</p>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+            <input type="hidden" asp-for="OrganizationId" />
+
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label">Название группы <span class="text-danger">*</span></label>
+                <input asp-for="Name" class="form-control" placeholder="Например: Старшая группа" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ParentGroupId" class="form-label">Родительская группа</label>
+                <select asp-for="ParentGroupId" class="form-select" asp-items="ViewBag.ParentGroups">
+                    <option value="">— без родительской группы —</option>
+                </select>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-success">Создать</button>
+                <a asp-action="Index" class="btn btn-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

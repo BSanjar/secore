@@ -61,11 +61,13 @@ wwwroot\lib\jquery\LICENSE.txt
 wwwroot\web\kindergarten\css\cabinet.css
 wwwroot\web\kindergarten\css\detsad-children.css
 wwwroot\web\kindergarten\css\detsad-dashboard.css
+wwwroot\web\kindergarten\css\detsad-orgclientgroups.css
 wwwroot\web\kindergarten\js\cabinet.js
 wwwroot\web\kindergarten\js\children.js
 wwwroot\web\kindergarten\js\create-child.js
 wwwroot\web\kindergarten\js\detsad-children.js
 wwwroot\web\kindergarten\js\detsad-dashboard.js
+wwwroot\web\kindergarten\js\detsad-orgclientgroups.js
 wwwroot\web\kindergarten\js\detsad.js
 wwwroot\web\kindergarten\js\invoices.js
 wwwroot\web\kindergarten\js\payment-history.js
