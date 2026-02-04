@@ -187,27 +187,51 @@
         const isDeletedFilter = document.getElementById('isDeletedFilter');
         if (!searchInput || !isDeletedFilter) return;
         const params = new URLSearchParams(window.location.search);
-        const pageSize = params.get('pageSize') || '10';
         params.set('search', searchInput.value.trim());
         params.set('isDeletedFilter', isDeletedFilter.value);
         params.set('page', '1');
-        params.set('pageSize', pageSize);
         window.location.search = params.toString();
+    }
+
+    function applySearchLocal() {
+        const searchInput = document.getElementById('searchInput');
+        const container = document.getElementById('groupsTree');
+        if (!searchInput || !container) return;
+        const term = searchInput.value.toLowerCase().trim();
+        const nodes = Array.from(container.querySelectorAll('.tree-node'));
+        if (!term) {
+            nodes.forEach(function (n) { n.classList.remove('search-hidden'); });
+            return;
+        }
+        var visible = new Set();
+        for (var i = nodes.length - 1; i >= 0; i--) {
+            var node = nodes[i];
+            var name = (node.getAttribute('data-group-name') || '').toLowerCase();
+            var matches = name.indexOf(term) !== -1;
+            var childNodes = node.querySelectorAll(':scope > .tree-children > .tree-node');
+            var childVisible = Array.from(childNodes).some(function (c) { return visible.has(c); });
+            if (matches || childVisible) visible.add(node);
+        }
+        nodes.forEach(function (n) {
+            if (visible.has(n)) n.classList.remove('search-hidden');
+            else n.classList.add('search-hidden');
+        });
     }
 
     document.addEventListener('DOMContentLoaded', function () {
         const searchInput = document.getElementById('searchInput');
         const isDeletedFilter = document.getElementById('isDeletedFilter');
         if (searchInput) {
-            let searchTimeout;
+            var searchTimeout;
             searchInput.addEventListener('input', function () {
                 clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(applyFiltersRedirect, 400);
+                searchTimeout = setTimeout(applySearchLocal, 300);
             });
         }
         if (isDeletedFilter) {
             isDeletedFilter.addEventListener('change', applyFiltersRedirect);
         }
+        applySearchLocal();
 
         const submitBtn = document.getElementById('groupFormSubmitBtn');
         if (submitBtn) {

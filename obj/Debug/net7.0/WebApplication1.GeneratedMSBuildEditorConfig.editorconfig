@@ -52,6 +52,18 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXEludm9pY2VzXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/OrganizationServices/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXE9yZ2FuaXphdGlvblNlcnZpY2VzXENyZWF0ZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/OrganizationServices/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXE9yZ2FuaXphdGlvblNlcnZpY2VzXEVkaXQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/OrganizationServices/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXE9yZ2FuaXphdGlvblNlcnZpY2VzXEluZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/OrgClientGroups/Create.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXE9yZ0NsaWVudEdyb3Vwc1xDcmVhdGUuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
@@ -66,6 +78,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/OrgClientGroups/_GroupTreeItem.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXE9yZ0NsaWVudEdyb3Vwc1xfR3JvdXBUcmVlSXRlbS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/Profile/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXFByb2ZpbGVcSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/Shared/_LanguageSwitcher.cshtml]
@@ -176,6 +192,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxQcml2YWN5LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Instructions/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSW5zdHJ1Y3Rpb25zXEluZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/AzatAdmin/Documents/SECORE/secore/Views/OrganizationFields/Create.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcT3JnYW5pemF0aW9uRmllbGRzXENyZWF0ZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
@@ -254,6 +274,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Shared/_ValidationScriptsPartial.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9WYWxpZGF0aW9uU2NyaXB0c1BhcnRpYWwuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Support/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU3VwcG9ydFxJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/AzatAdmin/Documents/SECORE/secore/Views/UserRoles/Assign.cshtml]

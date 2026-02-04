@@ -111,3 +111,7 @@
 .tree-node.has-children:not(.collapsed) > .tree-children {
     display: block;
 }
+
+.tree-node.search-hidden {
+    display: none !important;
+}

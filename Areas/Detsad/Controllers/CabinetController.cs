@@ -564,16 +564,29 @@ namespace WebApplication1.Areas.Detsad.Controllers
         }
 
         [RequirePermission("transactions.view")]
-        public async Task<IActionResult> Payments()
+        public async Task<IActionResult> Payments(string dateFrom = "", string dateTo = "")
         {
-            // Платежи для детского сада
-            // TODO: Получить ID организации текущего пользователя из сессии
-            // string? organizationId = HttpContext.Session.GetString("OrganizationId");
-            
-            var transactions = await _db.Transactions
-                .OrderByDescending(t => t.TransactionDate)
+            var organizationId = HttpContext.Session.GetString("OrganizationId");
+            if (string.IsNullOrEmpty(organizationId))
+                return RedirectToAction("Login", "Account", new { area = "" });
+
+            var invoices = await _db.Invoices
+                .Where(i => i.ClientNavigation != null && i.ClientNavigation.Organization == organizationId)
+                .Select(i => i.Id)
                 .ToListAsync();
 
+            var query = _db.Transactions
+                .Where(t => t.Invoice != null && invoices.Contains(t.Invoice));
+
+            if (DateTime.TryParse(dateFrom, out var fromDate))
+                query = query.Where(t => t.TransactionDate >= fromDate.Date);
+            if (DateTime.TryParse(dateTo, out var toDate))
+                query = query.Where(t => t.TransactionDate != null && t.TransactionDate.Value.Date <= toDate.Date.AddDays(1));
+
+            var transactions = await query.OrderByDescending(t => t.TransactionDate).ToListAsync();
+
+            ViewBag.DateFrom = dateFrom;
+            ViewBag.DateTo = dateTo;
             return View(transactions);
         }
     }

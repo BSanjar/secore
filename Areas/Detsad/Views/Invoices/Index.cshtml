@@ -4,6 +4,11 @@
     ViewData["Title"] = "Счета";
     var search = ViewBag.Search as string ?? "";
     var statusFilter = ViewBag.StatusFilter as string ?? "";
+    var clientId = ViewBag.ClientId as string ?? "";
+    var selectedClientName = ViewBag.SelectedClientName as string ?? "";
+    var periodicity = ViewBag.Periodicity as string ?? "";
+    var dateCreatedFrom = ViewBag.DateCreatedFrom as string ?? "";
+    var dateCreatedTo = ViewBag.DateCreatedTo as string ?? "";
 }
 
 @section Styles {
@@ -17,27 +22,35 @@
                 <h1 class="page-title">Счета</h1>
                 <p class="page-subtitle">Счета на оплату (инвойсы) организации</p>
             </div>
-            <a asp-action="Create" class="btn btn-primary">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px; vertical-align: middle;">
+            <a asp-action="Create" class="action-btn action-btn--add" title="Добавить счёт">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
                 </svg>
-                Добавить счет
+                Добавить счёт
             </a>
         </div>
     </div>
 
     <div class="filters-section">
-        <form method="get" asp-action="Index" class="row g-2 mb-2">
-            <div class="col-md-5">
-                <div class="search-box">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="search-icon">
-                        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/>
-                    </svg>
-                    <input type="text" name="search" class="form-control search-input" placeholder="Поиск по названию, лицевому счёту, клиенту..." value="@search">
+        <div class="row g-2 mb-2">
+            <div class="col-12 col-md-7">
+                <label class="form-label small text-muted mb-1">Поиск</label>
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <div class="search-box flex-grow-1" style="min-width: 160px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="search-icon">
+                            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/>
+                        </svg>
+                        <input type="text" class="form-control search-input" id="invoicesSearchInput" placeholder="Введите текст..." value="@search">
+                    </div>
+                    <select id="invoicesSearchType" class="form-select filter-select" style="width: auto; min-width: 160px;">
+                        <option value="name" selected>По названию</option>
+                        <option value="paycode">По лицевому счёту</option>
+                    </select>
                 </div>
             </div>
-            <div class="col-md-3">
-                <select name="statusFilter" class="form-select filter-select">
+            <div class="col-6 col-md-3">
+                <label class="form-label small text-muted mb-1">Статус</label>
+                <select id="invoicesStatusFilter" class="form-select filter-select">
                     <option value="">Все статусы</option>
                     @if (statusFilter == "actual")
                     {
@@ -65,10 +78,56 @@
                     }
                 </select>
             </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-outline-primary">Найти</button>
+        </div>
+        <div class="row g-2 mb-0 invoices-filters-row-2">
+            <div class="col invoices-filter-col">
+                <label class="form-label small text-muted mb-1">Периодичность</label>
+                <select id="invoicesPeriodicityFilter" class="form-select filter-select w-100">
+                    <option value="">Все</option>
+                    @if (periodicity == "daily") { <option value="daily" selected>Ежедневно</option> } else { <option value="daily">Ежедневно</option> }
+                    @if (periodicity == "weekly") { <option value="weekly" selected>Еженедельно</option> } else { <option value="weekly">Еженедельно</option> }
+                    @if (periodicity == "monthly") { <option value="monthly" selected>Ежемесячно</option> } else { <option value="monthly">Ежемесячно</option> }
+                    @if (periodicity == "yearly") { <option value="yearly" selected>Ежегодно</option> } else { <option value="yearly">Ежегодно</option> }
+                    @if (periodicity == "oneTime") { <option value="oneTime" selected>Разовая</option> } else { <option value="oneTime">Разовая</option> }
+                    @if (periodicity == "any") { <option value="any" selected>Любая</option> } else { <option value="any">Любая</option> }
+                </select>
             </div>
-        </form>
+            <div class="col invoices-filter-col">
+                <label class="form-label small text-muted mb-1">Дата создания (от)</label>
+                <input type="date" id="invoicesDateFrom" class="form-control filter-select w-100" value="@dateCreatedFrom">
+            </div>
+            <div class="col invoices-filter-col">
+                <label class="form-label small text-muted mb-1">Дата создания (до)</label>
+                <input type="date" id="invoicesDateTo" class="form-control filter-select w-100" value="@dateCreatedTo">
+            </div>
+            <div class="col invoices-filter-col flex-grow-1">
+                <label class="form-label small text-muted mb-1">Клиент</label>
+                <div class="invoices-client-dropdown">
+                    <input type="hidden" id="invoicesClientFilter" value="@clientId">
+                    <button type="button" class="btn btn-outline-secondary btn-sm w-100 text-start invoices-client-btn" id="invoicesClientBtn" aria-expanded="false">
+                        <span class="invoices-client-btn-text">@(string.IsNullOrEmpty(selectedClientName) ? "Все клиенты" : selectedClientName)</span>
+                        <svg class="ms-1 float-end" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M7 10l5 5 5-5H7z" fill="currentColor"/>
+                        </svg>
+                    </button>
+                    <div class="invoices-client-menu" id="invoicesClientMenu" aria-hidden="true">
+                        <div class="p-2 border-bottom">
+                            <input type="text" class="form-control form-control-sm invoices-client-search" id="invoicesClientSearch" placeholder="Поиск клиента..." autocomplete="off">
+                        </div>
+                        <div class="invoices-client-list" id="invoicesClientList">
+                            <div class="invoices-client-item" data-client-id="" data-client-name="Все клиенты">Все клиенты</div>
+                            @if (ViewBag.Clients != null)
+                            {
+                                @foreach (var c in ViewBag.Clients)
+                                {
+                                    <div class="invoices-client-item" data-client-id="@c.Id" data-client-name="@(c.ClientName ?? c.Id)">@(c.ClientName ?? c.Id)</div>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="filters-section">
@@ -87,13 +146,13 @@
                             <th></th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="invoicesTableBody">
                         @foreach (var inv in Model)
                         {
                             var statusText = inv.InvoiceStatus == "actual" ? "Активный" : inv.InvoiceStatus == "suspended" ? "Приостановлен" : inv.InvoiceStatus == "closed" ? "Закрыт" : inv.InvoiceStatus ?? "—";
                             var statusClass = inv.InvoiceStatus == "actual" ? "badge bg-success" : inv.InvoiceStatus == "suspended" ? "badge bg-warning text-dark" : inv.InvoiceStatus == "closed" ? "badge bg-secondary" : "badge bg-light text-dark";
                             var balanceSoms = inv.Balance.HasValue ? inv.Balance.Value / 100m : 0m;
-                            <tr>
+                            <tr class="invoice-row" data-search-name="@(inv.NameInvoice ?? "")" data-search-paycode="@(inv.PayCode ?? "")">
                                 <td>
                                     <strong>@(inv.NameInvoice ?? "Без названия")</strong>
                                     @if (!string.IsNullOrEmpty(inv.PayCode))
@@ -107,8 +166,14 @@
                                 <td class="@(balanceSoms < 0 ? "text-danger" : "")">@balanceSoms.ToString("N2") сом</td>
                                 <td>@(inv.DateCreated?.ToString("dd.MM.yyyy") ?? "—")</td>
                                 <td>
-                                    <a asp-action="Details" asp-route-id="@inv.Id" class="btn btn-sm btn-outline-primary" title="Просмотр">Просмотр</a>
-                                    <a asp-action="Edit" asp-route-id="@inv.Id" class="btn btn-sm btn-outline-secondary" title="Редактировать">Изменить</a>
+                                    <a asp-action="Details" asp-route-id="@inv.Id" asp-route-returnUrl="@ViewBag.ReturnUrl" class="action-btn action-btn--view" title="Просмотр">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" fill="currentColor"/></svg>
+                                        Просмотр
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@inv.Id" asp-route-returnUrl="@ViewBag.ReturnUrl" class="action-btn action-btn--edit" title="Редактировать">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor"/></svg>
+                                        Изменить
+                                    </a>
                                 </td>
                             </tr>
                         }
@@ -127,8 +192,114 @@
                 </div>
                 <h3 class="empty-state-title">Счетов пока нет</h3>
                 <p class="empty-state-description">Создайте счёт для приёма платежей от клиентов</p>
-                <a asp-action="Create" class="btn btn-primary mt-3">Добавить счет</a>
+                <a asp-action="Create" class="action-btn action-btn--add mt-3" title="Добавить счёт">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
+                    </svg>
+                    Добавить счёт
+                </a>
             </div>
         }
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var searchInput = document.getElementById('invoicesSearchInput');
+            var searchType = document.getElementById('invoicesSearchType');
+            var statusFilter = document.getElementById('invoicesStatusFilter');
+            var clientFilterInput = document.getElementById('invoicesClientFilter');
+            var clientBtn = document.getElementById('invoicesClientBtn');
+            var clientBtnText = document.querySelector('.invoices-client-btn-text');
+            var clientMenu = document.getElementById('invoicesClientMenu');
+            var clientSearch = document.getElementById('invoicesClientSearch');
+            var clientList = document.getElementById('invoicesClientList');
+            var periodicityFilter = document.getElementById('invoicesPeriodicityFilter');
+            var dateFrom = document.getElementById('invoicesDateFrom');
+            var dateTo = document.getElementById('invoicesDateTo');
+            var tbody = document.getElementById('invoicesTableBody');
+
+            function applySearchLocal() {
+                if (!searchInput || !tbody) return;
+                var term = searchInput.value.toLowerCase().trim();
+                var byName = !searchType || searchType.value === 'name';
+                var attr = byName ? 'data-search-name' : 'data-search-paycode';
+                var rows = tbody.querySelectorAll('tr.invoice-row');
+                rows.forEach(function (tr) {
+                    var text = (tr.getAttribute(attr) || '').toLowerCase();
+                    tr.style.display = !term || text.indexOf(term) !== -1 ? '' : 'none';
+                });
+            }
+
+            function applyFiltersRedirect() {
+                var params = new URLSearchParams(window.location.search);
+                if (searchInput) params.set('search', searchInput.value.trim());
+                if (statusFilter) params.set('statusFilter', statusFilter.value);
+                if (clientFilterInput) params.set('clientId', clientFilterInput.value || '');
+                if (periodicityFilter) params.set('periodicity', periodicityFilter.value);
+                if (dateFrom && dateFrom.value) params.set('dateCreatedFrom', dateFrom.value);
+                else params.delete('dateCreatedFrom');
+                if (dateTo && dateTo.value) params.set('dateCreatedTo', dateTo.value);
+                else params.delete('dateCreatedTo');
+                window.location.search = params.toString();
+            }
+
+            if (searchInput) {
+                var searchTimeout;
+                searchInput.addEventListener('input', function () {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(applySearchLocal, 300);
+                });
+            }
+            if (searchType) searchType.addEventListener('change', applySearchLocal);
+            if (statusFilter) statusFilter.addEventListener('change', applyFiltersRedirect);
+            if (periodicityFilter) periodicityFilter.addEventListener('change', applyFiltersRedirect);
+            if (dateFrom) dateFrom.addEventListener('change', applyFiltersRedirect);
+            if (dateTo) dateTo.addEventListener('change', applyFiltersRedirect);
+
+            if (clientBtn && clientMenu) {
+                clientBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    var isOpen = clientMenu.classList.toggle('is-open');
+                    clientBtn.setAttribute('aria-expanded', isOpen);
+                    if (isOpen && clientSearch) {
+                        clientSearch.value = '';
+                        var items = clientList.querySelectorAll('.invoices-client-item');
+                        items.forEach(function (el) { el.classList.remove('is-hidden'); });
+                        setTimeout(function () { clientSearch.focus(); }, 50);
+                    }
+                });
+                document.addEventListener('click', function () {
+                    clientMenu.classList.remove('is-open');
+                    clientBtn.setAttribute('aria-expanded', 'false');
+                });
+                clientMenu.addEventListener('click', function (e) { e.stopPropagation(); });
+            }
+            if (clientSearch && clientList) {
+                clientSearch.addEventListener('input', function () {
+                    var term = this.value.toLowerCase().trim();
+                    clientList.querySelectorAll('.invoices-client-item').forEach(function (item) {
+                        var name = (item.getAttribute('data-client-name') || '').toLowerCase();
+                        item.classList.toggle('is-hidden', term && name.indexOf(term) === -1);
+                    });
+                });
+            }
+            if (clientList) {
+                clientList.querySelectorAll('.invoices-client-item').forEach(function (item) {
+                    item.addEventListener('click', function () {
+                        var id = this.getAttribute('data-client-id') || '';
+                        var name = this.getAttribute('data-client-name') || 'Все клиенты';
+                        if (clientFilterInput) clientFilterInput.value = id;
+                        if (clientBtnText) clientBtnText.textContent = id ? name : 'Все клиенты';
+                        if (clientMenu) clientMenu.classList.remove('is-open');
+                        if (clientBtn) clientBtn.setAttribute('aria-expanded', 'false');
+                        applyFiltersRedirect();
+                    });
+                });
+            }
+
+            applySearchLocal();
+        });
+    </script>
+}

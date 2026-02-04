@@ -1,23 +1,42 @@
 @model List<WebApplication1.Models.DBModels.Transaction>
 @{
-    ViewData["Title"] = "Платежи";
+    ViewData["Title"] = "Транзакции";
+    var dateFrom = ViewBag.DateFrom as string ?? "";
+    var dateTo = ViewBag.DateTo as string ?? "";
 }
 
-<div class="payments-page">
+@section Styles {
+    <link rel="stylesheet" href="~/web/kindergarten/css/detsad-children.css" asp-append-version="true" />
+}
+
+<div class="children-page">
     <div class="page-header">
-        <h1 class="page-title">Платежи</h1>
-        <p class="page-subtitle">Все платежи детского сада</p>
+        <h1 class="page-title">Транзакции</h1>
+        <p class="page-subtitle">Все транзакции организации</p>
     </div>
 
-    <div class="transactions-container">
+    <div class="filters-section">
+        <form method="get" asp-action="Payments" id="transactionsFilterForm" class="row g-2 mb-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">Дата от</label>
+                <input type="date" name="dateFrom" class="form-control filter-select" value="@dateFrom" id="transactionsDateFrom">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">Дата до</label>
+                <input type="date" name="dateTo" class="form-control filter-select" value="@dateTo" id="transactionsDateTo">
+            </div>
+        </form>
+    </div>
+
+    <div class="filters-section">
         @if (Model != null && Model.Any())
         {
             <div class="table-responsive">
-                <table class="transactions-table">
+                <table class="table table-hover align-middle">
                     <thead>
                         <tr>
                             <th>Дата</th>
-                            <th>Сумма</th>                            
+                            <th>Сумма</th>
                             <th>Итого</th>
                             <th>Статус</th>
                         </tr>
@@ -25,57 +44,19 @@
                     <tbody>
                         @foreach (var transaction in Model)
                         {
-                            <tr class="transaction-row">
-                                <td class="transaction-date">
-                                    @if (transaction.TransactionDate.HasValue)
-                                    {
-                                        @transaction.TransactionDate.Value.ToString("dd.MM.yyyy HH:mm")
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">-</span>
-                                    }
-                                </td>
-                                <td class="transaction-amount">
-                                    @if (transaction.Summ.HasValue)
-                                    {
-                                        @((transaction.Summ.Value / 100).ToString("N2")) <span>сом</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">-</span>
-                                    }
-                                </td>
-                               
-                                <td class="transaction-total">
-                                    @if (transaction.TransactionSumm.HasValue)
-                                    {
-                                        @((transaction.TransactionSumm.Value / 100).ToString("N2")) <span>сом</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">-</span>
-                                    }
-                                </td>
-                                <td class="transaction-status">
-                                    @if (transaction.TransactionStatus == "success")
-                                    {
-                                        <span class="status-badge status-success">Успешно</span>
-                                    }
-                                    else if (transaction.TransactionStatus == "error")
-                                    {
-                                        <span class="status-badge status-error">Ошибка</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="status-badge status-unknown">@transaction.TransactionStatus</span>
-                                    }
-                                </td>
+                            var statusClass = transaction.TransactionStatus == "success" ? "badge bg-success" : transaction.TransactionStatus == "error" ? "badge bg-danger" : "badge bg-secondary";
+                            var statusText = transaction.TransactionStatus == "success" ? "Успешно" : transaction.TransactionStatus == "error" ? "Ошибка" : transaction.TransactionStatus ?? "—";
+                            <tr>
+                                <td>@(transaction.TransactionDate?.ToString("dd.MM.yyyy HH:mm") ?? "—")</td>
+                                <td>@(transaction.Summ.HasValue ? (transaction.Summ.Value / 100m).ToString("N2") + " сом" : "—")</td>
+                                <td>@(transaction.TransactionSumm.HasValue ? (transaction.TransactionSumm.Value / 100m).ToString("N2") + " сом" : "—")</td>
+                                <td><span class="@statusClass">@statusText</span></td>
                             </tr>
                         }
                     </tbody>
                 </table>
             </div>
+            <p class="text-muted small mt-2">Всего транзакций: @Model.Count</p>
         }
         else
         {
@@ -85,13 +66,23 @@
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.87 0 .53-.39 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-1.67c1.52-.29 2.72-1.16 2.73-2.77-.01-2.2-1.9-2.96-3.66-3.42z" fill="currentColor"/>
                     </svg>
                 </div>
-                <h3 class="empty-state-title">Платежей не найдено</h3>
-                <p class="empty-state-description">У вас пока нет платежей</p>
+                <h3 class="empty-state-title">Транзакций не найдено</h3>
+                <p class="empty-state-description">Измените период или условия фильтра</p>
             </div>
         }
     </div>
 </div>
 
 @section Scripts {
-    <script src="~/web/kindergarten/js/detsad.js" asp-append-version="true"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var form = document.getElementById('transactionsFilterForm');
+            var dateFrom = document.getElementById('transactionsDateFrom');
+            var dateTo = document.getElementById('transactionsDateTo');
+            if (form && dateFrom && dateTo) {
+                dateFrom.addEventListener('change', function () { form.submit(); });
+                dateTo.addEventListener('change', function () { form.submit(); });
+            }
+        });
+    </script>
 }

@@ -20,3 +20,101 @@ html {
 body {
   margin-bottom: 60px;
 }
+
+/* ============================================
+   Кнопки действий (глобальные): добавить / просмотр / редактирование
+   Использование: .action-btn .action-btn--add | .action-btn--view | .action-btn--edit
+   ============================================ */
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8125rem;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+  background: #fff;
+  color: #1e293b;
+}
+
+.action-btn:active {
+  transform: scale(0.98);
+}
+
+.action-btn svg {
+  flex-shrink: 0;
+}
+
+/* Добавить / создать — зелёный */
+.action-btn--add {
+  border-color: rgba(16, 185, 129, 0.5);
+  color: #0d9488;
+}
+
+.action-btn--add:hover {
+  border-color: #10b981;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.action-btn--add:active {
+  border-color: #059669;
+  color: #059669;
+  background: rgba(16, 185, 129, 0.15);
+}
+
+/* Просмотр — синий */
+.action-btn--view {
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #2563eb;
+}
+
+.action-btn--view:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.action-btn--view:active {
+  border-color: #1d4ed8;
+  color: #1d4ed8;
+  background: rgba(59, 130, 246, 0.15);
+}
+
+/* Редактирование — оранжевый/янтарный */
+.action-btn--edit {
+  border-color: rgba(245, 158, 11, 0.5);
+  color: #d97706;
+}
+
+.action-btn--edit:hover {
+  border-color: #f59e0b;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.action-btn--edit:active {
+  border-color: #b45309;
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.15);
+}
+
+/* Удаление — красный */
+.action-btn--delete {
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #dc2626;
+}
+
+.action-btn--delete:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.action-btn--delete:active {
+  border-color: #b91c1c;
+  color: #b91c1c;
+  background: rgba(239, 68, 68, 0.15);
+}

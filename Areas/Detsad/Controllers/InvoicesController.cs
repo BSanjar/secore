@@ -23,7 +23,13 @@ namespace WebApplication1.Areas.Detsad.Controllers
         }
 
         [RequirePermission("invoices.view")]
-        public async Task<IActionResult> Index(string search = "", string statusFilter = "")
+        public async Task<IActionResult> Index(
+            string search = "",
+            string statusFilter = "",
+            string clientId = "",
+            string periodicity = "",
+            string dateCreatedFrom = "",
+            string dateCreatedTo = "")
         {
             var organizationId = GetOrganizationId();
             if (string.IsNullOrEmpty(organizationId))
@@ -36,6 +42,18 @@ namespace WebApplication1.Areas.Detsad.Controllers
             if (!string.IsNullOrWhiteSpace(statusFilter))
                 query = query.Where(i => i.InvoiceStatus == statusFilter);
 
+            if (!string.IsNullOrWhiteSpace(clientId))
+                query = query.Where(i => i.Client == clientId);
+
+            if (!string.IsNullOrWhiteSpace(periodicity))
+                query = query.Where(i => i.Periodicity == periodicity);
+
+            if (DateTime.TryParse(dateCreatedFrom, out var fromDate))
+                query = query.Where(i => i.DateCreated >= fromDate.Date);
+
+            if (DateTime.TryParse(dateCreatedTo, out var toDate))
+                query = query.Where(i => i.DateCreated != null && i.DateCreated.Value.Date <= toDate.Date.AddDays(1));
+
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var term = search.Trim().ToLower();
@@ -46,13 +64,31 @@ namespace WebApplication1.Areas.Detsad.Controllers
             }
 
             var list = await query.OrderByDescending(i => i.DateCreated).ToListAsync();
+
+            var clients = await _db.OrganizationClients
+                .Where(c => c.Organization == organizationId)
+                .OrderBy(c => c.ClientName)
+                .Select(c => new { c.Id, c.ClientName })
+                .ToListAsync();
+
+            var selectedClientName = !string.IsNullOrEmpty(clientId)
+                ? clients.FirstOrDefault(c => c.Id == clientId)?.ClientName
+                : null;
+
             ViewBag.Search = search?.Trim() ?? "";
             ViewBag.StatusFilter = statusFilter;
+            ViewBag.ClientId = clientId;
+            ViewBag.SelectedClientName = selectedClientName;
+            ViewBag.Periodicity = periodicity;
+            ViewBag.DateCreatedFrom = dateCreatedFrom;
+            ViewBag.DateCreatedTo = dateCreatedTo;
+            ViewBag.Clients = clients;
+            ViewBag.ReturnUrl = Url.Action("Index", new { search = search?.Trim(), statusFilter, clientId, periodicity, dateCreatedFrom, dateCreatedTo });
             return View(list);
         }
 
         [RequirePermission("invoices.view")]
-        public async Task<IActionResult> Details(string id)
+        public async Task<IActionResult> Details(string id, string? returnUrl = null)
         {
             var organizationId = GetOrganizationId();
             if (string.IsNullOrEmpty(organizationId))
@@ -69,6 +105,7 @@ namespace WebApplication1.Areas.Detsad.Controllers
             if (invoice == null)
                 return NotFound();
 
+            ViewBag.ReturnUrl = returnUrl ?? Url.Action("Index");
             return View(invoice);
         }
 
@@ -143,7 +180,7 @@ namespace WebApplication1.Areas.Detsad.Controllers
 
         [RequirePermission("children.create")]
         [HttpGet]
-        public async Task<IActionResult> Edit(string id)
+        public async Task<IActionResult> Edit(string id, string? returnUrl = null)
         {
             var organizationId = GetOrganizationId();
             if (string.IsNullOrEmpty(organizationId))
@@ -161,13 +198,14 @@ namespace WebApplication1.Areas.Detsad.Controllers
                 .Select(c => new { c.Id, c.ClientName })
                 .ToListAsync();
             ViewBag.Clients = new SelectList(clients, "Id", "ClientName", invoice.Client);
+            ViewBag.ReturnUrl = returnUrl ?? Url.Action("Index");
             return View(invoice);
         }
 
         [RequirePermission("children.create")]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(string id, Invoice model)
+        public async Task<IActionResult> Edit(string id, Invoice model, string? returnUrl = null)
         {
             var organizationId = GetOrganizationId();
             if (string.IsNullOrEmpty(organizationId))
@@ -200,6 +238,8 @@ namespace WebApplication1.Areas.Detsad.Controllers
                 invoice.PayCode = model.PayCode;
                 await _db.SaveChangesAsync();
                 TempData["Message"] = "Изменения сохранены.";
+                if (!string.IsNullOrEmpty(returnUrl))
+                    return Redirect(returnUrl);
                 return RedirectToAction(nameof(Details), new { id = invoice.Id });
             }
 
@@ -209,6 +249,7 @@ namespace WebApplication1.Areas.Detsad.Controllers
                 .Select(c => new { c.Id, c.ClientName })
                 .ToListAsync();
             ViewBag.Clients = new SelectList(clients, "Id", "ClientName", model.Client);
+            ViewBag.ReturnUrl = returnUrl ?? Url.Action("Index");
             return View(model);
         }
     }

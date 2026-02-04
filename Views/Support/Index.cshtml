@@ -1,0 +1,57 @@
+@{
+    ViewData["Title"] = "Техподдержка";
+    var topic = ViewBag.Topic as string ?? "";
+    var message = ViewBag.Message as string ?? "";
+    var contactEmail = ViewBag.ContactEmail as string ?? "";
+    var contactPhone = ViewBag.ContactPhone as string ?? "";
+}
+
+<div class="container mt-4">
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Message"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <h2 class="mb-4">Техподдержка</h2>
+    <p class="text-muted mb-4">Опишите проблему или вопрос — мы ответим в ближайшее время</p>
+
+    <form asp-action="Index" method="post" class="card p-4 shadow-sm">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+        <div class="mb-3">
+            <label class="form-label">Тема обращения</label>
+            <select name="Topic" class="form-select">
+                <option value="">— Выберите тему —</option>
+                <option value="technical" selected="@(topic == "technical")">Техническая проблема</option>
+                <option value="billing" selected="@(topic == "billing")">Вопрос по оплате</option>
+                <option value="account" selected="@(topic == "account")">Учётная запись</option>
+                <option value="other" selected="@(topic == "other")">Другое</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Сообщение <span class="text-danger">*</span></label>
+            <textarea name="Message" class="form-control" rows="5" placeholder="Опишите вашу проблему или вопрос..." required>@message</textarea>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Email для ответа</label>
+                <input type="email" name="ContactEmail" class="form-control" value="@contactEmail" placeholder="email@example.com" />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Телефон для связи</label>
+                <input type="text" name="ContactPhone" class="form-control" value="@contactPhone" placeholder="+996 XXX XXX XXX" />
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Отправить</button>
+            <a href="javascript:history.back()" class="btn btn-outline-secondary">Отмена</a>
+        </div>
+    </form>
+</div>

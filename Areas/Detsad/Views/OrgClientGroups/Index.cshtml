@@ -19,8 +19,8 @@
                 <h1 class="page-title">Группы</h1>
                 <p class="page-subtitle">Группы клиентов (детей) организации</p>
             </div>
-            <button type="button" class="btn btn-primary" onclick="openAddGroupModal()">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px; vertical-align: middle;">
+            <button type="button" class="action-btn action-btn--add" onclick="openAddGroupModal()" title="Добавить группу">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
                 </svg>
                 Добавить группу
@@ -83,11 +83,16 @@
                 <p class="empty-state-description">@(string.IsNullOrEmpty(search) ? "Создайте группу, чтобы распределять клиентов (детей) по группам" : "По вашему запросу ничего не найдено. Измените поиск.")</p>
                 @if (string.IsNullOrEmpty(search))
                 {
-                    <button type="button" class="btn btn-primary mt-3" onclick="openAddGroupModal()">Добавить группу</button>
+                    <button type="button" class="action-btn action-btn--add mt-3" onclick="openAddGroupModal()" title="Добавить группу">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
+                    </svg>
+                    Добавить группу
+                </button>
                 }
                 else
                 {
-                    <a asp-action="Index" asp-route-isDeletedFilter="@isDeletedFilter" class="btn btn-outline-secondary mt-3">Сбросить поиск</a>
+                    <a asp-action="Index" asp-route-isDeletedFilter="@isDeletedFilter" class="action-btn mt-3">Сбросить поиск</a>
                 }
             </div>
         }
