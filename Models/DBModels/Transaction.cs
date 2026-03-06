@@ -25,6 +25,21 @@ public partial class Transaction
     /// </summary>
     public decimal? TransactionSumm { get; set; }
 
+    /// <summary>
+    /// Нижняя комиссия от организации (тыйыны), от суммы транзакции. 0 — вид не включён.
+    /// </summary>
+    public decimal? LowerCommissionFromOrg { get; set; }
+
+    /// <summary>
+    /// Верхняя комиссия от агента (тыйыны), от суммы транзакции. 0 — вид не включён.
+    /// </summary>
+    public decimal? UpperCommissionFromAgent { get; set; }
+
+    /// <summary>
+    /// Нижняя комиссия к агенту (тыйыны), от суммы транзакции. 0 — вид не включён.
+    /// </summary>
+    public decimal? LowerCommissionToAgent { get; set; }
+
     public string? Invoice { get; set; }
 
     public string? Agent { get; set; }

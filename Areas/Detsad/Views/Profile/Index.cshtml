@@ -1,7 +1,6 @@
 @model WebApplication1.Models.DBModels.User
 @{
     ViewData["Title"] = "Профиль";
-    var cultureName = ViewBag.CultureName as string ?? "ru";
 }
 
 @section Styles {
@@ -19,7 +18,7 @@
 
     <div class="page-header">
         <h1 class="page-title">Профиль</h1>
-        <p class="page-subtitle">Имя, контакт и язык интерфейса</p>
+        <p class="page-subtitle">Имя и контактный телефон</p>
     </div>
 
     <div class="filters-section">
@@ -35,15 +34,6 @@
             <div class="mb-3">
                 <label class="form-label text-muted small">Телефон</label>
                 <input type="text" name="Phone" class="form-control" value="@Model?.Phone" placeholder="+996 XXX XXX XXX" />
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label text-muted small">Язык интерфейса</label>
-                <select name="Culture" class="form-select filter-select">
-                    <option value="ru" selected="@(cultureName == "ru")">🇷🇺 Русский</option>
-                    <option value="en" selected="@(cultureName == "en")">🇬🇧 English</option>
-                    <option value="ky" selected="@(cultureName == "ky")">🇰🇬 Кыргызча</option>
-                </select>
             </div>
 
             <div class="d-flex gap-2">

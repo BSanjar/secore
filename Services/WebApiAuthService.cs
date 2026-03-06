@@ -16,41 +16,31 @@ namespace WebApplication1.Services
         }
 
         /// <summary>
-        /// Авторизация по логину и паролю API
+        /// Авторизация по логину и паролю API (агент).
         /// </summary>
         /// <param name="login">Логин API</param>
         /// <param name="password">Пароль API</param>
-        /// <returns>Организация, если авторизация успешна, иначе null</returns>
-        public async Task<Organization?> AuthorizeAsync(string login, string password)
+        /// <returns>Агент, если авторизация успешна, иначе null</returns>
+        public async Task<Agent?> AuthorizeAsync(string login, string password)
         {
             if (string.IsNullOrWhiteSpace(login) || string.IsNullOrWhiteSpace(password))
             {
                 return null;
             }
 
-            // Ищем организацию по логину API
-            var organization = await _db.Organizations
-                .FirstOrDefaultAsync(o => o.ApiLogin == login);
+            var agent = await _db.Agents
+                .FirstOrDefaultAsync(a => a.ApiLogin == login);
 
-            // Если организации с таким логином нет - возвращаем null
-            if (organization == null)
-            {
+            if (agent == null)
                 return null;
-            }
 
-            // Если пароль не установлен - возвращаем null
-            if (string.IsNullOrWhiteSpace(organization.ApiPassword))
-            {
+            if (string.IsNullOrWhiteSpace(agent.ApiPassword))
                 return null;
-            }
 
-            // Проверяем пароль (хеш в БД)
-            if (password != organization.ApiPassword)
-            {
+            if (password != agent.ApiPassword)
                 return null;
-            }
 
-            return organization;
+            return agent;
         }
     }
 }

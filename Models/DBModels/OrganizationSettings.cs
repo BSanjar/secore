@@ -1,0 +1,49 @@
+namespace WebApplication1.Models.DBModels;
+
+/// <summary>
+/// Настройки организации (1:1 с Organization).
+/// Используется во всех Area. Новые параметры добавлять сюда.
+/// </summary>
+public class OrganizationSettings
+{
+    /// <summary>
+    /// PK и FK на organization.id
+    /// </summary>
+    public string OrganizationId { get; set; } = null!;
+
+    /// <summary>
+    /// Если true — при создании счёта отключён выбор услуги:
+    /// в таблицу подставляется название счёта, доступен только ввод цены.
+    /// </summary>
+    public bool DisableInvoiceServiceSelection { get; set; }
+
+    /// <summary>
+    /// Если true — организации могут создавать счета с одинаковыми л/с.
+    /// </summary>
+    public bool AllowedHassameaccount { get; set; }
+
+    /// <summary>
+    /// За сколько дней до срока начинать отправку напоминаний по оплате.
+    /// </summary>
+    public int Paymentreminderdaysbefore { get; set; }
+
+    /// <summary>
+    /// Вид тарифа: subscription (подписка) или комбинация комиссий через флаги ниже.
+    /// </summary>
+    public string? BillingType { get; set; }
+
+    /// <summary>Учитывать нижнюю комиссию от организации (от оборота).</summary>
+    public bool UseLowerCommissionFromOrg { get; set; }
+
+    /// <summary>Справочник комиссии для нижней от организации (расчёт от оборота за период).</summary>
+    public string? CommissionId { get; set; }
+
+    /// <summary>Учитывать верхнюю комиссию от агента (сверху суммы, из agent_commission).</summary>
+    public bool UseUpperCommissionFromAgent { get; set; }
+
+    /// <summary>Учитывать нижнюю комиссию к агенту (из суммы, из agent_commission).</summary>
+    public bool UseLowerCommissionToAgent { get; set; }
+
+    public virtual Organization Organization { get; set; } = null!;
+    public virtual Commission? Commission { get; set; }
+}

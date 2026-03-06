@@ -71,6 +71,7 @@ namespace WebApplication1.Services
             ErrorCode errorCode,
             string? account = null)
         {
+      
             return new CheckResponse
             {
                 Account = account ?? string.Empty,

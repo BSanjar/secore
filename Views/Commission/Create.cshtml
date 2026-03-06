@@ -1,0 +1,133 @@
+@model WebApplication1.Models.DBModels.Commission
+@{
+    ViewData["Title"] = "Добавить комиссию";
+}
+
+<div class="mb-4">
+    <h1 class="h2 mb-1">Добавить комиссию</h1>
+    <p class="text-muted small mb-0">Процент, фикс, смешанная, ступенчатая (одна ставка по диапазону или прогрессивная)</p>
+</div>
+
+<form asp-action="Create" method="post" id="commissionForm">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="All" class="text-danger"></div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label">Название</label>
+                <input type="text" name="Name" class="form-control" value="@Model?.Name" placeholder="Например: 2% от суммы" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Вид комиссии</label>
+                <select name="CommissionKind" class="form-select" id="commissionKind" required>
+                    <option value="percent">Процент — fee = sum × rate</option>
+                    <option value="fixed">Фиксированная — fee = fixed</option>
+                    <option value="mixed">Смешанная — fee = sum × rate + fixed</option>
+                    <option value="single_tier">Ступенчатая: одна ставка по диапазону</option>
+                    <option value="progressive">Ступенчатая: прогрессивная (ставка к своей части)</option>
+                </select>
+            </div>
+            <div class="row g-2">
+                <div class="col-md-3" id="rateCol">
+                    <label class="form-label">Процент (%)</label>
+                    <input type="number" id="ratePercent" class="form-control" step="0.01" min="0" placeholder="3" value="@(Model?.Rate.HasValue == true ? (Model.Rate.Value * 100).ToString(System.Globalization.CultureInfo.InvariantCulture) : "")" />
+                    <input type="hidden" name="Rate" id="rateHidden" value="@Model?.Rate" />
+                </div>
+                <div class="col-md-3" id="fixedMinMaxBlock">
+                    <label class="form-label">Фикс (сом)</label>
+                    <input type="number" name="FixedAmount" step="0.01" class="form-control" value="@Model?.FixedAmount" placeholder="0.15" />
+                </div>
+                <div class="col-md-2" id="minFeeCol">
+                    <label class="form-label">Мин. комиссия (сом)</label>
+                    <input type="number" name="MinFee" step="0.01" class="form-control" value="@Model?.MinFee" />
+                </div>
+                <div class="col-md-2" id="maxFeeCol">
+                    <label class="form-label">Макс. комиссия (сом)</label>
+                    <input type="number" name="MaxFee" step="0.01" class="form-control" value="@Model?.MaxFee" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3 d-none" id="tiersCard">
+        <div class="card-header">Ступени (суммы в сомах)</div>
+        <div class="card-body">
+            <p class="small text-muted">Укажите диапазоны: от — до (включительно), ставка в процентах (например 3 для 3%).</p>
+            <table class="table table-sm" id="tiersTable">
+                <thead>
+                    <tr>
+                        <th>От (сом)</th>
+                        <th>До (сом)</th>
+                        <th>Ставка (%)</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="tiersBody"></tbody>
+            </table>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="addTier">+ Добавить ступень</button>
+            <input type="hidden" name="TiersJson" id="TiersJson" value="" />
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <button type="submit" class="btn btn-primary">Создать</button>
+        <a asp-action="Index" class="btn btn-secondary">Отмена</a>
+    </div>
+</form>
+
+@section Scripts {
+<script>
+(function() {
+    var kind = document.getElementById('commissionKind');
+    var tiersCard = document.getElementById('tiersCard');
+    var tiersBody = document.getElementById('tiersBody');
+    var addBtn = document.getElementById('addTier');
+    var tiersJsonInput = document.getElementById('TiersJson');
+
+    function toggleTiers() {
+        var v = kind.value;
+        tiersCard.classList.toggle('d-none', v !== 'single_tier' && v !== 'progressive');
+    }
+    function toggleFixedMinMax() {
+        var isPercent = kind.value === 'percent';
+        var block = document.getElementById('fixedMinMaxBlock');
+        var minCol = document.getElementById('minFeeCol');
+        var maxCol = document.getElementById('maxFeeCol');
+        if (block) block.style.display = isPercent ? 'none' : '';
+        if (minCol) minCol.style.display = isPercent ? 'none' : '';
+        if (maxCol) maxCol.style.display = isPercent ? 'none' : '';
+    }
+    kind.addEventListener('change', function() { toggleTiers(); toggleFixedMinMax(); });
+    toggleTiers();
+    toggleFixedMinMax();
+
+    function addRow(from, to, percent) {
+        var tr = document.createElement('tr');
+        tr.innerHTML = '<td><input type="number" step="0.01" class="form-control form-control-sm tier-from" value="' + (from || 0) + '" /></td>' +
+            '<td><input type="number" step="0.01" class="form-control form-control-sm tier-to" value="' + (to || 0) + '" /></td>' +
+            '<td><input type="number" step="0.01" class="form-control form-control-sm tier-rate" value="' + (percent !== undefined && percent !== null ? percent : '') + '" placeholder="3" /></td>' +
+            '<td><button type="button" class="btn btn-sm btn-outline-danger remove-tier">×</button></td>';
+        tiersBody.appendChild(tr);
+        tr.querySelector('.remove-tier').addEventListener('click', function() { tr.remove(); });
+    }
+    addBtn.addEventListener('click', function() { addRow(0, 0, 3); });
+
+    document.getElementById('commissionForm').addEventListener('submit', function() {
+        var ratePercentEl = document.getElementById('ratePercent');
+        var rateHiddenEl = document.getElementById('rateHidden');
+        if (ratePercentEl && rateHiddenEl) rateHiddenEl.value = (parseFloat(ratePercentEl.value) || 0) / 100;
+
+        var rows = tiersBody.querySelectorAll('tr');
+        var arr = [];
+        rows.forEach(function(tr) {
+            var from = parseFloat(tr.querySelector('.tier-from').value) || 0;
+            var to = parseFloat(tr.querySelector('.tier-to').value) || 0;
+            var percent = parseFloat(tr.querySelector('.tier-rate').value) || 0;
+            arr.push({ AmountFrom: from, AmountTo: to, Rate: percent / 100 });
+        });
+        tiersJsonInput.value = JSON.stringify(arr);
+    });
+})();
+</script>
+}

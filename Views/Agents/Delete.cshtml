@@ -1,0 +1,33 @@
+@model WebApplication1.Models.DBModels.Agent
+@{
+    ViewData["Title"] = "Удалить агента";
+    var hasTransactions = ViewBag.HasTransactions as bool? ?? false;
+}
+
+<div class="mb-4">
+    <h1 class="h2 mb-1">Удалить агента</h1>
+    <p class="text-muted small mb-4">@(Model.Name ?? Model.Id)</p>
+</div>
+
+<div class="mb-4">
+        @if (hasTransactions)
+        {
+            <div class="alert alert-warning">
+                У этого агента есть транзакции. Удаление агента может нарушить связь с историей транзакций. Удалить всё равно?
+            </div>
+        }
+
+        <dl class="row mb-4">
+            <dt class="col-sm-3">Название</dt>
+            <dd class="col-sm-9">@(Model.Name ?? "—")</dd>
+
+            <dt class="col-sm-3">API логин</dt>
+            <dd class="col-sm-9">@(Model.ApiLogin ?? "—")</dd>
+        </dl>
+
+        <form asp-action="Delete" method="post">
+            <input type="hidden" asp-for="Id" />
+            <button type="submit" class="action-btn action-btn--delete">Удалить</button>
+            <a asp-action="Index" class="action-btn action-btn--view">Отмена</a>
+        </form>
+</div>

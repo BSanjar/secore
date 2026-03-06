@@ -1,8 +1,12 @@
 @model List<WebApplication1.Models.DBModels.Transaction>
+@using System.Collections
 @{
     ViewData["Title"] = "Транзакции";
     var dateFrom = ViewBag.DateFrom as string ?? "";
     var dateTo = ViewBag.DateTo as string ?? "";
+    var agentsList = ViewBag.AgentsList as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var selectedAgentIds = ViewBag.SelectedAgentIds as List<string> ?? new List<string>();
+    var isAllAgentsSelected = selectedAgentIds.Count == 0;
 }
 
 @section Styles {
@@ -25,6 +29,36 @@
                 <label class="form-label small text-muted mb-1">Дата до</label>
                 <input type="date" name="dateTo" class="form-control filter-select" value="@dateTo" id="transactionsDateTo">
             </div>
+            @if (agentsList.Any())
+            {
+                <div class="col-md-4">
+                    <label class="form-label small text-muted mb-1">Агент</label>
+                    <select name="agentIds" id="transactionsAgentIds" class="form-select filter-select" multiple size="1" style="min-height: 38px;">
+                        @if (isAllAgentsSelected)
+                        {
+                            <option value="__all__" selected>Выбрать все</option>
+                        }
+                        else
+                        {
+                            <option value="__all__">Выбрать все</option>
+                        }
+                        @foreach (var a in agentsList)
+                        {
+                            var id = (string)a.Id;
+                            var name = (string)(a.Name ?? a.Id);
+                            var sel = !isAllAgentsSelected && selectedAgentIds.Contains(id);
+                            if (sel)
+                            {
+                                <option value="@id" selected>@name</option>
+                            }
+                            else
+                            {
+                                <option value="@id">@name</option>
+                            }
+                        }
+                    </select>
+                </div>
+            }
         </form>
     </div>
 
@@ -36,6 +70,7 @@
                     <thead>
                         <tr>
                             <th>Дата</th>
+                            <th>Агент</th>
                             <th>Сумма</th>
                             <th>Итого</th>
                             <th>Статус</th>
@@ -46,8 +81,10 @@
                         {
                             var statusClass = transaction.TransactionStatus == "success" ? "badge bg-success" : transaction.TransactionStatus == "error" ? "badge bg-danger" : "badge bg-secondary";
                             var statusText = transaction.TransactionStatus == "success" ? "Успешно" : transaction.TransactionStatus == "error" ? "Ошибка" : transaction.TransactionStatus ?? "—";
+                            var agentName = transaction.AgentNavigation?.Name ?? transaction.Agent ?? "—";
                             <tr>
                                 <td>@(transaction.TransactionDate?.ToString("dd.MM.yyyy HH:mm") ?? "—")</td>
+                                <td>@agentName</td>
                                 <td>@(transaction.Summ.HasValue ? (transaction.Summ.Value / 100m).ToString("N2") + " сом" : "—")</td>
                                 <td>@(transaction.TransactionSumm.HasValue ? (transaction.TransactionSumm.Value / 100m).ToString("N2") + " сом" : "—")</td>
                                 <td><span class="@statusClass">@statusText</span></td>
@@ -79,9 +116,13 @@
             var form = document.getElementById('transactionsFilterForm');
             var dateFrom = document.getElementById('transactionsDateFrom');
             var dateTo = document.getElementById('transactionsDateTo');
+            var agentIds = document.getElementById('transactionsAgentIds');
             if (form && dateFrom && dateTo) {
                 dateFrom.addEventListener('change', function () { form.submit(); });
                 dateTo.addEventListener('change', function () { form.submit(); });
+            }
+            if (form && agentIds) {
+                agentIds.addEventListener('change', function () { form.submit(); });
             }
         });
     </script>

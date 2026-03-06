@@ -69,12 +69,18 @@ namespace WebApplication1.Middleware
                             {
                                 OmitXmlDeclaration = false,
                                 Encoding = Encoding.UTF8,
-                                Indent = true
+                                Indent = true,
+                                Async = true
                             };
 
-                            using (var writer = XmlWriter.Create(context.Response.Body, settings))
+                            using (var ms = new MemoryStream())
                             {
-                                serializer.Serialize(writer, errorResponse, namespaces);
+                                using (var writer = XmlWriter.Create(ms, settings))
+                                {
+                                    serializer.Serialize(writer, errorResponse, namespaces);
+                                }
+                                ms.Position = 0;
+                                await ms.CopyToAsync(context.Response.Body);
                             }
 
                             return;

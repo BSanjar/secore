@@ -1,0 +1,63 @@
+@model WebApplication1.Models.DBModels.OrganizationSettings
+@{
+    ViewData["Title"] = "Настройки организации";
+}
+
+<div class="mb-4">
+    <h1 class="h2 mb-1">Настройки организации</h1>
+    <p class="text-muted small mb-0">Параметры, влияющие на работу системы во всех разделах</p>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+    </div>
+}
+
+<form asp-action="Index" method="post" class="mb-4">
+    <div asp-validation-summary="All" class="text-danger"></div>
+
+    <div class="card mb-3">
+        <div class="card-header">
+            <h5 class="mb-0">Создание счёта на оплату</h5>
+        </div>
+        <div class="card-body">
+            <div class="form-check">
+                <input asp-for="DisableInvoiceServiceSelection" class="form-check-input" type="checkbox" />
+                <label asp-for="DisableInvoiceServiceSelection" class="form-check-label">
+                    Отключить выбор услуги при создании счёта
+                </label>
+            </div>
+            <small class="form-text text-muted">
+                Если включено: при создании счёта выбор услуг в таблице блокируется, подставляется название счёта и доступен только ввод цены.
+            </small>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">
+            <h5 class="mb-0">Общие настройки</h5>
+        </div>
+        <div class="card-body">
+            <div class="form-check mb-3">
+                <input asp-for="AllowedHassameaccount" class="form-check-input" type="checkbox" />
+                <label asp-for="AllowedHassameaccount" class="form-check-label">
+                    Разрешить счета с одинаковым лицевым счётом
+                </label>
+            </div>
+            <div class="mb-2">
+                <label asp-for="Paymentreminderdaysbefore" class="form-label">Напоминание об оплате (за сколько дней до срока)</label>
+                <input asp-for="Paymentreminderdaysbefore" class="form-control" type="number" min="0" />
+                <span asp-validation-for="Paymentreminderdaysbefore" class="text-danger"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <button type="submit" class="btn btn-primary">Сохранить</button>
+        <a asp-controller="TariffAndCommissions" asp-action="Index" class="btn btn-outline-secondary">Тариф и комиссии</a>
+        <a asp-controller="Settings" asp-action="Index" class="btn btn-secondary">К настройкам</a>
+    </div>
+</form>

@@ -7,10 +7,12 @@
     var statusFilter = ViewBag.StatusFilter as string ?? "active";
     var debtorsOnly = ViewBag.DebtorsOnly as bool? ?? false;
     var childrenData = ViewBag.ChildrenData as List<WebApplication1.Models.DBModels.OrganizationClient> ?? new List<WebApplication1.Models.DBModels.OrganizationClient>();
+    var clientTotalBalanceByClientId = ViewBag.ClientTotalBalanceByClientId as Dictionary<string, decimal> ?? new Dictionary<string, decimal>();
 }
 
 @section Styles {
     <link rel="stylesheet" href="~/web/kindergarten/css/detsad-children.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/web/kindergarten/css/detsad-create-invoice.css" asp-append-version="true" />
 }
 
 <div class="children-page">
@@ -20,12 +22,20 @@
                 <h1 class="page-title">Дети</h1>
                 <p class="page-subtitle">Список всех детей в детском саду</p>
             </div>
-            <button type="button" class="action-btn action-btn--add" onclick="openAddChildModal()" title="Добавить нового ребёнка">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
-                </svg>
-                Добавить нового ребёнка
-            </button>
+            <div class="d-flex gap-2">
+                <button type="button" class="action-btn action-btn--view" onclick="openCreateInvoiceModal()" title="Создать счёт на оплату">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" fill="currentColor"/>
+                    </svg>
+                    Счёт на оплату
+                </button>
+                <button type="button" class="action-btn action-btn--add" onclick="openAddChildModal()" title="Добавить нового ребёнка">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
+                    </svg>
+                    Добавить нового ребёнка
+                </button>
+            </div>
         </div>
     </div>
 
@@ -128,10 +138,12 @@
                     statusClass = "status-deleted";
                 }
 
-                var isDebtor = client.ClientBalance.HasValue && client.ClientBalance.Value < 0 && client.ClientStatus == 1;
+                var totalBalanceTyiyn = clientTotalBalanceByClientId.GetValueOrDefault(client.Id, 0m);
+                var totalBalanceSoms = totalBalanceTyiyn / 100m;
+                var isDebtor = totalBalanceTyiyn < 0 && client.ClientStatus == 1;
                 var logoUrl = !string.IsNullOrEmpty(client.ClientLogo) ? $"data:image/png;base64,{client.ClientLogo}" : null;
 
-                <div class="child-card" data-client-id="@client.Id" data-org-client-group-id="@(client.OrgClientGroupId ?? "")" data-search-text="@($"{client.ClientName} {client.ClientPhone} {client.ClientEmail} {client.ClientAddress} {string.Join(" ", client.OrganizationClientsAdditionalFields.Select(af => af.Value ?? ""))}")">
+                <div class="child-card child-card--clickable" data-client-id="@client.Id" data-client-name="@(client.ClientName ?? "")" data-org-client-group-id="@(client.OrgClientGroupId ?? "")" data-search-text="@($"{client.ClientName} {client.ClientPhone} {client.ClientEmail} {client.ClientAddress} {string.Join(" ", client.OrganizationClientsAdditionalFields.Select(af => af.Value ?? ""))}")">
                     <div class="child-card-header">
                         <div class="child-avatar">
                             @if (!string.IsNullOrEmpty(logoUrl))
@@ -181,40 +193,16 @@
                                 <span class="info-value">@(client.CreatedDate?.ToString("dd.MM.yyyy") ?? "-")</span>
                             </div>
 
-                            @if (client.ClientBalance.HasValue)
-                            {
-                                <div class="info-item">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="info-icon">
-                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.87 0 .53-.39 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-1.67c1.52-.29 2.72-1.16 2.73-2.77-.01-2.2-1.9-2.96-3.66-3.42z" fill="currentColor"/>
-                                    </svg>
-                                    <span class="info-label">Баланс:</span>
-                                    <span class="info-value @(client.ClientBalance.Value < 0 ? "text-danger" : "")">
-                                        @((client.ClientBalance.Value / 100).ToString("N2")) сом
-                                    </span>
-                                </div>
-                            }
+                            <div class="info-item">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="info-icon">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.87 0 .53-.39 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-1.67c1.52-.29 2.72-1.16 2.73-2.77-.01-2.2-1.9-2.96-3.66-3.42z" fill="currentColor"/>
+                                </svg>
+                                <span class="info-label">Баланс по счетам:</span>
+                                <span class="info-value @(totalBalanceTyiyn < 0 ? "text-danger" : "")">
+                                    @totalBalanceSoms.ToString("N2") сом
+                                </span>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div class="child-card-footer">
-                        <button class="btn-action btn-child-info" onclick="showChildInfo('@client.Id')" title="Информация о ребенке">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="currentColor"/>
-                            </svg>
-                            <span class="btn-text">О ребенке</span>
-                        </button>
-                        <button class="btn-action btn-invoices-info" onclick="showInvoicesInfo('@client.Id')" title="Счета на оплату">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" fill="currentColor"/>
-                            </svg>
-                            <span class="btn-text">Счета</span>
-                        </button>
-                        <button class="btn-action btn-transactions-info" onclick="showClientTransactions('@client.Id')" title="Платежи">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.87 0 .53-.39 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-1.67c1.52-.29 2.72-1.16 2.73-2.77-.01-2.2-1.9-2.96-3.66-3.42z" fill="currentColor"/>
-                            </svg>
-                            <span class="btn-text">Платежи</span>
-                        </button>
                     </div>
                 </div>
             }
@@ -234,57 +222,53 @@
     </div>
 </div>
 
-<!-- Модальное окно "О ребенке" -->
-<div class="modal fade" id="childInfoModal" tabindex="-1" aria-labelledby="childInfoModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="childInfoModalLabel">Информация о ребенке</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body" id="childInfoContent">
-                <div class="loading-spinner">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Загрузка...</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Модальное окно "Счета на оплату" -->
-<div class="modal fade" id="invoicesInfoModal" tabindex="-1" aria-labelledby="invoicesInfoModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="invoicesInfoModalLabel">Счета на оплату</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body" id="invoicesInfoContent">
-                <div class="loading-spinner">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Загрузка...</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Модальное окно "Платежи" -->
-<div class="modal fade" id="clientTransactionsModal" tabindex="-1" aria-labelledby="clientTransactionsModalLabel" aria-hidden="true">
+<!-- Модальное окно с вкладками: О ребенке, Счета, Платежи -->
+<div class="modal fade" id="childDetailModal" tabindex="-1" aria-labelledby="childDetailModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="clientTransactionsModalLabel">Платежи</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title" id="childDetailModalLabel">Ребенок</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
             </div>
-            <div class="modal-body" id="clientTransactionsContent">
-                <div class="loading-spinner">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Загрузка...</span>
+            <div class="modal-body p-0">
+                <ul class="nav nav-tabs px-3 pt-2 border-bottom-0" id="childDetailTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="tab-child-info" data-bs-toggle="tab" data-bs-target="#pane-child-info" type="button" role="tab" aria-controls="pane-child-info" aria-selected="true">О ребенке</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-invoices" data-bs-toggle="tab" data-bs-target="#pane-invoices" type="button" role="tab" aria-controls="pane-invoices" aria-selected="false">Счета</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-payments" data-bs-toggle="tab" data-bs-target="#pane-payments" type="button" role="tab" aria-controls="pane-payments" aria-selected="false">Транзакции</button>
+                    </li>
+                </ul>
+                <div class="tab-content p-3" id="childDetailTabContent">
+                    <div class="tab-pane fade show active" id="pane-child-info" role="tabpanel" aria-labelledby="tab-child-info">
+                        <div id="childDetailInfoContent"><div class="loading-spinner"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div></div></div>
                     </div>
+                    <div class="tab-pane fade" id="pane-invoices" role="tabpanel" aria-labelledby="tab-invoices">
+                        <div id="childDetailInvoicesContent"><p class="text-muted mb-0">Выберите вкладку «Счета» для загрузки данных.</p></div>
+                    </div>
+                    <div class="tab-pane fade" id="pane-payments" role="tabpanel" aria-labelledby="tab-payments">
+                        <div id="childDetailPaymentsContent"><p class="text-muted mb-0">Выберите вкладку «Платежи» для загрузки данных.</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно "Счёт на оплату" (контент подгружается через partial) -->
+<div class="modal fade" id="createInvoiceModal" tabindex="-1" aria-labelledby="createInvoiceModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-fullscreen-lg-down modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createInvoiceModalLabel">Создать счёт на оплату</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body p-0" id="createInvoiceModalBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div>
                 </div>
             </div>
         </div>
@@ -427,4 +411,5 @@
 
 @section Scripts {
     <script src="~/web/kindergarten/js/detsad-children.js" asp-append-version="true"></script>
+    <script src="~/web/kindergarten/js/detsad-create-invoice.js" asp-append-version="true"></script>
 }

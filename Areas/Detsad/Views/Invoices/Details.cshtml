@@ -101,15 +101,16 @@
                     <thead>
                         <tr>
                             <th>Услуга</th>
-                            <th>Стоимость (тыйыны)</th>
+                            <th>Стоимость (сом)</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var svc in Model.InvoiceServices)
                         {
+                            var svcSumSoms = svc.ServiceSumm.HasValue ? svc.ServiceSumm.Value / 100m : (decimal?)null;
                             <tr>
                                 <td>@(svc.ServiceNavigation?.Name ?? svc.Service ?? "—")</td>
-                                <td>@(svc.ServiceSumm?.ToString("N0") ?? "—")</td>
+                                <td>@(svcSumSoms.HasValue ? svcSumSoms.Value.ToString("N2") + " сом" : "—")</td>
                             </tr>
                         }
                     </tbody>

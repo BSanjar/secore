@@ -15,7 +15,7 @@ public partial class InvoicePayment
     public DateTime? DateTo { get; set; }
 
     /// <summary>
-    /// сумма оплаты
+    /// сумма оплаты (тыйыны)
     /// </summary>
     public decimal? PaymentSumm { get; set; }
 

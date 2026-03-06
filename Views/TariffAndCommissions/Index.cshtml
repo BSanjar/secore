@@ -1,0 +1,237 @@
+@{
+    ViewData["Title"] = "Тариф и комиссии";
+    var organizations = ViewBag.Organizations as IEnumerable<WebApplication1.Models.DBModels.Organization>;
+    var selectedOrgId = ViewBag.SelectedOrganizationId as string;
+    var settings = ViewBag.Settings as WebApplication1.Models.DBModels.OrganizationSettings;
+    var commissions = ViewBag.Commissions as IEnumerable<WebApplication1.Models.DBModels.Commission> ?? Array.Empty<WebApplication1.Models.DBModels.Commission>();
+    var agents = ViewBag.Agents as IEnumerable<WebApplication1.Models.DBModels.Agent>;
+    var agentCommissions = ViewBag.AgentCommissions as IEnumerable<WebApplication1.Models.DBModels.AgentCommission>;
+}
+
+<div class="mb-4 d-flex justify-content-between align-items-start">
+    <div>
+        <h1 class="h2 mb-1">Тариф и комиссии</h1>
+        <p class="text-muted small mb-0">Настройка тарифа и комиссий по организациям</p>
+    </div>
+    <a asp-controller="Settings" asp-action="Index" class="btn btn-secondary">К настройкам</a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+    </div>
+}
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" asp-action="Index" class="row g-2 align-items-end">
+            <div class="col-auto">
+                <label class="form-label mb-0">Организация</label>
+            </div>
+            <div class="col-md-4">
+                <select name="organizationId" class="form-select" onchange="this.form.submit()">
+                    <option value="">— выберите организацию —</option>
+                    @if (organizations != null)
+                    {
+                        foreach (var o in organizations)
+                        {
+                            if (o.Id == selectedOrgId)
+                            {
+                                <option value="@o.Id" selected>@(o.Name ?? o.Id)</option>
+                            }
+                            else
+                            {
+                                <option value="@o.Id">@(o.Name ?? o.Id)</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (string.IsNullOrEmpty(selectedOrgId))
+{
+    <p class="text-muted">Выберите организацию, чтобы настроить тариф и комиссии.</p>
+}
+else
+{
+    <form asp-action="SaveSettings" method="post" class="mb-4">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="organizationId" value="@selectedOrgId" />
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0">Тариф и комиссии</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Тип тарифа</label>
+                    <select name="billingType" class="form-select">
+                        @if (settings?.BillingType != "subscription")
+                        {
+                            <option value="" selected>По комиссиям (настройки ниже)</option>
+                            <option value="subscription">Подписка (фикс за период)</option>
+                        }
+                        else
+                        {
+                            <option value="">По комиссиям (настройки ниже)</option>
+                            <option value="subscription" selected>Подписка (фикс за период)</option>
+                        }
+                    </select>
+                    <small class="form-text text-muted">Подписка — фиксированная сумма за пользование системой. Иначе применяются выбранные виды комиссий.</small>
+                </div>
+                <hr />
+                <p class="text-muted small mb-2">Включённые виды комиссий учитываются в транзакциях отдельно (для отчётов). Можно комбинировать.</p>
+                <div class="form-check mb-2">
+                    <input name="useLowerCommissionFromOrg" type="checkbox" class="form-check-input" value="true" checked="@(settings?.UseLowerCommissionFromOrg == true)" />
+                    <label class="form-check-label">Нижняя комиссия от организации</label>
+                </div>
+                <small class="form-text text-muted d-block mb-3">Считается от суммы транзакции.</small>
+                <div class="mb-3" id="commissionIdBlock">
+                    <label class="form-label">Вид комиссии (нижняя от организации)</label>
+                    <select name="commissionId" class="form-select">
+                        <option value="">— не выбрана —</option>
+                        @foreach (var c in commissions)
+                        {
+                            if (c != null)
+                            {
+                                if (settings?.CommissionId == c.Id)
+                                {
+                                    <option value="@c.Id" selected>@(c.Name ?? c.Id) — @c.CommissionKind</option>
+                                }
+                                else
+                                {
+                                    <option value="@c.Id">@(c.Name ?? c.Id) — @c.CommissionKind</option>
+                                }
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="form-check mb-2">
+                    <input name="useUpperCommissionFromAgent" type="checkbox" class="form-check-input" value="true" checked="@(settings?.UseUpperCommissionFromAgent == true)" />
+                    <label class="form-check-label">Верхняя комиссия от агента</label>
+                </div>
+                <small class="form-text text-muted d-block mb-3">Клиент платит сверху суммы. Вид комиссии задаётся по каждому агенту в блоке ниже.</small>
+                <div class="form-check mb-2">
+                    <input name="useLowerCommissionToAgent" type="checkbox" class="form-check-input" value="true" checked="@(settings?.UseLowerCommissionToAgent == true)" />
+                    <label class="form-check-label">Нижняя комиссия к агенту</label>
+                </div>
+                <small class="form-text text-muted d-block mb-0">Удерживается из суммы транзакции. Вид задаётся по каждому агенту в блоке ниже.</small>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Сохранить тариф и комиссии</button>
+    </form>
+
+    <div class="card mb-3">
+        <div class="card-header">
+            <h5 class="mb-0">Комиссии по агентам</h5>
+        </div>
+        <div class="card-body">
+            <p class="text-muted small mb-3">У организации может быть несколько агентов; комиссия (верхняя от агента и нижняя к агенту) настраивается отдельно для каждого. При создании транзакции подставляется комиссия того агента, через которого прошёл платёж.</p>
+            @if (agentCommissions != null && agentCommissions.Any())
+            {
+                <div class="table-responsive mb-4">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Агент</th>
+                                <th>Верхняя комиссия от агента</th>
+                                <th>Нижняя комиссия к агенту</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var ac in agentCommissions)
+                            {
+                                <tr>
+                                    <td>@(ac.Agent?.Name ?? ac.AgentId)</td>
+                                    <td>@(ac.Commission?.Name ?? ac.CommissionId)</td>
+                                    <td>@(ac.LowerCommission != null ? ac.LowerCommission.Name ?? ac.LowerCommissionId : "—")</td>
+                                    <td>
+                                        <form asp-action="DeleteAgentCommission" method="post" class="d-inline" onsubmit="return confirm('Удалить настройку комиссии для этого агента?');">
+                                            <input type="hidden" name="organizationId" value="@selectedOrgId" />
+                                            <input type="hidden" name="id" value="@ac.Id" />
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-outline-danger btn-sm">Удалить</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            <h6 class="mb-2">@(agentCommissions != null && agentCommissions.Any() ? "Добавить или изменить агента" : "Добавить агента")</h6>
+            <form asp-action="AddAgentCommission" method="post" class="row g-2 align-items-end">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="organizationId" value="@selectedOrgId" />
+                <div class="col-md-3">
+                    <label class="form-label">Агент</label>
+                    <select name="agentId" class="form-select" required>
+                        <option value="">— выберите —</option>
+                        @if (agents != null)
+                        {
+                            foreach (var a in agents)
+                            {
+                                <option value="@a.Id">@(a.Name ?? a.Id)</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Верхняя комиссия от агента</label>
+                    <select name="commissionId" class="form-select" required>
+                        <option value="">— выберите —</option>
+                        @foreach (var c in commissions)
+                        {
+                            if (c != null)
+                            {
+                                <option value="@c.Id">@(c.Name ?? c.Id) — @c.CommissionKind</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Нижняя комиссия к агенту</label>
+                    <select name="lowerCommissionId" class="form-select">
+                        <option value="">— не выбрана —</option>
+                        @foreach (var c in commissions)
+                        {
+                            if (c != null)
+                            {
+                                <option value="@c.Id">@(c.Name ?? c.Id) — @c.CommissionKind</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+            <small class="form-text text-muted d-block mt-2">Если агент уже есть в таблице — будет обновлена его настройка.</small>
+        </div>
+    </div>
+}
+
+<script>
+    (function () {
+        var cb = document.querySelector('input[name="useLowerCommissionFromOrg"]');
+        var block = document.getElementById('commissionIdBlock');
+        if (!cb || !block) return;
+        function toggle() { block.style.display = cb.checked ? 'block' : 'none'; }
+        cb.addEventListener('change', toggle);
+        toggle();
+    })();
+</script>

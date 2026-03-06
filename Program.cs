@@ -9,6 +9,11 @@ using WebApplication1.Areas.Simple.ViewModels;
 using WebApplication1.Areas.Simple.Services;
 using System.Linq;
 using WebApplication1.Services;
+using WebApplication1.Helpers;
+
+// Npgsql: разрешить запись DateTime с Kind=UTC в колонки timestamp without time zone
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Настройка локализации
@@ -27,6 +32,7 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
 // Add services to the container.
 builder.Services.AddControllersWithViews(options =>
 {
+    options.Filters.Add<WebApplication1.Filters.SetCabinetLayoutFilter>();
     // Удаляем стандартный XML input форматтер и добавляем кастомный с обработкой ошибок
     var xmlInputFormatter = options.InputFormatters.OfType<Microsoft.AspNetCore.Mvc.Formatters.XmlSerializerInputFormatter>().FirstOrDefault();
     if (xmlInputFormatter != null)
@@ -46,9 +52,10 @@ builder.Services.AddControllersWithViews(options =>
     .AddViewLocalization(Microsoft.AspNetCore.Mvc.Razor.LanguageViewLocationExpanderFormat.Suffix)
     .AddDataAnnotationsLocalization(); 
 
-// Регистрируем фильтр
+// Регистрируем фильтры
 builder.Services.AddScoped<WebApplication1.Filters.XmlValidationFilter>();
-
+builder.Services.AddScoped<WebApplication1.Filters.SetCabinetLayoutFilter>();
+builder.Services.AddScoped<OperationsByInvoices>();
 // Регистрируем сервис авторизации API
 builder.Services.AddScoped<WebApplication1.Services.WebApiAuthService>();
 
@@ -63,9 +70,10 @@ builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options 
 builder.Services.AddScoped<ITableSource<PaymentListItemVm>, SimplePaymentsTableSource>();
 
 // Регистрация сервисов
-// NotificationService - создает уведомления в БД (отправка выполняется отдельным проектом NotificationWorker)
+
 builder.Services.AddScoped<NotificationService>();
-// InvoicePaymentService удален - обработка платежей теперь в отдельном проекте InvoiceSchedulerJob
+builder.Services.AddScoped<TransactionCommissionService>();
+
 
 // Добавление поддержки сессий
 builder.Services.AddDistributedMemoryCache();

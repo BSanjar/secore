@@ -1,0 +1,156 @@
+@model WebApplication1.Models.DBModels.Agent
+@{
+    ViewData["Title"] = "Агент: " + (Model.Name ?? Model.Id);
+    var transactions = ViewBag.Transactions as IEnumerable<WebApplication1.Models.DBModels.Transaction> ?? Enumerable.Empty<WebApplication1.Models.DBModels.Transaction>();
+    var dateFrom = ViewBag.DateFrom as string ?? "";
+    var dateTo = ViewBag.DateTo as string ?? "";
+    var sortOrder = ViewBag.SortOrder as string ?? "desc";
+    var page = (int)(ViewBag.Page ?? 1);
+    var pageSize = (int)(ViewBag.PageSize ?? 15);
+    var totalCount = (int)(ViewBag.TotalCount ?? 0);
+    var totalPages = (int)(ViewBag.TotalPages ?? 0);
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+        <h1 class="h2 mb-1">@(Model.Name ?? Model.Id)</h1>
+        <p class="text-muted small mb-0">Информация об агенте</p>
+    </div>
+    <div class="d-flex gap-2">
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="action-btn action-btn--edit" title="Изменить">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor"/></svg>
+                    Изменить
+                </a>
+                <a asp-action="Delete" asp-route-id="@Model.Id" class="action-btn action-btn--delete" title="Удалить">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/></svg>
+                    Удалить
+                </a>
+                <a asp-action="Index" class="action-btn action-btn--view" title="К списку агентов">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor"/></svg>
+                    К списку агентов
+                </a>
+    </div>
+</div>
+
+@* Верхний блок — информация об агенте *@
+<div class="mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Информация об агенте</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-3">Название</dt>
+                    <dd class="col-sm-9">@(Model.Name ?? "—")</dd>
+
+                    <dt class="col-sm-3">API логин</dt>
+                    <dd class="col-sm-9">@(Model.ApiLogin ?? "—")</dd>
+
+                    <dt class="col-sm-3">API пароль</dt>
+                    <dd class="col-sm-9">********</dd>
+                </dl>
+            </div>
+        </div>
+</div>
+
+@* Нижний блок — транзакции: фильтры (дата от/до), сортировка по дате, пагинация *@
+<div class="mb-4">
+    <h5 class="mb-3">Транзакции по агенту</h5>
+
+        <form method="get" asp-action="Details" asp-route-id="@Model.Id" id="agentTransactionsFilterForm" class="row g-2 mb-3 align-items-end">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">Дата от</label>
+                <input type="date" name="dateFrom" class="form-control form-control-sm" value="@dateFrom" id="agentTransDateFrom" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">Дата до</label>
+                <input type="date" name="dateTo" class="form-control form-control-sm" value="@dateTo" id="agentTransDateTo" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">Сортировка по дате</label>
+                <select name="sortOrder" class="form-select form-select-sm" id="agentTransSortOrder">
+                    <option value="desc" selected="@(sortOrder == "desc")">Сначала новые</option>
+                    <option value="asc" selected="@(sortOrder == "asc")">Сначала старые</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="action-btn action-btn--view">Применить</button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            @if (transactions.Any())
+            {
+                <table class="table table-striped table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>Сумма</th>
+                            <th>Итого (с комиссией)</th>
+                            <th>Тип</th>
+                            <th>Статус</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var t in transactions)
+                        {
+                            var statusClass = t.TransactionStatus == "success" ? "badge bg-success" : t.TransactionStatus == "error" ? "badge bg-danger" : "badge bg-secondary";
+                            var statusText = t.TransactionStatus == "success" ? "Успешно" : t.TransactionStatus == "error" ? "Ошибка" : t.TransactionStatus ?? "—";
+                            var typeText = t.TransactionType == "debit" ? "Приход" : t.TransactionType == "credit" ? "Расход" : t.TransactionType ?? "—";
+                            <tr>
+                                <td>@(t.TransactionDate?.ToString("dd.MM.yyyy HH:mm") ?? "—")</td>
+                                <td>@(t.Summ.HasValue ? (t.Summ.Value / 100m).ToString("N2") + " сом" : "—")</td>
+                                <td>@(t.TransactionSumm.HasValue ? (t.TransactionSumm.Value / 100m).ToString("N2") + " сом" : "—")</td>
+                                <td>@typeText</td>
+                                <td><span class="@statusClass">@statusText</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                @if (totalPages > 1)
+                {
+                    <nav aria-label="Пагинация транзакций" class="mt-3">
+                        <ul class="pagination pagination-sm justify-content-center mb-0">
+                            <li class="page-item @(page <= 1 ? "disabled" : "")">
+                                <a class="page-link" href="@(page <= 1 ? "#" : Url.Action("Details", new { id = Model.Id, dateFrom, dateTo, sortOrder, page = page - 1, pageSize }))">Назад</a>
+                            </li>
+                            @for (var p = 1; p <= totalPages; p++)
+                            {
+                                var isCurrent = p == page;
+                                <li class="page-item @(isCurrent ? "active" : "")">
+                                    <a class="page-link" href="@(isCurrent ? "#" : Url.Action("Details", new { id = Model.Id, dateFrom, dateTo, sortOrder, page = p, pageSize }))">@p</a>
+                                </li>
+                            }
+                            <li class="page-item @(page >= totalPages ? "disabled" : "")">
+                                <a class="page-link" href="@(page >= totalPages ? "#" : Url.Action("Details", new { id = Model.Id, dateFrom, dateTo, sortOrder, page = page + 1, pageSize }))">Вперёд</a>
+                            </li>
+                        </ul>
+                    </nav>
+                }
+
+                <p class="text-muted small mt-2 mb-0">Показано @transactions.Count() из @totalCount транзакций</p>
+            }
+            else
+            {
+                <p class="text-muted mb-0 p-3">Транзакций по этому агенту нет.</p>
+            }
+        </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var form = document.getElementById('agentTransactionsFilterForm');
+            var dateFrom = document.getElementById('agentTransDateFrom');
+            var dateTo = document.getElementById('agentTransDateTo');
+            var sortOrder = document.getElementById('agentTransSortOrder');
+            if (form && dateFrom && dateTo && sortOrder) {
+                dateFrom.addEventListener('change', function () { form.submit(); });
+                dateTo.addEventListener('change', function () { form.submit(); });
+                sortOrder.addEventListener('change', function () { form.submit(); });
+            }
+        });
+    </script>
+}

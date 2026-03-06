@@ -1,0 +1,148 @@
+@model IEnumerable<WebApplication1.Models.DBModels.Notification>
+@{
+    ViewData["Title"] = "Уведомления";
+    var pageNum = (int)ViewBag.Page;
+    var totalPages = (int)ViewBag.TotalPages;
+    var totalCount = (int)ViewBag.TotalCount;
+    var status = ViewBag.Status as string ?? "";
+    var channel = ViewBag.Channel as string ?? "";
+    var createdFrom = ViewBag.CreatedFrom as string ?? "";
+    var createdTo = ViewBag.CreatedTo as string ?? "";
+    var sentFrom = ViewBag.SentFrom as string ?? "";
+    var sentTo = ViewBag.SentTo as string ?? "";
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+        <h1 class="h2 mb-1">Уведомления</h1>
+        <p class="text-muted small mb-0">Отправка и статус уведомлений по каналам (email, telegram и др.)</p>
+    </div>
+    <a asp-controller="Settings" asp-action="Index" class="btn btn-outline-secondary">← К настройкам</a>
+</div>
+
+<form method="get" asp-action="Index" class="card mb-4">
+    <div class="card-header py-2"><strong>Фильтры</strong></div>
+    <div class="card-body py-3">
+        <div class="row g-2 align-items-end">
+            <div class="col-auto">
+                <label class="form-label small mb-0">Статус</label>
+                <select name="status" class="form-select form-select-sm" style="min-width: 120px;">
+                    <option value="">Все</option>
+                    @if (status == "new") { <option value="new" selected>new</option> } else { <option value="new">new</option> }
+                    @if (status == "processing") { <option value="processing" selected>processing</option> } else { <option value="processing">processing</option> }
+                    @if (status == "sent") { <option value="sent" selected>sent</option> } else { <option value="sent">sent</option> }
+                    @if (status == "failed") { <option value="failed" selected>failed</option> } else { <option value="failed">failed</option> }
+                </select>
+            </div>
+            <div class="col-auto">
+                <label class="form-label small mb-0">Канал</label>
+                <select name="channel" class="form-select form-select-sm" style="min-width: 120px;">
+                    <option value="">Все</option>
+                    @if (channel == "email") { <option value="email" selected>email</option> } else { <option value="email">email</option> }
+                    @if (channel == "telegram") { <option value="telegram" selected>telegram</option> } else { <option value="telegram">telegram</option> }
+                    @if (channel == "whatsapp") { <option value="whatsapp" selected>whatsapp</option> } else { <option value="whatsapp">whatsapp</option> }
+                </select>
+            </div>
+            <div class="col-auto">
+                <label class="form-label small mb-0">Created_at с</label>
+                <input type="date" name="createdFrom" class="form-control form-control-sm" value="@createdFrom" />
+            </div>
+            <div class="col-auto">
+                <label class="form-label small mb-0">Created_at по</label>
+                <input type="date" name="createdTo" class="form-control form-control-sm" value="@createdTo" />
+            </div>
+            <div class="col-auto">
+                <label class="form-label small mb-0">Sent_at с</label>
+                <input type="date" name="sentFrom" class="form-control form-control-sm" value="@sentFrom" />
+            </div>
+            <div class="col-auto">
+                <label class="form-label small mb-0">Sent_at по</label>
+                <input type="date" name="sentTo" class="form-control form-control-sm" value="@sentTo" />
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary btn-sm">Применить</button>
+                <a asp-action="Index" class="btn btn-outline-secondary btn-sm">Сбросить</a>
+            </div>
+        </div>
+    </div>
+</form>
+
+@if (Model != null && Model.Any())
+{
+    <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Дата</th>
+                    <th>Канал</th>
+                    <th>Статус</th>
+                    <th>Тема</th>
+                    <th>Клиент</th>
+                    <th>Контакт</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var n in Model)
+                {
+                    <tr>
+                        <td>@(n.CreatedAt?.ToString("dd.MM.yyyy HH:mm") ?? "—")</td>
+                        <td>@(n.Channel ?? "—")</td>
+                        <td>
+                            <span class="badge @(n.Status == "sent" ? "bg-success" : n.Status == "failed" ? "bg-danger" : n.Status == "processing" ? "bg-warning" : "bg-secondary")">
+                                @(n.Status ?? "—")
+                            </span>
+                        </td>
+                        <td class="text-break">@(n.Subject != null && n.Subject.Length > 50 ? n.Subject.Substring(0, 50) + "…" : n.Subject ?? "—")</td>
+                        <td>@(n.ClientNavigation?.ClientName ?? n.ClientId ?? "—")</td>
+                        <td class="small">@(n.ContactInfo ?? "—")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (totalPages > 1)
+    {
+        var routeVals = new Dictionary<string, string> {
+            ["status"] = status,
+            ["channel"] = channel,
+            ["createdFrom"] = createdFrom,
+            ["createdTo"] = createdTo,
+            ["sentFrom"] = sentFrom,
+            ["sentTo"] = sentTo
+        };
+        <nav aria-label="Страницы уведомлений" class="mt-3">
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item @(pageNum <= 1 ? "disabled" : "")">
+                    @if (pageNum > 1)
+                    {
+                        <a class="page-link" asp-action="Index" asp-route-page="@(pageNum - 1)" asp-all-route-data="@routeVals">Назад</a>
+                    }
+                    else
+                    {
+                        <span class="page-link">Назад</span>
+                    }
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link">@(pageNum) из @totalPages</span>
+                </li>
+                <li class="page-item @(pageNum >= totalPages ? "disabled" : "")">
+                    @if (pageNum < totalPages)
+                    {
+                        <a class="page-link" asp-action="Index" asp-route-page="@(pageNum + 1)" asp-all-route-data="@routeVals">Вперёд</a>
+                    }
+                    else
+                    {
+                        <span class="page-link">Вперёд</span>
+                    }
+                </li>
+            </ul>
+        </nav>
+    }
+    <p class="text-muted small mt-2">Всего записей: @totalCount</p>
+}
+else
+{
+    <div class="alert alert-info">Уведомлений пока нет.</div>
+    <a asp-controller="Settings" asp-action="Index" class="btn btn-outline-secondary">← К настройкам</a>
+}

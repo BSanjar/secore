@@ -1,0 +1,77 @@
+@model IEnumerable<WebApplication1.Models.DBModels.Agent>
+@{
+    ViewData["Title"] = "Агенты";
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+        <h1 class="h2 mb-1">Агенты</h1>
+        <p class="text-muted small mb-0">Платёжные системы и API-агенты</p>
+    </div>
+    <a asp-action="Create" class="action-btn action-btn--add" title="Добавить агента">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
+                </svg>
+                Добавить агента
+            </a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (Model != null && Model.Any())
+{
+    <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Название</th>
+                            <th>API логин</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var agent in Model)
+                        {
+                            <tr>
+                                <td>@(agent.Name ?? "—")</td>
+                                <td>@(agent.ApiLogin ?? "—")</td>
+                                <td>
+                                    <a asp-action="Details" asp-route-id="@agent.Id" class="action-btn action-btn--view" title="Просмотр">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" fill="currentColor"/></svg>
+                                        Просмотр
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@agent.Id" class="action-btn action-btn--edit" title="Изменить">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor"/></svg>
+                                        Изменить
+                                    </a>
+                                    <a asp-action="Delete" asp-route-id="@agent.Id" class="action-btn action-btn--delete" title="Удалить">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/></svg>
+                                        Удалить
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+    </div>
+    <p class="text-muted small mt-2">Всего агентов: @Model.Count()</p>
+}
+else
+{
+    <div class="text-center py-5 bg-light rounded">
+        <p class="text-muted mb-2">Агентов не найдено</p>
+        <p class="small text-muted mb-3">Добавьте агента для приёма платежей</p>
+        <a asp-action="Create" class="action-btn action-btn--add" title="Добавить агента">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
+            </svg>
+            Добавить агента
+        </a>
+    </div>
+}

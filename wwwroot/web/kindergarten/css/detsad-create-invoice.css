@@ -1,0 +1,249 @@
+/* Create invoice — step 1 then step 2 (form | preview) */
+.create-invoice-wrap {
+    min-height: 40vh;
+}
+
+#createInvoiceStep1 .card {
+    max-width: none;
+}
+
+#createInvoiceStep2 .create-invoice-step .card {
+    max-width: none;
+}
+
+.create-invoice-step1-row {
+    min-height: 380px;
+}
+
+.step1-left-col .card,
+.step1-right-col .card {
+    border-radius: 10px;
+    border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.step1-left-col {
+    border-right: 1px solid var(--border-color, #e2e8f0);
+}
+
+@media (max-width: 767.98px) {
+    .step1-left-col {
+        border-right: none;
+        border-bottom: 1px solid var(--border-color, #e2e8f0);
+    }
+}
+
+/* Step 1 — дерево групп и клиентов */
+.invoice-tree-wrap {
+    max-height: 320px;
+    overflow-y: auto;
+    font-size: 0.9rem;
+}
+
+.tree-group {
+    margin-bottom: 0.25rem;
+}
+
+.tree-group-header {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.5rem;
+    cursor: pointer;
+    user-select: none;
+    background: #f1f5f9;
+    border-radius: 6px;
+}
+
+.tree-group-header:hover {
+    background: #e2e8f0;
+}
+
+.tree-toggle {
+    display: inline-block;
+    width: 1rem;
+    font-size: 0.65rem;
+    color: #64748b;
+    transition: transform 0.15s;
+}
+
+.tree-group-expanded .tree-toggle {
+    transform: rotate(0deg);
+}
+
+.tree-group .tree-group-check {
+    flex-shrink: 0;
+}
+
+.tree-group-name {
+    flex: 1;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.tree-group-children {
+    list-style: none;
+    padding-left: 1.5rem;
+    margin: 0.25rem 0 0 0;
+    display: none;
+}
+
+.tree-group-expanded .tree-group-children {
+    display: block;
+}
+
+.tree-client {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.5rem;
+    margin-bottom: 0.15rem;
+}
+
+.tree-client:hover {
+    background: #f8fafc;
+    border-radius: 4px;
+}
+
+.tree-client-check {
+    flex-shrink: 0;
+}
+
+.tree-client-name {
+    flex: 1;
+    cursor: pointer;
+    font-weight: 400;
+}
+
+/* Step 1 — блок выбранных клиентов справа */
+.selected-clients-list {
+    min-height: 260px;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.selected-clients-ul {
+    padding-left: 0;
+}
+
+.selected-client-item {
+    padding: 0.4rem 0.5rem !important;
+}
+
+.selected-client-item .selected-client-name {
+    font-size: 0.9rem;
+}
+
+.selected-client-remove {
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+#createInvoiceStep2 .row {
+    min-height: 0;
+}
+
+.create-invoice-form-col {
+    border-right: 1px solid var(--border-color, #e2e8f0);
+}
+
+@media (max-width: 991.98px) {
+    .create-invoice-form-col {
+        border-right: none;
+        border-bottom: 1px solid var(--border-color, #e2e8f0);
+    }
+}
+
+.create-invoice-form-col .card,
+.create-invoice-preview-col .card {
+    border-radius: 10px;
+    border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.create-invoice-form-col .card-header,
+.create-invoice-preview-card .card-body {
+    background: #f8fafc;
+}
+
+#invoiceGroupIds,
+#invoiceClientIds {
+    min-height: 80px;
+}
+
+.invoice-line-row .form-control-sm {
+    font-size: 0.8rem;
+}
+
+.line-remove {
+    padding: 0.2rem 0.4rem;
+    font-size: 1rem;
+}
+
+/* Step 2 — блок услуг: поиск и таблица */
+#invoiceServicesSearch {
+    max-width: 100%;
+}
+
+.service-qty-cell {
+    min-width: 100px;
+}
+
+.service-qty-cell .service-qty {
+    min-width: 4rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Step 2 — QR: иконка справа в заголовке */
+.btn-icon-only {
+    padding: 0.35rem 0.5rem;
+    line-height: 1;
+}
+
+.btn-icon-only svg {
+    display: block;
+}
+
+.invoice-qr-container {
+    min-height: 80px;
+}
+
+#invoiceQrContainer img {
+    max-width: 150px;
+    height: auto;
+    display: block;
+}
+
+/* Preview card — имитация документа */
+.create-invoice-preview-card {
+    max-width: 400px;
+    margin: 0 auto;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.preview-header .preview-service-name {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.preview-header .preview-invoice-number {
+    font-family: monospace;
+}
+
+.preview-details div {
+    margin-bottom: 0.25rem;
+}
+
+.preview-table th,
+.preview-table td {
+    padding: 0.35rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.preview-total {
+    font-size: 1rem;
+}
+
+.preview-executor {
+    font-size: 0.8rem;
+}

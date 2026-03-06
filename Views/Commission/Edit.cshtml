@@ -1,0 +1,139 @@
+@model WebApplication1.Models.DBModels.Commission
+@{
+    ViewData["Title"] = "Изменить комиссию";
+    var tiers = Model?.Tiers?.OrderBy(t => t.SortOrder).ToList() ?? new List<WebApplication1.Models.DBModels.CommissionTier>();
+}
+
+<div class="mb-4">
+    <h1 class="h2 mb-1">Изменить комиссию</h1>
+    <p class="text-muted small mb-0">@(Model?.Name ?? Model?.Id)</p>
+</div>
+
+<form asp-action="Edit" method="post" id="commissionForm">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="Id" value="@Model?.Id" />
+    <div asp-validation-summary="All" class="text-danger"></div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label">Название</label>
+                <input type="text" name="Name" class="form-control" value="@Model?.Name" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Вид комиссии</label>
+                <select name="CommissionKind" class="form-select" id="commissionKind" required>
+                    @if (Model?.CommissionKind == "percent") { <option value="percent" selected>Процент — fee = sum × rate</option> } else { <option value="percent">Процент — fee = sum × rate</option> }
+                    @if (Model?.CommissionKind == "fixed") { <option value="fixed" selected>Фиксированная — fee = fixed</option> } else { <option value="fixed">Фиксированная — fee = fixed</option> }
+                    @if (Model?.CommissionKind == "mixed") { <option value="mixed" selected>Смешанная — fee = sum × rate + fixed</option> } else { <option value="mixed">Смешанная — fee = sum × rate + fixed</option> }
+                    @if (Model?.CommissionKind == "single_tier") { <option value="single_tier" selected>Ступенчатая: одна ставка по диапазону</option> } else { <option value="single_tier">Ступенчатая: одна ставка по диапазону</option> }
+                    @if (Model?.CommissionKind == "progressive") { <option value="progressive" selected>Ступенчатая: прогрессивная</option> } else { <option value="progressive">Ступенчатая: прогрессивная</option> }
+                </select>
+            </div>
+            <div class="row g-2">
+                <div class="col-md-3" id="rateCol">
+                    <label class="form-label">Процент (%)</label>
+                    <input type="number" id="ratePercent" class="form-control" step="0.01" min="0" placeholder="3" value="@(Model?.Rate.HasValue == true ? (Model.Rate.Value * 100).ToString(System.Globalization.CultureInfo.InvariantCulture) : "")" />
+                    <input type="hidden" name="Rate" id="rateHidden" value="@Model?.Rate" />
+                </div>
+                <div class="col-md-3" id="fixedMinMaxBlock">
+                    <label class="form-label">Фикс (сом)</label>
+                    <input type="number" name="FixedAmount" step="0.01" class="form-control" value="@Model?.FixedAmount" />
+                </div>
+                <div class="col-md-2" id="minFeeCol">
+                    <label class="form-label">Мин. комиссия (сом)</label>
+                    <input type="number" name="MinFee" step="0.01" class="form-control" value="@Model?.MinFee" />
+                </div>
+                <div class="col-md-2" id="maxFeeCol">
+                    <label class="form-label">Макс. комиссия (сом)</label>
+                    <input type="number" name="MaxFee" step="0.01" class="form-control" value="@Model?.MaxFee" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3 d-none" id="tiersCard">
+        <div class="card-header">Ступени (сомы)</div>
+        <div class="card-body">
+            <table class="table table-sm" id="tiersTable">
+                <thead>
+                    <tr>
+                        <th>От (сом)</th>
+                        <th>До (сом)</th>
+                        <th>Ставка (%)</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="tiersBody"></tbody>
+            </table>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="addTier">+ Добавить ступень</button>
+            <input type="hidden" name="TiersJson" id="TiersJson" value="" />
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <button type="submit" class="btn btn-primary">Сохранить</button>
+        <a asp-action="Index" class="btn btn-secondary">Отмена</a>
+    </div>
+</form>
+
+@section Scripts {
+<script>
+(function() {
+    var kind = document.getElementById('commissionKind');
+    var tiersCard = document.getElementById('tiersCard');
+    var tiersBody = document.getElementById('tiersBody');
+    var addBtn = document.getElementById('addTier');
+    var tiersJsonInput = document.getElementById('TiersJson');
+
+    var initialTiers = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(tiers.Select(t => new { t.AmountFrom, t.AmountTo, RatePercent = t.Rate * 100 })));
+
+    function toggleTiers() {
+        tiersCard.classList.toggle('d-none', kind.value !== 'single_tier' && kind.value !== 'progressive');
+    }
+    function toggleFixedMinMax() {
+        var isPercent = kind.value === 'percent';
+        var block = document.getElementById('fixedMinMaxBlock');
+        var minCol = document.getElementById('minFeeCol');
+        var maxCol = document.getElementById('maxFeeCol');
+        if (block) block.style.display = isPercent ? 'none' : '';
+        if (minCol) minCol.style.display = isPercent ? 'none' : '';
+        if (maxCol) maxCol.style.display = isPercent ? 'none' : '';
+    }
+    kind.addEventListener('change', function() { toggleTiers(); toggleFixedMinMax(); });
+
+    function addRow(from, to, percent) {
+        var tr = document.createElement('tr');
+        tr.innerHTML = '<td><input type="number" step="0.01" class="form-control form-control-sm tier-from" value="' + (from || 0) + '" /></td>' +
+            '<td><input type="number" step="0.01" class="form-control form-control-sm tier-to" value="' + (to || 0) + '" /></td>' +
+            '<td><input type="number" step="0.01" class="form-control form-control-sm tier-rate" value="' + (percent !== undefined && percent !== null ? percent : '') + '" placeholder="3" /></td>' +
+            '<td><button type="button" class="btn btn-sm btn-outline-danger remove-tier">×</button></td>';
+        tiersBody.appendChild(tr);
+        tr.querySelector('.remove-tier').addEventListener('click', function() { tr.remove(); });
+    }
+
+    initialTiers.forEach(function(t) { addRow(t.AmountFrom, t.AmountTo, t.RatePercent); });
+    if (initialTiers.length === 0 && (kind.value === 'single_tier' || kind.value === 'progressive')) addRow(0, 0, 3);
+
+    addBtn.addEventListener('click', function() { addRow(0, 0, 3); });
+    toggleTiers();
+    toggleFixedMinMax();
+
+    document.getElementById('commissionForm').addEventListener('submit', function() {
+        var ratePercentEl = document.getElementById('ratePercent');
+        var rateHiddenEl = document.getElementById('rateHidden');
+        if (ratePercentEl && rateHiddenEl) rateHiddenEl.value = (parseFloat(ratePercentEl.value) || 0) / 100;
+
+        var rows = tiersBody.querySelectorAll('tr');
+        var arr = [];
+        rows.forEach(function(tr) {
+            var from = parseFloat(tr.querySelector('.tier-from').value) || 0;
+            var to = parseFloat(tr.querySelector('.tier-to').value) || 0;
+            var percent = parseFloat(tr.querySelector('.tier-rate').value) || 0;
+            arr.push({ AmountFrom: from, AmountTo: to, Rate: percent / 100 });
+        });
+        tiersJsonInput.value = JSON.stringify(arr);
+    });
+})();
+</script>
+}

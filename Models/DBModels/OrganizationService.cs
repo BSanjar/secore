@@ -13,7 +13,7 @@ public partial class OrganizationService
 
     /// <summary>
     /// если fixed_sum = 1, то тут будет значение фиксированной суммы
-    /// </summary>
+    /// </summary>  
     public decimal? ServiceSumm { get; set; }
 
     /// <summary>

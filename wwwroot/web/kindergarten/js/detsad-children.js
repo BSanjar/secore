@@ -156,411 +156,286 @@ document.addEventListener('DOMContentLoaded', function() {
     cards.forEach((card, index) => {
         card.style.animationDelay = `${index * 0.05}s`;
     });
+
+    // Клик по карточке — открыть модальное окно с вкладками
+    childrenCards.querySelectorAll('.child-card--clickable').forEach(function(card) {
+        card.addEventListener('click', function() {
+            const clientId = card.getAttribute('data-client-id');
+            const clientName = card.getAttribute('data-client-name') || 'Ребенок';
+            if (clientId) openChildDetailModal(clientId, clientName);
+        });
+    });
     
     console.log('Detsad children page loaded');
 });
 
-// Функция для показа информации о ребенке
-async function showChildInfo(clientId) {
-    const modal = new bootstrap.Modal(document.getElementById('childInfoModal'));
-    const content = document.getElementById('childInfoContent');
-    
-    content.innerHTML = `
-        <div class="loading-spinner">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Загрузка...</span>
-            </div>
-        </div>
-    `;
-    
+// Текущий клиент в модальном окне с вкладками (для загрузки Счета/Платежи при переключении вкладок)
+let currentDetailClientId = null;
+
+// Открыть модальное окно с вкладками по клику на карточку. Опционально: onShown() вызовется после открытия (для переключения на нужную вкладку).
+function openChildDetailModal(clientId, clientName, onShown) {
+    const modalEl = document.getElementById('childDetailModal');
+    const modalTitle = document.getElementById('childDetailModalLabel');
+    const infoContent = document.getElementById('childDetailInfoContent');
+    const invoicesContent = document.getElementById('childDetailInvoicesContent');
+    const paymentsContent = document.getElementById('childDetailPaymentsContent');
+    const tabInvoices = document.getElementById('tab-invoices');
+    const tabPayments = document.getElementById('tab-payments');
+
+    if (!modalEl || !modalTitle) return;
+
+    currentDetailClientId = clientId;
+    modalTitle.textContent = clientName || 'Ребенок';
+
+    if (infoContent) infoContent.innerHTML = '<div class="loading-spinner"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div></div>';
+    if (invoicesContent) invoicesContent.innerHTML = '<p class="text-muted mb-0">Выберите вкладку «Счета» для загрузки данных.</p>';
+    if (paymentsContent) paymentsContent.innerHTML = '<p class="text-muted mb-0">Выберите вкладку «Платежи» для загрузки данных.</p>';
+
+    const modal = new bootstrap.Modal(modalEl);
     modal.show();
-    
+
+    loadChildInfoInto(clientId, infoContent);
+
+    modalEl.addEventListener('shown.bs.modal', function onceShown() {
+        modalEl.removeEventListener('shown.bs.modal', onceShown);
+        var tabChildInfo = document.getElementById('tab-child-info');
+        if (tabChildInfo) bootstrap.Tab.getOrCreateInstance(tabChildInfo).show();
+        if (tabInvoices) {
+            tabInvoices.addEventListener('shown.bs.tab', function onInvoices() {
+                if (currentDetailClientId === clientId && invoicesContent && invoicesContent.innerHTML.includes('Выберите вкладку')) {
+                    loadInvoicesInto(clientId, invoicesContent, null);
+                }
+            });
+        }
+        if (tabPayments) {
+            tabPayments.addEventListener('shown.bs.tab', function onPayments() {
+                if (currentDetailClientId === clientId && paymentsContent && paymentsContent.innerHTML.includes('Выберите вкладку')) {
+                    loadPaymentsInto(clientId, paymentsContent);
+                }
+            });
+        }
+        if (typeof onShown === 'function') onShown();
+    });
+}
+
+// Загрузить контент "О ребенке" в указанный элемент
+async function loadChildInfoInto(clientId, contentEl) {
+    if (!contentEl) return;
+    contentEl.innerHTML = '<div class="loading-spinner"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div></div>';
     try {
         const response = await fetch(`/Detsad/Cabinet/GetChildInfo?clientId=${clientId}`);
-        if (!response.ok) {
-            throw new Error('Ошибка загрузки данных');
-        }
-        
+        if (!response.ok) throw new Error('Ошибка загрузки данных');
         const data = await response.json();
         const client = data.client;
         const additionalFields = data.additionalFields || [];
-        
-        // Определяем статус
-        let statusText = 'Неизвестно';
-        let statusClass = 'status-unknown';
-        if (client.status == 1) {
-            statusText = 'Активный';
-            statusClass = 'status-active';
-        } else if (client.status == 0) {
-            statusText = 'Приостановлен';
-            statusClass = 'status-suspended';
-        } else {
-            statusText = 'Удален';
-            statusClass = 'status-deleted';
-        }
-        
-        // Форматируем даты
+        let statusText = 'Неизвестно', statusClass = 'status-unknown';
+        if (client.status == 1) { statusText = 'Активный'; statusClass = 'status-active'; }
+        else if (client.status == 0) { statusText = 'Приостановлен'; statusClass = 'status-suspended'; }
+        else { statusText = 'Удален'; statusClass = 'status-deleted'; }
         const createdDate = client.createdDate ? new Date(client.createdDate).toLocaleDateString('ru-RU') : '-';
         const updatedDate = client.updatedDate ? new Date(client.updatedDate).toLocaleDateString('ru-RU') : '-';
-        
-        // Форматируем баланс
         const balance = client.balance ? (client.balance / 100).toFixed(2) : '0.00';
         const balanceClass = client.balance < 0 ? 'text-danger' : '';
-        
-        // HTML для модального окна
         let html = `
-            <!-- Основные данные из OrganizationClient -->
             <div class="details-section">
-                <h6 class="details-section-title">Основные данные из OrganizationClient</h6>
+                <h6 class="details-section-title">Основные данные</h6>
                 <div class="details-grid">
-                    <div class="detail-item">
-                        <span class="detail-label">ФИО</span>
-                        <span class="detail-value">${client.name || '-'}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Телефон</span>
-                        <span class="detail-value">${client.phone || '-'}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Email</span>
-                        <span class="detail-value">${client.email || '-'}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Адрес</span>
-                        <span class="detail-value">${client.address || '-'}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">ИНН</span>
-                        <span class="detail-value">${client.inn || '-'}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Баланс</span>
-                        <span class="detail-value ${balanceClass}">${balance} сом</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Статус</span>
-                        <span class="detail-value"><span class="child-status-badge ${statusClass}">${statusText}</span></span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Дата регистрации</span>
-                        <span class="detail-value">${createdDate}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Дата обновления</span>
-                        <span class="detail-value">${updatedDate}</span>
-                    </div>
+                    <div class="detail-item"><span class="detail-label">ФИО</span><span class="detail-value">${client.name || '-'}</span></div>
+                    <div class="detail-item"><span class="detail-label">Телефон</span><span class="detail-value">${client.phone || '-'}</span></div>
+                    <div class="detail-item"><span class="detail-label">Email</span><span class="detail-value">${client.email || '-'}</span></div>
+                    <div class="detail-item"><span class="detail-label">Адрес</span><span class="detail-value">${client.address || '-'}</span></div>
+                    <div class="detail-item"><span class="detail-label">ИНН</span><span class="detail-value">${client.inn || '-'}</span></div>
+                    <div class="detail-item"><span class="detail-label">Баланс</span><span class="detail-value ${balanceClass}">${balance} сом</span></div>
+                    <div class="detail-item"><span class="detail-label">Статус</span><span class="detail-value"><span class="child-status-badge ${statusClass}">${statusText}</span></span></div>
+                    <div class="detail-item"><span class="detail-label">Дата регистрации</span><span class="detail-value">${createdDate}</span></div>
+                    <div class="detail-item"><span class="detail-label">Дата обновления</span><span class="detail-value">${updatedDate}</span></div>
                 </div>
-            </div>
-        `;
-        
-        // Дополнительные поля
+            </div>`;
         if (additionalFields.length > 0) {
-            html += `
-                <div class="details-section">
-                    <h6 class="details-section-title">Дополнительные данные</h6>
-                    <div class="details-grid">
-            `;
-            
+            html += '<div class="details-section"><h6 class="details-section-title">Дополнительные данные</h6><div class="details-grid">';
             additionalFields.forEach(field => {
-                html += `
-                    <div class="detail-item">
-                        <span class="detail-label">${field.fieldName || '-'}</span>
-                        <span class="detail-value">${field.value || '-'}</span>
-                    </div>
-                `;
+                html += `<div class="detail-item"><span class="detail-label">${field.fieldName || '-'}</span><span class="detail-value">${field.value || '-'}</span></div>`;
             });
-            
-            html += `
-                    </div>
-                </div>
-            `;
+            html += '</div></div>';
         }
-        
-        content.innerHTML = html;
-        
-    } catch (error) {
-        console.error('Error loading child info:', error);
-        content.innerHTML = `
-            <div class="alert alert-danger" role="alert">
-                <strong>Ошибка!</strong> Не удалось загрузить данные. Попробуйте позже.
-            </div>
-        `;
+        contentEl.innerHTML = html;
+    } catch (err) {
+        console.error('Error loading child info:', err);
+        contentEl.innerHTML = '<div class="alert alert-danger" role="alert"><strong>Ошибка!</strong> Не удалось загрузить данные.</div>';
     }
 }
 
-// Функция для показа информации о счетах
-async function showInvoicesInfo(clientId, invoiceId = null) {
-    const modal = new bootstrap.Modal(document.getElementById('invoicesInfoModal'));
-    const content = document.getElementById('invoicesInfoContent');
-    
-    content.innerHTML = `
-        <div class="loading-spinner">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Загрузка...</span>
-            </div>
-        </div>
-    `;
-    
-    modal.show();
-    
+// Обновить вкладку «Счета» в модальном окне (при смене счета в select)
+window.refreshInvoicesInDetailModal = function(invoiceId) {
+    const content = document.getElementById('childDetailInvoicesContent');
+    if (currentDetailClientId && content) loadInvoicesInto(currentDetailClientId, content, invoiceId || null);
+};
+
+// Загрузить контент "Счета" в указанный элемент
+async function loadInvoicesInto(clientId, contentEl, invoiceId) {
+    if (!contentEl) return;
+    contentEl.innerHTML = '<div class="loading-spinner"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div></div>';
     try {
-        const url = invoiceId 
-            ? `/Detsad/Cabinet/GetInvoicesInfo?clientId=${clientId}&invoiceId=${invoiceId}`
+        const url = invoiceId
+            ? `/Detsad/Cabinet/GetInvoicesInfo?clientId=${clientId}&invoiceId=${encodeURIComponent(invoiceId)}`
             : `/Detsad/Cabinet/GetInvoicesInfo?clientId=${clientId}`;
-        
         const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error('Ошибка загрузки данных');
-        }
-        
+        if (!response.ok) throw new Error('Ошибка загрузки данных');
         const data = await response.json();
         const invoices = data.invoices || [];
         const selectedInvoice = data.selectedInvoice;
         const invoicePayments = data.invoicePayments || [];
-        
         if (!selectedInvoice) {
-            content.innerHTML = `
-                <div class="alert alert-info" role="alert">
-                    <strong>Информация:</strong> У данного клиента нет счетов на оплату.
-                </div>
-            `;
+            contentEl.innerHTML = '<div class="alert alert-info" role="alert"><strong>Информация:</strong> У данного клиента нет счетов на оплату.</div>';
             return;
         }
-        
-        // Форматируем дату создания
-        const dateCreated = selectedInvoice.dateCreated 
-            ? new Date(selectedInvoice.dateCreated).toLocaleDateString('ru-RU') 
-            : '-';
-        
-        // Форматируем баланс
+        const dateCreated = selectedInvoice.dateCreated ? new Date(selectedInvoice.dateCreated).toLocaleDateString('ru-RU') : '-';
         const balance = selectedInvoice.balance ? (selectedInvoice.balance / 100).toFixed(2) : '0.00';
         const balanceClass = selectedInvoice.balance < 0 ? 'text-danger' : '';
-        
-        // HTML для модального окна
         let html = `
-            <!-- Выбор счета -->
             <div class="details-section">
                 <div class="mb-3">
-                    <label for="invoiceSelect" class="form-label fw-bold">Выберите счет:</label>
-                    <select id="invoiceSelect" class="form-select" onchange="showInvoicesInfo('${clientId}', this.value)">
+                    <label for="invoiceSelectDetail" class="form-label fw-bold">Выберите счет:</label>
+                    <select id="invoiceSelectDetail" class="form-select" onchange="refreshInvoicesInDetailModal(this.value)">
         `;
-        
-        invoices.forEach(invoice => {
-            const isSelected = invoice.id === selectedInvoice.id;
-            html += `
-                <option value="${invoice.id}" ${isSelected ? 'selected' : ''}>
-                    ${invoice.name} (${invoice.payCode || 'без кода'})
-                </option>
-            `;
+        invoices.forEach(inv => {
+            const sel = inv.id === selectedInvoice.id ? ' selected' : '';
+            html += `<option value="${inv.id}"${sel}>${inv.name} (${inv.payCode || 'без кода'})</option>`;
         });
-        
-        html += `
-                    </select>
-                </div>
-            </div>
-            
-            <!-- Информация о выбранном счете -->
+        html += `</select></div></div>
             <div class="details-section">
                 <h6 class="details-section-title">Информация о счете</h6>
                 <div class="details-grid">
-                    <div class="detail-item">
-                        <span class="detail-label">Счет на оплату (pay_code)</span>
-                        <span class="detail-value">${selectedInvoice.payCode || '-'}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">ФИО клиента (ребенка)</span>
-                        <span class="detail-value">${data.client.name || '-'}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Дата создания</span>
-                        <span class="detail-value">${dateCreated}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Создавший пользователь</span>
-                        <span class="detail-value">${selectedInvoice.userCreater || '-'}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Тип периодичности оплаты</span>
-                        <span class="detail-value">${selectedInvoice.periodicity || '-'}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Текущий баланс</span>
-                        <span class="detail-value ${balanceClass}">${balance} сом</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Автоматически будет продлеваться контракт</span>
-                        <span class="detail-value">${selectedInvoice.autoProlongation ? 'Да' : 'Нет'}</span>
-                    </div>
+                    <div class="detail-item"><span class="detail-label">Название счёта</span><span class="detail-value">${selectedInvoice.nameInvoice || '-'}</span></div>
+                    <div class="detail-item"><span class="detail-label">Лицевой счёт</span><span class="detail-value">${selectedInvoice.payCode || '-'}</span></div>
+                    <div class="detail-item"><span class="detail-label">ФИО клиента</span><span class="detail-value">${data.client.name || '-'}</span></div>
+                    <div class="detail-item"><span class="detail-label">Дата создания</span><span class="detail-value">${dateCreated}</span></div>
+                    <div class="detail-item"><span class="detail-label">Создавший пользователь</span><span class="detail-value">${selectedInvoice.userCreater || '-'}</span></div>
+                    <div class="detail-item"><span class="detail-label">Периодичность</span><span class="detail-value">${selectedInvoice.periodicity || '-'}</span></div>
+                    <div class="detail-item"><span class="detail-label">Текущий баланс</span><span class="detail-value ${balanceClass}">${balance} сом</span></div>
+                    <div class="detail-item"><span class="detail-label">Автопродление</span><span class="detail-value">${selectedInvoice.autoProlongation ? 'Да' : 'Нет'}</span></div>
                 </div>
             </div>
-        `;
-        
-        // Платежные периоды (invoice_payments)
-        html += `
             <div class="details-section">
                 <h6 class="details-section-title">Платежные периоды</h6>
                 <div class="table-responsive">
                     <table class="table table-hover table-striped">
-                        <thead>
-                            <tr>
-                                <th>Период с</th>
-                                <th>Период по</th>
-                                <th>Сумма оплаты</th>
-                                <th>Статус</th>
-                                <th>Значение периода</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-        `;
-        
+                        <thead><tr><th>Период с</th><th>Период по</th><th>Сумма</th><th>Статус</th><th>Значение периода</th></tr></thead>
+                        <tbody>`;
         if (invoicePayments.length > 0) {
-            invoicePayments.forEach(payment => {
-                const dateFrom = payment.dateFrom ? new Date(payment.dateFrom).toLocaleDateString('ru-RU') : '-';
-                const dateTo = payment.dateTo ? new Date(payment.dateTo).toLocaleDateString('ru-RU') : '-';
-                const paymentSumm = payment.paymentSumm || '-';
-                const status = payment.paymentStatus === 'paid' ? 'Оплачено' 
-                    : payment.paymentStatus === 'non_paid' ? 'Не оплачено'
-                    : payment.paymentStatus === 'anulated' ? 'Аннулировано'
-                    : payment.paymentStatus || '-';
-                const statusClass = payment.paymentStatus === 'paid' ? 'text-success' 
-                    : payment.paymentStatus === 'non_paid' ? 'text-warning'
-                    : payment.paymentStatus === 'anulated' ? 'text-danger' : '';
-                const statusBadge = payment.paymentStatus === 'paid' ? 'bg-success' 
-                    : payment.paymentStatus === 'non_paid' ? 'bg-warning'
-                    : payment.paymentStatus === 'anulated' ? 'bg-danger' : 'bg-secondary';
-                
-                html += `
-                    <tr>
-                        <td><strong>${dateFrom}</strong></td>
-                        <td><strong>${dateTo}</strong></td>
-                        <td class="fw-bold">${paymentSumm}</td>
-                        <td><span class="badge ${statusBadge}">${status}</span></td>
-                        <td>${payment.periodValue || '-'}</td>
-                    </tr>
-                `;
+            invoicePayments.forEach(p => {
+                const dateFrom = p.dateFrom ? new Date(p.dateFrom).toLocaleDateString('ru-RU') : '-';
+                const dateTo = p.dateTo ? new Date(p.dateTo).toLocaleDateString('ru-RU') : '-';
+                const status = p.paymentStatus === 'paid' ? 'Оплачено' : p.paymentStatus === 'non_paid' ? 'Не оплачено' : p.paymentStatus === 'anulated' ? 'Аннулировано' : p.paymentStatus || '-';
+                const badge = p.paymentStatus === 'paid' ? 'bg-success' : p.paymentStatus === 'non_paid' ? 'bg-warning' : p.paymentStatus === 'anulated' ? 'bg-danger' : 'bg-secondary';
+                const paySumDisplay = p.paymentSumm != null ? Number(p.paymentSumm).toFixed(2) + ' сом' : '—';
+                html += `<tr><td>${dateFrom}</td><td>${dateTo}</td><td>${paySumDisplay}</td><td><span class="badge ${badge}">${status}</span></td><td>${p.periodValue || '-'}</td></tr>`;
             });
         } else {
-            html += `
-                <tr>
-                    <td colspan="5" class="text-center text-muted py-4">Платежных периодов не найдено</td>
-                </tr>
-            `;
+            html += '<tr><td colspan="5" class="text-center text-muted py-4">Платежных периодов не найдено</td></tr>';
         }
-        
-        html += `
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-        
-        content.innerHTML = html;
-        
-    } catch (error) {
-        console.error('Error loading invoices info:', error);
-        content.innerHTML = `
-            <div class="alert alert-danger" role="alert">
-                <strong>Ошибка!</strong> Не удалось загрузить данные. Попробуйте позже.
-            </div>
-        `;
+        html += '</tbody></table></div></div>';
+        contentEl.innerHTML = html;
+    } catch (err) {
+        console.error('Error loading invoices:', err);
+        contentEl.innerHTML = '<div class="alert alert-danger" role="alert"><strong>Ошибка!</strong> Не удалось загрузить данные.</div>';
     }
 }
 
-// Функция для показа транзакций клиента
-async function showClientTransactions(clientId) {
-    const modal = new bootstrap.Modal(document.getElementById('clientTransactionsModal'));
-    const content = document.getElementById('clientTransactionsContent');
-    
-    content.innerHTML = `
-        <div class="loading-spinner">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Загрузка...</span>
-            </div>
-        </div>
-    `;
-    
-    modal.show();
-    
+// Загрузить контент "Платежи" в указанный элемент (agentIds — массив id агентов или пустая строка для всех)
+async function loadPaymentsInto(clientId, contentEl, agentIds) {
+    if (!contentEl) return;
+    contentEl.innerHTML = '<div class="loading-spinner"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div></div>';
     try {
-        const response = await fetch(`/Detsad/Cabinet/GetClientTransactions?clientId=${clientId}`);
-        if (!response.ok) {
-            throw new Error('Ошибка загрузки данных');
+        let url = `/Detsad/Cabinet/GetClientTransactions?clientId=${encodeURIComponent(clientId)}`;
+        if (agentIds && agentIds.length > 0) {
+            url += '&agentIds=' + agentIds.map(function(id) { return encodeURIComponent(id); }).join('&agentIds=');
         }
-        
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Ошибка загрузки данных');
         const data = await response.json();
         const transactions = data.transactions || [];
-        
+        const agents = data.agents || [];
+        const selectedIds = agentIds && agentIds.length > 0 ? agentIds : [];
+        let filterHtml = '';
+        if (agents.length > 0) {
+            filterHtml = `
+                <div class="mb-3 d-flex align-items-center flex-wrap gap-2">
+                    <label class="form-label small text-muted mb-0 me-2">Агент:</label>
+                    <select id="childPaymentsAgentFilter" class="form-select form-select-sm" style="max-width: 220px;">
+                        <option value=""${selectedIds.length === 0 ? ' selected' : ''}>Все агенты</option>
+                        ${agents.map(function(a) {
+                            var isSel = selectedIds.length > 0 && selectedIds.indexOf(a.id) >= 0;
+                            return '<option value="' + (a.id || '') + '"' + (isSel ? ' selected' : '') + '>' + (a.name || a.id || '-') + '</option>';
+                        }).join('')}
+                    </select>
+                </div>`;
+        }
         let html = `
             <div class="details-section">
-                <h6 class="details-section-title">Транзакции по всем счетам</h6>
-                <p class="text-muted mb-3">Клиент: <strong>${data.client.name || '-'}</strong></p>
+                <h6 class="details-section-title">Транзакции</h6>
+                <p class="text-muted mb-2">Клиент: <strong>${data.client.name || '-'}</strong></p>
+                ${filterHtml}
                 <div class="table-responsive">
                     <table class="table table-hover table-striped">
-                        <thead>
-                            <tr>
-                                <th>Дата транзакции</th>
-                                <th>Сумма</th>
-                                <th>Сумма с комиссией</th>
-                                <th>Тип</th>
-                                <th>Статус</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-        `;
-        
+                        <thead><tr><th>Дата</th><th>Агент</th><th>Сумма</th><th>С комиссией</th><th>Тип</th><th>Статус</th></tr></thead>
+                        <tbody>`;
         if (transactions.length > 0) {
-            transactions.forEach(transaction => {
-                const transactionDate = transaction.transactionDate 
-                    ? new Date(transaction.transactionDate).toLocaleString('ru-RU') 
-                    : '-';
-                const summ = transaction.summ ? (transaction.summ / 100).toFixed(2) : '0.00';
-                const transactionSumm = transaction.transactionSumm ? (transaction.transactionSumm / 100).toFixed(2) : '0.00';
-                const type = transaction.transactionType === 'debit' ? 'Приход' 
-                    : transaction.transactionType === 'credit' ? 'Расход'
-                    : transaction.transactionType || '-';
-                const status = transaction.transactionStatus === 'success' ? 'Успешно' 
-                    : transaction.transactionStatus === 'error' ? 'Ошибка'
-                    : transaction.transactionStatus || '-';
-                const statusClass = transaction.transactionStatus === 'success' ? 'text-success' 
-                    : transaction.transactionStatus === 'error' ? 'text-danger' : '';
-                const typeClass = transaction.transactionType === 'debit' ? 'text-success' 
-                    : transaction.transactionType === 'credit' ? 'text-danger' : '';
-                
-                html += `
-                    <tr>
-                        <td>${transactionDate}</td>
-                        <td class="fw-bold">${summ} сом</td>
-                        <td>${transactionSumm} сом</td>
-                        <td class="${typeClass}">${type}</td>
-                        <td class="${statusClass}"><span class="badge ${statusClass === 'text-success' ? 'bg-success' : 'bg-danger'}">${status}</span></td>
-                    </tr>
-                `;
+            transactions.forEach(t => {
+                const date = t.transactionDate ? new Date(t.transactionDate).toLocaleString('ru-RU') : '-';
+                const agentName = t.agentName || t.agentId || '-';
+                const summ = t.summ ? (t.summ / 100).toFixed(2) : '0.00';
+                const summFee = t.transactionSumm ? (t.transactionSumm / 100).toFixed(2) : '0.00';
+                const type = t.transactionType === 'debit' ? 'Приход' : t.transactionType === 'credit' ? 'Расход' : t.transactionType || '-';
+                const typeClass = t.transactionType === 'debit' ? 'text-success' : t.transactionType === 'credit' ? 'text-danger' : '';
+                const status = t.transactionStatus === 'success' ? 'Успешно' : t.transactionStatus === 'error' ? 'Ошибка' : t.transactionStatus || '-';
+                const statusBadge = t.transactionStatus === 'success' ? 'bg-success' : 'bg-danger';
+                html += '<tr><td>' + date + '</td><td>' + agentName + '</td><td>' + summ + ' сом</td><td>' + summFee + ' сом</td><td class="' + typeClass + '">' + type + '</td><td><span class="badge ' + statusBadge + '">' + status + '</span></td></tr>';
             });
         } else {
-            html += `
-                <tr>
-                    <td colspan="5" class="text-center text-muted py-4">Транзакций не найдено</td>
-                </tr>
-            `;
+            html += '<tr><td colspan="6" class="text-center text-muted py-4">Транзакций не найдено</td></tr>';
         }
-        
-        html += `
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-        
-        content.innerHTML = html;
-        
-    } catch (error) {
-        console.error('Error loading client transactions:', error);
-        content.innerHTML = `
-            <div class="alert alert-danger" role="alert">
-                <strong>Ошибка!</strong> Не удалось загрузить данные. Попробуйте позже.
-            </div>
-        `;
+        html += '</tbody></table></div></div>';
+        contentEl.innerHTML = html;
+        if (agents.length > 0) {
+            var selEl = contentEl.querySelector('#childPaymentsAgentFilter');
+            if (selEl) {
+                selEl.addEventListener('change', function() {
+                    var val = selEl.value;
+                    var ids = val ? [val] : [];
+                    loadPaymentsInto(clientId, contentEl, ids);
+                });
+            }
+        }
+    } catch (err) {
+        console.error('Error loading payments:', err);
+        contentEl.innerHTML = '<div class="alert alert-danger" role="alert"><strong>Ошибка!</strong> Не удалось загрузить данные.</div>';
     }
+}
+
+// Функция для показа информации о ребенке (открывает модальное окно с вкладками на первой вкладке)
+async function showChildInfo(clientId) {
+    openChildDetailModal(clientId, 'Ребенок');
+}
+
+// Открыть модальное окно на вкладке «Счета»
+function showInvoicesInfo(clientId, invoiceId = null) {
+    openChildDetailModal(clientId, 'Ребенок', function() {
+        const tabInvoices = document.getElementById('tab-invoices');
+        const invoicesContent = document.getElementById('childDetailInvoicesContent');
+        if (tabInvoices) bootstrap.Tab.getOrCreateInstance(tabInvoices).show();
+        if (invoicesContent) loadInvoicesInto(clientId, invoicesContent, invoiceId);
+    });
+}
+
+// Открыть модальное окно на вкладке «Платежи»
+function showClientTransactions(clientId) {
+    openChildDetailModal(clientId, 'Ребенок', function() {
+        const tabPayments = document.getElementById('tab-payments');
+        const paymentsContent = document.getElementById('childDetailPaymentsContent');
+        if (tabPayments) bootstrap.Tab.getOrCreateInstance(tabPayments).show();
+        if (paymentsContent) loadPaymentsInto(clientId, paymentsContent);
+    });
 }
 
 // Экспортируем функции для глобального доступа

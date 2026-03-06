@@ -1,0 +1,40 @@
+@model WebApplication1.Models.DBModels.Agent
+@{
+    ViewData["Title"] = "Добавить агента";
+}
+
+<div class="mb-4">
+    <h1 class="h2 mb-1">Добавить агента</h1>
+    <p class="text-muted small mb-4">Новый платёжный агент или API</p>
+</div>
+
+<form asp-action="Create" method="post" class="mb-4">
+            <div asp-validation-summary="All" class="text-danger"></div>
+
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label">Название</label>
+                <input asp-for="Name" class="form-control" placeholder="Например: Платёжная система X" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ApiLogin" class="form-label">API логин</label>
+                <input asp-for="ApiLogin" class="form-control" />
+                <span asp-validation-for="ApiLogin" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ApiPassword" class="form-label">API пароль</label>
+                <input asp-for="ApiPassword" type="password" class="form-control" autocomplete="new-password" />
+                <span asp-validation-for="ApiPassword" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <button type="submit" class="action-btn action-btn--add">Создать</button>
+                <a asp-action="Index" class="action-btn action-btn--view">Отмена</a>
+            </div>
+</form>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

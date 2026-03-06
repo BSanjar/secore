@@ -17,23 +17,6 @@ public partial class Organization
     /// </summary>
     public string? Organizationtype { get; set; }
 
-    /// <summary>
-    /// если true - то организации могут создавать счета к оплате с одинаковыми л\с
-    /// </summary>
-    public bool AllowedHassameaccount { get; set; }
-
-    /// <summary>
-    /// Количество дней за которую будет начинатся отправка уведомлений по оплате на организацию
-    /// </summary>
-    public int Paymentreminderdaysbefore { get; set; }
-
-    /// <summary>
-    /// Логин для API
-    /// </summary>
-    public string? ApiLogin { get; set; }
-
-    public string? ApiPassword { get; set; }
-
     public virtual ICollection<OrganizationClient> OrganizationClients { get; set; } = new List<OrganizationClient>();
 
     public virtual ICollection<OrgClientGroup> OrgClientGroups { get; set; } = new List<OrgClientGroup>();
@@ -46,4 +29,7 @@ public partial class Organization
     public virtual ICollection<User> Users { get; set; } = new List<User>();
 
     public virtual ICollection<Role> Roles { get; set; } = new List<Role>();
+
+    public virtual OrganizationSettings? Settings { get; set; }
+    public virtual ICollection<AgentCommission> AgentCommissions { get; set; } = new List<AgentCommission>();
 }

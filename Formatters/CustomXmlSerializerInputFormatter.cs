@@ -32,6 +32,11 @@ namespace WebApplication1.Formatters
             {
                 // Если произошла ошибка десериализации, возвращаем null
                 // Фильтр XmlValidationFilter обработает это и вернет правильный XML ответ
+
+                var logger = context.HttpContext.RequestServices
+        .GetRequiredService<ILogger<CustomXmlSerializerInputFormatter>>();
+                logger.LogError(ex, "XML deserialization error. ContentType={ContentType}",
+                    context.HttpContext.Request.ContentType);
                 return await InputFormatterResult.NoValueAsync();
             }
         }

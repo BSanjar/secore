@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace WebApplication1.Models.DBModels;
@@ -35,6 +35,11 @@ public partial class Invoice
     /// Дата начал инвойса, т.е с этого дня будет учитываться платеж
     /// </summary>
     public DateTime? DateStartInvoice { get; set; }
+
+    /// <summary>
+    /// Дата окончания инвойса
+    /// </summary>
+    public DateTime? DateEndInvoice { get; set; }
 
     /// <summary>
     /// сумма баланса, если сумма в минусе то долг.

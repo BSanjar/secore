@@ -1,3 +1,20 @@
-﻿@{
-    Layout = "_Layout";
+@{
+    var cabinetLayout = Context.Session.GetString("CabinetLayout");
+    if (!string.IsNullOrEmpty(cabinetLayout))
+    {
+        if (cabinetLayout == "Detsad")
+            Layout = "~/Areas/Detsad/Views/Shared/_LayoutDetSadCabinet.cshtml";
+        else if (cabinetLayout == "Medclinic")
+            Layout = "~/Areas/Medclinic/Views/Shared/_LayoutMedCabinet.cshtml";
+        else if (cabinetLayout == "Standart")
+            Layout = "~/Areas/Standart/Views/Shared/_LayoutCabinet.cshtml";
+        else if (cabinetLayout == "Simple")
+            Layout = "~/Areas/Simple/Views/Shared/_LayoutSimpleCabinet.cshtml";
+        else
+            Layout = "_Layout";
+    }
+    else
+    {
+        Layout = "_Layout";
+    }
 }

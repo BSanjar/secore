@@ -33,6 +33,7 @@
 
   <ItemGroup>
     <Folder Include="Models\CommonModels\" />
+    <Folder Include="Scripts\" />
     <Folder Include="wwwroot\mobile\css\" />
     <Folder Include="wwwroot\mobile\js\" />
   </ItemGroup>

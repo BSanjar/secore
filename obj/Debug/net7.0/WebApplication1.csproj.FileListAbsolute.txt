@@ -2,6 +2,7 @@ C:\disk\sanjar\BillingCom\secore\WebApplication1\obj\Debug\net7.0\scopedcss\Area
 C:\disk\sanjar\BillingCom\secore\WebApplication1\bin\Debug\net7.0\BCrypt.Net-Next.dll
 C:\Users\AzatAdmin\Documents\SECORE\secore\bin\Debug\net7.0\appsettings.Development.json
 C:\Users\AzatAdmin\Documents\SECORE\secore\bin\Debug\net7.0\appsettings.json
+C:\Users\AzatAdmin\Documents\SECORE\secore\bin\Debug\net7.0\Postman_WebApi_Collection.json
 C:\Users\AzatAdmin\Documents\SECORE\secore\bin\Debug\net7.0\WebApplication1.staticwebassets.runtime.json
 C:\Users\AzatAdmin\Documents\SECORE\secore\bin\Debug\net7.0\WebApplication1.staticwebassets.endpoints.json
 C:\Users\AzatAdmin\Documents\SECORE\secore\bin\Debug\net7.0\WebApplication1.exe
@@ -60,10 +61,10 @@ C:\Users\AzatAdmin\Documents\SECORE\secore\obj\Debug\net7.0\staticwebassets.buil
 C:\Users\AzatAdmin\Documents\SECORE\secore\obj\Debug\net7.0\staticwebassets.build.json.cache
 C:\Users\AzatAdmin\Documents\SECORE\secore\obj\Debug\net7.0\staticwebassets.development.json
 C:\Users\AzatAdmin\Documents\SECORE\secore\obj\Debug\net7.0\staticwebassets.build.endpoints.json
-C:\Users\AzatAdmin\Documents\SECORE\secore\obj\Debug\net7.0\staticwebassets.upToDateCheck.txt
 C:\Users\AzatAdmin\Documents\SECORE\secore\obj\Debug\net7.0\WebAppli.7D14BD69.Up2Date
 C:\Users\AzatAdmin\Documents\SECORE\secore\obj\Debug\net7.0\WebApplication1.dll
 C:\Users\AzatAdmin\Documents\SECORE\secore\obj\Debug\net7.0\refint\WebApplication1.dll
 C:\Users\AzatAdmin\Documents\SECORE\secore\obj\Debug\net7.0\WebApplication1.pdb
 C:\Users\AzatAdmin\Documents\SECORE\secore\obj\Debug\net7.0\WebApplication1.genruntimeconfig.cache
 C:\Users\AzatAdmin\Documents\SECORE\secore\obj\Debug\net7.0\ref\WebApplication1.dll
+C:\Users\AzatAdmin\Documents\SECORE\secore\obj\Debug\net7.0\staticwebassets.upToDateCheck.txt

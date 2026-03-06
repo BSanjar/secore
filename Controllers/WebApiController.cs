@@ -22,12 +22,13 @@ namespace WebApplication1.Controllers
 
         private readonly AppDbContext _db;
         private readonly WebApiAuthService _authService;
-       
+        private readonly OperationsByInvoices _oper;
 
-        public WebApiController(AppDbContext db, WebApiAuthService authService)
+        public WebApiController(AppDbContext db, WebApiAuthService authService, OperationsByInvoices oper)
         {
             _db = db;
             _authService = authService;
+            _oper = oper;
         }
 
 
@@ -72,11 +73,9 @@ namespace WebApplication1.Controllers
 
            
 
-            var agentAuth = await _authService.AuthorizeAsync(request.Login, request.Password);
-            if (agentAuth == null)
+            var agent = await _authService.AuthorizeAsync(request.Login, request.Password);
+            if (agent == null)
                 return WebApiResponseService.CreateCheckErrorResponse(ErrorCode.AuthenticationFailed);
-
-            var agent = await _db.Agents.FirstAsync(a => a.ApiLogin == request.Login);     
 
             // Получаем организацию из реквизита (первые 5 цифр)
             var organizationId = request.Account.Substring(0, 5);
@@ -126,7 +125,6 @@ namespace WebApplication1.Controllers
                 };
 
 
-                OperationsByInvoices oper = new OperationsByInvoices(_db);
 
                 string service = "";
                 string nextPayDate = "";
@@ -149,7 +147,7 @@ namespace WebApplication1.Controllers
 
                
                     //все платежи счетов где есть оплата на сегодня и ниже (долги)
-                var duePayments = invoices.SelectMany(oper.GetDuePayments);
+                var duePayments = invoices.SelectMany(_oper.GetDuePayments);
                 if (duePayments.Any())
                 {
                     
@@ -171,7 +169,7 @@ namespace WebApplication1.Controllers
 
 
                     //все платежи счетов где есть оплата на завтра (плановые)
-                    var duePaymentsPlan = invoices.SelectMany(oper.GetDuePaymentsbyPlan);
+                    var duePaymentsPlan = invoices.SelectMany(_oper.GetDuePaymentsbyPlan);
                 if (duePaymentsPlan.Any()) 
                 {
                     plan_invoices_pay = string.Join("; ",
@@ -198,7 +196,7 @@ namespace WebApplication1.Controllers
                     if (!duePayments.Any() && !duePaymentsPlan.Any())
                     {
                         //все платежи счетов где есть оплата в будущем(через день и выше)
-                        var duePaymentsFuture = invoices.SelectMany(oper.GetDuePaymentsFuture);
+                        var duePaymentsFuture = invoices.SelectMany(_oper.GetDuePaymentsFuture);
 
                         future_invoices_pay = string.Join("; ",
                                                duePaymentsPlan
@@ -265,8 +263,8 @@ namespace WebApplication1.Controllers
                 return WebApiResponseService.CreateCheckErrorResponse(ErrorCode.InvalidAccount, request.Account);
 
             // 2. Авторизация агента
-            var agentAuth = await _authService.AuthorizeAsync(request.Login, request.Password);
-            if (agentAuth == null)
+            var agent = await _authService.AuthorizeAsync(request.Login, request.Password);
+            if (agent == null)
                 return WebApiResponseService.CreateCheckErrorResponse(ErrorCode.AuthenticationFailed);
 
             // 3. Определяем организацию
@@ -308,38 +306,37 @@ namespace WebApplication1.Controllers
                 }
             };
 
-            var oper = new OperationsByInvoices(_db);
             var sb = new StringBuilder();
             decimal recommendedSum = 0;
 
             // === ДОЛГИ ===
-            var duePayments = invoices.SelectMany(oper.GetDuePayments).ToList();
+            var duePayments = invoices.SelectMany(_oper.GetDuePayments).ToList();
             if (duePayments.Any())
             {
                 sb.AppendLine("Задолженности:");
-                sb.AppendLine(oper.BuildInvoicesText(duePayments));
+                sb.AppendLine(_oper.BuildInvoicesText(duePayments));
                 recommendedSum += duePayments.Sum(p => p.PaymentSumm ?? 0);
             }
 
             // === ПЛАНОВЫЕ (ЗАВТРА) ===
-            var planPayments = invoices.SelectMany(oper.GetDuePaymentsbyPlan).ToList();
+            var planPayments = invoices.SelectMany(_oper.GetDuePaymentsbyPlan).ToList();
             if (planPayments.Any())
             {
                 if (sb.Length > 0) sb.AppendLine();
                 sb.AppendLine("Платежи на завтра:");
-                sb.AppendLine(oper.BuildInvoicesText(planPayments));
+                sb.AppendLine(_oper.BuildInvoicesText(planPayments));
                 recommendedSum += planPayments.Sum(p => p.PaymentSumm ?? 0);
             }
 
             // === БУДУЩИЕ ===
             if (!duePayments.Any() && !planPayments.Any())
             {
-                var futurePayments = invoices.SelectMany(oper.GetDuePaymentsFuture).ToList();
+                var futurePayments = invoices.SelectMany(_oper.GetDuePaymentsFuture).ToList();
                 if (futurePayments.Any())
                 {
                     if (sb.Length > 0) sb.AppendLine();
                     sb.AppendLine("Ближайшие платежи:");
-                    sb.AppendLine(oper.BuildInvoicesText(futurePayments));
+                    sb.AppendLine(_oper.BuildInvoicesText(futurePayments));
                     recommendedSum += futurePayments.Sum(p => p.PaymentSumm ?? 0);
                 }
             }
@@ -449,12 +446,11 @@ namespace WebApplication1.Controllers
             }
 
             // Авторизация
-            var Agent = await _authService.AuthorizeAsync(request.Login, request.Password);
-            if (Agent == null)
+            var agent = await _authService.AuthorizeAsync(request.Login, request.Password);
+            if (agent == null)
             {
                 return WebApiResponseService.CreatePayErrorResponse(ErrorCode.AuthenticationFailed);
             }
-
 
             //из реквизита вытаскиваю id организации ()
             string organizationId = request.Account.Substring(0, 5);
@@ -466,23 +462,17 @@ namespace WebApplication1.Controllers
                 return WebApiResponseService.CreatePayErrorResponse(ErrorCode.AccountNotFound);
             }
 
-
             List<Invoice> invoices = new List<Invoice>();
             invoices = await _db.Invoices.Where(
                 a => a.PayCode == request.Account &&
                 a.InvoiceStatus == "actual" &&
                 a.ClientNavigation.Organization == organization.Id).ToListAsync();
 
-
             //есть ли актуальные счета
             if (invoices.Count == 0)
             {
                 return WebApiResponseService.CreatePayErrorResponse(ErrorCode.AccountNotFound);
             }
-
-            //агент по этой транзакции
-            Agent agent = new Agent();
-            agent = await _db.Agents.FirstOrDefaultAsync(a => a.ApiLogin == request.Login);
 
             //есть ли транзакция от этого агента с таким же txn_id в таблице transactions
             Models.DBModels.Transaction trn = await _db.Transactions.
@@ -524,17 +514,9 @@ namespace WebApplication1.Controllers
                                 //обновляю payment.PaymentStatus
                                 payment.PaymentStatus = "paid";
 
-                                //добавляю запись в transactions
-                                Models.DBModels.Transaction newTrn = new Models.DBModels.Transaction();
-                                newTrn.Id = Guid.NewGuid().ToString();
-                                newTrn.Invoice = inv.Id;
-                                newTrn.Agent = agent.Id;
-                                newTrn.Summ = paymentSumm;
-                                newTrn.TransactionDate = DateTime.Now.Date;
-                                newTrn.TransactionStatus = "success";
-                                newTrn.TransactionType = "payPaymentInvoice";
-                                newTrn.TxnId = request.TxnId;
-                                newTrn.TransactionSystem = "secore";
+                                //добавляю запись в transactions (с комиссией по агенту при тарифе upper/lower_commission_agent)
+                                var newTrn = await _oper.CreateTransactionWithCommissionAsync(
+                                    inv.Id, payment.Id, agent, paymentSumm, paymentSumm, request.TxnId, "payPaymentInvoice");
                                 await _db.Transactions.AddAsync(newTrn);
                             }
                         }
@@ -574,17 +556,9 @@ namespace WebApplication1.Controllers
                                         //обновляю payment.PaymentStatus
                                         payment.PaymentStatus = "paid";
 
-                                        //добавляю запись в transactions
-                                        Models.DBModels.Transaction newTrn = new Models.DBModels.Transaction();
-                                        newTrn.Id = Guid.NewGuid().ToString();
-                                        newTrn.Invoice = inv.Id;
-                                        newTrn.Agent = agent.Id;
-                                        newTrn.Summ = paymentSumm;
-                                        newTrn.TransactionDate = DateTime.Now.Date;
-                                        newTrn.TransactionStatus = "success";
-                                        newTrn.TransactionType = "payPaymentInvoice";
-                                        newTrn.TxnId = request.TxnId;
-                                        newTrn.TransactionSystem = "secore";
+                                        //добавляю запись в transactions (с комиссией по агенту)
+                                        var newTrn = await _oper.CreateTransactionWithCommissionAsync(
+                                            inv.Id, payment.Id, agent, paymentSumm, paymentSumm, request.TxnId, "payPaymentInvoice");
                                         await _db.Transactions.AddAsync(newTrn);
                                     }
                                     //здесь потом можно реализовать возможность погашения тех счетов на которых хватает Д\С
@@ -633,17 +607,9 @@ namespace WebApplication1.Controllers
                                 //обновляю payment.PaymentStatus
                                 payment.PaymentStatus = "paid";
 
-                                //добавляю запись в transactions
-                                Models.DBModels.Transaction newTrn = new Models.DBModels.Transaction();
-                                newTrn.Id = Guid.NewGuid().ToString();
-                                newTrn.Invoice = payment.Invoice;
-                                newTrn.Agent = agent.Id;
-                                newTrn.Summ = paymentSumm;
-                                newTrn.TransactionDate = DateTime.Now.Date;
-                                newTrn.TransactionStatus = "success";
-                                newTrn.TransactionType = "payPaymentInvoice";
-                                newTrn.TxnId = request.TxnId;
-                                newTrn.TransactionSystem = "secore";
+                                //добавляю запись в transactions (с комиссией по агенту)
+                                var newTrn = await _oper.CreateTransactionWithCommissionAsync(
+                                    payment.Invoice, payment.Id, agent, paymentSumm, paymentSumm, request.TxnId, "payPaymentInvoice");
                                 await _db.Transactions.AddAsync(newTrn);
 
                                 toBalance = toBalance - paymentSumm;
@@ -683,17 +649,9 @@ namespace WebApplication1.Controllers
                             //обновляю payment.PaymentStatus
                             payment.PaymentStatus = "paid";
 
-                            //добавляю запись в transactions
-                            Models.DBModels.Transaction newTrn = new Models.DBModels.Transaction();
-                            newTrn.Id = Guid.NewGuid().ToString();
-                            newTrn.Invoice = payment.Invoice;
-                            newTrn.Agent = agent.Id;
-                            newTrn.Summ = paymentSumm;
-                            newTrn.TransactionDate = DateTime.Now.Date;
-                            newTrn.TransactionStatus = "success";
-                            newTrn.TransactionType = "payPaymentInvoice";
-                            newTrn.TxnId = request.TxnId;
-                            newTrn.TransactionSystem = "secore";
+                            //добавляю запись в transactions (с комиссией по агенту)
+                            var newTrn = await _oper.CreateTransactionWithCommissionAsync(
+                                payment.Invoice, payment.Id, agent, paymentSumm, paymentSumm, request.TxnId, "payPaymentInvoice");
                             await _db.Transactions.AddAsync(newTrn);
                         }
 
@@ -721,17 +679,9 @@ namespace WebApplication1.Controllers
                                 //обновляю payment.PaymentStatus
                                 payment.PaymentStatus = "paid";
 
-                                //добавляю запись в transactions
-                                Models.DBModels.Transaction newTrn = new Models.DBModels.Transaction();
-                                newTrn.Id = Guid.NewGuid().ToString();
-                                newTrn.Invoice = payment.Invoice;
-                                newTrn.Agent = agent.Id;
-                                newTrn.Summ = paymentSumm;
-                                newTrn.TransactionDate = DateTime.Now.Date;
-                                newTrn.TransactionStatus = "success";
-                                newTrn.TransactionType = "payPaymentInvoice";
-                                newTrn.TxnId = request.TxnId;
-                                newTrn.TransactionSystem = "secore";
+                                //добавляю запись в transactions (с комиссией по агенту)
+                                var newTrn = await _oper.CreateTransactionWithCommissionAsync(
+                                    payment.Invoice, payment.Id, agent, paymentSumm, paymentSumm, request.TxnId, "payPaymentInvoice");
                                 await _db.Transactions.AddAsync(newTrn);
                             }
                         }
@@ -764,17 +714,9 @@ namespace WebApplication1.Controllers
                                 //обновляю payment.PaymentStatus
                                 payment.PaymentStatus = "paid";
 
-                                //добавляю запись в transactions
-                                Models.DBModels.Transaction newTrn = new Models.DBModels.Transaction();
-                                newTrn.Id = Guid.NewGuid().ToString();
-                                newTrn.Invoice = payment.Invoice;
-                                newTrn.Agent = agent.Id;
-                                newTrn.Summ = paymentSumm;
-                                newTrn.TransactionDate = DateTime.Now.Date;
-                                newTrn.TransactionStatus = "success";
-                                newTrn.TransactionType = "payPaymentInvoice";
-                                newTrn.TxnId = request.TxnId;
-                                newTrn.TransactionSystem = "secore";
+                                //добавляю запись в transactions (с комиссией по агенту)
+                                var newTrn = await _oper.CreateTransactionWithCommissionAsync(
+                                    payment.Invoice, payment.Id, agent, paymentSumm, paymentSumm, request.TxnId, "payPaymentInvoice");
                                 await _db.Transactions.AddAsync(newTrn);
 
                                 toBalance = toBalance - paymentSumm;
@@ -826,7 +768,6 @@ namespace WebApplication1.Controllers
 
             try
             {
-                OperationsByInvoices oper = new OperationsByInvoices(_db);
 
                 #region VALIDATION
 
@@ -874,11 +815,9 @@ namespace WebApplication1.Controllers
                 #region AUTHORIZATION
 
                 // Авторизация агента
-                var agentAuth = await _authService.AuthorizeAsync(request.Login, request.Password);
-                if (agentAuth == null)
+                var agent = await _authService.AuthorizeAsync(request.Login, request.Password);
+                if (agent == null)
                     return WebApiResponseService.CreatePayErrorResponse(ErrorCode.AuthenticationFailed);
-
-                var agent = await _db.Agents.FirstAsync(a => a.ApiLogin == request.Login);
 
                 #endregion
 
@@ -918,7 +857,7 @@ namespace WebApplication1.Controllers
 
                 // запись о принятом платеже чз API:
                 _db.Transactions.Add(
-                    oper.CreateTransaction(null,null, agent, requestSum, requestSum, request.TxnId, "payFromAPI"));
+                    _oper.CreateTransaction(null,null, agent, requestSum, requestSum, request.TxnId, "payFromAPI"));
 
 
 
@@ -927,7 +866,7 @@ namespace WebApplication1.Controllers
                 {
                     // Все просроченные платежи по всем счетам
                     var duePayments = invoices
-                        .SelectMany(oper.GetDuePayments)
+                        .SelectMany(_oper.GetDuePayments)
                         .ToList();
 
                     var totalDebt = duePayments.Sum(p => p.PaymentSumm ?? 0);
@@ -938,7 +877,7 @@ namespace WebApplication1.Controllers
                         var rest = requestSum;
 
                         foreach (var invoice in invoices)
-                            rest = oper.PayPayments(oper.GetDuePayments(invoice), rest, agent, request.TxnId);
+                            rest = await _oper.PayPaymentsAsync(_oper.GetDuePayments(invoice), rest, agent, request.TxnId);
 
                         // Остаток закидываем на баланс
                         if (rest > 0)
@@ -948,14 +887,14 @@ namespace WebApplication1.Controllers
                     else
                     {
                         var sortedInvoices = invoices
-                            .Where(i => oper.GetDuePayments(i).Any())
-                            .OrderBy(i => oper.GetDuePayments(i).Min(p => p.DateFrom))
+                            .Where(i => _oper.GetDuePayments(i).Any())
+                            .OrderBy(i => _oper.GetDuePayments(i).Min(p => p.DateFrom))
                             .ToList();
 
                         var rest = requestSum;
 
                         foreach (var invoice in sortedInvoices)
-                            rest = oper.PayPayments(oper.GetDuePayments(invoice), rest, agent, request.TxnId);
+                            rest = await _oper.PayPaymentsAsync(_oper.GetDuePayments(invoice), rest, agent, request.TxnId);
 
                         if (rest > 0)
                             invoices.ForEach(i => i.Balance = rest);
@@ -985,8 +924,9 @@ namespace WebApplication1.Controllers
                         rest -= paymentSumm;
                         payment.PaymentStatus = "paid";
 
-                        _db.Transactions.Add(
-                            oper.CreateTransaction( payment.Invoice,payment.Id, agent, paymentSumm, paymentSumm, request.TxnId, "payFromAPI"));
+                        var trn = await _oper.CreateTransactionWithCommissionAsync(
+                            payment.Invoice, payment.Id, agent, paymentSumm, paymentSumm, request.TxnId, "payFromAPI");
+                        _db.Transactions.Add(trn);
                     }
 
                     if (rest > 0)
@@ -1035,7 +975,6 @@ namespace WebApplication1.Controllers
 
             try
             {
-                OperationsByInvoices oper = new OperationsByInvoices(_db);
 
                 #region VALIDATION
 
@@ -1078,11 +1017,9 @@ namespace WebApplication1.Controllers
 
                 #region AUTHORIZATION
 
-                var agentAuth = await _authService.AuthorizeAsync(request.Login, request.Password);
-                if (agentAuth == null)
+                var agent = await _authService.AuthorizeAsync(request.Login, request.Password);
+                if (agent == null)
                     return WebApiResponseService.CreatePayErrorResponse(ErrorCode.AuthenticationFailed);
-
-                var agent = await _db.Agents.FirstAsync(a => a.ApiLogin == request.Login);
 
                 #endregion
 
@@ -1133,11 +1070,11 @@ namespace WebApplication1.Controllers
 
                 // Фиксируем входящий платёж
                 _db.Transactions.Add(
-                    oper.CreateTransaction(null, null, agent, requestSum, requestSum, request.TxnId, "payFromAPI")
+                    _oper.CreateTransaction(null, null, agent, requestSum, requestSum, request.TxnId, "payFromAPI")
                 );
 
-                // Вспомогательная функция для погашения платежей
-                void PayPaymentsList(IEnumerable<InvoicePayment> paymentsToPay)
+                // Вспомогательная функция для погашения платежей (с расчётом комиссии по агенту)
+                async Task PayPaymentsListAsync(IEnumerable<InvoicePayment> paymentsToPay)
                 {
                     foreach (var payment in paymentsToPay)
                     {
@@ -1156,16 +1093,15 @@ namespace WebApplication1.Controllers
                         paidPayments.Add(payment);
                         paidSum += toPay;
 
-                        _db.Transactions.Add(
-                            oper.CreateTransaction(
-                                payment.Invoice,
-                                payment.Id,
-                                agent,
-                                toPay,
-                                toPay,
-                                request.TxnId,
-                                "payPaymentInvoice"
-                            ));
+                        var trn = await _oper.CreateTransactionWithCommissionAsync(
+                            payment.Invoice,
+                            payment.Id,
+                            agent,
+                            toPay,
+                            toPay,
+                            request.TxnId,
+                            "payPaymentInvoice");
+                        _db.Transactions.Add(trn);
                     }
                 }
 
@@ -1174,10 +1110,10 @@ namespace WebApplication1.Controllers
                 // ===== ПОСЛЕДОВАТЕЛЬНОЕ ПОГАШЕНИЕ: ДОЛГИ → ПЛАНОВЫЕ =====
                 
                 // 1. Сначала гасим долги (если есть)
-                var duePayments = invoices.SelectMany(oper.GetDuePayments).ToList();
+                var duePayments = invoices.SelectMany(_oper.GetDuePayments).ToList();
                 if (duePayments.Any())
                 {
-                    PayPaymentsList(duePayments.OrderBy(p => p.DateFrom));
+                    await PayPaymentsListAsync(duePayments.OrderBy(p => p.DateFrom));
                 }
 
                 // 2. Если долгов нет, сначала добавляем сумму к балансу (как в старом коде)
@@ -1188,10 +1124,10 @@ namespace WebApplication1.Controllers
                 }
 
                 // 3. Если после погашения долгов остались средства, гасим плановые (завтра)
-                var planPayments = invoices.SelectMany(oper.GetDuePaymentsbyPlan).ToList();
+                var planPayments = invoices.SelectMany(_oper.GetDuePaymentsbyPlan).ToList();
                 if (planPayments.Any() && rest > 0)
                 {
-                    PayPaymentsList(planPayments.OrderBy(p => p.DateFrom));
+                    await PayPaymentsListAsync(planPayments.OrderBy(p => p.DateFrom));
                 }
 
                 // Будущие платежи не гасятся - остаток переводится на баланс
@@ -1323,11 +1259,7 @@ namespace WebApplication1.Controllers
                 return WebApiResponseService.CreatePayInfoErrorResponse(ErrorCode.TxnIdNotProvided);
 
             // 2. Авторизация агента
-            var agentAuth = await _authService.AuthorizeAsync(request.Login, request.Password);
-            if (agentAuth == null)
-                return WebApiResponseService.CreatePayInfoErrorResponse(ErrorCode.AuthenticationFailed);
-
-            var agent = await _db.Agents.FirstOrDefaultAsync(a => a.ApiLogin == request.Login);
+            var agent = await _authService.AuthorizeAsync(request.Login, request.Password);
             if (agent == null)
                 return WebApiResponseService.CreatePayInfoErrorResponse(ErrorCode.AuthenticationFailed);
 

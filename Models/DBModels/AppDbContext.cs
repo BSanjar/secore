@@ -48,6 +48,10 @@ public partial class AppDbContext : DbContext
     public virtual DbSet<UserRole> UserRoles { get; set; }
     public virtual DbSet<Notification> Notifications { get; set; }
     public virtual DbSet<Agent> Agents { get; set; }
+    public virtual DbSet<OrganizationSettings> OrganizationSettings { get; set; }
+    public virtual DbSet<Commission> Commissions { get; set; }
+    public virtual DbSet<CommissionTier> CommissionTiers { get; set; }
+    public virtual DbSet<AgentCommission> AgentCommissions { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
@@ -105,6 +109,10 @@ public partial class AppDbContext : DbContext
                 .HasComment("Дата начал инвойса, т.е с этого дня будет учитываться платеж")
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("date_start_invoice");
+            entity.Property(e => e.DateEndInvoice)
+                .HasComment("Дата окончания инвойса")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("date_end_invoice");
             entity.Property(e => e.FixedSumm)
                 .HasComment("фиксированная сумма платежа, если не указан или 0 то сумма для платежа любая сумма")
                 .HasColumnName("fixed_summ");
@@ -165,7 +173,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("character varying")
                 .HasColumnName("payment_status");
             entity.Property(e => e.PaymentSumm)
-                .HasComment("сумма оплаты")
+                .HasComment("сумма оплаты (тыйыны)")
                 .HasColumnName("payment_summ");
             entity.Property(e => e.PeriodValue)
                 .HasComment("какой месяц или год\r\nесли периодичность месяц или год")
@@ -214,16 +222,6 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Id)
                 .HasColumnType("character varying")
                 .HasColumnName("id");
-            entity.Property(e => e.AllowedHassameaccount)
-                .HasComment("если true - то организации могут создавать счета к оплате с одинаковыми л\\с")
-                .HasColumnName("allowed_hassameaccount");
-            entity.Property(e => e.ApiLogin)
-                .HasComment("Логин для API")
-                .HasColumnType("character varying")
-                .HasColumnName("api_login");
-            entity.Property(e => e.ApiPassword)
-                .HasColumnType("character varying")
-                .HasColumnName("api_password");
             entity.Property(e => e.Name)
                 .HasColumnType("character varying")
                 .HasColumnName("name");
@@ -231,9 +229,149 @@ public partial class AppDbContext : DbContext
                 .HasComment("standart\r\ndetsad\r\nschool\r\nmedclinic")
                 .HasColumnType("character varying")
                 .HasColumnName("organizationtype");
+
+            entity.HasOne(e => e.Settings)
+                .WithOne(s => s.Organization)
+                .HasForeignKey<OrganizationSettings>(s => s.OrganizationId)
+                .HasConstraintName("organization_settings_organization_fk");
+        });
+
+        modelBuilder.Entity<OrganizationSettings>(entity =>
+        {
+            entity.HasKey(e => e.OrganizationId).HasName("organization_settings_pk");
+            entity.ToTable("organization_settings");
+
+            entity.Property(e => e.OrganizationId)
+                .HasColumnType("character varying")
+                .HasColumnName("organization_id");
+            entity.Property(e => e.DisableInvoiceServiceSelection)
+                .HasComment("отключить выбор услуги при создании счёта; ввод названия и цены вручную")
+                .HasColumnName("disable_invoice_service_selection");
+            entity.Property(e => e.AllowedHassameaccount)
+                .HasComment("если true - организации могут создавать счета с одинаковыми л/с")
+                .HasColumnName("allowed_hassameaccount");
             entity.Property(e => e.Paymentreminderdaysbefore)
-                .HasComment("Количество дней за которую будет начинатся отправка уведомлений по оплате на организацию")
+                .HasComment("за сколько дней до срока начинать напоминания по оплате")
                 .HasColumnName("paymentreminderdaysbefore");
+            entity.Property(e => e.BillingType)
+                .HasComment("subscription или комбинация комиссий через флаги")
+                .HasColumnType("character varying")
+                .HasColumnName("billing_type");
+            entity.Property(e => e.UseLowerCommissionFromOrg)
+                .HasColumnName("use_lower_commission_from_org");
+            entity.Property(e => e.CommissionId)
+                .HasColumnType("character varying")
+                .HasColumnName("commission_id");
+            entity.Property(e => e.UseUpperCommissionFromAgent)
+                .HasColumnName("use_upper_commission_from_agent");
+            entity.Property(e => e.UseLowerCommissionToAgent)
+                .HasColumnName("use_lower_commission_to_agent");
+
+            entity.HasOne(d => d.Commission).WithMany()
+                .HasForeignKey(d => d.CommissionId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("organization_settings_commission_fk");
+        });
+
+        modelBuilder.Entity<Commission>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("commission_pk");
+            entity.ToTable("commission");
+
+            entity.Property(e => e.Id)
+                .HasColumnType("character varying")
+                .HasColumnName("id");
+            entity.Property(e => e.Name)
+                .HasColumnType("character varying")
+                .HasColumnName("name");
+            entity.Property(e => e.CommissionKind)
+                .HasComment("percent | fixed | mixed | single_tier | progressive")
+                .HasColumnType("character varying")
+                .HasColumnName("commission_kind");
+            entity.Property(e => e.Rate)
+                .HasColumnType("numeric(18,6)")
+                .HasColumnName("rate");
+            entity.Property(e => e.FixedAmount)
+                .HasColumnType("numeric(18,2)")
+                .HasColumnName("fixed_amount");
+            entity.Property(e => e.MinFee)
+                .HasColumnType("numeric(18,2)")
+                .HasColumnName("min_fee");
+            entity.Property(e => e.MaxFee)
+                .HasColumnType("numeric(18,2)")
+                .HasColumnName("max_fee");
+
+            entity.HasMany(e => e.Tiers).WithOne(t => t.Commission)
+                .HasForeignKey(t => t.CommissionId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("commission_tier_commission_fk");
+        });
+
+        modelBuilder.Entity<CommissionTier>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("commission_tier_pk");
+            entity.ToTable("commission_tier");
+
+            entity.Property(e => e.Id)
+                .HasColumnType("character varying")
+                .HasColumnName("id");
+            entity.Property(e => e.CommissionId)
+                .HasColumnType("character varying")
+                .HasColumnName("commission_id");
+            entity.Property(e => e.AmountFrom)
+                .HasColumnType("numeric(18,2)")
+                .HasColumnName("amount_from");
+            entity.Property(e => e.AmountTo)
+                .HasColumnType("numeric(18,2)")
+                .HasColumnName("amount_to");
+            entity.Property(e => e.Rate)
+                .HasColumnType("numeric(18,6)")
+                .HasColumnName("rate");
+            entity.Property(e => e.SortOrder)
+                .HasColumnName("sort_order");
+        });
+
+        modelBuilder.Entity<AgentCommission>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("agent_commission_pk");
+            entity.ToTable("agent_commission");
+
+            entity.Property(e => e.Id)
+                .HasColumnType("character varying")
+                .HasColumnName("id");
+            entity.Property(e => e.AgentId)
+                .HasColumnType("character varying")
+                .HasColumnName("agent_id");
+            entity.Property(e => e.OrganizationId)
+                .HasColumnType("character varying")
+                .HasColumnName("organization_id");
+            entity.Property(e => e.CommissionId)
+                .HasColumnType("character varying")
+                .HasColumnName("commission_id");
+            entity.Property(e => e.LowerCommissionId)
+                .HasColumnType("character varying")
+                .HasColumnName("lower_commission_id");
+
+            entity.HasOne(d => d.Agent).WithMany(p => p.AgentCommissions)
+                .HasForeignKey(d => d.AgentId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("agent_commission_agent_fk");
+            entity.HasOne(d => d.Organization).WithMany(p => p.AgentCommissions)
+                .HasForeignKey(d => d.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("agent_commission_organization_fk");
+            entity.HasOne(d => d.Commission).WithMany(p => p.AgentCommissions)
+                .HasForeignKey(d => d.CommissionId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("agent_commission_commission_fk");
+            entity.HasOne(d => d.LowerCommission).WithMany()
+                .HasForeignKey(d => d.LowerCommissionId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("agent_commission_lower_commission_fk");
+
+            entity.HasIndex(e => new { e.AgentId, e.OrganizationId })
+                .IsUnique()
+                .HasDatabaseName("agent_commission_agent_organization_uq");
         });
 
         modelBuilder.Entity<OrgClientGroup>(entity =>
@@ -596,6 +734,18 @@ public partial class AppDbContext : DbContext
                 .HasComment("debit - приход\r\ncredit - расход")
                 .HasColumnType("character varying")
                 .HasColumnName("transaction_type");
+            entity.Property(e => e.LowerCommissionFromOrg)
+                .HasComment("нижняя комиссия от организации (тыйыны)")
+                .HasColumnType("numeric(18,2)")
+                .HasColumnName("lower_commission_from_org");
+            entity.Property(e => e.UpperCommissionFromAgent)
+                .HasComment("верхняя комиссия от агента (тыйыны)")
+                .HasColumnType("numeric(18,2)")
+                .HasColumnName("upper_commission_from_agent");
+            entity.Property(e => e.LowerCommissionToAgent)
+                .HasComment("нижняя комиссия к агенту (тыйыны)")
+                .HasColumnType("numeric(18,2)")
+                .HasColumnName("lower_commission_to_agent");
 
             entity.HasOne(d => d.InvoiceNavigation).WithMany(p => p.Transactions)
                 .HasForeignKey(d => d.Invoice)
@@ -729,7 +879,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnName("api_login");
             entity.Property(e => e.ApiPassword)
                 .HasColumnType("character varying")
-                .HasColumnName("api_password");
+                .HasColumnName("api_psw");
             entity.Property(e => e.Name)
                 .HasColumnType("character varying")
                 .HasColumnName("name");

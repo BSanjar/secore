@@ -83,7 +83,7 @@
                         {
                             var isFixed = s.FixedSum == 1;
                             var sumInfo = isFixed && s.ServiceSumm.HasValue
-                                ? s.ServiceSumm.Value.ToString("N2") + " сом"
+                                ? (s.ServiceSumm.Value / 100m).ToString("N2") + " сом"
                                 : (s.MinSumm.HasValue || s.MaxSumm.HasValue)
                                     ? (s.MinSumm.HasValue ? (s.MinSumm.Value / 100m).ToString("N2") + " — " : "— ") + (s.MaxSumm.HasValue ? (s.MaxSumm.Value / 100m).ToString("N2") + " сом" : "—")
                                     : "—";

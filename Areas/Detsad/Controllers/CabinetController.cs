@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Models.DBModels;
@@ -19,73 +20,90 @@ namespace WebApplication1.Areas.Detsad.Controllers
         [RequirePermission("dashboard.view")]
         public async Task<IActionResult> Index()
         {
-            // TODO: Получить ID организации текущего пользователя из сессии
-            // string? organizationId = HttpContext.Session.GetString("OrganizationId");
-            // Для примера показываем все данные, но нужно фильтровать по организации
-            
-            var transactions = await _db.Transactions
-                .Where(t => t.TransactionStatus == "success")
+            var organizationId = HttpContext.Session.GetString("OrganizationId");
+            if (string.IsNullOrEmpty(organizationId))
+            {
+                return Unauthorized();
+            }
+
+            // Клиенты организации (активные для подсчёта клиентов)
+            var clientIds = await _db.OrganizationClients
+                .Where(c => c.Organization == organizationId)
+                .Select(c => c.Id)
                 .ToListAsync();
 
             var clients = await _db.OrganizationClients
-                .Where(c => c.ClientStatus == 1)
+                .Where(c => c.Organization == organizationId && c.ClientStatus == 1)
+                .ToListAsync();
+
+            // Счета организации (по клиентам)
+            var invoiceIds = await _db.Invoices
+                .Where(i => i.Client != null && clientIds.Contains(i.Client))
+                .Select(i => i.Id)
                 .ToListAsync();
 
             var invoices = await _db.Invoices
-                .Include(i => i.ClientNavigation)
+                .Where(i => i.Client != null && clientIds.Contains(i.Client))
+                .ToListAsync();
+
+            // Транзакции только по счетам организации (суммы в тыйынах)
+            var transactions = await _db.Transactions
+                .Where(t => t.TransactionStatus == "success" &&
+                            t.Invoice != null &&
+                            invoiceIds.Contains(t.Invoice))
                 .ToListAsync();
 
             var now = DateTime.Now;
             var currentMonth = now.Month;
             var currentYear = now.Year;
 
-            // Приходы за месяц (debit транзакции)
+            // Приходы за сегодня (debit, в сомах)
+            var todayIncome = transactions
+                .Where(t => t.TransactionDate.HasValue &&
+                            t.TransactionDate.Value.Date == DateTime.Today &&
+                            t.Summ.HasValue &&
+                            t.TransactionType == "debit")
+                .Sum(t => (decimal)(t.Summ ?? 0)) / 100m;
+
+            // Приходы за месяц (debit, в сомах)
             var monthIncome = transactions
                 .Where(t => t.TransactionDate.HasValue &&
                            t.TransactionDate.Value.Month == currentMonth &&
                            t.TransactionDate.Value.Year == currentYear &&
                            t.Summ.HasValue &&
                            t.TransactionType == "debit")
-                .Sum(t => (decimal)(t.Summ ?? 0)) / 100; // Конвертируем из копеек в сомы
+                .Sum(t => (decimal)(t.Summ ?? 0)) / 100m;
 
-            // Приходы за год (debit транзакции)
+            // Приходы за год (debit, в сомах)
             var yearIncome = transactions
                 .Where(t => t.TransactionDate.HasValue &&
                            t.TransactionDate.Value.Year == currentYear &&
                            t.Summ.HasValue &&
                            t.TransactionType == "debit")
-                .Sum(t => (decimal)(t.Summ ?? 0)) / 100; // Конвертируем из копеек в сомы
+                .Sum(t => (decimal)(t.Summ ?? 0)) / 100m;
 
-            // Должники (клиенты с отрицательным балансом или счета с отрицательным балансом)
-            var debtorsCount = clients
-                .Where(c => c.ClientBalance.HasValue && c.ClientBalance.Value < 0)
-                .Count();
+            // Должники: клиенты с отрицательной суммой балансов по счетам (actual)
+            var balanceByClient = await _db.Invoices
+                .Where(i => i.Client != null && clientIds.Contains(i.Client) && i.InvoiceStatus == "actual")
+                .GroupBy(i => i.Client!)
+                .Select(g => new { ClientId = g.Key, TotalBalance = g.Sum(i => i.Balance ?? 0m) })
+                .ToDictionaryAsync(x => x.ClientId, x => x.TotalBalance);
 
-            var debtorsAmount = clients
-                .Where(c => c.ClientBalance.HasValue && c.ClientBalance.Value < 0)
-                .Sum(c => Math.Abs((decimal)(c.ClientBalance ?? 0))) / 100; // Конвертируем из копеек в сомы
+            var debtorsCount = clientIds.Count(cid => balanceByClient.GetValueOrDefault(cid, 0m) < 0);
+            var debtorsAmount = balanceByClient
+                .Where(kv => kv.Value < 0)
+                .Sum(kv => Math.Abs(kv.Value)) / 100m;
 
-            // Количество клиентов
             var totalClients = clients.Count;
 
-            // Дополнительная статистика
-            var todayIncome = transactions
-                .Where(t => t.TransactionDate.HasValue &&
-                           t.TransactionDate.Value.Date == DateTime.Today &&
-                           t.Summ.HasValue &&
-                           t.TransactionType == "debit")
-                .Sum(t => (decimal)(t.Summ ?? 0)) / 100;
+            var activeInvoices = invoices.Count(i => i.InvoiceStatus == "actual");
 
-            var activeInvoices = invoices
-                .Where(i => i.InvoiceStatus == "actual")
-                .Count();
-
+            ViewBag.TodayIncome = todayIncome;
             ViewBag.MonthIncome = monthIncome;
             ViewBag.YearIncome = yearIncome;
             ViewBag.DebtorsCount = debtorsCount;
             ViewBag.DebtorsAmount = debtorsAmount;
             ViewBag.TotalClients = totalClients;
-            ViewBag.TodayIncome = todayIncome;
             ViewBag.ActiveInvoices = activeInvoices;
 
             return View();
@@ -244,13 +262,20 @@ namespace WebApplication1.Areas.Detsad.Controllers
                 childrenData = childrenData.Where(c => c.ClientStatus == null || c.ClientStatus < 0).ToList();
             }
 
-            // Фильтр должников (активные с отрицательным балансом)
+            // Сумма балансов по всем счетам для каждого клиента (нужна до фильтра должников)
+            var clientIdsForBalance = childrenData.Select(c => c.Id).ToList();
+            var totalBalanceByClient = await _db.Invoices
+                .Where(i => i.Client != null && clientIdsForBalance.Contains(i.Client) && i.InvoiceStatus == "actual")
+                .GroupBy(i => i.Client!)
+                .Select(g => new { ClientId = g.Key, TotalBalance = g.Sum(i => i.Balance ?? 0m) })
+                .ToDictionaryAsync(x => x.ClientId, x => x.TotalBalance);
+
+            // Фильтр должников (активные с отрицательной суммой балансов по счетам)
             if (debtorsOnly)
             {
-                childrenData = childrenData.Where(c => 
-                    c.ClientStatus == 1 && 
-                    c.ClientBalance.HasValue && 
-                    c.ClientBalance.Value < 0).ToList();
+                childrenData = childrenData.Where(c =>
+                    c.ClientStatus == 1 &&
+                    totalBalanceByClient.GetValueOrDefault(c.Id, 0m) < 0).ToList();
             }
 
             // Получаем дополнительные поля для организации
@@ -264,6 +289,7 @@ namespace WebApplication1.Areas.Detsad.Controllers
                 .OrderBy(g => g.Name)
                 .ToListAsync();
             ViewBag.OrgClientGroups = orgClientGroups;
+            ViewBag.ClientTotalBalanceByClientId = totalBalanceByClient;
 
             // Создаем список данных для View
             var childrenViewData = childrenData
@@ -271,6 +297,7 @@ namespace WebApplication1.Areas.Detsad.Controllers
                 .ToList();
 
             ViewBag.Search = search;
+            ViewBag.ClientTotalBalanceByClientId = totalBalanceByClient;
             ViewBag.StatusFilter = statusFilter;
             ViewBag.DebtorsOnly = debtorsOnly;
             ViewBag.OrganizationFields = organizationFields;
@@ -397,6 +424,7 @@ namespace WebApplication1.Areas.Detsad.Controllers
                 selectedInvoice = new
                 {
                     id = selectedInvoice.Id,
+                    nameInvoice = selectedInvoice.NameInvoice,
                     payCode = selectedInvoice.PayCode,
                     dateCreated = selectedInvoice.DateCreated,
                     userCreater = selectedInvoice.UserCreaterNavigation?.Name ?? selectedInvoice.UserCreater ?? "Неизвестно",
@@ -409,8 +437,7 @@ namespace WebApplication1.Areas.Detsad.Controllers
                     id = ip.Id,
                     dateFrom = ip.DateFrom,
                     dateTo = ip.DateTo,
-                    
-                    paymentSumm = ip.PaymentSumm.HasValue ? ip.PaymentSumm.Value * 100m : (decimal?)null,
+                    paymentSumm = ip.PaymentSumm.HasValue ? ip.PaymentSumm.Value / 100m : (decimal?)null,
                     paymentStatus = ip.PaymentStatus,
                     periodValue = ip.PeriodValue
                 }).ToList(),
@@ -516,7 +543,7 @@ namespace WebApplication1.Areas.Detsad.Controllers
         }
 
         [RequirePermission("transactions.view")]
-        public async Task<IActionResult> GetClientTransactions(string clientId)
+        public async Task<IActionResult> GetClientTransactions(string clientId, List<string>? agentIds = null)
         {
             var organizationId = HttpContext.Session.GetString("OrganizationId");
             if (string.IsNullOrEmpty(organizationId))
@@ -532,16 +559,33 @@ namespace WebApplication1.Areas.Detsad.Controllers
                 return NotFound();
             }
 
-            // Получаем все инвойсы клиента
             var invoices = await _db.Invoices
                 .Where(i => i.Client == clientId)
                 .Select(i => i.Id)
                 .ToListAsync();
 
-            // Получаем все транзакции по всем инвойсам клиента
-            var transactions = await _db.Transactions
-                .Where(t => t.Invoice != null && invoices.Contains(t.Invoice))
-                .OrderByDescending(t => t.TransactionDate)
+            var query = _db.Transactions
+                .Include(t => t.AgentNavigation)
+                .Where(t => t.Invoice != null && invoices.Contains(t.Invoice));
+
+            var selectedAgentIds = agentIds?
+                .Where(id => !string.IsNullOrWhiteSpace(id) && id.Trim() != "__all__")
+                .Select(id => id!.Trim())
+                .ToList() ?? new List<string>();
+            if (selectedAgentIds.Count > 0)
+                query = query.Where(t => t.Agent != null && selectedAgentIds.Contains(t.Agent));
+
+            var transactions = await query.OrderByDescending(t => t.TransactionDate).ToListAsync();
+
+            var agentIdsForClient = await _db.Transactions
+                .Where(t => t.Invoice != null && invoices.Contains(t.Invoice) && t.Agent != null)
+                .Select(t => t.Agent)
+                .Distinct()
+                .ToListAsync();
+            var agentsList = await _db.Agents
+                .Where(a => agentIdsForClient.Contains(a.Id))
+                .OrderBy(a => a.Name)
+                .Select(a => new { id = a.Id, name = a.Name ?? a.Id })
                 .ToListAsync();
 
             return Json(new
@@ -550,6 +594,7 @@ namespace WebApplication1.Areas.Detsad.Controllers
                 {
                     name = client.ClientName
                 },
+                agents = agentsList,
                 transactions = transactions.Select(t => new
                 {
                     id = t.Id,
@@ -558,13 +603,15 @@ namespace WebApplication1.Areas.Detsad.Controllers
                     transactionSumm = t.TransactionSumm,
                     transactionType = t.TransactionType,
                     transactionStatus = t.TransactionStatus,
-                    invoiceId = t.Invoice
+                    invoiceId = t.Invoice,
+                    agentId = t.Agent,
+                    agentName = t.AgentNavigation != null ? (t.AgentNavigation.Name ?? t.AgentNavigation.Id) : null
                 }).ToList()
             });
         }
 
         [RequirePermission("transactions.view")]
-        public async Task<IActionResult> Payments(string dateFrom = "", string dateTo = "")
+        public async Task<IActionResult> Payments(string dateFrom = "", string dateTo = "", List<string>? agentIds = null)
         {
             var organizationId = HttpContext.Session.GetString("OrganizationId");
             if (string.IsNullOrEmpty(organizationId))
@@ -576,6 +623,7 @@ namespace WebApplication1.Areas.Detsad.Controllers
                 .ToListAsync();
 
             var query = _db.Transactions
+                .Include(t => t.AgentNavigation)
                 .Where(t => t.Invoice != null && invoices.Contains(t.Invoice));
 
             if (DateTime.TryParse(dateFrom, out var fromDate))
@@ -583,11 +631,505 @@ namespace WebApplication1.Areas.Detsad.Controllers
             if (DateTime.TryParse(dateTo, out var toDate))
                 query = query.Where(t => t.TransactionDate != null && t.TransactionDate.Value.Date <= toDate.Date.AddDays(1));
 
+            var selectedAgentIds = agentIds?
+                .Where(id => !string.IsNullOrWhiteSpace(id) && id.Trim() != "__all__")
+                .Select(id => id!.Trim())
+                .ToList() ?? new List<string>();
+            if (selectedAgentIds.Count > 0)
+                query = query.Where(t => t.Agent != null && selectedAgentIds.Contains(t.Agent));
+
             var transactions = await query.OrderByDescending(t => t.TransactionDate).ToListAsync();
+
+            var agentIdsInOrg = await _db.Transactions
+                .Where(t => t.Invoice != null && invoices.Contains(t.Invoice))
+                .Select(t => t.Agent)
+                .Where(a => a != null)
+                .Distinct()
+                .ToListAsync();
+            var agentsList = await _db.Agents
+                .Where(a => agentIdsInOrg.Contains(a.Id))
+                .OrderBy(a => a.Name)
+                .Select(a => new { a.Id, a.Name })
+                .ToListAsync();
 
             ViewBag.DateFrom = dateFrom;
             ViewBag.DateTo = dateTo;
+            ViewBag.SelectedAgentIds = selectedAgentIds;
+            ViewBag.AgentsList = agentsList;
             return View(transactions);
+        }
+
+        [RequirePermission("invoices.view")]
+        [HttpGet]
+        public async Task<IActionResult> CreateInvoicePartial()
+        {
+            var organizationId = HttpContext.Session.GetString("OrganizationId");
+            if (string.IsNullOrEmpty(organizationId))
+                return Unauthorized();
+
+            var groups = await _db.OrgClientGroups
+                .Where(g => g.OrganizationId == organizationId && g.IsDeleted == 0)
+                .OrderBy(g => g.Name)
+                .Select(g => new { g.Id, g.Name })
+                .ToListAsync();
+
+            var clients = await _db.OrganizationClients
+                .Where(c => c.Organization == organizationId && c.ClientStatus == 1)
+                .OrderBy(c => c.ClientName)
+                .Select(c => new { c.Id, c.ClientName, c.OrgClientGroupId })
+                .ToListAsync();
+
+            var orgServices = await _db.OrganizationServices
+                .Where(s => s.Organization == organizationId && (s.Isdeleted == null || s.Isdeleted == 0))
+                .OrderBy(s => s.Name)
+                .Select(s => new { s.Id, s.Name, s.ServiceSumm, s.MinSumm, s.MaxSumm })
+                .ToListAsync();
+
+            var settings = await _db.OrganizationSettings
+                .FirstOrDefaultAsync(s => s.OrganizationId == organizationId);
+
+            ViewBag.OrgClientGroups = groups;
+            ViewBag.OrganizationClients = clients;
+            ViewBag.OrganizationServices = orgServices;
+            ViewBag.DisableInvoiceServiceSelection = settings?.DisableInvoiceServiceSelection ?? false;
+            ViewBag.AllowedHassameaccount = settings?.AllowedHassameaccount ?? false;
+            return PartialView("_CreateInvoicePartial");
+        }
+
+        /// <summary>
+        /// Для настройки AllowedHassameaccount: возвращает список лицевых счетов (PayCode) из счетов с Hassameaccount=true по выбранным клиентам.
+        /// </summary>
+        [RequirePermission("invoices.view")]
+        [HttpGet]
+        public async Task<IActionResult> GetInvoicePayCodeOptions([FromQuery] string clientIds)
+        {
+            var organizationId = HttpContext.Session.GetString("OrganizationId");
+            if (string.IsNullOrEmpty(organizationId))
+                return Unauthorized();
+
+            var ids = (clientIds ?? "")
+                .Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => s.Trim())
+                .Where(s => s.Length > 0)
+                .Distinct()
+                .ToList();
+            if (ids.Count == 0)
+                return Json(new { payCodeOptions = Array.Empty<object>() });
+
+            var list = await _db.Invoices
+                .Where(i => i.ClientNavigation != null && i.ClientNavigation.Organization == organizationId
+                    && ids.Contains(i.Client)
+                    && i.Hassameaccount
+                    && i.PayCode != null && i.PayCode.Length > 0)
+                .Select(i => new { i.PayCode, i.Id, i.NameInvoice })
+                .ToListAsync();
+
+            var distinctPayCodes = list
+                .GroupBy(x => x.PayCode)
+                .Select(g => new { payCode = g.Key, invoiceId = g.First().Id, nameInvoice = g.First().NameInvoice })
+                .ToList();
+
+            return Json(new { payCodeOptions = distinctPayCodes });
+        }
+
+        [RequirePermission("invoices.view")]
+        [HttpGet]
+        public async Task<IActionResult> GetNextInvoiceNumber()
+        {
+            var organizationId = HttpContext.Session.GetString("OrganizationId");
+            if (string.IsNullOrEmpty(organizationId))
+                return Unauthorized();
+
+            var orgPrefix = organizationId;
+            var prefixLen = orgPrefix.Length;
+            var clientIds = await _db.OrganizationClients
+                .Where(c => c.Organization == organizationId)
+                .Select(c => c.Id)
+                .ToListAsync();
+            var payCodes = await _db.Invoices
+                .Where(i => i.Client != null && clientIds.Contains(i.Client) && i.PayCode != null && i.PayCode.Length == prefixLen + 9 && i.PayCode.StartsWith(orgPrefix))
+                .Select(i => i.PayCode)
+                .ToListAsync();
+            long maxCounter = 0;
+            foreach (var pc in payCodes)
+            {
+                if (pc != null && pc.Length > prefixLen && long.TryParse(pc.Substring(prefixLen), out var c) && c > maxCounter)
+                    maxCounter = c;
+            }
+            var nextCode = orgPrefix + (maxCounter + 1).ToString("D9");
+            return Json(new { payCode = nextCode });
+        }
+
+        [RequirePermission("children.create")]
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> CreateInvoices([FromBody] CreateInvoicesRequest request)
+        {
+            var organizationId = HttpContext.Session.GetString("OrganizationId");
+            var userId = HttpContext.Session.GetString("UserId");
+            if (string.IsNullOrEmpty(organizationId) || string.IsNullOrEmpty(userId))
+                return Unauthorized();
+
+            if (request?.ClientIds == null || request.ClientIds.Count == 0)
+                return BadRequest(new { success = false, message = "Выберите хотя бы одного получателя (группу или клиентов)." });
+            var useManualService = request.ManualServicePriceSom.HasValue;
+            if (!useManualService && (request.ServiceItems == null || request.ServiceItems.Count == 0))
+                return BadRequest(new { success = false, message = "Выберите хотя бы одну услугу или укажите цену (режим «услуга по счёту»)." });
+            if (useManualService && request.ManualServicePriceSom.Value < 0)
+                return BadRequest(new { success = false, message = "Цена не может быть отрицательной." });
+            if (!request.AutoProlongation && !request.DateEndInvoice.HasValue)
+                return BadRequest(new { success = false, message = "Укажите дату конца счёта или включите автопролонгацию." });
+
+            var clientIds = request.ClientIds.Distinct().ToList();
+            var clients = await _db.OrganizationClients
+                .Where(c => c.Organization == organizationId && clientIds.Contains(c.Id))
+                .ToListAsync();
+            if (clients.Count == 0)
+                return BadRequest(new { success = false, message = "Выбранные клиенты не найдены." });
+
+            Dictionary<string, OrganizationService>? orgServices = null;
+            if (!useManualService)
+            {
+                var serviceIds = request.ServiceItems!.Select(x => x.ServiceId).Distinct().ToList();
+                orgServices = await _db.OrganizationServices
+                    .Where(s => s.Organization == organizationId && serviceIds.Contains(s.Id))
+                    .ToDictionaryAsync(s => s.Id, s => s);
+                if (orgServices.Count == 0)
+                    return BadRequest(new { success = false, message = "Выбранные услуги не найдены." });
+            }
+
+            var orgPrefix = organizationId;
+            var prefixLen = orgPrefix.Length;
+            var existingPayCodes = await _db.Invoices
+                .Where(i => i.Client != null && i.ClientNavigation != null && i.ClientNavigation.Organization == organizationId && i.PayCode != null)
+                .Select(i => i.PayCode)
+                .ToListAsync();
+            long maxCounter = 0;
+            foreach (var pc in existingPayCodes)
+            {
+                if (pc != null && pc.Length == prefixLen + 9 && pc.StartsWith(orgPrefix) && long.TryParse(pc.Substring(prefixLen), out var c) && c > maxCounter)
+                    maxCounter = c;
+            }
+
+            var useExistingPayCode = !string.IsNullOrWhiteSpace(request.PayCode);
+            var createdIds = new List<string>();
+
+            try
+            {
+                foreach (var client in clients)
+                {
+                    var payCode = useExistingPayCode ? request.PayCode!.Trim() : (orgPrefix + (++maxCounter).ToString("D9"));
+                    var invoiceId = Guid.NewGuid().ToString();
+                    // Храним даты как «без часового пояса» — то же значение, что ввёл пользователь (локальное)
+                    var dateStart = request.DateStartInvoice ?? DateTime.Today;
+                    if (dateStart.Kind != DateTimeKind.Unspecified)
+                        dateStart = DateTime.SpecifyKind(dateStart.Kind == DateTimeKind.Utc ? dateStart.ToLocalTime() : dateStart, DateTimeKind.Unspecified);
+
+                    var autoProlongation = request.AutoProlongation;
+                    DateTime? dateEnd = null;
+                    if (!autoProlongation && request.DateEndInvoice.HasValue)
+                    {
+                        dateEnd = request.DateEndInvoice.Value;
+                        if (dateEnd.Value.Kind != DateTimeKind.Unspecified)
+                            dateEnd = DateTime.SpecifyKind(dateEnd.Value.Kind == DateTimeKind.Utc ? dateEnd.Value.ToLocalTime() : dateEnd.Value, DateTimeKind.Unspecified);
+                    }
+
+                    decimal totalTyiyn;
+                    if (useManualService)
+                    {
+                        totalTyiyn = (decimal)(request.ManualServicePriceSom!.Value * 100m);
+                        _db.InvoiceServices.Add(new InvoiceService
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            Invoice = invoiceId,
+                            Service = null,
+                            ServiceSumm = totalTyiyn
+                        });
+                    }
+                    else
+                    {
+                        totalTyiyn = 0;
+                        foreach (var item in request.ServiceItems!)
+                        {
+                            if (item.ServiceId == null || orgServices == null || !orgServices.TryGetValue(item.ServiceId, out var orgService))
+                                continue;
+                            var qty = Math.Max(1, item.Qty ?? 1);
+                            var serviceSummTyiyn = orgService.ServiceSumm ?? 0;
+                            totalTyiyn += serviceSummTyiyn * qty;
+                            _db.InvoiceServices.Add(new InvoiceService
+                            {
+                                Id = Guid.NewGuid().ToString(),
+                                Invoice = invoiceId,
+                                Service = orgService.Id,
+                                ServiceSumm = serviceSummTyiyn * qty
+                            });
+                        }
+                    }
+
+                    var periodicity = request.Periodicity ?? "monthly";
+                    var useCurrentDateTime = request.UseCurrentDateTime;
+                    var ru = CultureInfo.GetCultureInfo("ru-RU");
+
+                    static DateTime GetPeriodStart(DateTime d, string periodicity)
+                    {
+                        if (periodicity == "monthly")
+                            return new DateTime(d.Year, d.Month, 1, 0, 0, 0, d.Kind);
+                        if (periodicity == "weekly")
+                        {
+                            var diff = ((int)d.DayOfWeek - (int)DayOfWeek.Monday + 7) % 7;
+                            var monday = d.Date.AddDays(-diff);
+                            return new DateTime(monday.Year, monday.Month, monday.Day, 0, 0, 0, d.Kind);
+                        }
+                        if (periodicity == "yearly")
+                            return new DateTime(d.Year, 1, 1, 0, 0, 0, d.Kind);
+                        return d;
+                    }
+
+                    static DateTime GetPeriodEnd(DateTime d, string periodicity)
+                    {
+                        if (periodicity == "monthly")
+                            return new DateTime(d.Year, d.Month, DateTime.DaysInMonth(d.Year, d.Month), 23, 59, 59, d.Kind);
+                        if (periodicity == "weekly")
+                        {
+                            var start = GetPeriodStart(d, "weekly");
+                            var endDate = start.AddDays(6).Date;
+                            return new DateTime(endDate.Year, endDate.Month, endDate.Day, 23, 59, 59, d.Kind);
+                        }
+                        if (periodicity == "yearly")
+                            return new DateTime(d.Year, 12, 31, 23, 59, 59, d.Kind);
+                        return d;
+                    }
+
+                    var invoice = new Invoice
+                    {
+                        Id = invoiceId,
+                        DateCreated = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Unspecified),
+                        UserCreater = userId,
+                        InvoiceStatus = "actual",
+                        Periodicity = request.Periodicity ?? "monthly",
+                        DateStartInvoice = dateStart,
+                        DateEndInvoice = dateEnd,
+                        Balance = 0,
+                        FixedSumm = totalTyiyn,
+                        PayCode = payCode,
+                        Client = client.Id,
+                        AutoProlongation = autoProlongation,
+                        Hassameaccount = useExistingPayCode,
+                        NameInvoice = !string.IsNullOrWhiteSpace(request.NameInvoice) ? request.NameInvoice : "Счет " + (client.ClientName ?? client.Id)
+                    };
+                    _db.Invoices.Add(invoice);
+
+                    if (autoProlongation)
+                    {
+                        DateTime dateFrom;
+                        DateTime dateTo;
+                        string periodValue;
+                        if (useCurrentDateTime)
+                        {
+                            if (periodicity == "weekly")
+                            {
+                                dateFrom = dateStart;
+                                var endDay = dateStart.AddDays(6).Date;
+                                dateTo = new DateTime(endDay.Year, endDay.Month, endDay.Day, 23, 59, 59, DateTimeKind.Unspecified);
+                                periodValue = dateFrom.ToString("dd.MM.yyyy", ru) + " - " + dateTo.ToString("dd.MM.yyyy", ru);
+                            }
+                            else if (periodicity == "yearly")
+                            {
+                                dateFrom = dateStart;
+                                dateTo = new DateTime(dateStart.Year, 12, 31, 23, 59, 59, DateTimeKind.Unspecified);
+                                periodValue = dateStart.Year.ToString();
+                            }
+                            else
+                            {
+                                dateFrom = dateStart;
+                                dateTo = dateStart.AddMonths(1).AddSeconds(-1);
+                                periodValue = ru.DateTimeFormat.GetMonthName(dateStart.Month) + " " + dateStart.Year;
+                            }
+                        }
+                        else
+                        {
+                            dateFrom = GetPeriodStart(dateStart, periodicity);
+                            dateTo = GetPeriodEnd(dateStart, periodicity);
+                            periodValue = periodicity == "weekly"
+                                ? dateFrom.ToString("dd.MM.yyyy", ru) + " - " + dateTo.ToString("dd.MM.yyyy", ru)
+                                : periodicity == "yearly"
+                                    ? dateFrom.Year.ToString()
+                                    : ru.DateTimeFormat.GetMonthName(dateFrom.Month) + " " + dateFrom.Year;
+                        }
+                        _db.InvoicePayments.Add(new InvoicePayment
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            Invoice = invoiceId,
+                            DateFrom = dateFrom,
+                            DateTo = dateTo,
+                            PaymentStatus = "non_paid",
+                            PeriodValue = periodValue,
+                            PaymentSumm = totalTyiyn
+                        });
+                    }
+                    else if (dateEnd.HasValue)
+                    {
+                        var from = dateStart.Date;
+                        var to = dateEnd.Value.Date;
+                        if (from > to) (from, to) = (to, from);
+
+                        if (periodicity == "weekly")
+                        {
+                            var periodStart = useCurrentDateTime
+                                ? dateStart
+                                : GetPeriodStart(dateStart, "weekly");
+                            while (periodStart < dateEnd.Value)
+                            {
+                                var periodEnd = useCurrentDateTime
+                                    ? new DateTime(periodStart.Year, periodStart.Month, periodStart.Day, 23, 59, 59, DateTimeKind.Unspecified).AddDays(6)
+                                    : GetPeriodEnd(periodStart, "weekly");
+                                var dateTo = periodEnd > dateEnd.Value ? dateEnd.Value : periodEnd;
+                                var periodValue = periodStart.ToString("dd.MM.yyyy", ru) + " - " + dateTo.ToString("dd.MM.yyyy", ru);
+                                _db.InvoicePayments.Add(new InvoicePayment
+                                {
+                                    Id = Guid.NewGuid().ToString(),
+                                    Invoice = invoiceId,
+                                    DateFrom = periodStart,
+                                    DateTo = dateTo,
+                                    PaymentStatus = "non_paid",
+                                    PeriodValue = periodValue,
+                                    PaymentSumm = totalTyiyn
+                                });
+                                periodStart = periodStart.AddDays(7);
+                                if (!useCurrentDateTime)
+                                    periodStart = new DateTime(periodStart.Year, periodStart.Month, periodStart.Day, 0, 0, 0, DateTimeKind.Unspecified);
+                            }
+                        }
+                        else if (periodicity == "yearly")
+                        {
+                            if (useCurrentDateTime)
+                            {
+                                var periodStart = dateStart;
+                                while (periodStart < dateEnd.Value)
+                                {
+                                    var periodEnd = new DateTime(periodStart.Year, 12, 31, 23, 59, 59, DateTimeKind.Unspecified);
+                                    var dateTo = periodEnd > dateEnd.Value ? dateEnd.Value : periodEnd;
+                                    _db.InvoicePayments.Add(new InvoicePayment
+                                    {
+                                        Id = Guid.NewGuid().ToString(),
+                                        Invoice = invoiceId,
+                                        DateFrom = periodStart,
+                                        DateTo = dateTo,
+                                        PaymentStatus = "non_paid",
+                                        PeriodValue = periodStart.Year.ToString(),
+                                        PaymentSumm = totalTyiyn
+                                    });
+                                    periodStart = new DateTime(periodStart.Year + 1, periodStart.Month, periodStart.Day, periodStart.Hour, periodStart.Minute, periodStart.Second, DateTimeKind.Unspecified);
+                                }
+                            }
+                            else
+                            {
+                                var startYear = from.Year;
+                                var endYear = to.Year;
+                                for (var y = startYear; y <= endYear; y++)
+                                {
+                                    var dateFrom = new DateTime(y, 1, 1, 0, 0, 0, DateTimeKind.Unspecified);
+                                    var dateTo = new DateTime(y, 12, 31, 23, 59, 59, DateTimeKind.Unspecified);
+                                    _db.InvoicePayments.Add(new InvoicePayment
+                                    {
+                                        Id = Guid.NewGuid().ToString(),
+                                        Invoice = invoiceId,
+                                        DateFrom = dateFrom,
+                                        DateTo = dateTo,
+                                        PaymentStatus = "non_paid",
+                                        PeriodValue = y.ToString(),
+                                        PaymentSumm = totalTyiyn
+                                    });
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (useCurrentDateTime)
+                            {
+                                var periodStart = dateStart;
+                                while (periodStart < dateEnd.Value)
+                                {
+                                    var periodEnd = periodStart.AddMonths(1).AddSeconds(-1);
+                                    var dateTo = periodEnd > dateEnd.Value ? dateEnd.Value : periodEnd;
+                                    var periodValue = ru.DateTimeFormat.GetMonthName(periodStart.Month) + " " + periodStart.Year;
+                                    _db.InvoicePayments.Add(new InvoicePayment
+                                    {
+                                        Id = Guid.NewGuid().ToString(),
+                                        Invoice = invoiceId,
+                                        DateFrom = periodStart,
+                                        DateTo = dateTo,
+                                        PaymentStatus = "non_paid",
+                                        PeriodValue = periodValue,
+                                        PaymentSumm = totalTyiyn
+                                    });
+                                    periodStart = periodStart.AddMonths(1);
+                                }
+                            }
+                            else
+                            {
+                                var endYear = to.Year;
+                                var endMonth = to.Month;
+                                for (var d = new DateTime(from.Year, from.Month, 1, 0, 0, 0, DateTimeKind.Unspecified); d.Year < endYear || (d.Year == endYear && d.Month <= endMonth); d = d.AddMonths(1))
+                                {
+                                    var y = d.Year;
+                                    var m = d.Month;
+                                    var periodStart = new DateTime(y, m, 1, 0, 0, 0, DateTimeKind.Unspecified);
+                                    var periodEnd = new DateTime(y, m, DateTime.DaysInMonth(y, m), 23, 59, 59, DateTimeKind.Unspecified);
+                                    var periodValue = ru.DateTimeFormat.GetMonthName(m) + " " + y;
+                                    _db.InvoicePayments.Add(new InvoicePayment
+                                    {
+                                        Id = Guid.NewGuid().ToString(),
+                                        Invoice = invoiceId,
+                                        DateFrom = periodStart,
+                                        DateTo = periodEnd,
+                                        PaymentStatus = "non_paid",
+                                        PeriodValue = periodValue,
+                                        PaymentSumm = totalTyiyn
+                                    });
+                                }
+                            }
+                        }
+                    }
+
+                    createdIds.Add(invoiceId);
+                }
+
+                await _db.SaveChangesAsync();
+                return Json(new { success = true, message = "Счета созданы.", createdIds });
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)
+            {
+                var msg = ex.InnerException?.Message ?? ex.Message;
+                return new JsonResult(new { success = false, message = "Ошибка БД: " + msg }) { StatusCode = 500 };
+            }
+            catch (Exception ex)
+            {
+                var msg = ex.InnerException?.Message ?? ex.Message;
+                return new JsonResult(new { success = false, message = "Ошибка: " + msg }) { StatusCode = 500 };
+            }
+        }
+
+        public class CreateInvoicesRequest
+        {
+            public string? NameInvoice { get; set; }
+            public DateTime? DateStartInvoice { get; set; }
+            public DateTime? DateEndInvoice { get; set; }
+            public string? Periodicity { get; set; }
+            public bool AutoProlongation { get; set; }
+            public bool UseCurrentDateTime { get; set; } = true;
+            public List<string> ClientIds { get; set; } = new();
+            public List<CreateInvoiceServiceItem> ServiceItems { get; set; } = new();
+            /// <summary>Когда AllowedHassameaccount: выбранный лицевой счёт (все счета создаются с ним, Hassameaccount=true).</summary>
+            public string? PayCode { get; set; }
+            /// <summary>Когда DisableInvoiceServiceSelection: цена в сомах для одной позиции «название счёта».</summary>
+            public decimal? ManualServicePriceSom { get; set; }
+        }
+
+        public class CreateInvoiceServiceItem
+        {
+            public string? ServiceId { get; set; }
+            public int? Qty { get; set; }
         }
     }
 }
