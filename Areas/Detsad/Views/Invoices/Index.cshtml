@@ -20,14 +20,8 @@
         <div class="d-flex justify-content-between align-items-center">
             <div>
                 <h1 class="page-title">Счета</h1>
-                <p class="page-subtitle">Счета на оплату (инвойсы) организации</p>
+                <p class="page-subtitle">Счета на оплату (инвойсы) организации. Создание счёта — на странице «Дети».</p>
             </div>
-            <a asp-action="Create" class="action-btn action-btn--add" title="Добавить счёт">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
-                </svg>
-                Добавить счёт
-            </a>
         </div>
     </div>
 
@@ -191,12 +185,9 @@
                     </svg>
                 </div>
                 <h3 class="empty-state-title">Счетов пока нет</h3>
-                <p class="empty-state-description">Создайте счёт для приёма платежей от клиентов</p>
-                <a asp-action="Create" class="action-btn action-btn--add mt-3" title="Добавить счёт">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
-                    </svg>
-                    Добавить счёт
+                <p class="empty-state-description">Счета создаются на странице «Дети» при выборе ребёнка и действия «Счёт на оплату».</p>
+                <a href="@Url.Action("Children", "Cabinet", new { area = "Detsad" })" class="action-btn action-btn--add mt-3" title="Перейти к списку детей">
+                    Перейти к списку детей
                 </a>
             </div>
         }

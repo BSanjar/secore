@@ -61,6 +61,7 @@ wwwroot\lib\jquery\LICENSE.txt
 wwwroot\web\kindergarten\css\cabinet.css
 wwwroot\web\kindergarten\css\detsad-children.css
 wwwroot\web\kindergarten\css\detsad-create-invoice.css
+wwwroot\web\kindergarten\css\detsad-dashboard-v2.css
 wwwroot\web\kindergarten\css\detsad-dashboard.css
 wwwroot\web\kindergarten\css\detsad-orgclientgroups.css
 wwwroot\web\kindergarten\js\cabinet.js

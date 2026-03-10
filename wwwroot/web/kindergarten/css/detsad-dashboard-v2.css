@@ -1,0 +1,365 @@
+/* Dashboard v2 — современный дашборд кабинета организации */
+
+.dashboard-v2 {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+.dashboard-v2__header {
+    margin-bottom: 1.75rem;
+}
+
+.dashboard-v2__title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 0.25rem 0;
+}
+
+.dashboard-v2__subtitle {
+    font-size: 0.9375rem;
+    color: #64748b;
+    margin: 0;
+}
+
+/* Верхние карточки */
+.dashboard-v2__cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+}
+
+@media (max-width: 1024px) {
+    .dashboard-v2__cards { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 560px) {
+    .dashboard-v2__cards { grid-template-columns: 1fr; }
+}
+
+.card-v2 {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border: 1px solid #e2e8f0;
+}
+
+.card-v2__icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    color: #fff;
+}
+
+.card-v2--primary .card-v2__icon { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+.card-v2--accent .card-v2__icon { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+.card-v2--info .card-v2__icon { background: linear-gradient(135deg, #0ea5e9, #0284c7); }
+.card-v2--success .card-v2__icon { background: linear-gradient(135deg, #10b981, #059669); }
+
+.card-v2__body {
+    min-width: 0;
+}
+
+.card-v2__label {
+    font-size: 0.8125rem;
+    color: #64748b;
+    margin-bottom: 0.25rem;
+}
+
+.card-v2__value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.card-v2__currency,
+.card-v2__unit {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #64748b;
+}
+
+.card-v2__hint {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-top: 0.25rem;
+}
+
+/* Центральный блок: график + карточка организации */
+.dashboard-v2__main {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 1.5rem;
+    margin-bottom: 1.75rem;
+}
+
+@media (max-width: 1024px) {
+    .dashboard-v2__main { grid-template-columns: 1fr; }
+}
+
+.chart-block {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border: 1px solid #e2e8f0;
+}
+
+.chart-block__title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 1rem 0;
+}
+
+.chart-block__period {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.chart-period-btn {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #64748b;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.chart-period-btn:hover {
+    background: #e2e8f0;
+    color: #475569;
+}
+
+.chart-period-btn.active {
+    background: #3b82f6;
+    color: #fff;
+    border-color: #3b82f6;
+}
+
+.chart-block__canvas-wrap {
+    height: 260px;
+    position: relative;
+}
+
+/* Правая карточка организации */
+.org-card {
+    background: linear-gradient(160deg, #1e293b 0%, #334155 100%);
+    border-radius: 12px;
+    padding: 1.25rem;
+    color: #f8fafc;
+    box-shadow: 0 4px 12px rgba(30, 41, 59, 0.25);
+}
+
+.org-card__title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #94a3b8;
+    margin: 0 0 0.5rem 0;
+}
+
+.org-card__name {
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: #fff;
+}
+
+.org-card__list {
+    margin: 0 0 1rem 0;
+    padding: 0;
+    font-size: 0.875rem;
+}
+
+.org-card__list dt {
+    color: #94a3b8;
+    font-weight: 500;
+    margin-top: 0.5rem;
+    margin-bottom: 0.15rem;
+}
+
+.org-card__list dd {
+    margin: 0;
+    color: #e2e8f0;
+}
+
+.org-card__btn {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #1e293b;
+    background: #f8fafc;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+.org-card__btn:hover {
+    background: #e2e8f0;
+}
+
+/* Нижний блок: Должники + Счета */
+.dashboard-v2__bottom {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.75rem;
+}
+
+@media (max-width: 768px) {
+    .dashboard-v2__bottom { grid-template-columns: 1fr; }
+}
+
+.block-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+}
+
+.block-card__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.block-card__title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0;
+}
+
+.block-card__link {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #3b82f6;
+    text-decoration: none;
+}
+
+.block-card__link:hover {
+    text-decoration: underline;
+}
+
+.block-card__body {
+    padding: 1rem 1.25rem;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.block-card__empty {
+    margin: 0;
+    font-size: 0.875rem;
+    color: #94a3b8;
+}
+
+.debtors-list,
+.invoices-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.debtors-list__item,
+.invoices-list__item {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.875rem;
+}
+
+.debtors-list__item:last-child,
+.invoices-list__item:last-child {
+    border-bottom: none;
+}
+
+.debtors-list__name,
+.invoices-list__name {
+    font-weight: 500;
+    color: #1e293b;
+    min-width: 0;
+}
+
+.invoices-list__name {
+    text-decoration: none;
+    color: #3b82f6;
+}
+
+.invoices-list__name:hover {
+    text-decoration: underline;
+}
+
+.debtors-list__amount {
+    font-weight: 600;
+    color: #dc2626;
+}
+
+.invoices-list__sum {
+    font-weight: 500;
+    color: #475569;
+}
+
+.debtors-list__status,
+.invoices-list__status {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+/* Быстрые действия */
+.dashboard-v2__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.action-tile {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    text-decoration: none;
+    color: #475569;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.action-tile:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #1e293b;
+}
+
+.action-tile__icon {
+    font-size: 1.25rem;
+}

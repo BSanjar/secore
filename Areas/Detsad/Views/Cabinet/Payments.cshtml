@@ -31,23 +31,23 @@
             </div>
             @if (agentsList.Any())
             {
+                var selectedId = (selectedAgentIds != null && selectedAgentIds.Count > 0) ? selectedAgentIds[0] : "__all__";
                 <div class="col-md-4">
                     <label class="form-label small text-muted mb-1">Агент</label>
-                    <select name="agentIds" id="transactionsAgentIds" class="form-select filter-select" multiple size="1" style="min-height: 38px;">
-                        @if (isAllAgentsSelected)
+                    <select name="agentIds" id="transactionsAgentIds" class="form-select filter-select">
+                        @if (selectedId == "__all__")
                         {
-                            <option value="__all__" selected>Выбрать все</option>
+                            <option value="__all__" selected>Все агенты</option>
                         }
                         else
                         {
-                            <option value="__all__">Выбрать все</option>
+                            <option value="__all__">Все агенты</option>
                         }
                         @foreach (var a in agentsList)
                         {
                             var id = (string)a.Id;
                             var name = (string)(a.Name ?? a.Id);
-                            var sel = !isAllAgentsSelected && selectedAgentIds.Contains(id);
-                            if (sel)
+                            if (selectedId == id)
                             {
                                 <option value="@id" selected>@name</option>
                             }

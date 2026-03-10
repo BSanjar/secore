@@ -26,7 +26,6 @@ namespace WebApplication1.Areas.Detsad.Controllers
                 return Unauthorized();
             }
 
-            // Клиенты организации (активные для подсчёта клиентов)
             var clientIds = await _db.OrganizationClients
                 .Where(c => c.Organization == organizationId)
                 .Select(c => c.Id)
@@ -36,75 +35,143 @@ namespace WebApplication1.Areas.Detsad.Controllers
                 .Where(c => c.Organization == organizationId && c.ClientStatus == 1)
                 .ToListAsync();
 
-            // Счета организации (по клиентам)
             var invoiceIds = await _db.Invoices
                 .Where(i => i.Client != null && clientIds.Contains(i.Client))
                 .Select(i => i.Id)
                 .ToListAsync();
 
             var invoices = await _db.Invoices
+                .Include(i => i.ClientNavigation)
                 .Where(i => i.Client != null && clientIds.Contains(i.Client))
                 .ToListAsync();
 
-            // Транзакции только по счетам организации (суммы в тыйынах)
             var transactions = await _db.Transactions
                 .Where(t => t.TransactionStatus == "success" &&
                             t.Invoice != null &&
-                            invoiceIds.Contains(t.Invoice))
+                            invoiceIds.Contains(t.Invoice) &&
+                            t.Summ.HasValue &&
+                            t.TransactionType == "payPaymentInvoice")
                 .ToListAsync();
 
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow;
+            var today = DateTime.Today;
             var currentMonth = now.Month;
             var currentYear = now.Year;
 
-            // Приходы за сегодня (debit, в сомах)
-            var todayIncome = transactions
-                .Where(t => t.TransactionDate.HasValue &&
-                            t.TransactionDate.Value.Date == DateTime.Today &&
-                            t.Summ.HasValue &&
-                            t.TransactionType == "debit")
-                .Sum(t => (decimal)(t.Summ ?? 0)) / 100m;
-
-            // Приходы за месяц (debit, в сомах)
             var monthIncome = transactions
                 .Where(t => t.TransactionDate.HasValue &&
                            t.TransactionDate.Value.Month == currentMonth &&
-                           t.TransactionDate.Value.Year == currentYear &&
-                           t.Summ.HasValue &&
-                           t.TransactionType == "debit")
+                           t.TransactionDate.Value.Year == currentYear)
                 .Sum(t => (decimal)(t.Summ ?? 0)) / 100m;
 
-            // Приходы за год (debit, в сомах)
             var yearIncome = transactions
-                .Where(t => t.TransactionDate.HasValue &&
-                           t.TransactionDate.Value.Year == currentYear &&
-                           t.Summ.HasValue &&
-                           t.TransactionType == "debit")
+                .Where(t => t.TransactionDate.HasValue && t.TransactionDate.Value.Year == currentYear)
                 .Sum(t => (decimal)(t.Summ ?? 0)) / 100m;
 
-            // Должники: клиенты с отрицательной суммой балансов по счетам (actual)
             var balanceByClient = await _db.Invoices
                 .Where(i => i.Client != null && clientIds.Contains(i.Client) && i.InvoiceStatus == "actual")
                 .GroupBy(i => i.Client!)
                 .Select(g => new { ClientId = g.Key, TotalBalance = g.Sum(i => i.Balance ?? 0m) })
                 .ToDictionaryAsync(x => x.ClientId, x => x.TotalBalance);
 
-            var debtorsCount = clientIds.Count(cid => balanceByClient.GetValueOrDefault(cid, 0m) < 0);
-            var debtorsAmount = balanceByClient
-                .Where(kv => kv.Value < 0)
-                .Sum(kv => Math.Abs(kv.Value)) / 100m;
-
             var totalClients = clients.Count;
+            var activeInvoicesCount = invoices.Count(i => i.InvoiceStatus == "actual");
 
-            var activeInvoices = invoices.Count(i => i.InvoiceStatus == "actual");
+            // Данные для графика: неделя (последние 7 дней), месяц (дни текущего месяца), год (12 месяцев)
+            var chartWeek = new List<object>();
+            for (var d = 6; d >= 0; d--)
+            {
+                var date = today.AddDays(-d);
+                var sum = transactions
+                    .Where(t => t.TransactionDate.HasValue && t.TransactionDate.Value.Date == date)
+                    .Sum(t => (decimal)(t.Summ ?? 0)) / 100m;
+                chartWeek.Add(new { label = date.ToString("dd.MM"), value = sum });
+            }
 
-            ViewBag.TodayIncome = todayIncome;
+            var chartMonth = new List<object>();
+            var firstDay = new DateTime(currentYear, currentMonth, 1);
+            var lastDay = firstDay.AddMonths(1).AddDays(-1);
+            for (var date = firstDay; date <= lastDay; date = date.AddDays(1))
+            {
+                var sum = transactions
+                    .Where(t => t.TransactionDate.HasValue && t.TransactionDate.Value.Date == date)
+                    .Sum(t => (decimal)(t.Summ ?? 0)) / 100m;
+                chartMonth.Add(new { label = date.ToString("dd.MM"), value = sum });
+            }
+
+            var chartYear = new List<object>();
+            for (var m = 1; m <= 12; m++)
+            {
+                var sum = transactions
+                    .Where(t => t.TransactionDate.HasValue &&
+                                t.TransactionDate.Value.Month == m &&
+                                t.TransactionDate.Value.Year == currentYear)
+                    .Sum(t => (decimal)(t.Summ ?? 0)) / 100m;
+                chartYear.Add(new { label = new DateTime(currentYear, m, 1).ToString("MMM", System.Globalization.CultureInfo.GetCultureInfo("ru-RU")), value = sum });
+            }
+
+            // Организация и условия обслуживания
+            var organization = await _db.Organizations.FindAsync(organizationId);
+            var orgSettings = await _db.OrganizationSettings
+                .Include(s => s.Commission)
+                .FirstOrDefaultAsync(s => s.OrganizationId == organizationId);
+            var agentCommission = await _db.AgentCommissions
+                .Include(ac => ac.Commission)
+                .Include(ac => ac.LowerCommission)
+                .FirstOrDefaultAsync(ac => ac.OrganizationId == organizationId);
+
+            var commissionName = orgSettings?.Commission?.Name ?? agentCommission?.Commission?.Name;
+            var commissionKind = orgSettings?.Commission?.CommissionKind ?? agentCommission?.Commission?.CommissionKind;
+            var commissionRate = orgSettings?.Commission?.Rate ?? agentCommission?.Commission?.Rate;
+            var commissionFixed = orgSettings?.Commission?.FixedAmount ?? agentCommission?.Commission?.FixedAmount;
+            var billingType = orgSettings?.BillingType ?? "commission";
+            var hasSubscription = string.Equals(billingType, "subscription", StringComparison.OrdinalIgnoreCase);
+
+            // Должники: топ по сумме долга
+            var debtorsList = clients
+                .Where(c => balanceByClient.GetValueOrDefault(c.Id, 0m) < 0)
+                .OrderBy(c => balanceByClient.GetValueOrDefault(c.Id, 0m))
+                .Take(10)
+                .Select(c => new
+                {
+                    ClientName = c.ClientName ?? "—",
+                    ClientId = c.Id,
+                    DebtAmount = Math.Abs(balanceByClient.GetValueOrDefault(c.Id, 0m)) / 100m,
+                    Status = c.ClientStatus == 1 ? "Активный" : "Приостановлен"
+                })
+                .ToList();
+
+            // Последние/актуальные счета
+            var recentInvoices = invoices
+                .Where(i => i.InvoiceStatus == "actual")
+                .OrderByDescending(i => i.DateCreated ?? DateTime.MinValue)
+                .Take(10)
+                .Select(i => new
+                {
+                    Id = i.Id,
+                    Name = i.NameInvoice ?? "Без названия",
+                    Balance = (i.Balance ?? 0m) / 100m,
+                    Status = i.InvoiceStatus == "actual" ? "Активный" : i.InvoiceStatus ?? "—",
+                    ClientName = i.ClientNavigation?.ClientName
+                })
+                .ToList();
+
             ViewBag.MonthIncome = monthIncome;
             ViewBag.YearIncome = yearIncome;
-            ViewBag.DebtorsCount = debtorsCount;
-            ViewBag.DebtorsAmount = debtorsAmount;
             ViewBag.TotalClients = totalClients;
-            ViewBag.ActiveInvoices = activeInvoices;
+            ViewBag.ActiveInvoices = activeInvoicesCount;
+            ViewBag.ChartWeek = System.Text.Json.JsonSerializer.Serialize(chartWeek);
+            ViewBag.ChartMonth = System.Text.Json.JsonSerializer.Serialize(chartMonth);
+            ViewBag.ChartYear = System.Text.Json.JsonSerializer.Serialize(chartYear);
+            ViewBag.Organization = organization;
+            ViewBag.OrgSettings = orgSettings;
+            ViewBag.HasSubscription = hasSubscription;
+            ViewBag.CommissionName = commissionName;
+            ViewBag.CommissionKind = commissionKind;
+            ViewBag.CommissionRate = commissionRate;
+            ViewBag.CommissionFixed = commissionFixed;
+            ViewBag.DebtorsList = debtorsList;
+            ViewBag.RecentInvoices = recentInvoices;
 
             return View();
         }
@@ -212,7 +279,7 @@ namespace WebApplication1.Areas.Detsad.Controllers
             public string? ClientEmail { get; set; }
             public string? ClientWa { get; set; }
             public string? ClientTg { get; set; }
-            /// <summary>Ключ — Id поля (OrganizationField), значение — введённое значение</summary>
+            /// <summary>Ключ — Id поля (OrganizationField), значение — вvведённое значение</summary>
             public Dictionary<string, string>? AdditionalFields { get; set; }
         }
 
