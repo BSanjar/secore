@@ -1,3 +1,4 @@
+wwwroot\css\login.css
 wwwroot\css\site.css
 wwwroot\favicon.ico
 wwwroot\js\site.js
@@ -77,3 +78,4 @@ wwwroot\web\kindergarten\js\payment-history.js
 wwwroot\web\Simple\css\cabinet.css
 wwwroot\web\Simple\css\dashboard.css
 wwwroot\web\Simple\js\dashboard.js
+wwwroot\css\dashboard-soft.css

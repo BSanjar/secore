@@ -1,0 +1,162 @@
+@using WebApplication1.Models.DBModels
+@{
+    ViewData["Title"] = "Подписка организации";
+    var org = ViewBag.Organization as Organization;
+    var orgId = ViewBag.OrganizationId as string ?? "";
+    var isSubscriptionBilling = ViewBag.IsSubscriptionBilling as bool? ?? false;
+    var currentPeriodEnd = ViewBag.CurrentPeriodEnd as DateTime?;
+    var isActive = ViewBag.IsActive as bool? ?? true;
+    var payments = ViewBag.Payments as List<OrganizationSubscriptionPayment> ?? new List<OrganizationSubscriptionPayment>();
+    var subscription = ViewBag.Subscription as OrganizationSubscription;
+    var message = TempData["SubscriptionMessage"] as string;
+    var error = TempData["SubscriptionError"] as string;
+}
+
+<div class="container py-4">
+    <h1 class="h3 mb-4">Подписка организации</h1>
+    <p class="text-muted">@(org?.Name ?? orgId)</p>
+
+    @if (!string.IsNullOrEmpty(message))
+    {
+        <div class="alert alert-success alert-dismissible fade show">@message <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    }
+    @if (!string.IsNullOrEmpty(error))
+    {
+        <div class="alert alert-danger alert-dismissible fade show">@error <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    }
+
+    <!-- Текущий статус доступа -->
+    <div class="card mb-4">
+        <div class="card-header">Текущий статус доступа</div>
+        <div class="card-body">
+            @if (!isSubscriptionBilling)
+            {
+                <p class="mb-0">Тариф без подписки. Ограничение доступа по периоду не применяется.</p>
+            }
+            else if (currentPeriodEnd.HasValue && currentPeriodEnd.Value.Date >= DateTime.UtcNow.Date)
+            {
+                <p class="mb-0 text-success"><strong>Доступ активен</strong> до @currentPeriodEnd.Value.ToString("dd.MM.yyyy")</p>
+                <p class="small text-muted mb-0">Организация активна</p>
+            }
+            else
+            {
+                <p class="mb-0 text-danger"><strong>Доступ приостановлен</strong>. Оплаченный период истёк.</p>
+                <p class="small text-muted mb-0">Статус организации: неактивная. Добавьте оплату для возобновления доступа.</p>
+            }
+        </div>
+    </div>
+
+    <!-- Настройки тарифа подписки -->
+    <div class="card mb-4">
+        <div class="card-header">Настройки тарифа подписки</div>
+        <div class="card-body">
+            <form method="post" asp-action="SaveSettings" asp-controller="OrganizationSubscription" class="row g-3">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="organizationId" value="@orgId" />
+                <div class="col-md-4">
+                    <label class="form-label">Стоимость за период (сом)</label>
+                    <input type="number" name="priceSom" class="form-control" step="0.01" min="0" value="@(subscription != null ? (subscription.PriceTyiyn / 100m).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) : "")" placeholder="0" required />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Период</label>
+                    <select name="periodType" class="form-select">
+                        @if (subscription?.PeriodType == "year")
+                        {
+                            <option value="month">Месяц</option>
+                            <option value="year" selected>Год</option>
+                        }
+                        else
+                        {
+                            <option value="month" selected>Месяц</option>
+                            <option value="year">Год</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary">Сохранить настройки</button>
+                </div>
+            </form>
+            <p class="small text-muted mt-2 mb-0">После сохранения тип тарифа организации будет установлен в «Подписка». Добавляйте оплаты ниже.</p>
+        </div>
+    </div>
+
+    <!-- История оплат -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>История оплат</span>
+            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addPaymentModal">+ Добавить оплату</button>
+        </div>
+        <div class="card-body p-0">
+            @if (payments.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Дата оплаты</th>
+                                <th>Сумма</th>
+                                <th>Период (с — по)</th>
+                                <th>Примечание</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var p in payments)
+                            {
+                                <tr>
+                                    <td>@p.PaidAt.ToString("dd.MM.yyyy HH:mm")</td>
+                                    <td>@((p.AmountTyiyn / 100m).ToString("N2")) сом</td>
+                                    <td>@p.PeriodStart.ToString("dd.MM.yyyy") — @p.PeriodEnd.ToString("dd.MM.yyyy")</td>
+                                    <td>@(p.Note ?? "—")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <p class="text-muted p-3 mb-0">Оплат пока нет. Добавьте оплату для открытия доступа.</p>
+            }
+        </div>
+    </div>
+
+    <a href="javascript:history.back()" class="btn btn-outline-secondary">Назад</a>
+</div>
+
+<!-- Модальное окно: добавить оплату -->
+<div class="modal fade" id="addPaymentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-action="AddPayment" asp-controller="OrganizationSubscription">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="organizationId" value="@orgId" />
+                <div class="modal-header">
+                    <h5 class="modal-title">Добавить оплату подписки</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Начало периода (дата)</label>
+                        <input type="date" name="periodStart" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Конец периода (дата)</label>
+                        <input type="date" name="periodEnd" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Сумма (сом)</label>
+                        <input type="number" name="amountSom" class="form-control" step="0.01" min="0" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Примечание</label>
+                        <input type="text" name="note" class="form-control" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Добавить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

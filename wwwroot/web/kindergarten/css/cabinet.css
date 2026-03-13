@@ -2,28 +2,33 @@
    Cabinet Layout Styles
    ============================================ */
 
+/* Палитра приведена к dashboard-soft: светлый холодный фон, приглушённые голубые акценты */
 :root {
-    --primary-color: #2563eb;
-    --primary-dark: #1e40af;
-    --primary-light: #3b82f6;
-    --secondary-color: #64748b;
-    --success-color: #10b981;
-    --error-color: #ef4444;
-    --warning-color: #f59e0b;
-    --info-color: #06b6d4;
-    --background: #f8fafc;
-    --surface: #ffffff;
-    --text-primary: #1e293b;
-    --text-secondary: #64748b;
-    --border-color: #e2e8f0;
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    --radius-sm: 0.375rem;
-    --radius-md: 0.5rem;
-    --radius-lg: 0.75rem;
-    --radius-xl: 1rem;
+    --primary-color: #6E93B7;
+    --primary-dark: #52779B;
+    --primary-light: #5F84A8;
+    --secondary-color: #607284;
+    --success-color: #7FAF98;
+    --success-soft: #E8F4ED;
+    --success-text: #4F7C67;
+    --error-color: #D38C8C;
+    --error-soft: #F9EAEA;
+    --error-text: #9C5C5C;
+    --warning-color: #D6B97A;
+    --info-color: #84A9C7;
+    --background: #EEF3F7;
+    --surface: #FDFEFF;
+    --text-primary: #273444;
+    --text-secondary: #607284;
+    --border-color: #E2EAF0;
+    --shadow-sm: 0 1px 2px 0 rgba(120, 144, 166, 0.06);
+    --shadow-md: 0 4px 12px rgba(120, 144, 166, 0.08);
+    --shadow-lg: 0 10px 24px rgba(120, 144, 166, 0.10);
+    --shadow-xl: 0 14px 30px rgba(120, 144, 166, 0.10);
+    --radius-sm: 14px;
+    --radius-md: 18px;
+    --radius-lg: 22px;
+    --radius-xl: 28px;
 }
 
 * {
@@ -125,14 +130,14 @@ body.cabinet-body {
     transform: scale(1.1);
 }
 
-/* Кнопка "Выставить счет" */
+/* Кнопка "Выставить счет" — в палитре success (мятно-зелёный) */
 .cabinet-header .btn-create-invoice {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    background: linear-gradient(135deg, var(--success-color) 0%, #6B9B8A 100%) !important;
     color: white !important;
     font-weight: 600 !important;
     padding: 0.5rem 1.25rem !important;
     border-radius: var(--radius-md) !important;
-    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3), 0 1px 3px rgba(16, 185, 129, 0.2);
+    box-shadow: 0 10px 20px rgba(127, 175, 152, 0.28);
     margin-right: 0.5rem !important;
     position: relative;
     overflow: hidden;
@@ -152,9 +157,9 @@ body.cabinet-body {
 }
 
 .cabinet-header .btn-create-invoice:hover {
-    background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
-    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.45), 0 4px 8px rgba(16, 185, 129, 0.3);
-    transform: translateY(-3px) scale(1.02);
+    background: linear-gradient(135deg, #6B9B8A 0%, #5F8A71 100%) !important;
+    box-shadow: 0 14px 28px rgba(127, 175, 152, 0.35);
+    transform: translateY(-2px) scale(1.02);
     color: white !important;
 }
 
@@ -164,7 +169,7 @@ body.cabinet-body {
 
 .cabinet-header .btn-create-invoice:active {
     transform: translateY(-1px) scale(1);
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35), 0 2px 4px rgba(16, 185, 129, 0.2);
+    box-shadow: 0 10px 24px rgba(127, 175, 152, 0.3);
 }
 
 /* Меню пользователя */
@@ -268,7 +273,7 @@ body.cabinet-body {
 }
 
 .cabinet-header .dropdown-item:hover {
-    background: linear-gradient(135deg, var(--background) 0%, #f1f5f9 100%);
+    background: #E4EEF7;
     color: var(--primary-color);
     transform: translateX(4px);
     padding-left: 1.75rem;
@@ -283,8 +288,8 @@ body.cabinet-body {
 }
 
 .cabinet-header .dropdown-item.text-danger:hover {
-    background-color: #fee2e2;
-    color: #dc2626;
+    background-color: var(--error-soft);
+    color: var(--error-text);
 }
 
 .cabinet-header .dropdown-divider {
@@ -509,17 +514,17 @@ body.cabinet-body {
 }
 
 .stat-card-income .stat-card-icon {
-    background: linear-gradient(135deg, #10b981, #059669);
+    background: linear-gradient(135deg, var(--success-color), #6B9B8A);
     color: white;
 }
 
 .stat-card-expense .stat-card-icon {
-    background: linear-gradient(135deg, #ef4444, #dc2626);
+    background: linear-gradient(135deg, var(--error-color), #B87C7C);
     color: white;
 }
 
 .stat-card-today .stat-card-icon {
-    background: linear-gradient(135deg, #06b6d4, #0891b2);
+    background: linear-gradient(135deg, var(--info-color), #6E93B7);
     color: white;
 }
 
@@ -529,7 +534,7 @@ body.cabinet-body {
 }
 
 .stat-card-transactions .stat-card-icon {
-    background: linear-gradient(135deg, var(--secondary-color), #475569);
+    background: linear-gradient(135deg, var(--secondary-color), #4F6B86);
     color: white;
 }
 
@@ -654,18 +659,18 @@ body.cabinet-body {
 }
 
 .status-success {
-    background-color: #d1fae5;
-    color: #065f46;
+    background-color: var(--success-soft);
+    color: var(--success-text);
 }
 
 .status-error {
-    background-color: #fee2e2;
-    color: #991b1b;
+    background-color: var(--error-soft);
+    color: var(--error-text);
 }
 
 .status-unknown {
-    background-color: #e5e7eb;
-    color: #374151;
+    background-color: #E4EBF1;
+    color: var(--text-secondary);
 }
 
 /* ============================================
@@ -805,34 +810,34 @@ body.cabinet-body {
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
-/* Разные цвета для label'ов услуг */
+/* Разные цвета для label'ов услуг — палитра dashboard-soft */
 .service-label-0 {
-    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
     color: white;
 }
 
 .service-label-1 {
-    background: linear-gradient(135deg, #10b981, #059669);
+    background: linear-gradient(135deg, var(--success-color), #6B9B8A);
     color: white;
 }
 
 .service-label-2 {
-    background: linear-gradient(135deg, #f59e0b, #d97706);
+    background: linear-gradient(135deg, var(--warning-color), #C4A55C);
     color: white;
 }
 
 .service-label-3 {
-    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    background: linear-gradient(135deg, #84A9C7, #6E93B7);
     color: white;
 }
 
 .service-label-4 {
-    background: linear-gradient(135deg, #ec4899, #db2777);
+    background: linear-gradient(135deg, #9DBFC4, #7FAF98);
     color: white;
 }
 
 .service-label-5 {
-    background: linear-gradient(135deg, #06b6d4, #0891b2);
+    background: linear-gradient(135deg, var(--info-color), var(--primary-color));
     color: white;
 }
 
@@ -855,13 +860,13 @@ body.cabinet-body {
 }
 
 .status-actual {
-    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-    color: #065f46;
+    background: var(--success-soft);
+    color: var(--success-text);
 }
 
 .status-closed {
-    background: linear-gradient(135deg, #e5e7eb, #d1d5db);
-    color: #374151;
+    background: #E4EBF1;
+    color: var(--text-secondary);
 }
 
 .invoice-periodicity {

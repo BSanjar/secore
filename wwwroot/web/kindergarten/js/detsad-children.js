@@ -26,34 +26,47 @@ document.addEventListener('DOMContentLoaded', function() {
         btnText.textContent = ids.length > 0 ? 'По группам (' + ids.length + ')' : 'По группам';
     }
 
-    // Функция для применения фильтров
+    // Функция для применения фильтров (поддержка и карточек .child-card, и строк таблицы .child-row)
     function applyFilters() {
+        if (!childrenCards) return;
         const search = searchInput.value.toLowerCase().trim();
         const selectedGroupIds = getSelectedGroupIds();
         const filterByGroups = selectedGroupIds.length > 0;
 
         const cards = childrenCards.querySelectorAll('.child-card');
+        const rows = childrenCards.querySelectorAll('.child-row');
+        const items = rows.length ? rows : cards;
         let visibleCount = 0;
+        const isTable = rows.length > 0;
+        const showDisplay = isTable ? 'table-row' : 'block';
+        const hideDisplay = 'none';
 
-        cards.forEach(card => {
-            const searchText = card.getAttribute('data-search-text')?.toLowerCase() || '';
-            const groupId = card.getAttribute('data-org-client-group-id') || '';
+        items.forEach(item => {
+            const searchText = item.getAttribute('data-search-text')?.toLowerCase() || '';
+            const groupId = item.getAttribute('data-org-client-group-id') || '';
 
             let matchesSearch = !search || searchText.includes(search);
             let matchesGroups = !filterByGroups || selectedGroupIds.includes(groupId);
 
             if (matchesSearch && matchesGroups) {
-                card.style.display = 'block';
+                item.style.display = showDisplay;
                 visibleCount++;
-                card.style.animation = 'cardSlideIn 0.3s ease forwards';
+                if (!isTable) item.style.animation = 'cardSlideIn 0.3s ease forwards';
             } else {
-                card.style.display = 'none';
+                item.style.display = hideDisplay;
             }
         });
-        
-        // Показываем пустое состояние если нет карточек
+
+        const filterEmptyEl = document.getElementById('childrenFilterEmptyState');
+        const tableEl = document.getElementById('childrenTable');
+        if (filterEmptyEl && tableEl) {
+            const showEmpty = visibleCount === 0 && items.length > 0;
+            filterEmptyEl.style.display = showEmpty ? 'block' : 'none';
+            tableEl.style.display = showEmpty ? 'none' : 'table';
+        }
+
         const emptyState = childrenCards.querySelector('.empty-state');
-        if (visibleCount === 0 && cards.length > 0) {
+        if (!isTable && visibleCount === 0 && cards.length > 0) {
             if (!emptyState) {
                 const emptyDiv = document.createElement('div');
                 emptyDiv.className = 'empty-state';
@@ -151,7 +164,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     updateGroupsFilterButtonText();
 
-    // Анимация карточек при загрузке
+    // Анимация карточек при загрузке (только для карточного вида)
     const cards = childrenCards.querySelectorAll('.child-card');
     cards.forEach((card, index) => {
         card.style.animationDelay = `${index * 0.05}s`;
@@ -165,7 +178,19 @@ document.addEventListener('DOMContentLoaded', function() {
             if (clientId) openChildDetailModal(clientId, clientName);
         });
     });
-    
+
+    // Клик по строке таблицы — открыть модальное окно
+    if (childrenCards) {
+        childrenCards.querySelectorAll('.child-row').forEach(function(row) {
+            row.addEventListener('click', function(e) {
+                if (e.target.closest('.btn-row-action')) return;
+                const clientId = row.getAttribute('data-client-id');
+                const clientName = row.getAttribute('data-client-name') || 'Ребенок';
+                if (clientId) openChildDetailModal(clientId, clientName);
+            });
+        });
+    }
+
     console.log('Detsad children page loaded');
 });
 

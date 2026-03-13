@@ -86,6 +86,13 @@ namespace WebApplication1.Controllers
                 return View(model);
             }
 
+            // Проверка доступа: только по флагу активности организации (is_active)
+            if (!await SubscriptionHelper.HasSubscriptionAccessAsync(_db, user.Organization))
+            {
+                ModelState.AddModelError("", "Доступ приостановлен: организация неактивна. Обратитесь к администратору.");
+                return View(model);
+            }
+
             // Сохраняем данные в сессии
             HttpContext.Session.SetString("UserId", user.Id);
             HttpContext.Session.SetString("UserName", user.Name ?? "Пользователь");
@@ -102,6 +109,15 @@ namespace WebApplication1.Controllers
 
             // Перенаправляем в соответствующий личный кабинет
             return RedirectToAction("Index", "Cabinet", new { area = area });
+        }
+
+        /// <summary>
+        /// Страница «Подписка истекла» — показывается при редиректе из RequireAuth, когда у организации нет действующего оплаченного периода.
+        /// </summary>
+        public IActionResult SubscriptionExpired()
+        {
+            HttpContext.Session.Clear();
+            return View();
         }
 
         // POST: Account/Logout

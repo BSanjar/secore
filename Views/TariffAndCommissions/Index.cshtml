@@ -3,6 +3,7 @@
     var organizations = ViewBag.Organizations as IEnumerable<WebApplication1.Models.DBModels.Organization>;
     var selectedOrgId = ViewBag.SelectedOrganizationId as string;
     var settings = ViewBag.Settings as WebApplication1.Models.DBModels.OrganizationSettings;
+    var subscription = ViewBag.Subscription as WebApplication1.Models.DBModels.OrganizationSubscription;
     var commissions = ViewBag.Commissions as IEnumerable<WebApplication1.Models.DBModels.Commission> ?? Array.Empty<WebApplication1.Models.DBModels.Commission>();
     var agents = ViewBag.Agents as IEnumerable<WebApplication1.Models.DBModels.Agent>;
     var agentCommissions = ViewBag.AgentCommissions as IEnumerable<WebApplication1.Models.DBModels.AgentCommission>;
@@ -77,20 +78,49 @@ else
             <div class="card-body">
                 <div class="mb-3">
                     <label class="form-label">Тип тарифа</label>
-                    <select name="billingType" class="form-select">
+                    <select name="billingType" id="billingTypeSelect" class="form-select">
                         @if (settings?.BillingType != "subscription")
                         {
-                            <option value="" selected>По комиссиям (настройки ниже)</option>
+                            <option value="commission" selected>По комиссиям (настройки ниже)</option>
                             <option value="subscription">Подписка (фикс за период)</option>
                         }
                         else
                         {
-                            <option value="">По комиссиям (настройки ниже)</option>
+                            <option value="commission">По комиссиям (настройки ниже)</option>
                             <option value="subscription" selected>Подписка (фикс за период)</option>
                         }
                     </select>
                     <small class="form-text text-muted">Подписка — фиксированная сумма за пользование системой. Иначе применяются выбранные виды комиссий.</small>
                 </div>
+
+                <div id="subscriptionBlock" class="mb-3 @(settings?.BillingType != "subscription" ? "d-none" : "")">
+                    <hr />
+                    <h6 class="mb-2">Настройка подписки</h6>
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-4">
+                            <label class="form-label">Стоимость за период (сом)</label>
+                            <input type="number" name="subscriptionPriceSom" class="form-control" step="0.01" min="0" value="@(subscription != null ? (subscription.PriceTyiyn / 100m).ToString("F2", System.Globalization.CultureInfo.InvariantCulture) : "")" placeholder="0.00" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Период</label>
+                            <select name="subscriptionPeriodType" class="form-select">
+                                @if (subscription?.PeriodType == "year")
+                                {
+                                    <option value="month">Месяц</option>
+                                    <option value="year" selected>Год</option>
+                                }
+                                else
+                                {
+                                    <option value="month" selected>Месяц</option>
+                                    <option value="year">Год</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <p class="text-muted small mb-0">История оплат и статус подписки — в разделе <a asp-controller="OrganizationSubscription" asp-action="Index">Подписка</a>.</p>
+                </div>
+
+                <div id="commissionBlock" class="@(settings?.BillingType == "subscription" ? "d-none" : "")">
                 <hr />
                 <p class="text-muted small mb-2">Включённые виды комиссий учитываются в транзакциях отдельно (для отчётов). Можно комбинировать.</p>
                 <div class="form-check mb-2">
@@ -128,6 +158,7 @@ else
                     <label class="form-check-label">Нижняя комиссия к агенту</label>
                 </div>
                 <small class="form-text text-muted d-block mb-0">Удерживается из суммы транзакции. Вид задаётся по каждому агенту в блоке ниже.</small>
+                </div>
             </div>
         </div>
 
@@ -227,11 +258,25 @@ else
 
 <script>
     (function () {
+        var billingSelect = document.getElementById('billingTypeSelect');
+        var subscriptionBlock = document.getElementById('subscriptionBlock');
+        var commissionBlock = document.getElementById('commissionBlock');
+        function toggleByBilling() {
+            var isSub = billingSelect && billingSelect.value === 'subscription';
+            if (subscriptionBlock) subscriptionBlock.classList.toggle('d-none', !isSub);
+            if (commissionBlock) commissionBlock.classList.toggle('d-none', isSub);
+        }
+        if (billingSelect) {
+            billingSelect.addEventListener('change', toggleByBilling);
+            toggleByBilling();
+        }
+
         var cb = document.querySelector('input[name="useLowerCommissionFromOrg"]');
         var block = document.getElementById('commissionIdBlock');
-        if (!cb || !block) return;
-        function toggle() { block.style.display = cb.checked ? 'block' : 'none'; }
-        cb.addEventListener('change', toggle);
-        toggle();
+        if (cb && block) {
+            function toggle() { block.style.display = cb.checked ? 'block' : 'none'; }
+            cb.addEventListener('change', toggle);
+            toggle();
+        }
     })();
 </script>

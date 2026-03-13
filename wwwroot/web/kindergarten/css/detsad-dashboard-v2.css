@@ -14,13 +14,13 @@
 .dashboard-v2__title {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #1e293b;
+    color: var(--text-primary, #273444);
     margin: 0 0 0.25rem 0;
 }
 
 .dashboard-v2__subtitle {
     font-size: 0.9375rem;
-    color: #64748b;
+    color: var(--text-secondary, #607284);
     margin: 0;
 }
 
@@ -45,10 +45,10 @@
     align-items: flex-start;
     gap: 1rem;
     padding: 1.25rem;
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    border: 1px solid #e2e8f0;
+    background: var(--card-bg, #FDFEFF);
+    border-radius: var(--radius-lg, 22px);
+    box-shadow: 0 14px 30px rgba(120, 144, 166, 0.10);
+    border: 1px solid var(--card-border, #E2EAF0);
 }
 
 .card-v2__icon {
@@ -62,10 +62,10 @@
     color: #fff;
 }
 
-.card-v2--primary .card-v2__icon { background: linear-gradient(135deg, #3b82f6, #2563eb); }
-.card-v2--accent .card-v2__icon { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
-.card-v2--info .card-v2__icon { background: linear-gradient(135deg, #0ea5e9, #0284c7); }
-.card-v2--success .card-v2__icon { background: linear-gradient(135deg, #10b981, #059669); }
+.card-v2--primary .card-v2__icon { background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); }
+.card-v2--accent .card-v2__icon { background: linear-gradient(135deg, #84A9C7, var(--primary-color)); }
+.card-v2--info .card-v2__icon { background: linear-gradient(135deg, var(--info-color), var(--primary-color)); }
+.card-v2--success .card-v2__icon { background: linear-gradient(135deg, var(--success-color), #6B9B8A); }
 
 .card-v2__body {
     min-width: 0;
@@ -73,26 +73,26 @@
 
 .card-v2__label {
     font-size: 0.8125rem;
-    color: #64748b;
+    color: var(--text-secondary);
     margin-bottom: 0.25rem;
 }
 
 .card-v2__value {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #1e293b;
+    color: var(--text-primary);
 }
 
 .card-v2__currency,
 .card-v2__unit {
     font-size: 0.875rem;
     font-weight: 500;
-    color: #64748b;
+    color: var(--text-secondary);
 }
 
 .card-v2__hint {
     font-size: 0.75rem;
-    color: #94a3b8;
+    color: var(--text-muted, #8C9AAA);
     margin-top: 0.25rem;
 }
 
@@ -109,17 +109,17 @@
 }
 
 .chart-block {
-    background: #fff;
-    border-radius: 12px;
+    background: var(--card-bg, #FDFEFF);
+    border-radius: var(--radius-lg, 22px);
     padding: 1.25rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    border: 1px solid #e2e8f0;
+    box-shadow: 0 14px 30px rgba(120, 144, 166, 0.10);
+    border: 1px solid var(--card-border, #E2EAF0);
 }
 
 .chart-block__title {
     font-size: 1.125rem;
     font-weight: 600;
-    color: #1e293b;
+    color: var(--text-primary);
     margin: 0 0 1rem 0;
 }
 
@@ -133,23 +133,23 @@
     padding: 0.4rem 0.75rem;
     font-size: 0.8125rem;
     font-weight: 500;
-    color: #64748b;
-    background: #f1f5f9;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
+    color: var(--text-secondary);
+    background: var(--card-bg-soft, #F6FAFD);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-sm, 14px);
     cursor: pointer;
     transition: background 0.2s, color 0.2s;
 }
 
 .chart-period-btn:hover {
-    background: #e2e8f0;
-    color: #475569;
+    background: var(--accent-primary-soft, #E4EEF7);
+    color: var(--primary-color);
 }
 
 .chart-period-btn.active {
-    background: #3b82f6;
+    background: var(--primary-color);
     color: #fff;
-    border-color: #3b82f6;
+    border-color: var(--primary-color);
 }
 
 .chart-block__canvas-wrap {
@@ -157,13 +157,14 @@
     position: relative;
 }
 
-/* Правая карточка организации */
+/* Правая карточка организации — светлая в палитре */
 .org-card {
-    background: linear-gradient(160deg, #1e293b 0%, #334155 100%);
-    border-radius: 12px;
+    background: var(--card-bg, #FDFEFF);
+    border: 1px solid var(--card-border, #E2EAF0);
+    border-radius: var(--radius-lg, 22px);
     padding: 1.25rem;
-    color: #f8fafc;
-    box-shadow: 0 4px 12px rgba(30, 41, 59, 0.25);
+    color: var(--text-primary);
+    box-shadow: 0 14px 30px rgba(120, 144, 166, 0.10);
 }
 
 .org-card__title {
@@ -171,7 +172,7 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #94a3b8;
+    color: var(--text-muted, #8C9AAA);
     margin: 0 0 0.5rem 0;
 }
 
@@ -179,7 +180,7 @@
     font-size: 1.125rem;
     font-weight: 700;
     margin-bottom: 1rem;
-    color: #fff;
+    color: var(--text-primary);
 }
 
 .org-card__list {
@@ -189,7 +190,7 @@
 }
 
 .org-card__list dt {
-    color: #94a3b8;
+    color: var(--text-muted, #8C9AAA);
     font-weight: 500;
     margin-top: 0.5rem;
     margin-bottom: 0.15rem;
@@ -197,7 +198,7 @@
 
 .org-card__list dd {
     margin: 0;
-    color: #e2e8f0;
+    color: var(--text-primary);
 }
 
 .org-card__btn {
@@ -205,15 +206,17 @@
     padding: 0.5rem 1rem;
     font-size: 0.875rem;
     font-weight: 500;
-    color: #1e293b;
-    background: #f8fafc;
-    border-radius: 8px;
+    color: var(--primary-color);
+    background: var(--btn-secondary-bg, #EDF4FA);
+    border: 1px solid var(--btn-secondary-border);
+    border-radius: var(--radius-sm, 14px);
     text-decoration: none;
-    transition: background 0.2s;
+    transition: background 0.2s, color 0.2s;
 }
 
 .org-card__btn:hover {
-    background: #e2e8f0;
+    background: var(--btn-secondary-hover);
+    color: var(--primary-dark);
 }
 
 /* Нижний блок: Должники + Счета */
@@ -229,10 +232,10 @@
 }
 
 .block-card {
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    border: 1px solid #e2e8f0;
+    background: var(--card-bg, #FDFEFF);
+    border-radius: var(--radius-lg, 22px);
+    box-shadow: 0 14px 30px rgba(120, 144, 166, 0.10);
+    border: 1px solid var(--card-border);
     overflow: hidden;
 }
 
@@ -241,24 +244,25 @@
     align-items: center;
     justify-content: space-between;
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid var(--card-border);
 }
 
 .block-card__title {
     font-size: 1rem;
     font-weight: 600;
-    color: #1e293b;
+    color: var(--text-primary);
     margin: 0;
 }
 
 .block-card__link {
     font-size: 0.8125rem;
     font-weight: 500;
-    color: #3b82f6;
+    color: var(--primary-color);
     text-decoration: none;
 }
 
 .block-card__link:hover {
+    color: var(--primary-dark);
     text-decoration: underline;
 }
 
@@ -271,7 +275,7 @@
 .block-card__empty {
     margin: 0;
     font-size: 0.875rem;
-    color: #94a3b8;
+    color: var(--text-muted, #8C9AAA);
 }
 
 .debtors-list,
@@ -288,7 +292,7 @@
     align-items: center;
     gap: 0.75rem;
     padding: 0.6rem 0;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid var(--card-border);
     font-size: 0.875rem;
 }
 
@@ -300,36 +304,37 @@
 .debtors-list__name,
 .invoices-list__name {
     font-weight: 500;
-    color: #1e293b;
+    color: var(--text-primary);
     min-width: 0;
 }
 
 .invoices-list__name {
     text-decoration: none;
-    color: #3b82f6;
+    color: var(--primary-color);
 }
 
 .invoices-list__name:hover {
+    color: var(--primary-dark);
     text-decoration: underline;
 }
 
 .debtors-list__amount {
     font-weight: 600;
-    color: #dc2626;
+    color: var(--error-color);
 }
 
 .invoices-list__sum {
     font-weight: 500;
-    color: #475569;
+    color: var(--text-secondary);
 }
 
 .debtors-list__status,
 .invoices-list__status {
     font-size: 0.75rem;
     padding: 0.2rem 0.5rem;
-    border-radius: 6px;
-    background: #f1f5f9;
-    color: #64748b;
+    border-radius: var(--radius-sm, 14px);
+    background: var(--card-bg-soft, #F6FAFD);
+    color: var(--text-secondary);
 }
 
 /* Быстрые действия */
@@ -344,20 +349,20 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.6rem 1rem;
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-sm, 14px);
     text-decoration: none;
-    color: #475569;
+    color: var(--text-secondary);
     font-size: 0.9375rem;
     font-weight: 500;
-    transition: background 0.2s, border-color 0.2s;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
 }
 
 .action-tile:hover {
-    background: #f8fafc;
-    border-color: #cbd5e1;
-    color: #1e293b;
+    background: var(--accent-primary-soft, #E4EEF7);
+    border-color: var(--input-border-focus, #8EAFCC);
+    color: var(--text-primary);
 }
 
 .action-tile__icon {

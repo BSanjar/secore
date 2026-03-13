@@ -21,12 +21,8 @@ namespace WebApplication1.Helpers
                 return null;
 
             if (decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var decimalValue))
-            {
-                // Если значение уже в сантимах (большое число), возвращаем как есть
-                // Если значение в сомах (маленькое число, например 100.50), конвертируем в сантимы
-                if (decimalValue < 1000)
-                    return decimalValue * 100m;
-                return decimalValue;
+            {                                
+                    return decimalValue * 100m;                
             }
 
             return null;

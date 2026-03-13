@@ -1,0 +1,23 @@
+@{
+    ViewData["Title"] = "Подписка истекла";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - SECORE</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+</head>
+<body class="bg-light d-flex align-items-center justify-content-center min-vh-100">
+    <div class="card shadow-sm" style="max-width: 420px;">
+        <div class="card-body p-4 text-center">
+            <h1 class="h5 text-danger mb-3">Период подписки истёк</h1>
+            <p class="text-muted mb-4">Доступ в систему для вашей организации приостановлен. Обратитесь к администратору для продления подписки.</p>
+            <a asp-action="Login" asp-controller="Account" class="btn btn-primary">На страницу входа</a>
+        </div>
+    </div>
+</body>
+</html>

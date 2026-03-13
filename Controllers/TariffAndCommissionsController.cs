@@ -48,7 +48,10 @@ public class TariffAndCommissionsController : Controller
             };
         }
 
+        var subscription = await _db.OrganizationSubscriptions.FirstOrDefaultAsync(s => s.OrganizationId == organizationId);
+
         ViewBag.Settings = settings;
+        ViewBag.Subscription = subscription;
         ViewBag.Commissions = await _db.Commissions.OrderBy(c => c.Name).ToListAsync();
         ViewBag.Agents = await _db.Agents.OrderBy(a => a.Name).ToListAsync();
         ViewBag.AgentCommissions = await _db.AgentCommissions
@@ -65,7 +68,8 @@ public class TariffAndCommissionsController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SaveSettings(string organizationId, string? billingType, bool useLowerCommissionFromOrg,
-        string? commissionId, bool useUpperCommissionFromAgent, bool useLowerCommissionToAgent)
+        string? commissionId, bool useUpperCommissionFromAgent, bool useLowerCommissionToAgent,
+        decimal? subscriptionPriceSom = null, string? subscriptionPeriodType = null)
     {
         if (string.IsNullOrEmpty(organizationId))
         {
@@ -73,10 +77,13 @@ public class TariffAndCommissionsController : Controller
             return RedirectToAction(nameof(Index));
         }
 
+        var isSubscription = string.Equals(billingType, "subscription", StringComparison.OrdinalIgnoreCase);
+        var billingTypeToSave = string.IsNullOrWhiteSpace(billingType) ? null : (billingType == "commission" ? null : billingType);
+
         var existing = await _db.OrganizationSettings.FirstOrDefaultAsync(s => s.OrganizationId == organizationId);
         if (existing != null)
         {
-            existing.BillingType = string.IsNullOrWhiteSpace(billingType) ? null : billingType;
+            existing.BillingType = billingTypeToSave;
             existing.UseLowerCommissionFromOrg = useLowerCommissionFromOrg;
             existing.CommissionId = useLowerCommissionFromOrg && !string.IsNullOrWhiteSpace(commissionId) ? commissionId : null;
             existing.UseUpperCommissionFromAgent = useUpperCommissionFromAgent;
@@ -87,13 +94,32 @@ public class TariffAndCommissionsController : Controller
             _db.OrganizationSettings.Add(new OrganizationSettings
             {
                 OrganizationId = organizationId,
-                BillingType = string.IsNullOrWhiteSpace(billingType) ? null : billingType,
+                BillingType = billingTypeToSave,
                 UseLowerCommissionFromOrg = useLowerCommissionFromOrg,
                 CommissionId = useLowerCommissionFromOrg && !string.IsNullOrWhiteSpace(commissionId) ? commissionId : null,
                 UseUpperCommissionFromAgent = useUpperCommissionFromAgent,
                 UseLowerCommissionToAgent = useLowerCommissionToAgent
             });
         }
+
+        if (isSubscription && subscriptionPriceSom.HasValue && subscriptionPriceSom >= 0)
+        {
+            var sub = await _db.OrganizationSubscriptions.FirstOrDefaultAsync(s => s.OrganizationId == organizationId);
+            if (sub == null)
+            {
+                sub = new OrganizationSubscription
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    OrganizationId = organizationId,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _db.OrganizationSubscriptions.Add(sub);
+            }
+            sub.PriceTyiyn = subscriptionPriceSom.Value * 100m;
+            sub.PeriodType = subscriptionPeriodType == "year" ? "year" : "month";
+            sub.UpdatedAt = DateTime.UtcNow;
+        }
+
         await _db.SaveChangesAsync();
         TempData["Success"] = "Настройки тарифа и комиссий сохранены.";
         return RedirectToAction(nameof(Index), new { organizationId });

@@ -7,11 +7,11 @@ using WebApplication1.Models.DBModels;
 namespace WebApplication1.Helpers
 {
     /// <summary>
-    /// Атрибут для проверки авторизации пользователя
+    /// Атрибут для проверки авторизации пользователя и активности организации (Organization.IsActive).
     /// </summary>
     public class RequireAuthAttribute : ActionFilterAttribute
     {
-        public override void OnActionExecuting(ActionExecutingContext context)
+        public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
             var organizationId = context.HttpContext.Session.GetString("OrganizationId");
             var userId = context.HttpContext.Session.GetString("UserId");
@@ -22,7 +22,14 @@ namespace WebApplication1.Helpers
                 return;
             }
 
-            base.OnActionExecuting(context);
+            var db = context.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
+            if (!await SubscriptionHelper.HasSubscriptionAccessAsync(db, organizationId))
+            {
+                context.Result = new RedirectToActionResult("SubscriptionExpired", "Account", new { area = "" });
+                return;
+            }
+
+            await next();
         }
     }
 
@@ -38,9 +45,8 @@ namespace WebApplication1.Helpers
             _permissionCode = permissionCode;
         }
 
-        public override void OnActionExecuting(ActionExecutingContext context)
+        public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
-            // Сначала проверяем авторизацию
             var organizationId = context.HttpContext.Session.GetString("OrganizationId");
             var userId = context.HttpContext.Session.GetString("UserId");
 
@@ -50,18 +56,21 @@ namespace WebApplication1.Helpers
                 return;
             }
 
-            // Проверяем права доступа
             var dbContext = context.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
-            var hasPermission = PermissionHelper.HasPermission(dbContext, userId, _permissionCode);
+            if (!await SubscriptionHelper.HasSubscriptionAccessAsync(dbContext, organizationId))
+            {
+                context.Result = new RedirectToActionResult("SubscriptionExpired", "Account", new { area = "" });
+                return;
+            }
 
+            var hasPermission = PermissionHelper.HasPermission(dbContext, userId, _permissionCode);
             if (!hasPermission)
             {
-                // Перенаправляем на страницу с сообщением об отсутствии доступа
                 context.Result = new RedirectToActionResult("AccessDenied", "Home", new { permissionCode = _permissionCode });
                 return;
             }
 
-            base.OnActionExecuting(context);
+            await next();
         }
     }
 

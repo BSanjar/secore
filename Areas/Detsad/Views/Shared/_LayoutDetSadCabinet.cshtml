@@ -5,6 +5,9 @@
 @{
     var requestCulture = Context.Features.Get<IRequestCultureFeature>();
     var currentCulture = requestCulture?.RequestCulture?.UICulture ?? System.Globalization.CultureInfo.CurrentUICulture;
+    var currentCultureName = currentCulture.Name ?? "ru";
+    if (currentCultureName.Length > 2) { currentCultureName = currentCultureName.Substring(0, 2); }
+    var returnUrl = string.IsNullOrEmpty(Context.Request.Path) ? "/" : $"{Context.Request.Path.Value}{Context.Request.QueryString}";
 }
 <!DOCTYPE html>
 <html lang="@currentCulture.TwoLetterISOLanguageName">
@@ -14,133 +17,190 @@
     <title>@ViewData["Title"] - Личный кабинет</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/dashboard-soft.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/web/kindergarten/css/cabinet.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/WebApplication1.styles.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
 </head>
-<body class="cabinet-body">
-    <header class="cabinet-header detsad-header">
-        <nav class="navbar navbar-expand-lg navbar-dark">
-            <div class="container">
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
-                        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    @{
-                        var controller = ViewContext.RouteData.Values["controller"]?.ToString();
-                        var action = ViewContext.RouteData.Values["action"]?.ToString();
-                        var area = ViewContext.RouteData.Values["area"]?.ToString();
-                    }
-                    <!-- Левый край: SECORE -->
-                    <a class="navbar-brand me-4" asp-area="Detsad" asp-controller="Cabinet" asp-action="Index">SECORE</a>
-                    <!-- Центральное меню: Дети, Услуги, Группы, Счета, Транзакции -->
-                    <ul class="navbar-nav mx-auto detsad-nav">
-                        <li class="nav-item">
-                            <a class="nav-link @(controller == "Cabinet" && action == "Children" ? "active" : "")" asp-area="Detsad" asp-controller="Cabinet" asp-action="Children">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="nav-icon">
-                                    <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" fill="currentColor"/>
-                                </svg>
-                                <span class="nav-text">@Localizer["Children"]</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link @(controller == "OrganizationServices" ? "active" : "")" asp-area="Detsad" asp-controller="OrganizationServices" asp-action="Index">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="nav-icon">
-                                    <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z" fill="currentColor"/>
-                                </svg>
-                                <span class="nav-text">Услуги</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link @(controller == "OrgClientGroups" ? "active" : "")" asp-area="Detsad" asp-controller="OrgClientGroups" asp-action="Index">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="nav-icon">
-                                    <path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z" fill="currentColor"/>
-                                </svg>
-                                <span class="nav-text">Группы</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link @(controller == "Invoices" ? "active" : "")" asp-area="Detsad" asp-controller="Invoices" asp-action="Index">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="nav-icon">
-                                    <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" fill="currentColor"/>
-                                </svg>
-                                <span class="nav-text">Счета</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link @(controller == "Cabinet" && action == "Payments" ? "active" : "")" asp-area="Detsad" asp-controller="Cabinet" asp-action="Payments">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="nav-icon">
-                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.87 0 .53-.39 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-1.67c1.52-.29 2.72-1.16 2.73-2.77-.01-2.2-1.9-2.96-3.66-3.42z" fill="currentColor"/>
-                                </svg>
-                                <span class="nav-text">Транзакции</span>
-                            </a>
-                        </li>
-                    </ul>
-                    
-                    <!-- Правая часть меню: переключатель языка и аватар пользователя -->
-                    <ul class="navbar-nav ms-auto align-items-center">
-                        <li class="nav-item me-2">
-                            @await Html.PartialAsync("_LanguageSwitcher")
-                        </li>
-                        <li class="nav-item dropdown user-menu">
-                            <a class="nav-link user-profile" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <div class="user-avatar">
-                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="currentColor"/>
-                                    </svg>
-                                </div>
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                                <!-- Секция: Профиль -->
-                                <li><h6 class="dropdown-header">Профиль</h6></li>
-                                <li><a class="dropdown-item @(controller == "Profile" ? "active" : "")" asp-area="Detsad" asp-controller="Profile" asp-action="Index">Профиль</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <!-- Секция: Настройки -->
-                                <li><h6 class="dropdown-header">@Localizer["Settings"]</h6></li>
-                                <li><a class="dropdown-item @(controller == "Settings" || controller == "Roles" || controller == "Permissions" || controller == "UserRoles" || controller == "Users" || controller == "OrganizationFields" ? "active" : "")" asp-area="" asp-controller="Settings" asp-action="Index">@Localizer["Settings"]</a></li>
-                                <li><a class="dropdown-item @(controller == "Support" ? "active" : "")" asp-area="" asp-controller="Support" asp-action="Index">@Localizer["Support"]</a></li>
-                                <li><a class="dropdown-item @(controller == "Instructions" ? "active" : "")" asp-area="" asp-controller="Instructions" asp-action="Index">@Localizer["Instructions"]</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <!-- Секция: Пользователь -->
-                                <li><h6 class="dropdown-header">@(WebApplication1.Helpers.AuthorizationHelper.GetUserName(Context) ?? "Пользователь")</h6></li>
-                                <li>
-                                    <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
-                                        <button type="submit" class="dropdown-item text-danger">
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="me-2">
-                                                <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.59L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" fill="currentColor"/>
-                                            </svg>
-                                            Выйти
-                                        </button>
-                                    </form>
-                                </li>
-                            </ul>
-                        </li>
-                    </ul>
-                </div>
+<body class="cabinet-body dashboard-body">
+    @{
+        var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+        var action = ViewContext.RouteData.Values["action"]?.ToString();
+        var area = ViewContext.RouteData.Values["area"]?.ToString();
+    }
+    <div class="dashboard-app">
+        <aside class="dashboard-sidebar">
+            <div class="dashboard-sidebar-top">
+                <a class="dashboard-sidebar-brand" asp-area="Detsad" asp-controller="Cabinet" asp-action="Index">
+                    <span class="dashboard-sidebar-brand-mark">✺</span>
+                    <span class="dashboard-sidebar-brand-text">Secore</span>
+                </a>
+                <nav class="dashboard-sidebar-nav">
+                    <a class="dashboard-nav-item @(controller == "Cabinet" && action == "Children" ? "active" : "")" asp-area="Detsad" asp-controller="Cabinet" asp-action="Children">
+                        <span class="dashboard-nav-item-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" fill="currentColor" />
+                            </svg>
+                        </span>
+                        <span class="dashboard-nav-item-label">@Localizer["Children"]</span>
+                    </a>
+                    <a class="dashboard-nav-item @(controller == "OrganizationServices" ? "active" : "")" asp-area="Detsad" asp-controller="OrganizationServices" asp-action="Index">
+                        <span class="dashboard-nav-item-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z" fill="currentColor" />
+                            </svg>
+                        </span>
+                        <span class="dashboard-nav-item-label">Услуги</span>
+                    </a>
+                    <a class="dashboard-nav-item @(controller == "OrgClientGroups" ? "active" : "")" asp-area="Detsad" asp-controller="OrgClientGroups" asp-action="Index">
+                        <span class="dashboard-nav-item-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z" fill="currentColor" />
+                            </svg>
+                        </span>
+                        <span class="dashboard-nav-item-label">Группы</span>
+                    </a>
+                    <a class="dashboard-nav-item @(controller == "Invoices" ? "active" : "")" asp-area="Detsad" asp-controller="Invoices" asp-action="Index">
+                        <span class="dashboard-nav-item-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.1-.9-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" fill="currentColor" />
+                            </svg>
+                        </span>
+                        <span class="dashboard-nav-item-label">Счета</span>
+                    </a>
+                    <a class="dashboard-nav-item @(controller == "Cabinet" && action == "Payments" ? "active" : "")" asp-area="Detsad" asp-controller="Cabinet" asp-action="Payments">
+                        <span class="dashboard-nav-item-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.87 0 .53-.39 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-1.67c1.52-.29 2.72-1.16 2.73-2.77-.01-2.2-1.9-2.96-3.66-3.42z" fill="currentColor" />
+                            </svg>
+                        </span>
+                        <span class="dashboard-nav-item-label">Транзакции</span>
+                    </a>
+                </nav>
             </div>
-        </nav>
-    </header>
-    
-    <main class="cabinet-main">
-        <div class="container">
-            @RenderBody()
-        </div>
-    </main>
+            <div class="dashboard-sidebar-bottom">
+                <a class="dashboard-sidebar-bottom-item" href="@Url.Action("Index", "Settings", new { area = "" })" title="@Localizer["Settings"]">
+                    <span class="dashboard-nav-item-icon">⚙</span>
+                    <span class="dashboard-nav-item-label">@Localizer["Settings"]</span>
+                </a>
+                <a class="dashboard-sidebar-bottom-item" href="@Url.Action("Index", "Support", new { area = "" })" title="@Localizer["Support"]">
+                    <span class="dashboard-nav-item-icon">?</span>
+                    <span class="dashboard-nav-item-label">@Localizer["Support"]</span>
+                </a>
+                <a class="dashboard-sidebar-bottom-item" href="@Url.Action("Index", "Settings", new { area = "" })" title="@Localizer["Settings"]">
+                    <span class="dashboard-avatar-small">
+                        @(WebApplication1.Helpers.AuthorizationHelper.GetUserName(Context)?[0].ToString().ToUpperInvariant() ?? "U")
+                    </span>
+                    <span class="dashboard-nav-item-label">@Localizer["Settings"]</span>
+                </a>
+                <form asp-area="" asp-controller="Account" asp-action="Logout" method="post" class="dashboard-sidebar-bottom-item dashboard-logout-form">
+                    <button type="submit" class="dashboard-logout-btn" title="@Localizer["Logout"]">
+                        <span class="dashboard-nav-item-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" fill="currentColor"/></svg>
+                        </span>
+                        <span class="dashboard-nav-item-label">@Localizer["Logout"]</span>
+                    </button>
+                </form>
+            </div>
+        </aside>
 
-    <footer class="cabinet-footer">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-12 text-center">
-                    <p class="mb-0">&copy; @DateTime.Now.Year - @Localizer["OrganizationCabinet"]. @Localizer["AllRightsReserved"].</p>
+        <div class="dashboard-main">
+            <header class="dashboard-topbar">
+                <div class="dashboard-topbar-title">
+                    <h1>@ViewData["Title"]</h1>
+                    <p>@ViewData["Subtitle"]</p>
                 </div>
-            </div>
+                <div class="dashboard-topbar-actions">
+                    <div class="dashboard-search" id="dashboardSearch">
+                        <input type="text" placeholder="Поиск..." id="dashboardSearchInput" />
+                        <button type="button" class="dashboard-search-btn" aria-label="Поиск">🔍</button>
+                    </div>
+                    <div class="dashboard-notifications-wrap">
+                        <button type="button" class="dashboard-notifications-btn" id="dashboardNotificationsBtn" aria-label="Уведомления">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" fill="currentColor"/></svg>
+                            <span class="dashboard-notifications-badge count" id="dashboardNotificationsBadge" style="display: none;">3</span>
+                        </button>
+                        <div class="dashboard-notifications-dropdown" id="dashboardNotificationsDropdown">
+                            <div class="dashboard-notifications-dropdown-header">Уведомления</div>
+                            <div class="dashboard-notifications-dropdown-list">
+                                <div class="dashboard-notifications-dropdown-empty">Нет новых уведомлений</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="dashboard-lang-wrap">
+                        <button type="button" class="dashboard-lang-btn" id="dashboardLangBtn" aria-label="@Localizer["Language"]" title="@Localizer["Language"]">
+                            <span class="dashboard-lang-flag">@(currentCultureName == "ru" ? "🇷🇺" : currentCultureName == "en" ? "🇬🇧" : "🇰🇬")</span>
+                        </button>
+                        <div class="dashboard-lang-dropdown" id="dashboardLangDropdown">
+                            <div class="dashboard-lang-dropdown-header">@Localizer["Language"]</div>
+                            <form asp-controller="Language" asp-action="SetLanguage" method="post" asp-route-returnUrl="@returnUrl" class="dashboard-lang-form">
+                                <input type="hidden" name="culture" value="ru" />
+                                <button type="submit" class="dashboard-lang-option @(currentCultureName == "ru" ? "active" : "")">🇷🇺 Русский</button>
+                            </form>
+                            <form asp-controller="Language" asp-action="SetLanguage" method="post" asp-route-returnUrl="@returnUrl" class="dashboard-lang-form">
+                                <input type="hidden" name="culture" value="en" />
+                                <button type="submit" class="dashboard-lang-option @(currentCultureName == "en" ? "active" : "")">🇬🇧 English</button>
+                            </form>
+                            <form asp-controller="Language" asp-action="SetLanguage" method="post" asp-route-returnUrl="@returnUrl" class="dashboard-lang-form">
+                                <input type="hidden" name="culture" value="ky" />
+                                <button type="submit" class="dashboard-lang-option @(currentCultureName == "ky" ? "active" : "")">🇰🇬 Кыргызча</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="cabinet-main">
+                <div class="container">
+                    @RenderBody()
+                </div>
+            </main>
+
+            <footer class="cabinet-footer">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-md-12 text-center">
+                            <p class="mb-0">&copy; @DateTime.Now.Year - @Localizer["OrganizationCabinet"]. @Localizer["AllRightsReserved"].</p>
+                        </div>
+                    </div>
+                </div>
+            </footer>
         </div>
-    </footer>
+    </div>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script>
+        (function () {
+            var search = document.getElementById('dashboardSearch');
+            var searchInput = document.getElementById('dashboardSearchInput');
+            if (search && searchInput) {
+                searchInput.addEventListener('focus', function () { search.classList.add('is-expanded'); });
+                searchInput.addEventListener('blur', function () { search.classList.remove('is-expanded'); });
+            }
+            var notifBtn = document.getElementById('dashboardNotificationsBtn');
+            var notifDropdown = document.getElementById('dashboardNotificationsDropdown');
+            if (notifBtn && notifDropdown) {
+                notifBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    notifDropdown.classList.toggle('is-open');
+                    if (langDropdown) langDropdown.classList.remove('is-open');
+                });
+                document.addEventListener('click', function () { notifDropdown.classList.remove('is-open'); });
+            }
+            var langBtn = document.getElementById('dashboardLangBtn');
+            var langDropdown = document.getElementById('dashboardLangDropdown');
+            if (langBtn && langDropdown) {
+                langBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    langDropdown.classList.toggle('is-open');
+                    document.getElementById('dashboardNotificationsDropdown').classList.remove('is-open');
+                });
+                document.addEventListener('click', function () { langDropdown.classList.remove('is-open'); });
+            }
+        })();
+    </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

@@ -1,6 +1,7 @@
 @using System.Linq
 @{
     ViewData["Title"] = "Дети";
+    ViewData["Subtitle"] = "Список клиентов с основной информацией и статусами";
     var organizationFields = ViewBag.OrganizationFields as List<WebApplication1.Models.DBModels.OrganizationField> ?? new List<WebApplication1.Models.DBModels.OrganizationField>();
     var orgClientGroups = ViewBag.OrgClientGroups as List<WebApplication1.Models.DBModels.OrgClientGroup> ?? new List<WebApplication1.Models.DBModels.OrgClientGroup>();
     var search = ViewBag.Search as string ?? "";
@@ -11,214 +12,146 @@
 }
 
 @section Styles {
-    <link rel="stylesheet" href="~/web/kindergarten/css/detsad-children.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/web/kindergarten/css/detsad-create-invoice.css" asp-append-version="true" />
 }
 
-<div class="children-page">
-    <div class="page-header">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h1 class="page-title">Дети</h1>
-                <p class="page-subtitle">Список всех детей в детском саду</p>
-            </div>
-            <div class="d-flex gap-2">
-                <button type="button" class="action-btn action-btn--view" onclick="openCreateInvoiceModal()" title="Создать счёт на оплату">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" fill="currentColor"/>
-                    </svg>
-                    Счёт на оплату
-                </button>
-                <button type="button" class="action-btn action-btn--add" onclick="openAddChildModal()" title="Добавить нового ребёнка">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
-                    </svg>
-                    Добавить нового ребёнка
-                </button>
-            </div>
+<div class="dashboard-page">
+    <!-- Фильтры и действия -->
+    <div class="dashboard-filters">
+        <div class="search-box">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;color:var(--text-muted)">
+                <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/>
+            </svg>
+            <input type="text" id="searchInput" placeholder="Поиск по имени, телефону, email..." value="@search">
         </div>
-    </div>
-
-    <!-- Поиск и фильтры -->
-    <div class="filters-section">
-        <div class="row g-2 mb-2">
-            <div class="col-md-6">
-                <div class="search-box">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="search-icon">
-                        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/>
-                    </svg>
-                    <input type="text" id="searchInput" class="form-control search-input" placeholder="Поиск по имени, телефону, email..." value="@search">
-                </div>
-            </div>
-            <div class="col-md-3">
-                <select id="statusFilter" class="form-select filter-select">
-                    @if (statusFilter == "active")
-                    {
-                        <option value="active" selected>Активные</option>
-                        <option value="inactive">Неактивные</option>
-                        <option value="deleted">Удаленные</option>
-                    }
-                    else if (statusFilter == "inactive")
-                    {
-                        <option value="active">Активные</option>
-                        <option value="inactive" selected>Неактивные</option>
-                        <option value="deleted">Удаленные</option>
-                    }
-                    else
-                    {
-                        <option value="active">Активные</option>
-                        <option value="inactive">Неактивные</option>
-                        <option value="deleted" selected>Удаленные</option>
-                    }
-                </select>
-            </div>
-            <div class="col-md-3">
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="debtorsFilter" @(debtorsOnly ? "checked" : "")>
-                    <label class="form-check-label" for="debtorsFilter">
-                        Только должники
-                    </label>
-                </div>
-            </div>
-        </div>
+        <select id="statusFilter" class="form-select-soft">
+            @if (statusFilter == "active")
+            {
+                <option value="active" selected>Активные</option>
+                <option value="inactive">Неактивные</option>
+                <option value="deleted">Удалённые</option>
+            }
+            else if (statusFilter == "inactive")
+            {
+                <option value="active">Активные</option>
+                <option value="inactive" selected>Неактивные</option>
+                <option value="deleted">Удалённые</option>
+            }
+            else
+            {
+                <option value="active">Активные</option>
+                <option value="inactive">Неактивные</option>
+                <option value="deleted" selected>Удалённые</option>
+            }
+        </select>
+        <label class="form-check-soft">
+            <input type="checkbox" id="debtorsFilter" @(debtorsOnly ? "checked" : "")>
+            <span>Только должники</span>
+        </label>
         @if (orgClientGroups != null && orgClientGroups.Any())
         {
-            <div class="row g-2 mb-0">
-                <div class="col-12">
-                    <div class="groups-filter-dropdown">
-                        <button type="button" class="btn btn-outline-secondary btn-sm groups-filter-btn" id="groupsFilterBtn" aria-expanded="false" aria-haspopup="true">
-                            <span class="groups-filter-btn-text">По группам</span>
-                            <svg class="ms-1" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M7 10l5 5 5-5H7z" fill="currentColor"/>
-                            </svg>
-                        </button>
-                        <div class="groups-filter-menu" id="groupsFilterMenu" role="menu" aria-hidden="true">
-                            <div class="groups-filter-search-wrap p-2 border-bottom">
-                                <input type="text" class="form-control form-control-sm groups-filter-search" id="groupsFilterSearch" placeholder="Поиск групп..." autocomplete="off">
-                            </div>
-                            <div class="groups-filter-list" id="groupsFilterList">
-                                @foreach (var g in orgClientGroups)
-                                {
-                                    <label class="groups-filter-item">
-                                        <input type="checkbox" class="form-check-input group-filter-checkbox" value="@g.Id" data-group-name="@(g.Name ?? "")">
-                                        <span class="groups-filter-item-text">@(g.Name ?? g.Id)</span>
-                                    </label>
-                                }
-                            </div>
-                        </div>
+            <div class="groups-filter-dropdown">
+                <button type="button" class="btn-soft-secondary" id="groupsFilterBtn" aria-expanded="false" aria-haspopup="true">
+                    <span class="groups-filter-btn-text">По группам</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5H7z"/></svg>
+                </button>
+                <div class="groups-filter-menu" id="groupsFilterMenu" role="menu" aria-hidden="true">
+                    <div class="groups-filter-search-wrap p-2 border-bottom">
+                        <input type="text" class="form-control form-control-sm groups-filter-search" id="groupsFilterSearch" placeholder="Поиск групп..." autocomplete="off">
                     </div>
-                </div>
-            </div>
-        }
-    </div>
-
-    <!-- Карточки детей -->
-    <div class="children-cards-container" id="childrenCards">
-        @if (childrenData != null && childrenData.Any())
-        {
-            @foreach (var client in childrenData)
-            {
-
-                var statusText = "Неизвестно";
-                var statusClass = "status-unknown";
-                
-                if (client.ClientStatus == 1)
-                {
-                    statusText = "Активный";
-                    statusClass = "status-active";
-                }
-                else if (client.ClientStatus == 0)
-                {
-                    statusText = "Приостановлен";
-                    statusClass = "status-suspended";
-                }
-                else
-                {
-                    statusText = "Удален";
-                    statusClass = "status-deleted";
-                }
-
-                var totalBalanceTyiyn = clientTotalBalanceByClientId.GetValueOrDefault(client.Id, 0m);
-                var totalBalanceSoms = totalBalanceTyiyn / 100m;
-                var isDebtor = totalBalanceTyiyn < 0 && client.ClientStatus == 1;
-                var logoUrl = !string.IsNullOrEmpty(client.ClientLogo) ? $"data:image/png;base64,{client.ClientLogo}" : null;
-
-                <div class="child-card child-card--clickable" data-client-id="@client.Id" data-client-name="@(client.ClientName ?? "")" data-org-client-group-id="@(client.OrgClientGroupId ?? "")" data-search-text="@($"{client.ClientName} {client.ClientPhone} {client.ClientEmail} {client.ClientAddress} {string.Join(" ", client.OrganizationClientsAdditionalFields.Select(af => af.Value ?? ""))}")">
-                    <div class="child-card-header">
-                        <div class="child-avatar">
-                            @if (!string.IsNullOrEmpty(logoUrl))
-                            {
-                                <img src="@logoUrl" alt="@client.ClientName" class="avatar-image">
-                            }
-                            else
-                            {
-                                <div class="avatar-placeholder">
-                                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="currentColor"/>
-                                    </svg>
-                                </div>
-                            }
-                        </div>
-                        <div class="child-status-badge @statusClass">
-                            @statusText
-                        </div>
-                        @if (isDebtor)
+                    <div class="groups-filter-list" id="groupsFilterList">
+                        @foreach (var g in orgClientGroups)
                         {
-                            <div class="debtor-badge">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="currentColor"/>
-                                </svg>
-                                Должник
-                            </div>
+                            <label class="groups-filter-item">
+                                <input type="checkbox" class="form-check-input group-filter-checkbox" value="@g.Id" data-group-name="@(g.Name ?? "")">
+                                <span class="groups-filter-item-text">@(g.Name ?? g.Id)</span>
+                            </label>
                         }
                     </div>
-                    
-                    <div class="child-card-body">
-                        <h3 class="child-name">@(client.ClientName ?? "Без имени")</h3>
-                        
-                        <div class="child-info">
-                            <div class="info-item">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="info-icon">
-                                    <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" fill="currentColor"/>
-                                </svg>
-                                <span class="info-label">Телефон:</span>
-                                <span class="info-value">@(client.ClientPhone ?? "-")</span>
-                            </div>
-                            
-                            <div class="info-item">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="info-icon">
-                                    <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z" fill="currentColor"/>
-                                </svg>
-                                <span class="info-label">Регистрация:</span>
-                                <span class="info-value">@(client.CreatedDate?.ToString("dd.MM.yyyy") ?? "-")</span>
-                            </div>
-
-                            <div class="info-item">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="info-icon">
-                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.87 0 .53-.39 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-1.67c1.52-.29 2.72-1.16 2.73-2.77-.01-2.2-1.9-2.96-3.66-3.42z" fill="currentColor"/>
-                                </svg>
-                                <span class="info-label">Баланс по счетам:</span>
-                                <span class="info-value @(totalBalanceTyiyn < 0 ? "text-danger" : "")">
-                                    @totalBalanceSoms.ToString("N2") сом
-                                </span>
-                            </div>
-                        </div>
-                    </div>
                 </div>
-            }
-        }
-        else
-        {
-            <div class="empty-state">
-                <div class="empty-state-icon">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" fill="currentColor"/>
-                    </svg>
-                </div>
-                <h3 class="empty-state-title">Детей не найдено</h3>
-                <p class="empty-state-description">В детском саду пока нет записанных детей</p>
             </div>
         }
+        <div class="ms-auto d-flex gap-2">
+            <button type="button" class="btn-soft-secondary" onclick="openCreateInvoiceModal()" title="Создать счёт на оплату">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
+                Счёт на оплату
+            </button>
+            <button type="button" class="btn-soft-primary" onclick="openAddChildModal()" title="Добавить ребёнка">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                Добавить ребёнка
+            </button>
+        </div>
+    </div>
+
+    <!-- Таблица клиентов -->
+    <div class="dashboard-table-card">
+        <div class="table-wrap">
+            @if (childrenData != null && childrenData.Any())
+            {
+                <table class="table-soft" id="childrenTable">
+                    <thead>
+                        <tr>
+                            <th>ФИО</th>
+                            <th>Телефон</th>
+                            <th>Регистрация</th>
+                            <th>Баланс</th>
+                            <th>Статус</th>
+                            <th class="text-end">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="childrenCards">
+                        @foreach (var client in childrenData)
+                        {
+                            var statusText = "Неизвестно";
+                            var statusClass = "status-deleted";
+                            if (client.ClientStatus == 1) { statusText = "Активный"; statusClass = "status-active"; }
+                            else if (client.ClientStatus == 0) { statusText = "Приостановлен"; statusClass = "status-suspended"; }
+
+                            var totalBalanceTyiyn = clientTotalBalanceByClientId.GetValueOrDefault(client.Id, 0m);
+                            var totalBalanceSoms = totalBalanceTyiyn / 100m;
+                            var searchText = $"{client.ClientName} {client.ClientPhone} {client.ClientEmail} {client.ClientAddress} {string.Join(" ", client.OrganizationClientsAdditionalFields?.Select(af => af.Value ?? "") ?? Array.Empty<string>())}";
+                            <tr class="child-row"
+                                data-client-id="@client.Id"
+                                data-client-name="@(client.ClientName ?? "")"
+                                data-org-client-group-id="@(client.OrgClientGroupId ?? "")"
+                                data-search-text="@searchText">
+                                <td><span class="cell-name">@(client.ClientName ?? "—")</span></td>
+                                <td class="cell-muted">@(client.ClientPhone ?? "—")</td>
+                                <td class="cell-muted">@(client.CreatedDate?.ToString("dd.MM.yyyy") ?? "—")</td>
+                                <td class="@(totalBalanceTyiyn < 0 ? "balance-negative" : "balance-positive")">@totalBalanceSoms.ToString("N2") сом</td>
+                                <td><span class="status-badge @statusClass">@statusText</span></td>
+                                <td class="cell-actions text-end">
+                                    <button type="button" class="btn-row-action" title="Открыть" onclick="event.stopPropagation(); var r=this.closest('tr'); openChildDetailModal(r.dataset.clientId,r.dataset.clientName||'Ребенок')">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                <div id="childrenFilterEmptyState" class="empty-state-inline" style="display: none;">
+                    <div class="empty-state-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/>
+                        </svg>
+                    </div>
+                    <p class="empty-state-title">Ничего не найдено</p>
+                    <p class="empty-state-desc">Попробуйте изменить параметры поиска или фильтры.</p>
+                </div>
+            }
+            else
+            {
+                <div class="empty-state-inline" id="childrenEmptyState">
+                    <div class="empty-state-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" fill="currentColor"/>
+                        </svg>
+                    </div>
+                    <p class="empty-state-title">Детей не найдено</p>
+                    <p class="empty-state-desc">В детском саду пока нет записанных детей или измените фильтры.</p>
+                </div>
+            }
+        </div>
     </div>
 </div>
 
@@ -258,7 +191,7 @@
     </div>
 </div>
 
-<!-- Модальное окно "Счёт на оплату" (контент подгружается через partial) -->
+<!-- Модальное окно "Счёт на оплату" -->
 <div class="modal fade" id="createInvoiceModal" tabindex="-1" aria-labelledby="createInvoiceModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-fullscreen-lg-down modal-xl modal-dialog-scrollable">
         <div class="modal-content">
@@ -285,7 +218,6 @@
             </div>
             <div class="modal-body">
                 <form id="childForm" novalidate>
-                    <!-- ФИО и ИНН -->
                     <div class="row mb-3">
                         <div class="col-8">
                             <label for="clientName" class="form-label">ФИО ребенка <span class="text-danger">*</span></label>
@@ -298,7 +230,6 @@
                             <div class="invalid-feedback">ИНН должен содержать 14 цифр</div>
                         </div>
                     </div>
-
                     @if (orgClientGroups != null && orgClientGroups.Any())
                     {
                         <div class="mb-3" id="groupSelectWrapper">
@@ -312,11 +243,9 @@
                             </select>
                         </div>
                     }
-
                     <div class="form-section-divider mb-3">
                         <span class="divider-text">Контактные данные (родителей)</span>
                     </div>
-
                     <div class="row mb-3">
                         <div class="col-6">
                             <label for="clientPhone" class="form-label">Телефон <span class="text-danger">*</span></label>
@@ -337,7 +266,6 @@
                             <div class="invalid-feedback">Пожалуйста, укажите корректный email</div>
                         </div>
                     </div>
-
                     <div class="row mb-3">
                         <div class="col-6">
                             <label for="clientWa" class="form-label">WhatsApp</label>
@@ -348,12 +276,10 @@
                             <input type="text" class="form-control form-control-compact" id="clientTg" name="clientTg" placeholder="username или +996...">
                         </div>
                     </div>
-
                     <div class="mb-3">
                         <label for="clientAdres" class="form-label">Адрес</label>
                         <input type="text" class="form-control form-control-compact" id="clientAdres" name="clientAdres">
                     </div>
-
                     @if (organizationFields != null && organizationFields.Any())
                     {
                         <div class="form-section-divider mb-3">
@@ -398,7 +324,6 @@
                         </div>
                     }
                 </form>
-
                 <div id="errorMessage" class="alert alert-danger" style="display: none;" role="alert"></div>
             </div>
             <div class="modal-footer">

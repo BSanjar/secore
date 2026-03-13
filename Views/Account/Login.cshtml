@@ -3,78 +3,98 @@
 @inject IHtmlLocalizer<WebApplication1.SharedResources> Localizer
 @{
     ViewData["Title"] = Localizer["Login"].Value;
-    Layout = null; // Используем отдельный layout для страницы входа
+    Layout = null;
 }
 
 <!DOCTYPE html>
-<html lang="@System.Globalization.CultureInfo.CurrentCulture.TwoLetterISOLanguageName">
+<html lang="@System.Globalization.CultureInfo.CurrentCulture.TwoLetterISOLanguageName" class="login-page-root">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - SECORE</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <style>
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .login-container {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            padding: 40px;
-            width: 100%;
-            max-width: 400px;
-        }
-        .login-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .login-header h2 {
-            color: #667eea;
-            margin-bottom: 10px;
-        }
-    </style>
+    <link rel="stylesheet" href="~/css/login.css" asp-append-version="true" />
 </head>
 <body>
-    <div class="login-container">
-        <div class="login-header">
-            <h2>SECORE</h2>
-            <p class="text-muted">@Localizer["Login"]</p>
-        </div>
-        
-        <div class="mb-3 text-end">
-            @await Html.PartialAsync("_LanguageSwitcher")
-        </div>
+    <div class="login-lang-wrap">
+        @await Html.PartialAsync("_LanguageSwitcher")
+    </div>
 
-        <form asp-action="Login" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+    <div class="login-shell">
+        <section class="login-showcase">
+            <div>
+                <div class="login-brand">
+                    <div class="login-brand-mark">S</div>
+                    <div class="login-brand-text">
+                        <strong>SECORE</strong>
+                        <span>Service Ecosystem for Commerce, Organizations and Reporting Engine</span>
+                    </div>
+                </div>
 
-            <div class="mb-3">
-                <label asp-for="Email" class="form-label">@Localizer["Email"]</label>
-                <input asp-for="Email" class="form-control" />
-                <span asp-validation-for="Email" class="text-danger"></span>
+                <div class="login-hero">
+                    <div class="login-eyebrow">Secure access portal</div>
+                    <h1>Управляйте платежами в едином рабочем пространстве</h1>
+                    <p>Войдите в систему для доступа к клиентской базе, услугам, платежам, транзакциям и отчетам. Безопасная авторизация и удобный интерфейс для ежедневной работы организации с клиентами.</p>
+
+                    <div class="login-mini-cards">
+                        <div class="login-mini-card">
+                            <span class="login-mini-label">Доступ к системе</span>
+                            <div class="login-mini-value">24/7</div>
+                            <div class="login-mini-meta"><strong>Active</strong> стабильный доступ</div>
+                        </div>
+                        <div class="login-mini-card">
+                            <span class="login-mini-label">Безопасность</span>
+                            <div class="login-mini-value">99.9%</div>
+                            <div class="login-mini-meta"><strong>Safe</strong> защищённая авторизация</div>
+                        </div>
+                    </div>
+                </div>
             </div>
+        </section>
 
-            <div class="mb-3">
-                <label asp-for="Password" class="form-label">@Localizer["Password"]</label>
-                <input asp-for="Password" class="form-control" />
-                <span asp-validation-for="Password" class="text-danger"></span>
-            </div>
+        <section class="login-panel-wrap">
+            <div class="login-panel">
+                <div class="panel-top">
+                    <span class="small">@Localizer["Login"]</span>
+                    <h2>Вход в SECORE</h2>
+                    <p>Введите email и пароль для доступа к системе.</p>
+                </div>
 
-            <div class="mb-3 form-check">
-                <input asp-for="RememberMe" class="form-check-input" />
-                <label asp-for="RememberMe" class="form-check-label">@Localizer["RememberMe"]</label>
-            </div>
+                <form asp-action="Login" method="post" class="login-auth-form">
+                    <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+                    @Html.AntiForgeryToken()
 
-            <div class="d-grid">
-                <button type="submit" class="btn btn-primary btn-lg">@Localizer["SignIn"]</button>
+                    <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+
+                    <div class="field">
+                        <label class="field-label" asp-for="Email">@Localizer["Email"]</label>
+                        <div class="input-wrap">
+                            <span class="input-icon"></span>
+                            <input asp-for="Email" class="input" type="email" placeholder="@Localizer["Email"]" autocomplete="username" />
+                        </div>
+                        <span asp-validation-for="Email" class="field-error"></span>
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label" asp-for="Password">@Localizer["Password"]</label>
+                        <div class="input-wrap">
+                            <span class="input-icon">&#9679;</span>
+                            <input asp-for="Password" class="input" type="password" placeholder="@Localizer["Password"]" autocomplete="current-password" />
+                        </div>
+                        <span asp-validation-for="Password" class="field-error"></span>
+                    </div>
+
+                    <div class="row-between">
+                        <label class="checkbox">
+                            <input asp-for="RememberMe" type="checkbox" />
+                            <span>@Localizer["RememberMe"]</span>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn-primary">@Localizer["SignIn"]</button>
+                </form>
             </div>
-        </form>
+        </section>
     </div>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>

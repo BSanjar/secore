@@ -52,6 +52,8 @@ public partial class AppDbContext : DbContext
     public virtual DbSet<Commission> Commissions { get; set; }
     public virtual DbSet<CommissionTier> CommissionTiers { get; set; }
     public virtual DbSet<AgentCommission> AgentCommissions { get; set; }
+    public virtual DbSet<OrganizationSubscription> OrganizationSubscriptions { get; set; }
+    public virtual DbSet<OrganizationSubscriptionPayment> OrganizationSubscriptionPayments { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
@@ -229,6 +231,10 @@ public partial class AppDbContext : DbContext
                 .HasComment("standart\r\ndetsad\r\nschool\r\nmedclinic")
                 .HasColumnType("character varying")
                 .HasColumnName("organizationtype");
+            entity.Property(e => e.IsActive)
+                .HasComment("false — доступ заблокирован (истёк период подписки)")
+                .HasColumnName("is_active")
+                .HasDefaultValue(true);
 
             entity.HasOne(e => e.Settings)
                 .WithOne(s => s.Organization)
@@ -271,6 +277,72 @@ public partial class AppDbContext : DbContext
                 .HasForeignKey(d => d.CommissionId)
                 .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("organization_settings_commission_fk");
+        });
+
+        modelBuilder.Entity<OrganizationSubscription>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("organization_subscription_pk");
+            entity.ToTable("organization_subscription");
+
+            entity.Property(e => e.Id)
+                .HasColumnType("character varying")
+                .HasColumnName("id");
+            entity.Property(e => e.OrganizationId)
+                .HasColumnType("character varying")
+                .HasColumnName("organization_id");
+            entity.Property(e => e.PriceTyiyn)
+                .HasColumnType("numeric(18,2)")
+                .HasColumnName("price_tyiyn");
+            entity.Property(e => e.PeriodType)
+                .HasColumnType("character varying")
+                .HasColumnName("period_type");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("updated_at");
+
+            entity.HasOne(d => d.Organization).WithOne(p => p.Subscription)
+                .HasForeignKey<OrganizationSubscription>(d => d.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("organization_subscription_organization_fk");
+        });
+
+        modelBuilder.Entity<OrganizationSubscriptionPayment>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("organization_subscription_payment_pk");
+            entity.ToTable("organization_subscription_payment");
+
+            entity.Property(e => e.Id)
+                .HasColumnType("character varying")
+                .HasColumnName("id");
+            entity.Property(e => e.OrganizationId)
+                .HasColumnType("character varying")
+                .HasColumnName("organization_id");
+            entity.Property(e => e.PaidAt)
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("paid_at");
+            entity.Property(e => e.AmountTyiyn)
+                .HasColumnType("numeric(18,2)")
+                .HasColumnName("amount_tyiyn");
+            entity.Property(e => e.PeriodStart)
+                .HasColumnType("date")
+                .HasColumnName("period_start");
+            entity.Property(e => e.PeriodEnd)
+                .HasColumnType("date")
+                .HasColumnName("period_end");
+            entity.Property(e => e.Note)
+                .HasColumnType("character varying")
+                .HasColumnName("note");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("created_at");
+
+            entity.HasOne(d => d.Organization).WithMany(p => p.SubscriptionPayments)
+                .HasForeignKey(d => d.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("organization_subscription_payment_organization_fk");
         });
 
         modelBuilder.Entity<Commission>(entity =>
