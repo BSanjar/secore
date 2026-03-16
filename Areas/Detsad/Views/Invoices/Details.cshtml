@@ -20,9 +20,16 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
 
     <nav class="detsad-breadcrumb" aria-label="Навигация">
-        <a href="@returnUrl">Счета</a>
+        <a href="@returnUrl">Отчетность</a>
         <span class="breadcrumb-sep">›</span>
         <span>Просмотр счёта</span>
     </nav>
@@ -35,8 +42,15 @@
                     @if (Model.ClientNavigation != null) { <span class="ms-2">Клиент: @Model.ClientNavigation.ClientName</span> }
                 </p>
             </div>
-            <div class="d-flex gap-2">
-                <a asp-action="Edit" asp-route-id="@Model.Id" asp-route-returnUrl="@returnUrl" class="detsad-btn-primary">Редактировать</a>
+            <div class="d-flex gap-2 flex-wrap">
+                <a asp-action="DownloadPdf" asp-route-id="@Model.Id" class="detsad-btn-primary d-inline-flex align-items-center gap-1" download>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                    Счет на оплату PDF
+                </a>
+                <a asp-action="ExportInvoicePaymentsExcel" asp-route-id="@Model.Id" class="btn btn-outline-success d-inline-flex align-items-center gap-1" download>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 15.01l1.41 1.41L11 14.84V19h2v-4.16l1.59 1.59L16 15.01 12.01 11 8 15.01z" fill="currentColor"/></svg>
+                    Платежи в Excel
+                </a>
             </div>
         </div>
     </div>
@@ -129,6 +143,7 @@
                             <th>Период (с — по)</th>
                             <th>Сумма</th>
                             <th>Статус</th>
+                            <th class="text-center">Чек</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -140,6 +155,18 @@
                                 <td>@(pay.DateFrom?.ToString("dd.MM.yyyy") ?? "—") — @(pay.DateTo?.ToString("dd.MM.yyyy") ?? "—")</td>
                                 <td>@paySum.ToString("N2") сом</td>
                                 <td>@payStatus</td>
+                                <td class="text-center">
+                                    @if (pay.PaymentStatus == "paid")
+                                    {
+                                        <a asp-action="DownloadReceiptPdf" asp-route-id="@pay.Id" class="btn btn-sm btn-outline-primary" download title="Скачать чек">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
                             </tr>
                         }
                     </tbody>
@@ -148,3 +175,11 @@
         </div>
     }
 </div>
+
+@section Scripts {
+    <script>
+        if (window.location.search.indexOf('print=1') !== -1) {
+            window.addEventListener('load', function() { try { window.print(); } catch (e) {} });
+        }
+    </script>
+}

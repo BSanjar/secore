@@ -202,9 +202,7 @@ function openChildDetailModal(clientId, clientName, onShown) {
     const modalEl = document.getElementById('childDetailModal');
     const modalTitle = document.getElementById('childDetailModalLabel');
     const infoContent = document.getElementById('childDetailInfoContent');
-    const invoicesContent = document.getElementById('childDetailInvoicesContent');
     const paymentsContent = document.getElementById('childDetailPaymentsContent');
-    const tabInvoices = document.getElementById('tab-invoices');
     const tabPayments = document.getElementById('tab-payments');
 
     if (!modalEl || !modalTitle) return;
@@ -213,7 +211,6 @@ function openChildDetailModal(clientId, clientName, onShown) {
     modalTitle.textContent = clientName || 'Ребенок';
 
     if (infoContent) infoContent.innerHTML = '<div class="loading-spinner"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div></div>';
-    if (invoicesContent) invoicesContent.innerHTML = '<p class="text-muted mb-0">Выберите вкладку «Счета» для загрузки данных.</p>';
     if (paymentsContent) paymentsContent.innerHTML = '<p class="text-muted mb-0">Выберите вкладку «Платежи» для загрузки данных.</p>';
 
     const modal = new bootstrap.Modal(modalEl);
@@ -225,17 +222,10 @@ function openChildDetailModal(clientId, clientName, onShown) {
         modalEl.removeEventListener('shown.bs.modal', onceShown);
         var tabChildInfo = document.getElementById('tab-child-info');
         if (tabChildInfo) bootstrap.Tab.getOrCreateInstance(tabChildInfo).show();
-        if (tabInvoices) {
-            tabInvoices.addEventListener('shown.bs.tab', function onInvoices() {
-                if (currentDetailClientId === clientId && invoicesContent && invoicesContent.innerHTML.includes('Выберите вкладку')) {
-                    loadInvoicesInto(clientId, invoicesContent, null);
-                }
-            });
-        }
         if (tabPayments) {
             tabPayments.addEventListener('shown.bs.tab', function onPayments() {
                 if (currentDetailClientId === clientId && paymentsContent && paymentsContent.innerHTML.includes('Выберите вкладку')) {
-                    loadPaymentsInto(clientId, paymentsContent);
+                    loadPaymentsTab(clientId, paymentsContent, null);
                 }
             });
         }
@@ -253,6 +243,8 @@ async function loadChildInfoInto(clientId, contentEl) {
         const data = await response.json();
         const client = data.client;
         const additionalFields = data.additionalFields || [];
+
+        // Основные данные по ребёнку
         let statusText = 'Неизвестно', statusClass = 'status-unknown';
         if (client.status == 1) { statusText = 'Активный'; statusClass = 'status-active'; }
         else if (client.status == 0) { statusText = 'Приостановлен'; statusClass = 'status-suspended'; }
@@ -276,6 +268,36 @@ async function loadChildInfoInto(clientId, contentEl) {
                     <div class="detail-item"><span class="detail-label">Дата обновления</span><span class="detail-value">${updatedDate}</span></div>
                 </div>
             </div>`;
+
+        // Информация о счёте (по умолчанию используем первый/выбранный счёт из GetInvoicesInfo)
+        try {
+            const invResp = await fetch(`/Detsad/Cabinet/GetInvoicesInfo?clientId=${clientId}`);
+            if (invResp.ok) {
+                const invData = await invResp.json();
+                const selectedInvoice = invData.selectedInvoice;
+                if (selectedInvoice) {
+                    const invDateCreated = selectedInvoice.dateCreated ? new Date(selectedInvoice.dateCreated).toLocaleDateString('ru-RU') : '-';
+                    const invBalance = selectedInvoice.balance ? (selectedInvoice.balance / 100).toFixed(2) : '0.00';
+                    const invBalanceClass = selectedInvoice.balance < 0 ? 'text-danger' : '';
+                    html += `
+            <div class="details-section">
+                <h6 class="details-section-title">Информация о счёте</h6>
+                <div class="details-grid">
+                    <div class="detail-item"><span class="detail-label">Название счёта</span><span class="detail-value">${selectedInvoice.nameInvoice || '-'}</span></div>
+                    <div class="detail-item"><span class="detail-label">Лицевой счёт</span><span class="detail-value">${selectedInvoice.payCode || '-'}</span></div>
+                    <div class="detail-item"><span class="detail-label">Дата создания</span><span class="detail-value">${invDateCreated}</span></div>
+                    <div class="detail-item"><span class="detail-label">Периодичность</span><span class="detail-value">${selectedInvoice.periodicity || '-'}</span></div>
+                    <div class="detail-item"><span class="detail-label">Текущий баланс</span><span class="detail-value ${invBalanceClass}">${invBalance} сом</span></div>
+                    <div class="detail-item"><span class="detail-label">Автопродление</span><span class="detail-value">${selectedInvoice.autoProlongation ? 'Да' : 'Нет'}</span></div>
+                </div>
+            </div>`;
+                }
+            }
+        } catch (e) {
+            console.warn('Не удалось загрузить информацию о счёте для карточки ребёнка', e);
+        }
+
+        // Дополнительные данные
         if (additionalFields.length > 0) {
             html += '<div class="details-section"><h6 class="details-section-title">Дополнительные данные</h6><div class="details-grid">';
             additionalFields.forEach(field => {
@@ -290,14 +312,14 @@ async function loadChildInfoInto(clientId, contentEl) {
     }
 }
 
-// Обновить вкладку «Счета» в модальном окне (при смене счета в select)
+// Обновить вкладку «Платежи» в модальном окне (при смене счета в select)
 window.refreshInvoicesInDetailModal = function(invoiceId) {
-    const content = document.getElementById('childDetailInvoicesContent');
-    if (currentDetailClientId && content) loadInvoicesInto(currentDetailClientId, content, invoiceId || null);
+    const content = document.getElementById('childDetailPaymentsContent');
+    if (currentDetailClientId && content) loadPaymentsTab(currentDetailClientId, content, invoiceId || null);
 };
 
-// Загрузить контент "Счета" в указанный элемент
-async function loadInvoicesInto(clientId, contentEl, invoiceId) {
+// Загрузить вкладку «Платежи»: выбор счёта + платёжные периоды
+async function loadPaymentsTab(clientId, contentEl, invoiceId) {
     if (!contentEl) return;
     contentEl.innerHTML = '<div class="loading-spinner"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div></div>';
     try {
@@ -317,35 +339,30 @@ async function loadInvoicesInto(clientId, contentEl, invoiceId) {
         const dateCreated = selectedInvoice.dateCreated ? new Date(selectedInvoice.dateCreated).toLocaleDateString('ru-RU') : '-';
         const balance = selectedInvoice.balance ? (selectedInvoice.balance / 100).toFixed(2) : '0.00';
         const balanceClass = selectedInvoice.balance < 0 ? 'text-danger' : '';
+        const downloadPdfUrl = '/Detsad/Invoices/DownloadPdf?id=' + encodeURIComponent(selectedInvoice.id);
         let html = `
             <div class="details-section">
-                <div class="mb-3">
-                    <label for="invoiceSelectDetail" class="form-label fw-bold">Выберите счет:</label>
-                    <select id="invoiceSelectDetail" class="form-select" onchange="refreshInvoicesInDetailModal(this.value)">
+                <div class="mb-3 d-flex flex-wrap align-items-center gap-2">
+                    <div class="flex-grow-1">
+                        <label for="invoiceSelectDetail" class="form-label fw-bold mb-0 me-2">Выберите счет:</label>
+                        <select id="invoiceSelectDetail" class="form-select form-select-sm d-inline-block" style="max-width: 320px;" onchange="refreshInvoicesInDetailModal(this.value)">
         `;
         invoices.forEach(inv => {
             const sel = inv.id === selectedInvoice.id ? ' selected' : '';
             html += `<option value="${inv.id}"${sel}>${inv.name} (${inv.payCode || 'без кода'})</option>`;
         });
-        html += `</select></div></div>
-            <div class="details-section">
-                <h6 class="details-section-title">Информация о счете</h6>
-                <div class="details-grid">
-                    <div class="detail-item"><span class="detail-label">Название счёта</span><span class="detail-value">${selectedInvoice.nameInvoice || '-'}</span></div>
-                    <div class="detail-item"><span class="detail-label">Лицевой счёт</span><span class="detail-value">${selectedInvoice.payCode || '-'}</span></div>
-                    <div class="detail-item"><span class="detail-label">ФИО клиента</span><span class="detail-value">${data.client.name || '-'}</span></div>
-                    <div class="detail-item"><span class="detail-label">Дата создания</span><span class="detail-value">${dateCreated}</span></div>
-                    <div class="detail-item"><span class="detail-label">Создавший пользователь</span><span class="detail-value">${selectedInvoice.userCreater || '-'}</span></div>
-                    <div class="detail-item"><span class="detail-label">Периодичность</span><span class="detail-value">${selectedInvoice.periodicity || '-'}</span></div>
-                    <div class="detail-item"><span class="detail-label">Текущий баланс</span><span class="detail-value ${balanceClass}">${balance} сом</span></div>
-                    <div class="detail-item"><span class="detail-label">Автопродление</span><span class="detail-value">${selectedInvoice.autoProlongation ? 'Да' : 'Нет'}</span></div>
-                </div>
-            </div>
+        html += `</select>
+                    </div>
+                    <a href="${downloadPdfUrl}" class="btn btn-primary btn-sm" download title="Счет на оплату PDF">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="me-1"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                        Скачать счет (PDF)
+                    </a>
+                </div></div>
             <div class="details-section">
                 <h6 class="details-section-title">Платежные периоды</h6>
                 <div class="table-responsive">
                     <table class="table table-hover table-striped">
-                        <thead><tr><th>Период с</th><th>Период по</th><th>Сумма</th><th>Статус</th><th>Значение периода</th></tr></thead>
+                        <thead><tr><th>Период с</th><th>Период по</th><th>Сумма</th><th>Статус</th><th>Значение периода</th><th class="text-center">Чек</th></tr></thead>
                         <tbody>`;
         if (invoicePayments.length > 0) {
             invoicePayments.forEach(p => {
@@ -354,86 +371,18 @@ async function loadInvoicesInto(clientId, contentEl, invoiceId) {
                 const status = p.paymentStatus === 'paid' ? 'Оплачено' : p.paymentStatus === 'non_paid' ? 'Не оплачено' : p.paymentStatus === 'anulated' ? 'Аннулировано' : p.paymentStatus || '-';
                 const badge = p.paymentStatus === 'paid' ? 'bg-success' : p.paymentStatus === 'non_paid' ? 'bg-warning' : p.paymentStatus === 'anulated' ? 'bg-danger' : 'bg-secondary';
                 const paySumDisplay = p.paymentSumm != null ? Number(p.paymentSumm).toFixed(2) + ' сом' : '—';
-                html += `<tr><td>${dateFrom}</td><td>${dateTo}</td><td>${paySumDisplay}</td><td><span class="badge ${badge}">${status}</span></td><td>${p.periodValue || '-'}</td></tr>`;
+                const receiptLink = p.paymentStatus === 'paid' && p.id
+                    ? '<a href="/Detsad/Invoices/DownloadReceiptPdf?id=' + encodeURIComponent(p.id) + '" class="btn btn-sm btn-outline-primary" download title="Скачать чек"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg></a>'
+                    : '—';
+                html += `<tr><td>${dateFrom}</td><td>${dateTo}</td><td>${paySumDisplay}</td><td><span class="badge ${badge}">${status}</span></td><td>${p.periodValue || '-'}</td><td class="text-center">${receiptLink}</td></tr>`;
             });
         } else {
-            html += '<tr><td colspan="5" class="text-center text-muted py-4">Платежных периодов не найдено</td></tr>';
+            html += '<tr><td colspan="6" class="text-center text-muted py-4">Платежных периодов не найдено</td></tr>';
         }
         html += '</tbody></table></div></div>';
         contentEl.innerHTML = html;
     } catch (err) {
-        console.error('Error loading invoices:', err);
-        contentEl.innerHTML = '<div class="alert alert-danger" role="alert"><strong>Ошибка!</strong> Не удалось загрузить данные.</div>';
-    }
-}
-
-// Загрузить контент "Платежи" в указанный элемент (agentIds — массив id агентов или пустая строка для всех)
-async function loadPaymentsInto(clientId, contentEl, agentIds) {
-    if (!contentEl) return;
-    contentEl.innerHTML = '<div class="loading-spinner"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div></div>';
-    try {
-        let url = `/Detsad/Cabinet/GetClientTransactions?clientId=${encodeURIComponent(clientId)}`;
-        if (agentIds && agentIds.length > 0) {
-            url += '&agentIds=' + agentIds.map(function(id) { return encodeURIComponent(id); }).join('&agentIds=');
-        }
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('Ошибка загрузки данных');
-        const data = await response.json();
-        const transactions = data.transactions || [];
-        const agents = data.agents || [];
-        const selectedIds = agentIds && agentIds.length > 0 ? agentIds : [];
-        let filterHtml = '';
-        if (agents.length > 0) {
-            filterHtml = `
-                <div class="mb-3 d-flex align-items-center flex-wrap gap-2">
-                    <label class="form-label small text-muted mb-0 me-2">Агент:</label>
-                    <select id="childPaymentsAgentFilter" class="form-select form-select-sm" style="max-width: 220px;">
-                        <option value=""${selectedIds.length === 0 ? ' selected' : ''}>Все агенты</option>
-                        ${agents.map(function(a) {
-                            var isSel = selectedIds.length > 0 && selectedIds.indexOf(a.id) >= 0;
-                            return '<option value="' + (a.id || '') + '"' + (isSel ? ' selected' : '') + '>' + (a.name || a.id || '-') + '</option>';
-                        }).join('')}
-                    </select>
-                </div>`;
-        }
-        let html = `
-            <div class="details-section">
-                <h6 class="details-section-title">Транзакции</h6>
-                <p class="text-muted mb-2">Клиент: <strong>${data.client.name || '-'}</strong></p>
-                ${filterHtml}
-                <div class="table-responsive">
-                    <table class="table table-hover table-striped">
-                        <thead><tr><th>Дата</th><th>Агент</th><th>Сумма</th><th>С комиссией</th><th>Тип</th><th>Статус</th></tr></thead>
-                        <tbody>`;
-        if (transactions.length > 0) {
-            transactions.forEach(t => {
-                const date = t.transactionDate ? new Date(t.transactionDate).toLocaleString('ru-RU') : '-';
-                const agentName = t.agentName || t.agentId || '-';
-                const summ = t.summ ? (t.summ / 100).toFixed(2) : '0.00';
-                const summFee = t.transactionSumm ? (t.transactionSumm / 100).toFixed(2) : '0.00';
-                const type = t.transactionType === 'debit' ? 'Приход' : t.transactionType === 'credit' ? 'Расход' : t.transactionType || '-';
-                const typeClass = t.transactionType === 'debit' ? 'text-success' : t.transactionType === 'credit' ? 'text-danger' : '';
-                const status = t.transactionStatus === 'success' ? 'Успешно' : t.transactionStatus === 'error' ? 'Ошибка' : t.transactionStatus || '-';
-                const statusBadge = t.transactionStatus === 'success' ? 'bg-success' : 'bg-danger';
-                html += '<tr><td>' + date + '</td><td>' + agentName + '</td><td>' + summ + ' сом</td><td>' + summFee + ' сом</td><td class="' + typeClass + '">' + type + '</td><td><span class="badge ' + statusBadge + '">' + status + '</span></td></tr>';
-            });
-        } else {
-            html += '<tr><td colspan="6" class="text-center text-muted py-4">Транзакций не найдено</td></tr>';
-        }
-        html += '</tbody></table></div></div>';
-        contentEl.innerHTML = html;
-        if (agents.length > 0) {
-            var selEl = contentEl.querySelector('#childPaymentsAgentFilter');
-            if (selEl) {
-                selEl.addEventListener('change', function() {
-                    var val = selEl.value;
-                    var ids = val ? [val] : [];
-                    loadPaymentsInto(clientId, contentEl, ids);
-                });
-            }
-        }
-    } catch (err) {
-        console.error('Error loading payments:', err);
+        console.error('Error loading invoices/payments:', err);
         contentEl.innerHTML = '<div class="alert alert-danger" role="alert"><strong>Ошибка!</strong> Не удалось загрузить данные.</div>';
     }
 }
@@ -443,30 +392,19 @@ async function showChildInfo(clientId) {
     openChildDetailModal(clientId, 'Ребенок');
 }
 
-// Открыть модальное окно на вкладке «Счета»
-function showInvoicesInfo(clientId, invoiceId = null) {
-    openChildDetailModal(clientId, 'Ребенок', function() {
-        const tabInvoices = document.getElementById('tab-invoices');
-        const invoicesContent = document.getElementById('childDetailInvoicesContent');
-        if (tabInvoices) bootstrap.Tab.getOrCreateInstance(tabInvoices).show();
-        if (invoicesContent) loadInvoicesInto(clientId, invoicesContent, invoiceId);
-    });
-}
-
 // Открыть модальное окно на вкладке «Платежи»
-function showClientTransactions(clientId) {
+function showInvoicesInfo(clientId, invoiceId = null) {
     openChildDetailModal(clientId, 'Ребенок', function() {
         const tabPayments = document.getElementById('tab-payments');
         const paymentsContent = document.getElementById('childDetailPaymentsContent');
         if (tabPayments) bootstrap.Tab.getOrCreateInstance(tabPayments).show();
-        if (paymentsContent) loadPaymentsInto(clientId, paymentsContent);
+        if (paymentsContent) loadPaymentsTab(clientId, paymentsContent, invoiceId);
     });
 }
 
 // Экспортируем функции для глобального доступа
 window.showChildInfo = showChildInfo;
 window.showInvoicesInfo = showInvoicesInfo;
-window.showClientTransactions = showClientTransactions;
 
 // Функции для модального окна добавления ребенка
 function openAddChildModal() {
@@ -507,7 +445,13 @@ function initWhatsAppSync() {
 function resetModal() {
     document.getElementById('childForm').reset();
     document.getElementById('errorMessage').style.display = 'none';
-    
+    const nameEl = document.getElementById('addChildInvoiceName');
+    const amountEl = document.getElementById('addChildInvoiceAmount');
+    if (nameEl) nameEl.value = '';
+    if (amountEl) amountEl.value = '';
+
+    showAddChildStep(1);
+
     const form = document.getElementById('childForm');
     if (form) {
         form.classList.remove('was-validated');
@@ -516,51 +460,81 @@ function resetModal() {
             input.classList.remove('is-invalid', 'is-valid');
         });
     }
-    
+
     initPhoneMask();
 }
 
-async function submitChild() {
+function showAddChildStep(step) {
+    const step1 = document.getElementById('addChildStep1');
+    const step2 = document.getElementById('addChildStep2');
+    const submitBtn = document.getElementById('submitBtn');
+    const btnBack = document.getElementById('addChildBtnBack');
+    const btnSkip = document.getElementById('addChildBtnSkip');
+    const btnCancel = document.getElementById('addChildBtnCancel');
+    if (!step1 || !step2 || !submitBtn) return;
+
+    if (step === 1) {
+        step1.style.display = 'block';
+        step2.style.display = 'none';
+        submitBtn.textContent = 'Далее';
+        submitBtn.onclick = function() { goAddChildToStep2(); };
+        if (btnBack) { btnBack.style.display = 'none'; }
+        if (btnSkip) { btnSkip.style.display = 'none'; }
+        if (btnCancel) { btnCancel.classList.remove('me-auto'); }
+    } else {
+        step1.style.display = 'none';
+        step2.style.display = 'block';
+        submitBtn.textContent = 'Зарегистрировать и создать счёт';
+        submitBtn.onclick = function() { submitChildAndInvoice(); };
+        if (btnBack) { btnBack.style.display = 'block'; }
+        if (btnSkip) { btnSkip.style.display = 'inline-block'; }
+        if (btnCancel) { btnCancel.classList.add('me-auto'); }
+    }
+}
+
+function goAddChildToStep2() {
     const errorDiv = document.getElementById('errorMessage');
     errorDiv.style.display = 'none';
 
     const form = document.getElementById('childForm');
-    
-    // Валидация ИНН
     const innInput = document.getElementById('clientInn');
-    const innValue = innInput.value.replace(/\D/g, '');
+    const innValue = (innInput && innInput.value.replace(/\D/g, '')) || '';
     if (innValue.length !== 14) {
-        innInput.classList.add('is-invalid');
-        innInput.classList.remove('is-valid');
+        if (innInput) { innInput.classList.add('is-invalid'); innInput.classList.remove('is-valid'); }
         form.classList.add('was-validated');
         return;
-    } else {
-        innInput.classList.remove('is-invalid');
-        innInput.classList.add('is-valid');
     }
-    
-    // Валидация телефона
+    if (innInput) { innInput.classList.remove('is-invalid'); innInput.classList.add('is-valid'); }
+
     const phoneInput = document.getElementById('clientPhone');
-    const phoneValue = phoneInput.value;
+    const phoneValue = (phoneInput && phoneInput.value) || '';
     const phoneRegex = /^\+996\(\d{3}\) \d{3} \d{3}$/;
     if (!phoneRegex.test(phoneValue)) {
-        phoneInput.classList.add('is-invalid');
-        phoneInput.classList.remove('is-valid');
+        if (phoneInput) { phoneInput.classList.add('is-invalid'); phoneInput.classList.remove('is-valid'); }
         form.classList.add('was-validated');
+        form.reportValidity();
         return;
-    } else {
-        phoneInput.classList.remove('is-invalid');
-        phoneInput.classList.add('is-valid');
     }
-    
+    if (phoneInput) { phoneInput.classList.remove('is-invalid'); phoneInput.classList.add('is-valid'); }
+
     if (!form.checkValidity()) {
         form.classList.add('was-validated');
         form.reportValidity();
         return;
     }
-    
     form.classList.add('was-validated');
+    showAddChildStep(2);
+}
 
+document.addEventListener('DOMContentLoaded', function() {
+    const btnBack = document.getElementById('addChildBtnBack');
+    if (btnBack) btnBack.addEventListener('click', function() { showAddChildStep(1); });
+    const btnSkip = document.getElementById('addChildBtnSkip');
+    if (btnSkip) btnSkip.addEventListener('click', function() { submitChildOnly(); });
+});
+
+function getChildFormData() {
+    const form = document.getElementById('childForm');
     const childData = {
         clientName: document.getElementById('clientName').value.trim(),
         clientInn: document.getElementById('clientInn').value.replace(/\D/g, ''),
@@ -570,12 +544,8 @@ async function submitChild() {
         clientWa: (document.getElementById('clientWa') && document.getElementById('clientWa').value.trim()) || null,
         clientTg: (document.getElementById('clientTg') && document.getElementById('clientTg').value.trim()) || null
     };
-
     const groupSelect = document.getElementById('orgClientGroupId');
-    if (groupSelect && groupSelect.value) {
-        childData.orgClientGroupId = groupSelect.value;
-    }
-
+    if (groupSelect && groupSelect.value) childData.orgClientGroupId = groupSelect.value;
     const additionalFieldsSection = document.getElementById('additionalFieldsSection');
     if (additionalFieldsSection) {
         const fieldInputs = additionalFieldsSection.querySelectorAll('[data-field-id]');
@@ -583,49 +553,181 @@ async function submitChild() {
         fieldInputs.forEach(el => {
             const fieldId = el.getAttribute('data-field-id');
             const value = (el.value || '').trim();
-            if (fieldId && value) {
-                additionalFields[fieldId] = value;
-            }
+            if (fieldId && value) additionalFields[fieldId] = value;
         });
-        if (Object.keys(additionalFields).length > 0) {
-            childData.additionalFields = additionalFields;
-        }
+        if (Object.keys(additionalFields).length > 0) childData.additionalFields = additionalFields;
     }
+    return childData;
+}
 
-    // Отправляем данные
+async function submitChild() {
+    // На шаге 1 кнопка «Далее» — переходим на шаг 2
+    const step2 = document.getElementById('addChildStep2');
+    if (step2 && step2.style.display === 'none') {
+        goAddChildToStep2();
+        return;
+    }
+    submitChildOnly();
+}
+
+async function submitChildOnly() {
+    const errorDiv = document.getElementById('errorMessage');
+    errorDiv.style.display = 'none';
+
+    const form = document.getElementById('childForm');
+    const innInput = document.getElementById('clientInn');
+    const innValue = (innInput && innInput.value.replace(/\D/g, '')) || '';
+    if (innValue.length !== 14) {
+        if (innInput) { innInput.classList.add('is-invalid'); innInput.classList.remove('is-valid'); }
+        form.classList.add('was-validated');
+        return;
+    }
+    if (innInput) { innInput.classList.remove('is-invalid'); innInput.classList.add('is-valid'); }
+
+    const phoneInput = document.getElementById('clientPhone');
+    const phoneValue = (phoneInput && phoneInput.value) || '';
+    const phoneRegex = /^\+996\(\d{3}\) \d{3} \d{3}$/;
+    if (!phoneRegex.test(phoneValue)) {
+        if (phoneInput) { phoneInput.classList.add('is-invalid'); phoneInput.classList.remove('is-valid'); }
+        form.classList.add('was-validated');
+        form.reportValidity();
+        return;
+    }
+    if (phoneInput) phoneInput.classList.remove('is-invalid');
+    if (!form.checkValidity()) { form.classList.add('was-validated'); form.reportValidity(); return; }
+    form.classList.add('was-validated');
+
+    const childData = getChildFormData();
     try {
         const submitBtn = document.getElementById('submitBtn');
+        const btnSkip = document.getElementById('addChildBtnSkip');
         submitBtn.disabled = true;
+        if (btnSkip) btnSkip.disabled = true;
         submitBtn.textContent = 'Регистрация...';
 
         const response = await fetch('/Detsad/Cabinet/CreateChild', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(childData)
         });
-
         const result = await response.json();
 
         if (result.success) {
-            // Закрываем модальное окно
-            const modal = bootstrap.Modal.getInstance(document.getElementById('addChildModal'));
-            modal.hide();
-
-            // Обновляем страницу
+            bootstrap.Modal.getInstance(document.getElementById('addChildModal')).hide();
             window.location.reload();
         } else {
             showError(result.message || 'Ошибка при добавлении ребенка');
             submitBtn.disabled = false;
-            submitBtn.textContent = 'Зарегистрировать';
+            submitBtn.textContent = 'Зарегистрировать и создать счёт';
+            if (btnSkip) btnSkip.disabled = false;
         }
     } catch (error) {
         console.error('Error submitting child:', error);
         showError('Ошибка при отправке данных. Попробуйте позже.');
         const submitBtn = document.getElementById('submitBtn');
+        const btnSkip = document.getElementById('addChildBtnSkip');
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Зарегистрировать';
+        submitBtn.textContent = 'Зарегистрировать и создать счёт';
+        if (btnSkip) btnSkip.disabled = false;
+    }
+}
+
+async function submitChildAndInvoice() {
+    const errorDiv = document.getElementById('errorMessage');
+    errorDiv.style.display = 'none';
+
+    const nameEl = document.getElementById('addChildInvoiceName');
+    const amountEl = document.getElementById('addChildInvoiceAmount');
+    const name = (nameEl && nameEl.value.trim()) || '';
+    const amount = amountEl && amountEl.value !== '' ? parseFloat(amountEl.value) : NaN;
+    if (!name) {
+        if (nameEl) nameEl.classList.add('is-invalid');
+        errorDiv.textContent = 'Укажите название счёта.';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    if (nameEl) nameEl.classList.remove('is-invalid');
+    if (isNaN(amount) || amount < 0) {
+        if (amountEl) amountEl.classList.add('is-invalid');
+        errorDiv.textContent = 'Укажите корректную сумму (сом).';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    if (amountEl) amountEl.classList.remove('is-invalid');
+
+    const form = document.getElementById('childForm');
+    const innInput = document.getElementById('clientInn');
+    const phoneInput = document.getElementById('clientPhone');
+    if ((innInput && innInput.value.replace(/\D/g, '').length !== 14) || !form.checkValidity()) {
+        showAddChildStep(1);
+        form.reportValidity();
+        return;
+    }
+
+    const childData = getChildFormData();
+    const submitBtn = document.getElementById('submitBtn');
+    const btnSkip = document.getElementById('addChildBtnSkip');
+    submitBtn.disabled = true;
+    if (btnSkip) btnSkip.disabled = true;
+    submitBtn.textContent = 'Регистрация...';
+
+    try {
+        const createChildRes = await fetch('/Detsad/Cabinet/CreateChild', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(childData)
+        });
+        const createChildResult = await createChildRes.json();
+        if (!createChildResult.success) {
+            showError(createChildResult.message || 'Ошибка при добавлении ребенка');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Зарегистрировать и создать счёт';
+            if (btnSkip) btnSkip.disabled = false;
+            return;
+        }
+
+        const clientId = createChildResult.clientId;
+        if (!clientId) {
+            showError('Не получен идентификатор ребёнка.');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Зарегистрировать и создать счёт';
+            if (btnSkip) btnSkip.disabled = false;
+            return;
+        }
+
+        const invoicePayload = {
+            nameInvoice: name,
+            manualServicePriceSom: amount,
+            autoProlongation: true,
+            periodicity: 'monthly',
+            useCurrentDateTime: true,
+            clientIds: [clientId],
+            serviceItems: [],
+            hassameaccount: true
+        };
+
+        const invoiceRes = await fetch('/Detsad/Cabinet/CreateInvoices', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(invoicePayload)
+        });
+        const invoiceResult = await invoiceRes.json();
+
+        if (invoiceResult.success !== false) {
+            bootstrap.Modal.getInstance(document.getElementById('addChildModal')).hide();
+            window.location.reload();
+        } else {
+            showError(invoiceResult.message || 'Ребёнок добавлен, но не удалось создать счёт.');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Зарегистрировать и создать счёт';
+            if (btnSkip) btnSkip.disabled = false;
+        }
+    } catch (error) {
+        console.error('Error submitChildAndInvoice:', error);
+        showError('Ошибка при отправке данных. Попробуйте позже.');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Зарегистрировать и создать счёт';
+        if (btnSkip) btnSkip.disabled = false;
     }
 }
 

@@ -1,6 +1,8 @@
 @using Microsoft.AspNetCore.Mvc.Localization
 @using Microsoft.AspNetCore.Localization
+@using WebApplication1.Helpers
 @inject IHtmlLocalizer<WebApplication1.SharedResources> Localizer
+@inject WebApplication1.Models.DBModels.AppDbContext _layoutDb
 
 @{
     var requestCulture = Context.Features.Get<IRequestCultureFeature>();
@@ -8,6 +10,8 @@
     var currentCultureName = currentCulture.Name ?? "ru";
     if (currentCultureName.Length > 2) { currentCultureName = currentCultureName.Substring(0, 2); }
     var returnUrl = string.IsNullOrEmpty(Context.Request.Path) ? "/" : $"{Context.Request.Path.Value}{Context.Request.QueryString}";
+    var userId = Context.Session.GetString("UserId");
+    var userPerms = string.IsNullOrEmpty(userId) ? new List<string>() : PermissionHelper.GetUserPermissions(_layoutDb, userId);
 }
 <!DOCTYPE html>
 <html lang="@currentCulture.TwoLetterISOLanguageName">
@@ -36,6 +40,8 @@
                     <span class="dashboard-sidebar-brand-text">Secore</span>
                 </a>
                 <nav class="dashboard-sidebar-nav">
+                    @if (userPerms.Contains("nav.children"))
+                    {
                     <a class="dashboard-nav-item @(controller == "Cabinet" && action == "Children" ? "active" : "")" asp-area="Detsad" asp-controller="Cabinet" asp-action="Children">
                         <span class="dashboard-nav-item-icon">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -44,6 +50,9 @@
                         </span>
                         <span class="dashboard-nav-item-label">@Localizer["Children"]</span>
                     </a>
+                    }
+                    @if (userPerms.Contains("nav.services"))
+                    {
                     <a class="dashboard-nav-item @(controller == "OrganizationServices" ? "active" : "")" asp-area="Detsad" asp-controller="OrganizationServices" asp-action="Index">
                         <span class="dashboard-nav-item-icon">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -52,6 +61,9 @@
                         </span>
                         <span class="dashboard-nav-item-label">Услуги</span>
                     </a>
+                    }
+                    @if (userPerms.Contains("nav.groups"))
+                    {
                     <a class="dashboard-nav-item @(controller == "OrgClientGroups" ? "active" : "")" asp-area="Detsad" asp-controller="OrgClientGroups" asp-action="Index">
                         <span class="dashboard-nav-item-icon">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -60,14 +72,20 @@
                         </span>
                         <span class="dashboard-nav-item-label">Группы</span>
                     </a>
+                    }
+                    @if (userPerms.Contains("nav.invoices"))
+                    {
                     <a class="dashboard-nav-item @(controller == "Invoices" ? "active" : "")" asp-area="Detsad" asp-controller="Invoices" asp-action="Index">
                         <span class="dashboard-nav-item-icon">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.1-.9-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" fill="currentColor" />
                             </svg>
                         </span>
-                        <span class="dashboard-nav-item-label">Счета</span>
+                        <span class="dashboard-nav-item-label">Отчетность</span>
                     </a>
+                    }
+                    @if (userPerms.Contains("nav.transactions"))
+                    {
                     <a class="dashboard-nav-item @(controller == "Cabinet" && action == "Payments" ? "active" : "")" asp-area="Detsad" asp-controller="Cabinet" asp-action="Payments">
                         <span class="dashboard-nav-item-icon">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -76,23 +94,33 @@
                         </span>
                         <span class="dashboard-nav-item-label">Транзакции</span>
                     </a>
+                    }
                 </nav>
             </div>
             <div class="dashboard-sidebar-bottom">
+                @if (userPerms.Contains("nav.settings"))
+                {
                 <a class="dashboard-sidebar-bottom-item" href="@Url.Action("Index", "Settings", new { area = "" })" title="@Localizer["Settings"]">
                     <span class="dashboard-nav-item-icon">⚙</span>
                     <span class="dashboard-nav-item-label">@Localizer["Settings"]</span>
                 </a>
+                }
+                @if (userPerms.Contains("nav.support"))
+                {
                 <a class="dashboard-sidebar-bottom-item" href="@Url.Action("Index", "Support", new { area = "" })" title="@Localizer["Support"]">
                     <span class="dashboard-nav-item-icon">?</span>
                     <span class="dashboard-nav-item-label">@Localizer["Support"]</span>
                 </a>
-                <a class="dashboard-sidebar-bottom-item" href="@Url.Action("Index", "Settings", new { area = "" })" title="@Localizer["Settings"]">
+                }
+                @if (userPerms.Contains("nav.profile"))
+                {
+                <a class="dashboard-sidebar-bottom-item" href="@Url.Action("Index", "Profile", new { area = "Detsad" })" title="Профиль">
                     <span class="dashboard-avatar-small">
-                        @(WebApplication1.Helpers.AuthorizationHelper.GetUserName(Context)?[0].ToString().ToUpperInvariant() ?? "U")
+                        @(AuthorizationHelper.GetUserName(Context)?[0].ToString().ToUpperInvariant() ?? "U")
                     </span>
-                    <span class="dashboard-nav-item-label">@Localizer["Settings"]</span>
+                    <span class="dashboard-nav-item-label">Профиль</span>
                 </a>
+                }
                 <form asp-area="" asp-controller="Account" asp-action="Logout" method="post" class="dashboard-sidebar-bottom-item dashboard-logout-form">
                     <button type="submit" class="dashboard-logout-btn" title="@Localizer["Logout"]">
                         <span class="dashboard-nav-item-icon">
@@ -113,7 +141,7 @@
                 <div class="dashboard-topbar-actions">
                     <div class="dashboard-search" id="dashboardSearch">
                         <input type="text" placeholder="Поиск..." id="dashboardSearchInput" />
-                        <button type="button" class="dashboard-search-btn" aria-label="Поиск">🔍</button>
+                        <button type="button" class="dashboard-search-btn" aria-label="Поиск"><img src="~/img/search-icon.png" alt="" class="dashboard-search-icon" /></button>
                     </div>
                     <div class="dashboard-notifications-wrap">
                         <button type="button" class="dashboard-notifications-btn" id="dashboardNotificationsBtn" aria-label="Уведомления">

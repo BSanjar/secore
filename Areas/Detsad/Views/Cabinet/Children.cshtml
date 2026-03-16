@@ -9,6 +9,7 @@
     var debtorsOnly = ViewBag.DebtorsOnly as bool? ?? false;
     var childrenData = ViewBag.ChildrenData as List<WebApplication1.Models.DBModels.OrganizationClient> ?? new List<WebApplication1.Models.DBModels.OrganizationClient>();
     var clientTotalBalanceByClientId = ViewBag.ClientTotalBalanceByClientId as Dictionary<string, decimal> ?? new Dictionary<string, decimal>();
+    var firstInvoiceIdByClientId = ViewBag.FirstInvoiceIdByClientId as Dictionary<string, string> ?? new Dictionary<string, string>();
 }
 
 @section Styles {
@@ -18,32 +19,32 @@
 <div class="dashboard-page">
     <!-- Фильтры и действия -->
     <div class="dashboard-filters">
-        <div class="search-box">
+                <div class="search-box">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;color:var(--text-muted)">
-                <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/>
-            </svg>
+                        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/>
+                    </svg>
             <input type="text" id="searchInput" placeholder="Поиск по имени, телефону, email..." value="@search">
-        </div>
+                </div>
         <select id="statusFilter" class="form-select-soft">
-            @if (statusFilter == "active")
-            {
-                <option value="active" selected>Активные</option>
-                <option value="inactive">Неактивные</option>
+                    @if (statusFilter == "active")
+                    {
+                        <option value="active" selected>Активные</option>
+                        <option value="inactive">Неактивные</option>
                 <option value="deleted">Удалённые</option>
-            }
-            else if (statusFilter == "inactive")
-            {
-                <option value="active">Активные</option>
-                <option value="inactive" selected>Неактивные</option>
+                    }
+                    else if (statusFilter == "inactive")
+                    {
+                        <option value="active">Активные</option>
+                        <option value="inactive" selected>Неактивные</option>
                 <option value="deleted">Удалённые</option>
-            }
-            else
-            {
-                <option value="active">Активные</option>
-                <option value="inactive">Неактивные</option>
+                    }
+                    else
+                    {
+                        <option value="active">Активные</option>
+                        <option value="inactive">Неактивные</option>
                 <option value="deleted" selected>Удалённые</option>
-            }
-        </select>
+                    }
+                </select>
         <label class="form-check-soft">
             <input type="checkbox" id="debtorsFilter" @(debtorsOnly ? "checked" : "")>
             <span>Только должники</span>
@@ -58,14 +59,14 @@
                 <div class="groups-filter-menu" id="groupsFilterMenu" role="menu" aria-hidden="true">
                     <div class="groups-filter-search-wrap p-2 border-bottom">
                         <input type="text" class="form-control form-control-sm groups-filter-search" id="groupsFilterSearch" placeholder="Поиск групп..." autocomplete="off">
-                    </div>
+            </div>
                     <div class="groups-filter-list" id="groupsFilterList">
                         @foreach (var g in orgClientGroups)
                         {
                             <label class="groups-filter-item">
                                 <input type="checkbox" class="form-check-input group-filter-checkbox" value="@g.Id" data-group-name="@(g.Name ?? "")">
                                 <span class="groups-filter-item-text">@(g.Name ?? g.Id)</span>
-                            </label>
+                    </label>
                         }
                     </div>
                 </div>
@@ -86,8 +87,8 @@
     <!-- Таблица клиентов -->
     <div class="dashboard-table-card">
         <div class="table-wrap">
-            @if (childrenData != null && childrenData.Any())
-            {
+        @if (childrenData != null && childrenData.Any())
+        {
                 <table class="table-soft" id="childrenTable">
                     <thead>
                         <tr>
@@ -100,9 +101,9 @@
                         </tr>
                     </thead>
                     <tbody id="childrenCards">
-                        @foreach (var client in childrenData)
-                        {
-                            var statusText = "Неизвестно";
+            @foreach (var client in childrenData)
+            {
+                var statusText = "Неизвестно";
                             var statusClass = "status-deleted";
                             if (client.ClientStatus == 1) { statusText = "Активный"; statusClass = "status-active"; }
                             else if (client.ClientStatus == 0) { statusText = "Приостановлен"; statusClass = "status-suspended"; }
@@ -110,10 +111,12 @@
                             var totalBalanceTyiyn = clientTotalBalanceByClientId.GetValueOrDefault(client.Id, 0m);
                             var totalBalanceSoms = totalBalanceTyiyn / 100m;
                             var searchText = $"{client.ClientName} {client.ClientPhone} {client.ClientEmail} {client.ClientAddress} {string.Join(" ", client.OrganizationClientsAdditionalFields?.Select(af => af.Value ?? "") ?? Array.Empty<string>())}";
+                            var firstInvoiceId = firstInvoiceIdByClientId.GetValueOrDefault(client.Id, "");
                             <tr class="child-row"
                                 data-client-id="@client.Id"
                                 data-client-name="@(client.ClientName ?? "")"
                                 data-org-client-group-id="@(client.OrgClientGroupId ?? "")"
+                                data-first-invoice-id="@firstInvoiceId"
                                 data-search-text="@searchText">
                                 <td><span class="cell-name">@(client.ClientName ?? "—")</span></td>
                                 <td class="cell-muted">@(client.ClientPhone ?? "—")</td>
@@ -121,9 +124,25 @@
                                 <td class="@(totalBalanceTyiyn < 0 ? "balance-negative" : "balance-positive")">@totalBalanceSoms.ToString("N2") сом</td>
                                 <td><span class="status-badge @statusClass">@statusText</span></td>
                                 <td class="cell-actions text-end">
-                                    <button type="button" class="btn-row-action" title="Открыть" onclick="event.stopPropagation(); var r=this.closest('tr'); openChildDetailModal(r.dataset.clientId,r.dataset.clientName||'Ребенок')">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-                                    </button>
+                                    <div class="child-actions-menu">
+                                        <button type="button" class="child-actions-menu-btn" title="Действия" aria-haspopup="true" aria-expanded="false" aria-controls="child-actions-dropdown-@client.Id" id="child-actions-btn-@client.Id">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                                        </button>
+                                        <div class="child-actions-menu-dropdown" role="menu" id="child-actions-dropdown-@client.Id" aria-labelledby="child-actions-btn-@client.Id">
+                                            <button type="button" class="child-actions-menu-item" role="menuitem" data-action="profile">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                                                Редактировать профиль ребенка
+                                            </button>
+                                            <button type="button" class="child-actions-menu-item" role="menuitem" data-action="edit-invoice">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                                                Редактировать счет
+                                            </button>
+                                            <a class="child-actions-menu-item child-actions-menu-item-link" role="menuitem" data-action="report" href="@(string.IsNullOrEmpty(firstInvoiceId) ? Url.Action("Index", "Invoices", new { area = "Detsad", clientId = client.Id }) : Url.Action("Details", "Invoices", new { area = "Detsad", id = firstInvoiceId, returnUrl = Url.Action("Children", "Cabinet", new { area = "Detsad" }) }))">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+                                                Отчет
+                                            </a>
+                                </div>
+                        </div>
                                 </td>
                             </tr>
                         }
@@ -133,19 +152,19 @@
                     <div class="empty-state-icon">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/>
-                        </svg>
+                                    </svg>
                     </div>
                     <p class="empty-state-title">Ничего не найдено</p>
                     <p class="empty-state-desc">Попробуйте изменить параметры поиска или фильтры.</p>
                 </div>
-            }
-            else
-            {
+        }
+        else
+        {
                 <div class="empty-state-inline" id="childrenEmptyState">
-                    <div class="empty-state-icon">
+                <div class="empty-state-icon">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" fill="currentColor"/>
-                        </svg>
+                        <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" fill="currentColor"/>
+                    </svg>
                     </div>
                     <p class="empty-state-title">Детей не найдено</p>
                     <p class="empty-state-desc">В детском саду пока нет записанных детей или измените фильтры.</p>
@@ -169,18 +188,12 @@
                         <button class="nav-link active" id="tab-child-info" data-bs-toggle="tab" data-bs-target="#pane-child-info" type="button" role="tab" aria-controls="pane-child-info" aria-selected="true">О ребенке</button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="tab-invoices" data-bs-toggle="tab" data-bs-target="#pane-invoices" type="button" role="tab" aria-controls="pane-invoices" aria-selected="false">Счета</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="tab-payments" data-bs-toggle="tab" data-bs-target="#pane-payments" type="button" role="tab" aria-controls="pane-payments" aria-selected="false">Транзакции</button>
+                        <button class="nav-link" id="tab-payments" data-bs-toggle="tab" data-bs-target="#pane-payments" type="button" role="tab" aria-controls="pane-payments" aria-selected="false">Платежи</button>
                     </li>
                 </ul>
                 <div class="tab-content p-3" id="childDetailTabContent">
                     <div class="tab-pane fade show active" id="pane-child-info" role="tabpanel" aria-labelledby="tab-child-info">
                         <div id="childDetailInfoContent"><div class="loading-spinner"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div></div></div>
-                    </div>
-                    <div class="tab-pane fade" id="pane-invoices" role="tabpanel" aria-labelledby="tab-invoices">
-                        <div id="childDetailInvoicesContent"><p class="text-muted mb-0">Выберите вкладку «Счета» для загрузки данных.</p></div>
                     </div>
                     <div class="tab-pane fade" id="pane-payments" role="tabpanel" aria-labelledby="tab-payments">
                         <div id="childDetailPaymentsContent"><p class="text-muted mb-0">Выберите вкладку «Платежи» для загрузки данных.</p></div>
@@ -208,7 +221,7 @@
     </div>
 </div>
 
-<!-- Модальное окно "Добавить нового ребенка" -->
+<!-- Модальное окно "Добавить нового ребенка" (2 шага: данные ребёнка → опционально счёт) -->
 <div class="modal fade" id="addChildModal" tabindex="-1" aria-labelledby="addChildModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
@@ -217,19 +230,20 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="childForm" novalidate>
-                    <div class="row mb-3">
-                        <div class="col-8">
-                            <label for="clientName" class="form-label">ФИО ребенка <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="clientName" name="clientName" required>
-                            <div class="invalid-feedback">Пожалуйста, укажите ФИО ребенка</div>
+                <div id="addChildStep1">
+                    <form id="childForm" novalidate>
+                        <div class="row mb-3">
+                            <div class="col-8">
+                                <label for="clientName" class="form-label">ФИО ребенка <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="clientName" name="clientName" required>
+                                <div class="invalid-feedback">Пожалуйста, укажите ФИО ребенка</div>
+                            </div>
+                            <div class="col-4">
+                                <label for="clientInn" class="form-label">ИНН <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="clientInn" name="clientInn" maxlength="14" pattern="[0-9]{14}" required>
+                                <div class="invalid-feedback">ИНН должен содержать 14 цифр</div>
+                            </div>
                         </div>
-                        <div class="col-4">
-                            <label for="clientInn" class="form-label">ИНН <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="clientInn" name="clientInn" maxlength="14" pattern="[0-9]{14}" required>
-                            <div class="invalid-feedback">ИНН должен содержать 14 цифр</div>
-                        </div>
-                    </div>
                     @if (orgClientGroups != null && orgClientGroups.Any())
                     {
                         <div class="mb-3" id="groupSelectWrapper">
@@ -243,29 +257,29 @@
                             </select>
                         </div>
                     }
-                    <div class="form-section-divider mb-3">
-                        <span class="divider-text">Контактные данные (родителей)</span>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-6">
-                            <label for="clientPhone" class="form-label">Телефон <span class="text-danger">*</span></label>
+                        <div class="form-section-divider mb-3">
+                            <span class="divider-text">Контактные данные (родителей)</span>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label for="clientPhone" class="form-label">Телефон <span class="text-danger">*</span></label>
                             <div class="d-flex align-items-start gap-2">
                                 <div class="flex-grow-1">
-                                    <input type="tel" class="form-control form-control-compact" id="clientPhone" name="clientPhone" placeholder="+996(***) *** ***" required>
-                                    <div class="invalid-feedback">Пожалуйста, укажите корректный номер телефона</div>
+                                <input type="tel" class="form-control form-control-compact" id="clientPhone" name="clientPhone" placeholder="+996(***) *** ***" required>
+                                <div class="invalid-feedback">Пожалуйста, укажите корректный номер телефона</div>
                                 </div>
                                 <div class="form-check mt-2 pt-1">
                                     <input class="form-check-input" type="checkbox" id="phoneIsWa" name="phoneIsWa">
                                     <label class="form-check-label small" for="phoneIsWa">WhatsApp</label>
                                 </div>
                             </div>
+                            </div>
+                            <div class="col-6">
+                                <label for="clientEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control form-control-compact" id="clientEmail" name="clientEmail">
+                                <div class="invalid-feedback">Пожалуйста, укажите корректный email</div>
+                            </div>
                         </div>
-                        <div class="col-6">
-                            <label for="clientEmail" class="form-label">Email</label>
-                            <input type="email" class="form-control form-control-compact" id="clientEmail" name="clientEmail">
-                            <div class="invalid-feedback">Пожалуйста, укажите корректный email</div>
-                        </div>
-                    </div>
                     <div class="row mb-3">
                         <div class="col-6">
                             <label for="clientWa" class="form-label">WhatsApp</label>
@@ -276,15 +290,15 @@
                             <input type="text" class="form-control form-control-compact" id="clientTg" name="clientTg" placeholder="username или +996...">
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="clientAdres" class="form-label">Адрес</label>
-                        <input type="text" class="form-control form-control-compact" id="clientAdres" name="clientAdres">
-                    </div>
+                        <div class="mb-3">
+                            <label for="clientAdres" class="form-label">Адрес</label>
+                            <input type="text" class="form-control form-control-compact" id="clientAdres" name="clientAdres">
+                        </div>
                     @if (organizationFields != null && organizationFields.Any())
                     {
                         <div class="form-section-divider mb-3">
                             <span class="divider-text">Дополнительная информация</span>
-                        </div>
+                </div>
                         <div id="additionalFieldsSection">
                             @foreach (var f in organizationFields)
                             {
@@ -319,16 +333,175 @@
                                     {
                                         <input type="text" class="form-control form-control-compact" id="@fieldId" name="@fieldId" data-field-id="@f.Id">
                                     }
+                            </div>
+                            }
+                        </div>
+                    }
+                    </form>
+                    <div id="errorMessage" class="alert alert-danger" style="display: none;" role="alert"></div>
+                </div>
+                <div id="addChildStep2" style="display: none;">
+                    <p class="text-muted mb-3">Создание счета</p>
+                    <div class="row mb-3">
+                        <div class="col-12 col-md-6">
+                            <label for="addChildInvoiceName" class="form-label">Название счёта <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="addChildInvoiceName" placeholder="Например: Посещение детского сада">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="addChildInvoiceAmount" class="form-label">Сумма (сом) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="addChildInvoiceAmount" step="0.01" min="0" placeholder="0">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="addChildBtnCancel" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-outline-secondary me-auto" id="addChildBtnBack" style="display: none;">Назад</button>
+                <button type="button" class="btn btn-secondary" id="addChildBtnSkip" style="display: none;">Только ребёнка</button>
+                <button type="button" class="btn btn-success" id="submitBtn" onclick="submitChild()">Далее</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно "Редактировать профиль ребенка" -->
+<div class="modal fade" id="editChildModal" tabindex="-1" aria-labelledby="editChildModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editChildModalLabel">Редактировать профиль ребенка</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                <div id="editChildLoading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div>
+                </div>
+                <form id="editChildForm" novalidate style="display: none;">
+                    <input type="hidden" id="editClientId" name="clientId" />
+                    <div class="form-section-divider mb-3">
+                        <span class="divider-text">Основные данные</span>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-8">
+                            <label for="editClientName" class="form-label">ФИО ребенка <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="editClientName" name="clientName" required>
+                        </div>
+                        <div class="col-4">
+                            <label for="editClientInn" class="form-label">ИНН <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="editClientInn" name="clientInn" maxlength="14" pattern="[0-9]{14}" required>
+                        </div>
+                    </div>
+                    @if (orgClientGroups != null && orgClientGroups.Any())
+                    {
+                        <div class="mb-3">
+                            <label for="editOrgClientGroupId" class="form-label">Группа</label>
+                            <select class="form-select" id="editOrgClientGroupId" name="orgClientGroupId">
+                                <option value="">Без группы</option>
+                                @foreach (var g in orgClientGroups)
+                                {
+                                    <option value="@g.Id">@(g.Name ?? g.Id)</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label for="editClientPhone" class="form-label">Телефон <span class="text-danger">*</span></label>
+                            <input type="tel" class="form-control" id="editClientPhone" name="clientPhone" required>
+                        </div>
+                        <div class="col-6">
+                            <label for="editClientEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="editClientEmail" name="clientEmail">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label for="editClientWa" class="form-label">WhatsApp</label>
+                            <input type="text" class="form-control" id="editClientWa" name="clientWa" placeholder="+996(***) *** ***">
+                        </div>
+                        <div class="col-6">
+                            <label for="editClientTg" class="form-label">Telegram</label>
+                            <input type="text" class="form-control" id="editClientTg" name="clientTg" placeholder="username или +996...">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editClientAdres" class="form-label">Адрес</label>
+                        <input type="text" class="form-control" id="editClientAdres" name="clientAdres">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editClientStatus" class="form-label">Статус</label>
+                        <select class="form-select" id="editClientStatus" name="clientStatus">
+                            <option value="1">Активный</option>
+                            <option value="0">Неактивный</option>
+                        </select>
+                    </div>
+                    @if (organizationFields != null && organizationFields.Any())
+                    {
+                        <div class="form-section-divider mb-3">
+                            <span class="divider-text">Дополнительные параметры</span>
+                        </div>
+                        <div id="editAdditionalFieldsSection">
+                            @foreach (var f in organizationFields)
+                            {
+                                var fieldId = "edit_af_" + f.Id;
+                                var label = f.FieldName ?? f.Id;
+                                <div class="mb-3">
+                                    <label for="@fieldId" class="form-label">@label</label>
+                                    @if (f.FieldType == "selected" && !string.IsNullOrEmpty(f.FieldSelectValues))
+                                    {
+                                        var options = (f.FieldSelectValues ?? "").Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                                        <select class="form-select" id="@fieldId" name="additionalFields[@f.Id]" data-field-id="@f.Id">
+                                            <option value="">— не указано —</option>
+                                            @foreach (var opt in options)
+                                            {
+                                                <option value="@opt.Trim()">@opt.Trim()</option>
+                                            }
+                                        </select>
+                                    }
+                                    else if (f.FieldType == "int")
+                                    {
+                                        <input type="number" class="form-control" id="@fieldId" name="additionalFields[@f.Id]" data-field-id="@f.Id" step="1">
+                                    }
+                                    else if (f.FieldType == "money")
+                                    {
+                                        <input type="number" class="form-control" id="@fieldId" name="additionalFields[@f.Id]" data-field-id="@f.Id" step="0.01" min="0">
+                                    }
+                                    else if (f.FieldType == "datetime")
+                                    {
+                                        <input type="datetime-local" class="form-control" id="@fieldId" name="additionalFields[@f.Id]" data-field-id="@f.Id">
+                                    }
+                                    else
+                                    {
+                                        <input type="text" class="form-control" id="@fieldId" name="additionalFields[@f.Id]" data-field-id="@f.Id">
+                                    }
                                 </div>
                             }
                         </div>
                     }
                 </form>
-                <div id="errorMessage" class="alert alert-danger" style="display: none;" role="alert"></div>
+                <div id="editChildError" class="alert alert-danger" style="display: none;" role="alert"></div>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer" id="editChildModalFooter" style="display: none;">
+                <button type="button" class="btn btn-danger me-auto" id="editChildDeleteBtn">Удалить</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-success" id="submitBtn" onclick="submitChild()">Зарегистрировать</button>
+                <button type="button" class="btn btn-success" id="editChildSaveBtn">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно "Редактировать счет" (та же структура, что Шаг 2 createInvoiceModal) -->
+<div class="modal fade" id="editInvoiceModal" tabindex="-1" aria-labelledby="editInvoiceModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-fullscreen-lg-down modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editInvoiceModalLabel">Редактировать счёт</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body p-0" id="editInvoiceModalBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div>
+                </div>
             </div>
         </div>
     </div>
@@ -337,4 +510,358 @@
 @section Scripts {
     <script src="~/web/kindergarten/js/detsad-children.js" asp-append-version="true"></script>
     <script src="~/web/kindergarten/js/detsad-create-invoice.js" asp-append-version="true"></script>
+    <script>
+        (function() {
+            document.addEventListener('click', function(e) {
+                var menu = e.target.closest('.child-actions-menu');
+                if (menu) {
+                    e.stopPropagation();
+                    if (e.target.closest('.child-actions-menu-btn')) {
+                        e.preventDefault();
+                        var open = document.querySelectorAll('.child-actions-menu.is-open');
+                        open.forEach(function(m) {
+                            if (m !== menu) {
+                                m.classList.remove('is-open');
+                                var btn = m.querySelector('.child-actions-menu-btn');
+                                if (btn) btn.setAttribute('aria-expanded', 'false');
+                            }
+                        });
+                        var isOpen = menu.classList.toggle('is-open');
+                        var thisBtn = menu.querySelector('.child-actions-menu-btn');
+                        if (thisBtn) thisBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                        return;
+                    }
+                    var item = e.target.closest('.child-actions-menu-item');
+                    if (item && !item.classList.contains('child-actions-menu-item-link')) {
+                        e.preventDefault();
+                        var row = menu.closest('tr.child-row');
+                        if (!row) return;
+                        var clientId = row.dataset.clientId;
+                        var clientName = row.dataset.clientName || 'Ребенок';
+                        var firstInvoiceId = row.dataset.firstInvoiceId || '';
+                        var action = item.getAttribute('data-action');
+                        menu.classList.remove('is-open');
+                        var menuBtn = menu.querySelector('.child-actions-menu-btn');
+                        if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
+                        if (action === 'profile') {
+                            if (typeof openEditChildModal === 'function') openEditChildModal(clientId);
+                        } else if (action === 'edit-invoice') {
+                            if (firstInvoiceId) {
+                                openEditInvoiceModal(firstInvoiceId);
+                            } else {
+                                if (typeof showInvoicesInfo === 'function') showInvoicesInfo(clientId);
+                            }
+                        }
+                        return;
+                    }
+                    return;
+                }
+                document.querySelectorAll('.child-actions-menu.is-open').forEach(function(m) {
+                    m.classList.remove('is-open');
+                    var btn = m.querySelector('.child-actions-menu-btn');
+                    if (btn) btn.setAttribute('aria-expanded', 'false');
+                });
+            }, true);
+        })();
+
+        window.openEditChildModal = function(clientId) {
+            var modal = document.getElementById('editChildModal');
+            var loading = document.getElementById('editChildLoading');
+            var form = document.getElementById('editChildForm');
+            var footer = document.getElementById('editChildModalFooter');
+            var errEl = document.getElementById('editChildError');
+            if (!modal || !form) return;
+            errEl.style.display = 'none';
+            form.style.display = 'none';
+            footer.style.display = 'none';
+            loading.style.display = 'block';
+            var bsModal = new bootstrap.Modal(modal);
+            bsModal.show();
+            fetch('/Detsad/Cabinet/GetChildInfo?clientId=' + encodeURIComponent(clientId))
+                .then(function(r) { if (!r.ok) throw new Error('Ошибка загрузки'); return r.json(); })
+                .then(function(data) {
+                    var c = data.client;
+                    document.getElementById('editClientId').value = c.id || clientId;
+                    document.getElementById('editClientName').value = c.name || '';
+                    document.getElementById('editClientInn').value = c.inn || '';
+                    document.getElementById('editOrgClientGroupId').value = c.orgClientGroupId || '';
+                    document.getElementById('editClientPhone').value = c.phone || '';
+                    document.getElementById('editClientEmail').value = c.email || '';
+                    document.getElementById('editClientWa').value = c.clientWa || '';
+                    document.getElementById('editClientTg').value = c.clientTg || '';
+                    document.getElementById('editClientAdres').value = c.address || '';
+                    var statusVal = c.status !== undefined && c.status !== null ? String(c.status) : '1';
+                    document.getElementById('editClientStatus').value = statusVal === '2' ? '0' : statusVal;
+                    (data.additionalFields || []).forEach(function(f) {
+                        var el = document.querySelector('#editChildForm [data-field-id="' + (f.fieldId || f.FieldId) + '"]');
+                        if (el) el.value = f.value || f.Value || '';
+                    });
+                    loading.style.display = 'none';
+                    form.style.display = 'block';
+                    footer.style.display = 'flex';
+                })
+                .catch(function(e) {
+                    loading.style.display = 'none';
+                    errEl.textContent = e.message || 'Не удалось загрузить данные.';
+                    errEl.style.display = 'block';
+                });
+        };
+
+        document.getElementById('editChildSaveBtn') && document.getElementById('editChildSaveBtn').addEventListener('click', function() {
+            var form = document.getElementById('editChildForm');
+            var errEl = document.getElementById('editChildError');
+            var clientId = document.getElementById('editClientId').value;
+            if (!clientId) return;
+            if (!form.checkValidity()) { form.reportValidity(); return; }
+            var additionalFields = {};
+            form.querySelectorAll('[data-field-id]').forEach(function(el) {
+                var id = el.getAttribute('data-field-id');
+                if (id && el.name) additionalFields[id] = el.value || '';
+            });
+            var payload = {
+                clientId: clientId,
+                clientName: document.getElementById('editClientName').value,
+                clientInn: document.getElementById('editClientInn').value,
+                orgClientGroupId: document.getElementById('editOrgClientGroupId').value || null,
+                clientPhone: document.getElementById('editClientPhone').value,
+                clientAdres: document.getElementById('editClientAdres').value,
+                clientEmail: document.getElementById('editClientEmail').value,
+                clientWa: document.getElementById('editClientWa').value,
+                clientTg: document.getElementById('editClientTg').value,
+                clientStatus: parseInt(document.getElementById('editClientStatus').value, 10),
+                additionalFields: additionalFields
+            };
+            fetch('/Detsad/Cabinet/UpdateChild', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]') && document.querySelector('input[name="__RequestVerificationToken"]').value },
+                body: JSON.stringify(payload)
+            }).then(function(r) { return r.json(); })
+            .then(function(res) {
+                if (res.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('editChildModal')).hide();
+                    if (typeof loadChildInfoInto === 'function' && currentDetailClientId === clientId) {
+                        var infoContent = document.getElementById('childDetailInfoContent');
+                        if (infoContent) loadChildInfoInto(clientId, infoContent);
+                    }
+                    location.reload();
+                } else {
+                    errEl.textContent = res.message || 'Ошибка сохранения';
+                    errEl.style.display = 'block';
+                }
+            }).catch(function() {
+                errEl.textContent = 'Ошибка сети';
+                errEl.style.display = 'block';
+            });
+        });
+
+        document.getElementById('editChildDeleteBtn') && document.getElementById('editChildDeleteBtn').addEventListener('click', function() {
+            if (!confirm('Удалить ребёнка из списка? Статус будет установлен как «Удалён».')) return;
+            var clientId = document.getElementById('editClientId').value;
+            if (!clientId) return;
+            var payload = {
+                clientId: clientId,
+                clientName: document.getElementById('editClientName').value,
+                clientInn: document.getElementById('editClientInn').value,
+                orgClientGroupId: document.getElementById('editOrgClientGroupId').value || null,
+                clientPhone: document.getElementById('editClientPhone').value,
+                clientAdres: document.getElementById('editClientAdres').value,
+                clientEmail: document.getElementById('editClientEmail').value,
+                clientWa: document.getElementById('editClientWa').value,
+                clientTg: document.getElementById('editClientTg').value,
+                clientStatus: 2,
+                additionalFields: {}
+            };
+            document.getElementById('editChildForm').querySelectorAll('[data-field-id]').forEach(function(el) {
+                var id = el.getAttribute('data-field-id');
+                if (id) payload.additionalFields[id] = el.value || '';
+            });
+            fetch('/Detsad/Cabinet/UpdateChild', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(function(r) { return r.json(); })
+            .then(function(res) {
+                if (res.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('editChildModal')).hide();
+                    location.reload();
+                } else {
+                    document.getElementById('editChildError').textContent = res.message || 'Ошибка';
+                    document.getElementById('editChildError').style.display = 'block';
+                }
+            });
+        });
+
+        window.openEditInvoiceModal = function(invoiceId) {
+            var modal = document.getElementById('editInvoiceModal');
+            var body = document.getElementById('editInvoiceModalBody');
+            if (!modal || !body) return;
+            body.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>';
+            var bsModal = new bootstrap.Modal(modal);
+            bsModal.show();
+            fetch('/Detsad/Cabinet/GetEditInvoicePartial?invoiceId=' + encodeURIComponent(invoiceId))
+                .then(function(r) { if (!r.ok) throw new Error('Ошибка загрузки'); return r.text(); })
+                .then(function(html) {
+                    body.innerHTML = html;
+                    if (typeof window.initEditInvoiceModal === 'function') window.initEditInvoiceModal(body);
+                })
+                .catch(function() {
+                    body.innerHTML = '<div class="alert alert-danger m-3">Не удалось загрузить форму редактирования.</div>';
+                });
+        };
+
+        window.initEditInvoiceModal = function(container) {
+            if (!container) return;
+            var wrap = container.querySelector('.edit-invoice-wrap');
+            if (!wrap) return;
+            var invoiceId = wrap.getAttribute('data-invoice-id');
+            var disableServiceSelection = wrap.getAttribute('data-disable-invoice-service-selection') === 'true';
+            var allowedHassame = wrap.getAttribute('data-allowed-hassame-account') === 'true';
+            var dateStartEl = container.querySelector('#editInvDateStart');
+            var dateEndEl = container.querySelector('#editInvDateEnd');
+            var dateEndBlock = container.querySelector('#editInvDateEndBlock');
+            var periodicityEl = container.querySelector('#editInvPeriodicity');
+            var autoProlongationEl = container.querySelector('#editInvAutoProlongation');
+            var saveBtn = container.querySelector('#editInvSaveBtn');
+            var errEl = container.querySelector('#editInvError');
+
+            function toDateTimeLocalString(d) {
+                var y = d.getFullYear(), m = ('0' + (d.getMonth() + 1)).slice(-2), day = ('0' + d.getDate()).slice(-2);
+                var h = ('0' + d.getHours()).slice(-2), min = ('0' + d.getMinutes()).slice(-2);
+                return y + '-' + m + '-' + day + 'T' + h + ':' + min;
+            }
+            function updateShortcutsVisibility() {
+                if (!periodicityEl || !dateEndBlock) return;
+                dateEndBlock.querySelectorAll('.invoice-shortcuts-group').forEach(function(gr) {
+                    gr.classList.toggle('d-none', gr.getAttribute('data-periodicity') !== periodicityEl.value);
+                });
+            }
+            if (autoProlongationEl && dateEndBlock) {
+                autoProlongationEl.addEventListener('change', function() {
+                    dateEndBlock.classList.toggle('d-none', !!this.checked);
+                });
+            }
+            updateShortcutsVisibility();
+            if (periodicityEl) periodicityEl.addEventListener('change', updateShortcutsVisibility);
+            dateEndBlock && dateEndBlock.querySelectorAll('.edit-inv-date-shortcut').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    if (!dateStartEl || !dateEndEl) return;
+                    var startVal = dateStartEl.value;
+                    if (!startVal) return;
+                    var type = btn.getAttribute('data-type') || 'months';
+                    var val = parseInt(btn.getAttribute('data-value'), 10) || 1;
+                    var d = new Date(startVal.indexOf('T') !== -1 ? startVal : startVal + 'T12:00:00');
+                    if (type === 'days') d.setDate(d.getDate() + val);
+                    else if (type === 'weeks') d.setDate(d.getDate() + val * 7);
+                    else if (type === 'months') d.setMonth(d.getMonth() + val);
+                    else if (type === 'years') d.setFullYear(d.getFullYear() + val);
+                    dateEndEl.value = toDateTimeLocalString(d);
+                });
+            });
+            var searchEl = container.querySelector('#editInvServicesSearch');
+            if (searchEl) {
+                searchEl.addEventListener('input', function() {
+                    var term = (this.value || '').toLowerCase().trim();
+                    (container.querySelectorAll('#editInvServicesBody .edit-inv-service-row') || []).forEach(function(tr) {
+                        var name = (tr.getAttribute('data-name') || '').toLowerCase();
+                        tr.style.display = !term || name.indexOf(term) >= 0 ? '' : 'none';
+                    });
+                });
+            }
+            var qrBtn = container.querySelector('#editInvGenerateQr');
+            var qrContainer = container.querySelector('#editInvQrContainer');
+            if (qrBtn && qrContainer) {
+                qrBtn.addEventListener('click', function() {
+                    var code = (container.querySelector('#editInvPayCode') || {}).value || '';
+                    qrContainer.innerHTML = '<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + encodeURIComponent(code) + '" alt="QR" />';
+                });
+            }
+            if (allowedHassame) {
+                var payCodeSelect = container.querySelector('#editInvPayCodeSelect');
+                var payCodeInput = container.querySelector('#editInvPayCode');
+                var clientEl = container.querySelector('#editInvClient');
+                var currentClient = clientEl ? clientEl.value : '';
+                if (payCodeSelect && payCodeInput) {
+                    fetch('/Detsad/Cabinet/GetInvoicePayCodeOptions?clientIds=' + encodeURIComponent(currentClient || ''))
+                        .then(function(r) { return r.json(); })
+                        .then(function(data) {
+                            payCodeSelect.innerHTML = '';
+                            var optNew = document.createElement('option');
+                            optNew.value = '__new__';
+                            optNew.textContent = 'Сгенерировать новый';
+                            payCodeSelect.appendChild(optNew);
+                            (data.payCodeOptions || []).forEach(function(o) {
+                                var opt = document.createElement('option');
+                                opt.value = o.payCode || '';
+                                opt.textContent = (o.nameInvoice && o.nameInvoice.trim() ? o.nameInvoice.trim() + ' (' + (o.payCode || '') + ')' : (o.payCode || '—'));
+                                if ((o.payCode || '') === (payCodeInput.value || '')) opt.selected = true;
+                                payCodeSelect.appendChild(opt);
+                            });
+                            payCodeSelect.addEventListener('change', function() {
+                                var v = this.value;
+                                if (v === '__new__' || v === '') {
+                                    fetch('/Detsad/Cabinet/GetNextInvoiceNumber').then(function(r) { return r.json(); }).then(function(d) { payCodeInput.value = d.payCode || ''; }).catch(function() { payCodeInput.value = ''; });
+                                } else { payCodeInput.value = v; }
+                            });
+                        }).catch(function() { payCodeSelect.innerHTML = '<option value="__new__">Сгенерировать новый</option>'; });
+                }
+            }
+            if (saveBtn) {
+                saveBtn.addEventListener('click', function() {
+                    var client = (container.querySelector('#editInvClient') || {}).value;
+                    if (!client) { if (errEl) { errEl.textContent = 'Выберите клиента.'; errEl.style.display = 'block'; } return; }
+                    var dateStartVal = (container.querySelector('#editInvDateStart') || {}).value;
+                    var dateEndVal = (container.querySelector('#editInvDateEnd') || {}).value;
+                    var payload = {
+                        id: invoiceId,
+                        client: client,
+                        nameInvoice: (container.querySelector('#editInvName') || {}).value || '',
+                        payCode: (container.querySelector('#editInvPayCode') || {}).value || '',
+                        periodicity: (container.querySelector('#editInvPeriodicity') || {}).value || 'monthly',
+                        invoiceStatus: (container.querySelector('#editInvStatus') || {}).value || 'actual',
+                        dateStartInvoice: dateStartVal ? dateStartVal + ':00' : null,
+                        dateEndInvoice: dateEndVal ? dateEndVal + ':00' : null,
+                        autoProlongation: !!(container.querySelector('#editInvAutoProlongation') && container.querySelector('#editInvAutoProlongation').checked),
+                        nextStartInvoice: null,
+                        hassameaccount: allowedHassame && (container.querySelector('#editInvPayCodeSelect') || {}).value && (container.querySelector('#editInvPayCodeSelect').value !== '__new__' && container.querySelector('#editInvPayCodeSelect').value !== ''),
+                        manualServicePriceSom: null,
+                        serviceItems: []
+                    };
+                    if (disableServiceSelection) {
+                        var manualInput = container.querySelector('#editInvManualPriceSom');
+                        if (manualInput && manualInput.value !== '' && !isNaN(parseFloat(manualInput.value))) {
+                            payload.manualServicePriceSom = parseFloat(manualInput.value);
+                        }
+                    } else {
+                        (container.querySelectorAll('#editInvServicesBody .edit-inv-service-row') || []).forEach(function(tr) {
+                            var check = tr.querySelector('.service-include');
+                            if (!check || !check.checked) return;
+                            var sid = tr.getAttribute('data-service-id');
+                            var qtyInput = tr.querySelector('.service-qty');
+                            var qty = qtyInput ? (parseInt(qtyInput.value, 10) || 1) : 1;
+                            if (sid) payload.serviceItems.push({ serviceId: sid, qty: qty });
+                        });
+                    }
+                    if (errEl) errEl.style.display = 'none';
+                    saveBtn.disabled = true;
+                    fetch('/Detsad/Invoices/UpdateInvoice', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    }).then(function(r) { return r.json(); })
+                    .then(function(res) {
+                        if (res.success) {
+                            bootstrap.Modal.getInstance(document.getElementById('editInvoiceModal')).hide();
+                            location.reload();
+                        } else {
+                            if (errEl) { errEl.textContent = res.message || 'Ошибка сохранения'; errEl.style.display = 'block'; }
+                            saveBtn.disabled = false;
+                        }
+                    }).catch(function() {
+                        if (errEl) { errEl.textContent = 'Ошибка сети'; errEl.style.display = 'block'; }
+                        saveBtn.disabled = false;
+                    });
+                });
+            }
+        };
+    </script>
 }

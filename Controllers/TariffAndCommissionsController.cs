@@ -6,6 +6,7 @@ using WebApplication1.Models.DBModels;
 namespace WebApplication1.Controllers;
 
 [RequireAuth]
+[RequirePermission("settings.tariff")]
 public class TariffAndCommissionsController : Controller
 {
     private readonly AppDbContext _db;

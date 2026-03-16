@@ -6,6 +6,7 @@ using WebApplication1.Helpers;
 namespace WebApplication1.Controllers
 {
     [RequireAuth]
+    [RequirePermission("settings.agents")]
     public class AgentsController : Controller
     {
         private readonly AppDbContext _db;

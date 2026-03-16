@@ -1,0 +1,308 @@
+@model WebApplication1.Models.DBModels.Invoice
+@using System.Linq
+@using System.Globalization
+@{
+    var orgServices = ViewBag.OrganizationServices as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var disableInvoiceServiceSelection = ViewBag.DisableInvoiceServiceSelection as bool? ?? false;
+    var allowedHassameaccount = ViewBag.AllowedHassameaccount as bool? ?? false;
+    var inv = CultureInfo.InvariantCulture;
+    var dateStartStr = Model.DateStartInvoice.HasValue ? Model.DateStartInvoice.Value.ToString("yyyy-MM-ddTHH:mm", inv) : "";
+    var dateEndStr = Model.DateEndInvoice.HasValue ? Model.DateEndInvoice.Value.ToString("yyyy-MM-ddTHH:mm", inv) : "";
+    var manualPriceSom = 0m;
+    if (disableInvoiceServiceSelection && Model.InvoiceServices != null)
+    {
+        var manualRow = Model.InvoiceServices.FirstOrDefault(s => string.IsNullOrEmpty(s.Service));
+        if (manualRow != null && manualRow.ServiceSumm.HasValue)
+            manualPriceSom = (decimal)manualRow.ServiceSumm.Value / 100m;
+    }
+    var invoiceServicesList = Model.InvoiceServices?.ToList() ?? new List<WebApplication1.Models.DBModels.InvoiceService>();
+}
+
+<div class="create-invoice-wrap edit-invoice-wrap" data-invoice-id="@Model.Id" data-disable-invoice-service-selection="@(disableInvoiceServiceSelection ? "true" : "false")" data-allowed-hassame-account="@(allowedHassameaccount ? "true" : "false")">
+    <!-- Редактирование: только Шаг 2 (детали счёта + услуги + предпросмотр) -->
+    <div class="create-invoice-step" id="editInvStep2">
+        <div class="row g-0">
+            <div class="col-lg-6 create-invoice-form-col">
+                <div class="p-3">
+                    <strong class="d-block mb-3">Редактирование счёта</strong>
+
+                    <!-- Детали счёта -->
+                    <div class="card mb-3">
+                        <div class="card-header py-2"><strong>Детали счёта</strong></div>
+                        <div class="card-body py-2">
+                            <div class="mb-2">
+                                <label class="form-label small">Клиент <span class="text-danger">*</span></label>
+                                <select id="editInvClient" class="form-select form-select-sm" required>
+                                    <option value="">— Выберите клиента —</option>
+                                    @{
+                                        var clientsList = ViewBag.Clients as Microsoft.AspNetCore.Mvc.Rendering.SelectList;
+                                    }
+                                    @if (clientsList != null)
+                                    {
+                                        foreach (Microsoft.AspNetCore.Mvc.Rendering.SelectListItem c in clientsList)
+                                        {
+                                            var sel = c.Selected ? "selected" : null;
+                                            <option value="@(c.Value ?? "")" selected="@sel">@c.Text</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small">Название счёта</label>
+                                <input type="text" id="editInvName" class="form-control form-control-sm" placeholder="Например: Оплата за месяц" value="@(Model.NameInvoice ?? "")" />
+                            </div>
+                            <div class="row g-2 mb-2">
+                                <div class="col-6">
+                                    @if (allowedHassameaccount)
+                                    {
+                                        <label class="form-label small">Лицевой счёт</label>
+                                        <select id="editInvPayCodeSelect" class="form-select form-select-sm mb-1">
+                                            <option value="">Загрузка...</option>
+                                        </select>
+                                        <input type="text" id="editInvPayCode" class="form-control form-control-sm" readonly placeholder="—" value="@(Model.PayCode ?? "")" />
+                                    }
+                                    else
+                                    {
+                                        <label class="form-label small">Номер счёта (14 цифр)</label>
+                                        <input type="text" id="editInvPayCode" class="form-control form-control-sm" readonly value="@(Model.PayCode ?? "")" />
+                                    }
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small">Периодичность</label>
+                                    <select id="editInvPeriodicity" class="form-select form-select-sm">
+                                        @{ var per = Model.Periodicity ?? "monthly";
+                                            var selDaily = per == "daily" ? "selected" : null;
+                                            var selWeekly = per == "weekly" ? "selected" : null;
+                                            var selMonthly = per == "monthly" ? "selected" : null;
+                                            var selYearly = per == "yearly" ? "selected" : null;
+                                            var selOneTime = per == "oneTime" ? "selected" : null;
+                                            var selAny = per == "any" ? "selected" : null; }
+                                        <option value="daily" selected="@selDaily">Ежедневно</option>
+                                        <option value="weekly" selected="@selWeekly">Еженедельно</option>
+                                        <option value="monthly" selected="@selMonthly">Ежемесячно</option>
+                                        <option value="yearly" selected="@selYearly">Ежегодно</option>
+                                        <option value="oneTime" selected="@selOneTime">Разовая</option>
+                                        <option value="any" selected="@selAny">Любая</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small">Статус</label>
+                                <select id="editInvStatus" class="form-select form-select-sm">
+                                    @{ var st = Model.InvoiceStatus ?? "actual";
+                                        var stActual = st == "actual" ? "selected" : null;
+                                        var stSuspended = st == "suspended" ? "selected" : null;
+                                        var stClosed = st == "closed" ? "selected" : null; }
+                                    <option value="actual" selected="@stActual">Активный</option>
+                                    <option value="suspended" selected="@stSuspended">Приостановлен</option>
+                                    <option value="closed" selected="@stClosed">Закрыт</option>
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <div class="form-check">
+                                    @{ var autoChecked = Model.AutoProlongation == true ? "checked" : null; }
+                                <input type="checkbox" class="form-check-input" id="editInvAutoProlongation" checked="@autoChecked" />
+                                    <label class="form-check-label small" for="editInvAutoProlongation">Автопролонгация</label>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="editInvUseCurrentDateTime" checked />
+                                    <label class="form-check-label small" for="editInvUseCurrentDateTime">Учитывать текущий день и время</label>
+                                </div>
+                            </div>
+                            <div class="row g-2 mb-2">
+                                <div class="col-6">
+                                    <label class="form-label small">Дата и время начала</label>
+                                    <input type="datetime-local" id="editInvDateStart" class="form-control form-control-sm" value="@dateStartStr" />
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small">Дата и время конца счёта</label>
+                                    <input type="datetime-local" id="editInvDateEnd" class="form-control form-control-sm" value="@dateEndStr" />
+                                </div>
+                            </div>
+                            <div class="invoice-date-end-block @(Model.AutoProlongation == true ? "d-none" : "")" id="editInvDateEndBlock">
+                                <label class="form-label small">Быстрый выбор срока</label>
+                                <div class="d-flex flex-wrap gap-2 align-items-center mb-1" id="editInvDateEndShortcuts">
+                                    <span class="invoice-shortcuts-group" data-periodicity="monthly">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary edit-inv-date-shortcut" data-type="months" data-value="1">1 месяц</button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary edit-inv-date-shortcut" data-type="months" data-value="3">3 месяца</button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary edit-inv-date-shortcut" data-type="months" data-value="6">6 месяцев</button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary edit-inv-date-shortcut" data-type="months" data-value="12">1 год</button>
+                                    </span>
+                                    <span class="invoice-shortcuts-group d-none" data-periodicity="daily">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary edit-inv-date-shortcut" data-type="days" data-value="3">3 дня</button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary edit-inv-date-shortcut" data-type="days" data-value="7">7 дней</button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary edit-inv-date-shortcut" data-type="days" data-value="30">30 дней</button>
+                                    </span>
+                                    <span class="invoice-shortcuts-group d-none" data-periodicity="weekly">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary edit-inv-date-shortcut" data-type="weeks" data-value="1">1 неделя</button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary edit-inv-date-shortcut" data-type="weeks" data-value="4">4 недели</button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary edit-inv-date-shortcut" data-type="weeks" data-value="8">8 недель</button>
+                                    </span>
+                                    <span class="invoice-shortcuts-group d-none" data-periodicity="yearly">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary edit-inv-date-shortcut" data-type="years" data-value="1">1 год</button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary edit-inv-date-shortcut" data-type="years" data-value="2">2 года</button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary edit-inv-date-shortcut" data-type="years" data-value="3">3 года</button>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (disableInvoiceServiceSelection)
+                    {
+                        <div class="card mb-3" id="editInvManualServiceCard">
+                            <div class="card-header py-2"><strong>Услуга по счёту</strong></div>
+                            <div class="card-body py-2">
+                                <p class="small text-muted mb-2">В качестве наименования услуги используется название счёта. Укажите цену.</p>
+                                <div class="mb-2">
+                                    <label class="form-label small">Цена, сом</label>
+                                    <input type="number" id="editInvManualPriceSom" class="form-control form-control-sm" min="0" step="0.01" placeholder="0.00" value="@manualPriceSom.ToString("0.00", inv)" />
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="card mb-3 @(disableInvoiceServiceSelection ? "d-none" : "")" id="editInvServicesCard">
+                        <div class="card-header py-2"><strong>Услуги</strong></div>
+                        <div class="card-body py-2">
+                            <p class="small text-muted mb-2">Выберите услуги из списка организации и укажите количество.</p>
+                            <div class="mb-2">
+                                <input type="text" id="editInvServicesSearch" class="form-control form-control-sm" placeholder="Поиск по названию услуги..." />
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered mb-0" id="editInvServicesTable">
+                                    <thead>
+                                        <tr>
+                                            <th style="width:40px"></th>
+                                            <th>Название</th>
+                                            <th style="width:90px">Цена, сом</th>
+                                            <th style="width:70px">Min</th>
+                                            <th style="width:70px">Max</th>
+                                            <th style="width:100px">Qty</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="editInvServicesBody">
+                                        @foreach (var s in orgServices)
+                                        {
+                                            var priceSom = (decimal)(s.ServiceSumm ?? 0) / 100m;
+                                            var minSom = (decimal)(s.MinSumm ?? 0) / 100m;
+                                            var maxSom = (decimal)(s.MaxSumm ?? 0) / 100m;
+                                            var existing = invoiceServicesList.FirstOrDefault(isv => isv.Service == (string)s.Id);
+                                            var isChecked = existing != null;
+                                            var qty = 1;
+                                            if (existing != null && existing.ServiceSumm.HasValue && (s.ServiceSumm ?? 0) > 0)
+                                            {
+                                                var num = (decimal)(existing.ServiceSumm ?? 0);
+                                                var denom = (decimal)(s.ServiceSumm ?? 0);
+                                                qty = (int)Math.Max(1, Math.Round(num / denom));
+                                            }
+                                            <tr class="invoice-service-row edit-inv-service-row" data-service-id="@s.Id" data-name="@(s.Name ?? "")" data-price="@priceSom.ToString("0.00", inv)" data-min="@minSom.ToString("0.00", inv)" data-max="@maxSom.ToString("0.00", inv)">
+                                                <td><input type="checkbox" class="form-check-input service-include" @(isChecked ? "checked" : "") /></td>
+                                                <td class="service-name">@(s.Name ?? s.Id)</td>
+                                                <td class="service-price">@priceSom.ToString("N2")</td>
+                                                <td class="service-min">@minSom.ToString("N2")</td>
+                                                <td class="service-max">@maxSom.ToString("N2")</td>
+                                                <td class="service-qty-cell"><input type="number" min="1" class="form-control form-control-sm service-qty" value="@qty" /></td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                            @if (!orgServices.Any())
+                            {
+                                <p class="text-muted small mb-0">Нет услуг.</p>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="card mb-3">
+                        <div class="card-header py-2 d-flex align-items-center justify-content-between">
+                            <strong>QR-код</strong>
+                            <button type="button" class="btn btn-sm btn-outline-secondary btn-icon-only" id="editInvGenerateQr" title="Сгенерировать QR">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="4" height="4"/><rect x="17" y="14" width="4" height="4"/><path d="M10 14h4"/><path d="M14 17v-6"/><path d="M10 17h4"/></svg>
+                            </button>
+                        </div>
+                        <div class="card-body py-2">
+                            <div id="editInvQrContainer" class="invoice-qr-container"></div>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn-success w-100" id="editInvSaveBtn">Сохранить</button>
+                    <div id="editInvError" class="alert alert-danger mt-2 mb-0" style="display:none;" role="alert"></div>
+                </div>
+            </div>
+
+            <div class="col-lg-6 create-invoice-preview-col">
+                <div class="p-3">
+                    <div class="card create-invoice-preview-card" id="editInvPreviewCard">
+                        <div class="card-body">
+                            <div class="preview-header text-center border-bottom pb-2 mb-2">
+                                <div class="preview-service-name">SECORE</div>
+                                <div class="preview-invoice-number text-muted small" id="editInvPreviewNumber">@(Model.PayCode ?? "—")</div>
+                            </div>
+                            <div class="preview-details small mb-2">
+                                <div><strong>Название:</strong> <span id="editInvPreviewName">@(Model.NameInvoice ?? "—")</span></div>
+                                <div><strong>Дата начала:</strong> <span id="editInvPreviewDateStart">@(dateStartStr != "" ? Model.DateStartInvoice?.ToString("dd.MM.yyyy HH:mm", inv) : "—")</span></div>
+                                <div><strong>Периодичность:</strong> <span id="editInvPreviewPeriodicity">@(Model.Periodicity ?? "—")</span></div>
+                                <div id="editInvPreviewDateEndRow" class="@(string.IsNullOrEmpty(dateEndStr) ? "d-none" : "")"><strong>Дата конца:</strong> <span id="editInvPreviewDateEnd">@(dateEndStr != "" ? Model.DateEndInvoice?.ToString("dd.MM.yyyy HH:mm", inv) : "—")</span></div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm preview-table">
+                                    <thead>
+                                        <tr><th>Наименование</th><th>Цена</th><th>Кол-во</th><th>Сумма</th></tr>
+                                    </thead>
+                                    <tbody id="editInvPreviewLinesBody">
+                                        <tr><td colspan="4" class="text-muted text-center">Нет позиций</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="preview-total border-top pt-2 mt-2">
+                                <strong>Итого: <span id="editInvPreviewTotal">0</span> сом</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card mt-3 create-invoice-preview-payments-card" id="editInvPaymentsCard">
+                        <div class="card-header py-2"><strong>График платежей</strong></div>
+                        <div class="card-body py-2">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered mb-0">
+                                    <thead>
+                                        <tr><th>№</th><th>Дата начала</th><th>Дата конца</th><th>Сумма</th><th>Статус</th></tr>
+                                    </thead>
+                                    <tbody id="editInvPaymentsBody">
+                                        @{
+                                            var paymentsList = Model.InvoicePayments != null ? Model.InvoicePayments.OrderBy(p => p.DateFrom).ToList() : new List<WebApplication1.Models.DBModels.InvoicePayment>();
+                                        }
+                                        @if (paymentsList.Any())
+                                        {
+                                            var num = 0;
+                                            foreach (var pay in paymentsList)
+                                            {
+                                                num++;
+                                                var paySum = pay.PaymentSumm.HasValue ? (pay.PaymentSumm.Value / 100m).ToString("N2", inv) : "0.00";
+                                                var payStatus = pay.PaymentStatus == "paid" ? "Оплачено" : pay.PaymentStatus == "non_paid" ? "Не оплачено" : pay.PaymentStatus == "anulated" ? "Аннулировано" : pay.PaymentStatus ?? "—";
+                                                <tr>
+                                                    <td>@num</td>
+                                                    <td>@(pay.DateFrom?.ToString("dd.MM.yyyy", inv) ?? "—")</td>
+                                                    <td>@(pay.DateTo?.ToString("dd.MM.yyyy", inv) ?? "—")</td>
+                                                    <td>@paySum сом</td>
+                                                    <td>@payStatus</td>
+                                                </tr>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <tr><td colspan="5" class="text-muted text-center small">Нет записей</td></tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

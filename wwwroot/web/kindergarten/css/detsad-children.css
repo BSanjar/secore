@@ -1110,3 +1110,91 @@
     margin-bottom: -2px;
 }
 
+/* ============================================
+   Settings page (единый стиль с проектом)
+   ============================================ */
+.settings-page .settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.settings-page .settings-card {
+    background: var(--surface);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.settings-page .settings-card__header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border-color);
+    background: #f8fafc;
+}
+
+.settings-page .settings-card__title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.settings-page .settings-card__title svg {
+    flex-shrink: 0;
+    color: var(--text-secondary);
+}
+
+.settings-page .settings-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.settings-page .settings-list__item {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.settings-page .settings-list__item:last-child {
+    border-bottom: none;
+}
+
+.settings-page .settings-list__link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.25rem;
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 0.9375rem;
+    transition: background 0.2s, color 0.2s;
+}
+
+.settings-page .settings-list__link:hover {
+    background: rgba(16, 185, 129, 0.06);
+    color: #10b981;
+}
+
+.settings-page .settings-list__link svg {
+    flex-shrink: 0;
+    color: var(--text-secondary);
+}
+
+.settings-page .settings-list__link:hover svg {
+    color: #10b981;
+}
+
+.settings-page .settings-list__link-arrow {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.settings-page .settings-list__link:hover .settings-list__link-arrow {
+    color: #10b981;
+}
+

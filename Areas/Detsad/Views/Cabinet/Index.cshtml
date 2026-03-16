@@ -142,7 +142,7 @@
         </aside>
     </section>
 
-    <!-- Нижний блок: Должники + Счета -->
+    <!-- Нижний блок: Должники + Отчетность -->
     <section class="dashboard-v2__bottom">
         <div class="dashboard-v2__debtors">
             <div class="block-card">
@@ -174,8 +174,8 @@
         <div class="dashboard-v2__invoices">
             <div class="block-card">
                 <div class="block-card__head">
-                    <h3 class="block-card__title">Счета</h3>
-                    <a href="@Url.Action("Index", "Invoices", new { area = "Detsad" })" class="block-card__link">Все счета</a>
+                    <h3 class="block-card__title">Отчетность</h3>
+                    <a href="@Url.Action("Index", "Invoices", new { area = "Detsad" })" class="block-card__link">Вся отчётность</a>
                 </div>
                 <div class="block-card__body">
                     @if (recentInvoices.Any())
@@ -212,7 +212,7 @@
         </a>
         <a href="@Url.Action("Index", "Invoices", new { area = "Detsad" })" class="action-tile">
             <span class="action-tile__icon">📄</span>
-            <span class="action-tile__text">Счета</span>
+            <span class="action-tile__text">Отчетность</span>
         </a>
     </section>
 </div>

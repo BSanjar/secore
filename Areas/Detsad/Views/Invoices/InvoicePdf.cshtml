@@ -1,0 +1,196 @@
+@model WebApplication1.Models.DBModels.Invoice
+@using System.Globalization
+@{
+    Layout = null;
+    var inv = CultureInfo.InvariantCulture;
+    var ru = new CultureInfo("ru-RU");
+    var statusText = Model.InvoiceStatus == "actual" ? "Актуальный" : Model.InvoiceStatus == "suspended" ? "Приостановлен" : Model.InvoiceStatus == "closed" ? "Закрыт" : Model.InvoiceStatus ?? "—";
+    var periodicityText = Model.Periodicity == "monthly" ? "Ежемесячно" : Model.Periodicity == "yearly" ? "Ежегодно" : Model.Periodicity == "weekly" ? "Еженедельно" : Model.Periodicity == "daily" ? "Ежедневно" : Model.Periodicity == "oneTime" ? "Разовая" : Model.Periodicity ?? "—";
+    var balanceSoms = Model.Balance ?? 0;
+    var fixedSoms = (Model.FixedSumm ?? 0) / 100m;
+    var clientName = Model.ClientNavigation?.ClientName ?? "—";
+    var receiverName = ViewBag.ReceiverName as string ?? "—";
+    var inn = ViewBag.Inn as string ?? "—";
+    var bank = ViewBag.Bank as string ?? "—";
+    var account = ViewBag.Account as string ?? "—";
+    var invoiceNumber = Model.PayCode ?? Model.Id ?? "—";
+}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Счет на оплату</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 0; font-family: Arial, sans-serif; background: #ffffff; color: #1f2937; font-size: 12px; }
+    .invoice-page { width: 100%; max-width: none; margin: 0; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: none; }
+    .invoice-header { background: linear-gradient(135deg, #111827, #374151); color: #ffffff; padding: 20px 24px; display: flex; justify-content: space-between; align-items: stretch; gap: 24px; min-height: 90px; }
+    .invoice-header-left { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+    .invoice-header-system { display: block; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px; }
+    .invoice-header-left h1 { display: block; margin: 0 0 8px; font-size: 26px; font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; }
+    .invoice-header-desc { display: block; margin: 0; font-size: 12px; line-height: 1.4; color: #cbd5e1; max-width: 520px; }
+    .invoice-header-right { flex-shrink: 0; width: 220px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
+    .invoice-header-right .info-line { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 11px; }
+    .invoice-header-right .info-line span:first-child { color: #94a3b8; font-size: 10px; }
+    .invoice-header-right .info-line strong { color: #ffffff; font-weight: 600; }
+    .status-badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 500; background: rgba(16, 185, 129, 0.25); border: 1px solid rgba(16, 185, 129, 0.4); color: #a7f3d0; }
+    .invoice-content { padding: 14px 16px 18px; }
+    .top-grid { display: grid; grid-template-columns: 65% 1fr; gap: 12px; margin-bottom: 12px; width: 100%; }
+    .top-grid .card { min-width: 0; }
+    .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px 14px; background: #ffffff; }
+    .card.gray { background: #f9fafb; }
+    .card h2 { margin: 0 0 10px; font-size: 14px; color: #111827; }
+    .field-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .field-box { border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 10px; }
+    .field-box .label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; color: #9ca3af; margin-bottom: 4px; }
+    .field-box .value { font-size: 11px; font-weight: 600; color: #111827; line-height: 1.3; }
+    .metric-box { border: 1px solid #e5e7eb; border-radius: 8px; background: #ffffff; padding: 8px 10px; margin-bottom: 8px; }
+    .metric-box:last-child { margin-bottom: 0; }
+    .metric-box .label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; color: #9ca3af; margin-bottom: 4px; }
+    .metric-box .value { font-size: 13px; font-weight: 700; color: #111827; }
+    .metric-box .value.debt { color: #dc2626; }
+    .table-card { border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; margin-bottom: 12px; }
+    .table-header { padding: 10px 14px; border-bottom: 1px solid #e5e7eb; background: #f9fafb; }
+    .table-header h2 { margin: 0; font-size: 14px; }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: #ffffff; }
+    th, td { padding: 8px 10px; border-bottom: 1px solid #e5e7eb; text-align: left; font-size: 11px; }
+    th { color: #6b7280; font-weight: 600; }
+    td { color: #111827; }
+    td.total, th.total { text-align: right; }
+    .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
+    .bottom-grid .card { min-width: 0; }
+    .requisites p { margin: 0 0 6px; font-size: 11px; line-height: 1.4; color: #374151; }
+    .requisites strong { color: #111827; }
+    .qr-placeholder { margin-top: 10px; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 14px; text-align: center; color: #6b7280; background: #f9fafb; font-size: 11px; }
+    .summary-line { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; font-size: 11px; }
+    .summary-line:last-child { margin-bottom: 0; }
+    .summary-line .title { color: #6b7280; }
+    .summary-line .amount { font-weight: 700; color: #111827; }
+    .summary-line .amount.red { color: #dc2626; }
+    .summary-line.total { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #cbd5e1; font-size: 13px; }
+    .summary-line.total .amount { font-size: 18px; }
+    .paycode-box { margin-top: 12px; background: #111827; color: #f9fafb; border-radius: 8px; padding: 10px 12px; line-height: 1.4; font-size: 11px; }
+    .total-block { border: 2px solid #111827; background: #f8fafc; border-radius: 10px; padding: 14px 16px; }
+    .total-block h2 { margin-bottom: 12px; }
+    .total-block .summary-line.total .amount { font-size: 22px; color: #111827; }
+    .invoice-footer { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; padding: 12px 16px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 10px; }
+    .invoice-footer-left { max-width: 50%; }
+    .invoice-footer-right { flex-shrink: 0; }
+    .signatures { display: flex; gap: 24px; flex-wrap: wrap; }
+    .signature-block { min-width: 120px; }
+    .signature-title { margin-bottom: 20px; font-size: 9px; text-transform: uppercase; color: #9ca3af; letter-spacing: 0.5px; }
+    .signature-line { border-top: 1px solid #6b7280; padding-top: 4px; color: #374151; font-size: 10px; }
+  </style>
+</head>
+<body>
+  <div class="invoice-page">
+    <!-- Верхняя шапка документа: слева — название и пояснение, справа — реквизиты счета -->
+    <div class="invoice-header">
+      <div class="invoice-header-left">
+        <span class="invoice-header-system">SECORE / Billing</span>
+        <h1>Счет на оплату</h1>
+        <span class="invoice-header-desc">Платежный документ для оплаты по лицевому счету — не чек, не выписка и не уведомление.</span>
+      </div>
+      <div class="invoice-header-right">
+        <div class="info-line"><span>Номер счета</span><strong>@invoiceNumber</strong></div>
+        <div class="info-line"><span>Дата выставления</span><strong>@(Model.DateCreated?.ToString("dd.MM.yyyy", ru) ?? "—")</strong></div>
+        <div class="info-line"><span>Статус</span><span class="status-badge">@statusText</span></div>
+      </div>
+    </div>
+
+    <div class="invoice-content">
+      <!-- Основной верхний блок в две колонки: слева — данные клиента и параметры счета, справа — сводка -->
+      <div class="top-grid">
+        <div class="card">
+          <h2>Данные клиента и параметры счета</h2>
+          <div class="field-grid">
+            <div class="field-box"><div class="label">Клиент</div><div class="value">@clientName</div></div>
+            <div class="field-box"><div class="label">Наименование счета</div><div class="value">@(Model.NameInvoice ?? "—")</div></div>
+            <div class="field-box"><div class="label">Код оплаты (PayCode)</div><div class="value">@(Model.PayCode ?? "—")</div></div>
+            <div class="field-box"><div class="label">Периодичность</div><div class="value">@periodicityText</div></div>
+            <div class="field-box"><div class="label">Начало периода</div><div class="value">@(Model.DateStartInvoice?.ToString("dd.MM.yyyy", ru) ?? "—")</div></div>
+            <div class="field-box"><div class="label">Окончание периода</div><div class="value">@(Model.DateEndInvoice?.ToString("dd.MM.yyyy", ru) ?? "—")</div></div>
+          </div>
+        </div>
+        <div class="card gray">
+          <h2>Сводка</h2>
+          <div class="metric-box"><div class="label">Фиксированная сумма</div><div class="value">@fixedSoms.ToString("N2", ru) сом</div></div>
+          <div class="metric-box"><div class="label">Текущий баланс</div><div class="value @(balanceSoms < 0 ? "debt" : "")">@((balanceSoms / 100m).ToString("N2", ru)) сом</div></div>
+          <div class="metric-box"><div class="label">Следующий период</div><div class="value">@(Model.NextStartInvoice?.ToString("dd.MM.yyyy", ru) ?? "—")</div></div>
+        </div>
+      </div>
+
+      <!-- Главный табличный блок по всей ширине: состав начисления -->
+      <div class="table-card">
+        <div class="table-header"><h2>Состав начисления</h2></div>
+        <table>
+          <thead>
+            <tr><th>Услуга</th><th>Период</th><th>Кол-во</th><th>Цена</th><th class="total">Сумма</th></tr>
+          </thead>
+          <tbody>
+            @if (Model.InvoiceServices != null && Model.InvoiceServices.Any())
+            {
+                foreach (var line in Model.InvoiceServices)
+                {
+                    var name = line.ServiceNavigation?.Name ?? Model.NameInvoice ?? "Услуга по счёту";
+                    var priceTyiyn = line.ServiceSumm ?? 0;
+                    var priceSom = priceTyiyn / 100m;
+                    var qty = 1;
+                    if (line.ServiceNavigation != null && (line.ServiceNavigation.ServiceSumm ?? 0) > 0)
+                    {
+                        qty = (int)Math.Max(1, Math.Round(priceTyiyn / (decimal)line.ServiceNavigation.ServiceSumm!.Value));
+                    }
+                    var periodVal = Model.DateStartInvoice?.ToString("MMMM yyyy", ru) ?? "—";
+                    <tr>
+                      <td>@name</td>
+                      <td>@periodVal</td>
+                      <td>@qty</td>
+                      <td>@(priceSom.ToString("N2", ru)) сом</td>
+                      <td class="total">@(priceSom.ToString("N2", ru)) сом</td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr><td>@(Model.NameInvoice ?? "Услуга")</td><td>—</td><td>1</td><td>@(fixedSoms.ToString("N2", ru)) сом</td><td class="total">@(fixedSoms.ToString("N2", ru)) сом</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Двухколоночный блок: слева — реквизиты для оплаты, справа — итоговый финансовый блок -->
+      <div class="bottom-grid">
+        <div class="card requisites">
+          <h2>Реквизиты для оплаты</h2>
+          <p><strong>Получатель:</strong> @receiverName</p>
+          <p><strong>ИНН:</strong> @inn</p>
+          <p><strong>Банк:</strong> @bank</p>
+          <p><strong>Р/с:</strong> @account</p>
+          <p><strong>Назначение платежа:</strong> Оплата по счету @invoiceNumber</p>
+          <div class="qr-placeholder">Оплата по коду <strong>@(Model.PayCode ?? "—")</strong></div>
+        </div>
+        <div class="card total-block">
+          <h2>Итого к оплате</h2>
+          <div class="summary-line"><span class="title">Начислено</span><span class="amount">@fixedSoms.ToString("N2", ru) сом</span></div>
+          <div class="summary-line"><span class="title">Переплата / долг</span><span class="amount @(balanceSoms < 0 ? "red" : "")">@((balanceSoms / 100m).ToString("N2", ru)) сом</span></div>
+          <div class="summary-line"><span class="title">Комиссия</span><span class="amount">0.00 сом</span></div>
+          @{ var totalToPay = fixedSoms + (balanceSoms / 100m); }
+          <div class="summary-line total"><span class="title">Итого к оплате</span><span class="amount">@(totalToPay < 0 ? "0.00" : totalToPay.ToString("N2", ru)) сом</span></div>
+          <div class="paycode-box">Оплатить можно по коду <strong>@(Model.PayCode ?? "—")</strong> через кассу, банковское приложение или QR.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Нижняя служебная часть: слева — поясняющая информация, справа — подписи -->
+    <div class="invoice-footer">
+      <div class="invoice-footer-left">Документ сформирован автоматически. При оплате сохраните чек.</div>
+      <div class="invoice-footer-right signatures">
+        <div class="signature-block"><div class="signature-title">Исполнитель</div><div class="signature-line">__________________</div></div>
+        <div class="signature-block"><div class="signature-title">Плательщик</div><div class="signature-line">__________________</div></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

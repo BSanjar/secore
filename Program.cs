@@ -73,6 +73,7 @@ builder.Services.AddScoped<ITableSource<PaymentListItemVm>, SimplePaymentsTableS
 
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<TransactionCommissionService>();
+builder.Services.AddScoped<ViewRenderService>();
 
 
 // Добавление поддержки сессий

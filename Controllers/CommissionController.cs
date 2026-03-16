@@ -7,6 +7,7 @@ using WebApplication1.Models.DBModels;
 namespace WebApplication1.Controllers;
 
 [RequireAuth]
+[RequirePermission("settings.tariff")]
 public class CommissionController : Controller
 {
     private readonly AppDbContext _db;

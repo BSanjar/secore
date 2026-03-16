@@ -93,6 +93,202 @@ body.dashboard-body {
   min-height: 100vh;
 }
 
+/* ========== Единый стиль кнопок (soft dashboard) ========== */
+body.dashboard-body .btn,
+body.dashboard-body .action-btn,
+body.dashboard-body .detsad-btn-primary,
+body.dashboard-body .detsad-btn-secondary,
+body.dashboard-body .btn-soft-primary,
+body.dashboard-body .btn-soft-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+  text-decoration: none;
+  cursor: pointer;
+  line-height: 1.3;
+}
+
+body.dashboard-body .btn:disabled,
+body.dashboard-body .btn.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+body.dashboard-body .btn-sm,
+body.dashboard-body .action-btn {
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+body.dashboard-body .btn-primary,
+body.dashboard-body .btn-soft-primary,
+body.dashboard-body .detsad-btn-primary {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  border-color: transparent;
+  font-weight: 600;
+}
+
+body.dashboard-body .btn-primary:hover:not(:disabled),
+body.dashboard-body .btn-soft-primary:hover,
+body.dashboard-body .detsad-btn-primary:hover {
+  background: var(--btn-primary-hover);
+  color: var(--btn-primary-text);
+}
+
+body.dashboard-body .btn-secondary,
+body.dashboard-body .btn-soft-secondary,
+body.dashboard-body .detsad-btn-secondary {
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border-color: var(--btn-secondary-border);
+}
+
+body.dashboard-body .btn-secondary:hover:not(:disabled),
+body.dashboard-body .btn-soft-secondary:hover,
+body.dashboard-body .detsad-btn-secondary:hover {
+  background: var(--btn-secondary-hover);
+  color: var(--btn-secondary-text);
+  border-color: var(--btn-secondary-border);
+}
+
+body.dashboard-body .btn-success {
+  background: var(--success);
+  color: #fff;
+  border-color: transparent;
+}
+
+body.dashboard-body .btn-success:hover:not(:disabled) {
+  background: var(--success-text);
+  color: #fff;
+}
+
+body.dashboard-body .btn-danger {
+  background: var(--error);
+  color: #fff;
+  border-color: transparent;
+}
+
+body.dashboard-body .btn-danger:hover:not(:disabled) {
+  background: var(--error-text);
+  color: #fff;
+}
+
+body.dashboard-body .btn-outline-primary,
+body.dashboard-body .btn-outline-success {
+  background: transparent;
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+body.dashboard-body .btn-outline-primary:hover:not(:disabled),
+body.dashboard-body .btn-outline-success:hover {
+  background: var(--accent-primary-soft);
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+body.dashboard-body .btn-outline-secondary {
+  background: transparent;
+  border-color: var(--btn-outline-border);
+  color: var(--btn-outline-text);
+}
+
+body.dashboard-body .btn-outline-secondary:hover:not(:disabled) {
+  background: var(--btn-outline-hover);
+  border-color: var(--btn-outline-border);
+  color: var(--btn-outline-text);
+}
+
+body.dashboard-body .action-btn--add {
+  background: var(--success-soft);
+  border-color: var(--success);
+  color: var(--success-text);
+}
+
+body.dashboard-body .action-btn--add:hover {
+  background: var(--success);
+  color: #fff;
+  border-color: var(--success);
+}
+
+body.dashboard-body .action-btn--view {
+  background: var(--accent-primary-soft);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+body.dashboard-body .action-btn--view:hover {
+  background: var(--accent-primary);
+  color: #fff;
+  border-color: var(--accent-primary);
+}
+
+body.dashboard-body .action-btn--edit {
+  background: var(--warning-soft);
+  border-color: var(--warning);
+  color: var(--warning-text);
+}
+
+body.dashboard-body .action-btn--edit:hover {
+  background: var(--warning);
+  color: #fff;
+  border-color: var(--warning);
+}
+
+body.dashboard-body .action-btn--delete {
+  background: var(--error-soft);
+  border-color: var(--error);
+  color: var(--error-text);
+}
+
+body.dashboard-body .action-btn--delete:hover {
+  background: var(--error);
+  color: #fff;
+  border-color: var(--error);
+}
+
+body.dashboard-body .action-btn:not([class*="action-btn--"]) {
+  background: var(--btn-secondary-bg);
+  border-color: var(--btn-secondary-border);
+  color: var(--btn-secondary-text);
+}
+
+body.dashboard-body .action-btn:not([class*="action-btn--"]):hover {
+  background: var(--btn-secondary-hover);
+  color: var(--btn-secondary-text);
+}
+
+body.dashboard-body .chart-period-btn {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--btn-secondary-bg);
+  border: 1px solid var(--btn-secondary-border);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+body.dashboard-body .chart-period-btn:hover {
+  background: var(--btn-secondary-hover);
+  color: var(--btn-secondary-text);
+}
+
+body.dashboard-body .chart-period-btn.active {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: #fff;
+}
+
 .dashboard-app {
   display: grid;
   grid-template-columns: 74px 1fr;
@@ -139,7 +335,7 @@ body.dashboard-body {
 .dashboard-sidebar-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  
   padding: 4px 0;
   text-decoration: none;
   color: var(--accent-primary);
@@ -195,7 +391,7 @@ body.dashboard-body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+
   padding: 10px 12px;
   border-radius: var(--radius-sm);
   border: none;
@@ -626,6 +822,13 @@ body.dashboard-body .cabinet-main {
   color: #fff;
 }
 
+.dashboard-search-btn .dashboard-search-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  display: block;
+}
+
 .dashboard-circle-btn {
   background: var(--card-bg);
   color: var(--text-secondary);
@@ -902,6 +1105,81 @@ body.dashboard-body .cabinet-main {
 .dashboard-table-card .table-soft .btn-row-action:hover {
   background: var(--accent-primary-soft);
   color: var(--accent-primary);
+}
+
+/* Меню действий в строке (Дети) */
+.child-actions-menu {
+  position: relative;
+  display: inline-block;
+}
+
+.child-actions-menu-btn {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, color 0.2s;
+}
+
+.child-actions-menu-btn:hover {
+  background: var(--accent-primary-soft);
+  color: var(--accent-primary);
+}
+
+.child-actions-menu-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  min-width: 220px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--card-shadow), 0 12px 28px rgba(120, 144, 166, 0.15);
+  z-index: 100;
+  padding: 6px 0;
+  display: none;
+}
+
+.child-actions-menu.is-open .child-actions-menu-dropdown {
+  display: block;
+}
+
+.child-actions-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.child-actions-menu-item:hover {
+  background: var(--sidebar-item-hover);
+}
+
+.child-actions-menu-item-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.child-actions-menu-item svg {
+  flex-shrink: 0;
+  color: var(--text-secondary);
 }
 
 /* Пустое состояние внутри карточки */
