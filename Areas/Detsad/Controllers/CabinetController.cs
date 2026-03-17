@@ -12,10 +12,12 @@ namespace WebApplication1.Areas.Detsad.Controllers
     public class CabinetController : Controller
     {
         private readonly AppDbContext _db;
-        
-        public CabinetController(AppDbContext db)
+        private readonly OperationsByInvoices _operationsByInvoices;
+
+        public CabinetController(AppDbContext db, OperationsByInvoices operationsByInvoices)
         {
             _db = db;
+            _operationsByInvoices = operationsByInvoices;
         }
 
         [RequirePermission("dashboard.view")]
@@ -770,7 +772,7 @@ namespace WebApplication1.Areas.Detsad.Controllers
         }
 
         [RequirePermission("transactions.view")]
-        public async Task<IActionResult> Payments(string dateFrom = "", string dateTo = "", List<string>? agentIds = null)
+        public async Task<IActionResult> Payments(string dateFrom = "", string dateTo = "", List<string>? agentIds = null, List<string>? clientIds = null)
         {
             var organizationId = HttpContext.Session.GetString("OrganizationId");
             if (string.IsNullOrEmpty(organizationId))
@@ -783,6 +785,8 @@ namespace WebApplication1.Areas.Detsad.Controllers
 
             var query = _db.Transactions
                 .Include(t => t.AgentNavigation)
+                .Include(t => t.InvoiceNavigation)
+                .ThenInclude(i => i!.ClientNavigation)
                 .Where(t => t.Invoice != null && invoices.Contains(t.Invoice));
 
             if (DateTime.TryParse(dateFrom, out var fromDate))
@@ -796,6 +800,13 @@ namespace WebApplication1.Areas.Detsad.Controllers
                 .ToList() ?? new List<string>();
             if (selectedAgentIds.Count > 0)
                 query = query.Where(t => t.Agent != null && selectedAgentIds.Contains(t.Agent));
+
+            var selectedClientIds = clientIds?
+                .Where(id => !string.IsNullOrWhiteSpace(id) && id.Trim() != "__all__")
+                .Select(id => id!.Trim())
+                .ToList() ?? new List<string>();
+            if (selectedClientIds.Count > 0)
+                query = query.Where(t => t.InvoiceNavigation != null && t.InvoiceNavigation.Client != null && selectedClientIds.Contains(t.InvoiceNavigation.Client));
 
             var transactions = await query.OrderByDescending(t => t.TransactionDate).ToListAsync();
 
@@ -811,10 +822,23 @@ namespace WebApplication1.Areas.Detsad.Controllers
                 .Select(a => new { a.Id, a.Name })
                 .ToListAsync();
 
+            var clientIdsInOrg = await _db.Invoices
+                .Where(i => i.Client != null && i.ClientNavigation != null && i.ClientNavigation.Organization == organizationId)
+                .Select(i => i.Client)
+                .Distinct()
+                .ToListAsync();
+            var clientsList = await _db.OrganizationClients
+                .Where(c => clientIdsInOrg.Contains(c.Id))
+                .OrderBy(c => c.ClientName)
+                .Select(c => new { c.Id, c.ClientName })
+                .ToListAsync();
+
             ViewBag.DateFrom = dateFrom;
             ViewBag.DateTo = dateTo;
             ViewBag.SelectedAgentIds = selectedAgentIds;
+            ViewBag.SelectedClientIds = selectedClientIds;
             ViewBag.AgentsList = agentsList;
+            ViewBag.ClientsList = clientsList;
             return View(transactions);
         }
 
@@ -1023,304 +1047,28 @@ namespace WebApplication1.Areas.Detsad.Controllers
                     return BadRequest(new { success = false, message = "Выбранные услуги не найдены." });
             }
 
-            var orgPrefix = organizationId;
-            var prefixLen = orgPrefix.Length;
-            var existingPayCodes = await _db.Invoices
-                .Where(i => i.Client != null && i.ClientNavigation != null && i.ClientNavigation.Organization == organizationId && i.PayCode != null)
-                .Select(i => i.PayCode)
-                .ToListAsync();
-            long maxCounter = 0;
-            foreach (var pc in existingPayCodes)
+            var input = new CreateInvoicesInput
             {
-                if (pc != null && pc.Length == prefixLen + 9 && pc.StartsWith(orgPrefix) && long.TryParse(pc.Substring(prefixLen), out var c) && c > maxCounter)
-                    maxCounter = c;
-            }
-
-            var useExistingPayCode = !string.IsNullOrWhiteSpace(request.PayCode);
-            var createdIds = new List<string>();
+                OrganizationId = organizationId,
+                UserId = userId,
+                Clients = clients,
+                NameInvoice = request.NameInvoice,
+                DateStartInvoice = request.DateStartInvoice,
+                DateEndInvoice = request.DateEndInvoice,
+                Periodicity = request.Periodicity,
+                AutoProlongation = request.AutoProlongation,
+                UseCurrentDateTime = request.UseCurrentDateTime,
+                UseManualService = useManualService,
+                ManualServicePriceSom = request.ManualServicePriceSom,
+                ServiceItems = request.ServiceItems?.Select(x => new CreateInvoiceServiceItemInput { ServiceId = x.ServiceId, Qty = x.Qty }).ToList(),
+                OrgServices = orgServices,
+                PayCode = request.PayCode,
+                Hassameaccount = request.Hassameaccount
+            };
 
             try
             {
-                foreach (var client in clients)
-                {
-                    var payCode = useExistingPayCode ? request.PayCode!.Trim() : (orgPrefix + (++maxCounter).ToString("D9"));
-                    var invoiceId = Guid.NewGuid().ToString();
-                    // Храним даты как «без часового пояса» — то же значение, что ввёл пользователь (локальное)
-                    var dateStart = request.DateStartInvoice ?? DateTime.Today;
-                    if (dateStart.Kind != DateTimeKind.Unspecified)
-                        dateStart = DateTime.SpecifyKind(dateStart.Kind == DateTimeKind.Utc ? dateStart.ToLocalTime() : dateStart, DateTimeKind.Unspecified);
-
-                    var autoProlongation = request.AutoProlongation;
-                    DateTime? dateEnd = null;
-                    if (!autoProlongation && request.DateEndInvoice.HasValue)
-                    {
-                        dateEnd = request.DateEndInvoice.Value;
-                        if (dateEnd.Value.Kind != DateTimeKind.Unspecified)
-                            dateEnd = DateTime.SpecifyKind(dateEnd.Value.Kind == DateTimeKind.Utc ? dateEnd.Value.ToLocalTime() : dateEnd.Value, DateTimeKind.Unspecified);
-                    }
-
-                    decimal totalTyiyn;
-                    if (useManualService)
-                    {
-                        totalTyiyn = (decimal)(request.ManualServicePriceSom!.Value * 100m);
-                        _db.InvoiceServices.Add(new InvoiceService
-                        {
-                            Id = Guid.NewGuid().ToString(),
-                            Invoice = invoiceId,
-                            Service = null,
-                            ServiceSumm = totalTyiyn
-                        });
-                    }
-                    else
-                    {
-                        totalTyiyn = 0;
-                        foreach (var item in request.ServiceItems!)
-                        {
-                            if (item.ServiceId == null || orgServices == null || !orgServices.TryGetValue(item.ServiceId, out var orgService))
-                                continue;
-                            var qty = Math.Max(1, item.Qty ?? 1);
-                            var serviceSummTyiyn = orgService.ServiceSumm ?? 0;
-                            totalTyiyn += serviceSummTyiyn * qty;
-                            _db.InvoiceServices.Add(new InvoiceService
-                            {
-                                Id = Guid.NewGuid().ToString(),
-                                Invoice = invoiceId,
-                                Service = orgService.Id,
-                                ServiceSumm = serviceSummTyiyn * qty
-                            });
-                        }
-                    }
-
-                    var periodicity = request.Periodicity ?? "monthly";
-                    var useCurrentDateTime = request.UseCurrentDateTime;
-                    var ru = CultureInfo.GetCultureInfo("ru-RU");
-
-                    static DateTime GetPeriodStart(DateTime d, string periodicity)
-                    {
-                        if (periodicity == "monthly")
-                            return new DateTime(d.Year, d.Month, 1, 0, 0, 0, d.Kind);
-                        if (periodicity == "weekly")
-                        {
-                            var diff = ((int)d.DayOfWeek - (int)DayOfWeek.Monday + 7) % 7;
-                            var monday = d.Date.AddDays(-diff);
-                            return new DateTime(monday.Year, monday.Month, monday.Day, 0, 0, 0, d.Kind);
-                        }
-                        if (periodicity == "yearly")
-                            return new DateTime(d.Year, 1, 1, 0, 0, 0, d.Kind);
-                        return d;
-                    }
-
-                    static DateTime GetPeriodEnd(DateTime d, string periodicity)
-                    {
-                        if (periodicity == "monthly")
-                            return new DateTime(d.Year, d.Month, DateTime.DaysInMonth(d.Year, d.Month), 23, 59, 59, d.Kind);
-                        if (periodicity == "weekly")
-                        {
-                            var start = GetPeriodStart(d, "weekly");
-                            var endDate = start.AddDays(6).Date;
-                            return new DateTime(endDate.Year, endDate.Month, endDate.Day, 23, 59, 59, d.Kind);
-                        }
-                        if (periodicity == "yearly")
-                            return new DateTime(d.Year, 12, 31, 23, 59, 59, d.Kind);
-                        return d;
-                    }
-
-                    var invoice = new Invoice
-                    {
-                        Id = invoiceId,
-                        DateCreated = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Unspecified),
-                        UserCreater = userId,
-                        InvoiceStatus = "actual",
-                        Periodicity = request.Periodicity ?? "monthly",
-                        DateStartInvoice = dateStart,
-                        DateEndInvoice = dateEnd,
-                        Balance = 0,
-                        FixedSumm = totalTyiyn,
-                        PayCode = payCode,
-                        Client = client.Id,
-                        AutoProlongation = autoProlongation,
-                        Hassameaccount = request.Hassameaccount || useExistingPayCode,
-                        NameInvoice = !string.IsNullOrWhiteSpace(request.NameInvoice) ? request.NameInvoice : "Счет " + (client.ClientName ?? client.Id)
-                    };
-                    _db.Invoices.Add(invoice);
-
-                    if (autoProlongation)
-                    {
-                        DateTime dateFrom;
-                        DateTime dateTo;
-                        string periodValue;
-                        if (useCurrentDateTime)
-                        {
-                            if (periodicity == "weekly")
-                            {
-                                dateFrom = dateStart;
-                                var endDay = dateStart.AddDays(6).Date;
-                                dateTo = new DateTime(endDay.Year, endDay.Month, endDay.Day, 23, 59, 59, DateTimeKind.Unspecified);
-                                periodValue = dateFrom.ToString("dd.MM.yyyy", ru) + " - " + dateTo.ToString("dd.MM.yyyy", ru);
-                            }
-                            else if (periodicity == "yearly")
-                            {
-                                dateFrom = dateStart;
-                                dateTo = new DateTime(dateStart.Year, 12, 31, 23, 59, 59, DateTimeKind.Unspecified);
-                                periodValue = dateStart.Year.ToString();
-                            }
-                            else
-                            {
-                                dateFrom = dateStart;
-                                dateTo = dateStart.AddMonths(1).AddSeconds(-1);
-                                periodValue = ru.DateTimeFormat.GetMonthName(dateStart.Month) + " " + dateStart.Year;
-                            }
-                        }
-                        else
-                        {
-                            dateFrom = GetPeriodStart(dateStart, periodicity);
-                            dateTo = GetPeriodEnd(dateStart, periodicity);
-                            periodValue = periodicity == "weekly"
-                                ? dateFrom.ToString("dd.MM.yyyy", ru) + " - " + dateTo.ToString("dd.MM.yyyy", ru)
-                                : periodicity == "yearly"
-                                    ? dateFrom.Year.ToString()
-                                    : ru.DateTimeFormat.GetMonthName(dateFrom.Month) + " " + dateFrom.Year;
-                        }
-                        _db.InvoicePayments.Add(new InvoicePayment
-                        {
-                            Id = Guid.NewGuid().ToString(),
-                            Invoice = invoiceId,
-                            DateFrom = dateFrom,
-                            DateTo = dateTo,
-                            PaymentStatus = "non_paid",
-                            PeriodValue = periodValue,
-                            PaymentSumm = totalTyiyn
-                        });
-                    }
-                    else if (dateEnd.HasValue)
-                    {
-                        var from = dateStart.Date;
-                        var to = dateEnd.Value.Date;
-                        if (from > to) (from, to) = (to, from);
-
-                        if (periodicity == "weekly")
-                        {
-                            var periodStart = useCurrentDateTime
-                                ? dateStart
-                                : GetPeriodStart(dateStart, "weekly");
-                            while (periodStart < dateEnd.Value)
-                            {
-                                var periodEnd = useCurrentDateTime
-                                    ? new DateTime(periodStart.Year, periodStart.Month, periodStart.Day, 23, 59, 59, DateTimeKind.Unspecified).AddDays(6)
-                                    : GetPeriodEnd(periodStart, "weekly");
-                                var dateTo = periodEnd > dateEnd.Value ? dateEnd.Value : periodEnd;
-                                var periodValue = periodStart.ToString("dd.MM.yyyy", ru) + " - " + dateTo.ToString("dd.MM.yyyy", ru);
-                                _db.InvoicePayments.Add(new InvoicePayment
-                                {
-                                    Id = Guid.NewGuid().ToString(),
-                                    Invoice = invoiceId,
-                                    DateFrom = periodStart,
-                                    DateTo = dateTo,
-                                    PaymentStatus = "non_paid",
-                                    PeriodValue = periodValue,
-                                    PaymentSumm = totalTyiyn
-                                });
-                                periodStart = periodStart.AddDays(7);
-                                if (!useCurrentDateTime)
-                                    periodStart = new DateTime(periodStart.Year, periodStart.Month, periodStart.Day, 0, 0, 0, DateTimeKind.Unspecified);
-                            }
-                        }
-                        else if (periodicity == "yearly")
-                        {
-                            if (useCurrentDateTime)
-                            {
-                                var periodStart = dateStart;
-                                while (periodStart < dateEnd.Value)
-                                {
-                                    var periodEnd = new DateTime(periodStart.Year, 12, 31, 23, 59, 59, DateTimeKind.Unspecified);
-                                    var dateTo = periodEnd > dateEnd.Value ? dateEnd.Value : periodEnd;
-                                    _db.InvoicePayments.Add(new InvoicePayment
-                                    {
-                                        Id = Guid.NewGuid().ToString(),
-                                        Invoice = invoiceId,
-                                        DateFrom = periodStart,
-                                        DateTo = dateTo,
-                                        PaymentStatus = "non_paid",
-                                        PeriodValue = periodStart.Year.ToString(),
-                                        PaymentSumm = totalTyiyn
-                                    });
-                                    periodStart = new DateTime(periodStart.Year + 1, periodStart.Month, periodStart.Day, periodStart.Hour, periodStart.Minute, periodStart.Second, DateTimeKind.Unspecified);
-                                }
-                            }
-                            else
-                            {
-                                var startYear = from.Year;
-                                var endYear = to.Year;
-                                for (var y = startYear; y <= endYear; y++)
-                                {
-                                    var dateFrom = new DateTime(y, 1, 1, 0, 0, 0, DateTimeKind.Unspecified);
-                                    var dateTo = new DateTime(y, 12, 31, 23, 59, 59, DateTimeKind.Unspecified);
-                                    _db.InvoicePayments.Add(new InvoicePayment
-                                    {
-                                        Id = Guid.NewGuid().ToString(),
-                                        Invoice = invoiceId,
-                                        DateFrom = dateFrom,
-                                        DateTo = dateTo,
-                                        PaymentStatus = "non_paid",
-                                        PeriodValue = y.ToString(),
-                                        PaymentSumm = totalTyiyn
-                                    });
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (useCurrentDateTime)
-                            {
-                                var periodStart = dateStart;
-                                while (periodStart < dateEnd.Value)
-                                {
-                                    var periodEnd = periodStart.AddMonths(1).AddSeconds(-1);
-                                    var dateTo = periodEnd > dateEnd.Value ? dateEnd.Value : periodEnd;
-                                    var periodValue = ru.DateTimeFormat.GetMonthName(periodStart.Month) + " " + periodStart.Year;
-                                    _db.InvoicePayments.Add(new InvoicePayment
-                                    {
-                                        Id = Guid.NewGuid().ToString(),
-                                        Invoice = invoiceId,
-                                        DateFrom = periodStart,
-                                        DateTo = dateTo,
-                                        PaymentStatus = "non_paid",
-                                        PeriodValue = periodValue,
-                                        PaymentSumm = totalTyiyn
-                                    });
-                                    periodStart = periodStart.AddMonths(1);
-                                }
-                            }
-                            else
-                            {
-                                var endYear = to.Year;
-                                var endMonth = to.Month;
-                                for (var d = new DateTime(from.Year, from.Month, 1, 0, 0, 0, DateTimeKind.Unspecified); d.Year < endYear || (d.Year == endYear && d.Month <= endMonth); d = d.AddMonths(1))
-                                {
-                                    var y = d.Year;
-                                    var m = d.Month;
-                                    var periodStart = new DateTime(y, m, 1, 0, 0, 0, DateTimeKind.Unspecified);
-                                    var periodEnd = new DateTime(y, m, DateTime.DaysInMonth(y, m), 23, 59, 59, DateTimeKind.Unspecified);
-                                    var periodValue = ru.DateTimeFormat.GetMonthName(m) + " " + y;
-                                    _db.InvoicePayments.Add(new InvoicePayment
-                                    {
-                                        Id = Guid.NewGuid().ToString(),
-                                        Invoice = invoiceId,
-                                        DateFrom = periodStart,
-                                        DateTo = periodEnd,
-                                        PaymentStatus = "non_paid",
-                                        PeriodValue = periodValue,
-                                        PaymentSumm = totalTyiyn
-                                    });
-                                }
-                            }
-                        }
-                    }
-
-                    createdIds.Add(invoiceId);
-                }
-
-                await _db.SaveChangesAsync();
+                var createdIds = await _operationsByInvoices.CreateInvoicesAsync(input);
                 return Json(new { success = true, message = "Счета созданы.", createdIds });
             }
             catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)

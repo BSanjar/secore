@@ -6,6 +6,8 @@
     var dateTo = ViewBag.DateTo as string ?? "";
     var agentsList = ViewBag.AgentsList as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
     var selectedAgentIds = ViewBag.SelectedAgentIds as List<string> ?? new List<string>();
+    var clientsList = ViewBag.ClientsList as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var selectedClientIds = ViewBag.SelectedClientIds as List<string> ?? new List<string>();
     var isAllAgentsSelected = selectedAgentIds.Count == 0;
 }
 
@@ -20,18 +22,48 @@
 
     <div class="filters-section">
         <form method="get" asp-action="Payments" id="transactionsFilterForm" class="row g-2 mb-2 align-items-end">
-            <div class="col-md-3">
+            <div class="col-6 col-md-3">
                 <label class="form-label small text-muted mb-1">Дата от</label>
                 <input type="date" name="dateFrom" class="form-control filter-select" value="@dateFrom" id="transactionsDateFrom">
             </div>
-            <div class="col-md-3">
+            <div class="col-6 col-md-3">
                 <label class="form-label small text-muted mb-1">Дата до</label>
                 <input type="date" name="dateTo" class="form-control filter-select" value="@dateTo" id="transactionsDateTo">
             </div>
+            @if (clientsList.Any())
+            {
+                var selectedClientId = (selectedClientIds != null && selectedClientIds.Count > 0) ? selectedClientIds[0] : "__all__";
+                <div class="col-6 col-md-3">
+                    <label class="form-label small text-muted mb-1">Клиент</label>
+                    <select name="clientIds" id="transactionsClientIds" class="form-select filter-select">
+                        @if (selectedClientId == "__all__")
+                        {
+                            <option value="__all__" selected>Все клиенты</option>
+                        }
+                        else
+                        {
+                            <option value="__all__">Все клиенты</option>
+                        }
+                        @foreach (var c in clientsList)
+                        {
+                            var id = (string)c.Id;
+                            var name = (string)(c.ClientName ?? c.Id);
+                            if (selectedClientId == id)
+                            {
+                                <option value="@id" selected>@name</option>
+                            }
+                            else
+                            {
+                                <option value="@id">@name</option>
+                            }
+                        }
+                    </select>
+                </div>
+            }
             @if (agentsList.Any())
             {
                 var selectedId = (selectedAgentIds != null && selectedAgentIds.Count > 0) ? selectedAgentIds[0] : "__all__";
-                <div class="col-md-4">
+                <div class="col-6 col-md-3">
                     <label class="form-label small text-muted mb-1">Агент</label>
                     <select name="agentIds" id="transactionsAgentIds" class="form-select filter-select">
                         @if (selectedId == "__all__")
@@ -69,6 +101,8 @@
                     <thead>
                         <tr>
                             <th>Дата</th>
+                            <th>ФИО клиента</th>
+                            <th>Лицевой счёт</th>
                             <th>Агент</th>
                             <th>Сумма</th>
                             <th>Итого</th>
@@ -81,8 +115,12 @@
                             var statusClass = transaction.TransactionStatus == "success" ? "badge bg-success" : transaction.TransactionStatus == "error" ? "badge bg-danger" : "badge bg-secondary";
                             var statusText = transaction.TransactionStatus == "success" ? "Успешно" : transaction.TransactionStatus == "error" ? "Ошибка" : transaction.TransactionStatus ?? "—";
                             var agentName = transaction.AgentNavigation?.Name ?? transaction.Agent ?? "—";
+                            var clientName = transaction.InvoiceNavigation?.ClientNavigation?.ClientName ?? "—";
+                            var payCode = transaction.InvoiceNavigation?.PayCode ?? "—";
                             <tr>
                                 <td>@(transaction.TransactionDate?.ToString("dd.MM.yyyy HH:mm") ?? "—")</td>
+                                <td>@clientName</td>
+                                <td>@payCode</td>
                                 <td>@agentName</td>
                                 <td>@(transaction.Summ.HasValue ? (transaction.Summ.Value / 100m).ToString("N2") + " сом" : "—")</td>
                                 <td>@(transaction.TransactionSumm.HasValue ? (transaction.TransactionSumm.Value / 100m).ToString("N2") + " сом" : "—")</td>
@@ -122,6 +160,10 @@
             }
             if (form && agentIds) {
                 agentIds.addEventListener('change', function () { form.submit(); });
+            }
+            var clientIds = document.getElementById('transactionsClientIds');
+            if (form && clientIds) {
+                clientIds.addEventListener('change', function () { form.submit(); });
             }
         });
     </script>
