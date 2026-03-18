@@ -10,7 +10,7 @@ namespace WebApplication1.Services
         /// <summary>
         /// Получить описание ошибки по коду
         /// </summary>
-        private static string GetErrorDescription(ErrorCode errorCode)
+        public static string GetErrorDescription(ErrorCode errorCode)
         {
             return errorCode switch
             {
@@ -36,6 +36,7 @@ namespace WebApplication1.Services
                 ErrorCode.ServiceNotSupported => "Запрашиваемая услуга не поддерживается данным методом",
                 ErrorCode.PaymentAlreadyExists => "Оплата уже существует с отправленным txn_id",
                 ErrorCode.PaymentNotFound => "Оплата с переданным txn_id не найдена.",
+                ErrorCode.ServiceIdNotFound => "Сервис/организация не найдена.",
                 ErrorCode.SystemError => "Системная ошибка",
                 ErrorCode.AuthenticationFailed => "Аутентификация не пройдена",
                 _ => "Неизвестная ошибка"

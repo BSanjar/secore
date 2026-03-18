@@ -14,7 +14,7 @@ using System.Globalization;
 
 namespace WebApplication1.Controllers
 {
-    [Route("[controller]/[action]")]
+    [Route("avnWebApi/[action]")]
     [ApiController]
     [ServiceFilter(typeof(WebApplication1.Filters.XmlValidationFilter))]
     public class WebApiController : ControllerBase
@@ -339,6 +339,16 @@ namespace WebApplication1.Controllers
                     sb.AppendLine(_oper.BuildInvoicesText(futurePayments));
                     recommendedSum += futurePayments.Sum(p => p.PaymentSumm ?? 0);
                 }
+            }
+
+            // Учёт текущего положительного баланса при расчёте рекомендуемой суммы:
+            // если на балансе уже есть деньги, вычитаем их из суммы к оплате (но не уходим в минус).
+            var currentBalance = invoices.FirstOrDefault()?.Balance ?? 0m;
+            if (currentBalance > 0)
+            {
+                recommendedSum -= currentBalance;
+                if (recommendedSum < 0)
+                    recommendedSum = 0;
             }
 
             // 7. Баланс
@@ -1066,15 +1076,21 @@ namespace WebApplication1.Controllers
                 decimal balanceAdded = 0m;
                 decimal lackSum = 0m;
 
-                decimal rest = requestSum;
+                var oldBalanceForAll = invoices.First().Balance ?? 0m;
+                // Всегда учитываем накопленный баланс (включая положительный),
+                // чтобы следующий платеж мог погасить долг за счет balance + paySum.
+                // Если баланс отрицательный — это уменьшает доступную сумму (долг).
+                decimal rest = requestSum + oldBalanceForAll;
 
                 // Фиксируем входящий платёж
                 _db.Transactions.Add(
                     _oper.CreateTransaction(null, null, agent, requestSum, requestSum, request.TxnId, "payFromAPI")
                 );
 
-                // Вспомогательная функция для погашения платежей (с расчётом комиссии по агенту)
-                async Task PayPaymentsListAsync(IEnumerable<InvoicePayment> paymentsToPay)
+                // Вспомогательная функция для погашения платежей (с расчётом комиссии по агенту).
+                // requireFullAmount: если true — гасим платёж только при полной сумме (как в payold2);
+                // иначе остаток уходит на баланс, payment_invoice не трогаем.
+                async Task PayPaymentsListAsync(IEnumerable<InvoicePayment> paymentsToPay, bool requireFullAmount = false)
                 {
                     foreach (var payment in paymentsToPay)
                     {
@@ -1085,8 +1101,7 @@ namespace WebApplication1.Controllers
                         if (paymentAmount <= 0)
                             continue;
 
-                        var toPay = Math.Min(rest, paymentAmount);
-
+                        var toPay = requireFullAmount ? paymentAmount : Math.Min(rest, paymentAmount);
                         rest -= toPay;
                         payment.PaymentStatus = "paid";
 
@@ -1109,42 +1124,29 @@ namespace WebApplication1.Controllers
 
                 // ===== ПОСЛЕДОВАТЕЛЬНОЕ ПОГАШЕНИЕ: ДОЛГИ → ПЛАНОВЫЕ =====
                 
-                // 1. Сначала гасим долги (если есть)
+                // 1. Сначала гасим долги (если есть) — только полной суммой, иначе остаток на баланс
                 var duePayments = invoices.SelectMany(_oper.GetDuePayments).ToList();
                 if (duePayments.Any())
                 {
-                    await PayPaymentsListAsync(duePayments.OrderBy(p => p.DateFrom));
-                }
-
-                // 2. Если долгов нет, сначала добавляем сумму к балансу (как в старом коде)
-                if (!duePayments.Any())
-                {
-                    var currentBalance = firstInvoice.Balance ?? 0m;
-                    rest = requestSum + currentBalance;
+                    await PayPaymentsListAsync(duePayments.OrderBy(p => p.DateFrom), requireFullAmount: true);
                 }
 
                 // 3. Если после погашения долгов остались средства, гасим плановые (завтра)
+                // Только при полной сумме — иначе не гасим payment_invoice, остаток на баланс (как в payold2)
                 var planPayments = invoices.SelectMany(_oper.GetDuePaymentsbyPlan).ToList();
                 if (planPayments.Any() && rest > 0)
                 {
-                    await PayPaymentsListAsync(planPayments.OrderBy(p => p.DateFrom));
+                    await PayPaymentsListAsync(planPayments.OrderBy(p => p.DateFrom), requireFullAmount: true);
                 }
 
                 // Будущие платежи не гасятся - остаток переводится на баланс
 
                 // ===== ОСТАТОК =====
-                if (rest > 0)
-                {
-                    // Обновляем баланс для всех связанных счетов
-                    var oldBalance = firstInvoice.Balance ?? 0m;
-                    invoices.ForEach(i => i.Balance = rest);
-                    // balanceAdded - это сколько было добавлено к балансу
-                    balanceAdded = rest - oldBalance;
-                }
-                else if (rest < 0)
-                {
+                // Всегда фиксируем новый баланс (может быть >0, =0 или <0)
+                invoices.ForEach(i => i.Balance = rest);
+                balanceAdded = rest - oldBalanceForAll;
+                if (rest < 0)
                     lackSum = Math.Abs(rest);
-                }
 
                 #endregion
 
