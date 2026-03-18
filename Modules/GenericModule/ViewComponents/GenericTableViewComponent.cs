@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-
+using WebApplication1.Dtos;
 using WebApplication1.Modules.GenericModule.Services;
-using WebApplication1.Modules.GenericModule.Models;
 
 namespace WebApplication1.Modules.GenericModule.ViewComponents
 {

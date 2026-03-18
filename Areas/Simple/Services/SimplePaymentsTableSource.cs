@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using WebApplication1.Areas.Simple.ViewModels;
+using WebApplication1.Dtos;
 using WebApplication1.Models.DBModels;
-using WebApplication1.Modules.GenericModule.Models;
 using WebApplication1.Modules.GenericModule.Services;
 
 namespace WebApplication1.Areas.Simple.Services

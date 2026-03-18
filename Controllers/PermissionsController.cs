@@ -15,20 +15,10 @@ namespace WebApplication1.Controllers
             _db = db;
         }
 
-        private async Task<string?> GetCurrentOrganizationType()
-        {
-            var orgId = HttpContext.Session.GetString("OrganizationId");
-            if (string.IsNullOrEmpty(orgId))
-                return null;
-
-            var org = await _db.Organizations.FindAsync(orgId);
-            return org?.Organizationtype;
-        }
-
         // GET: Permissions
         public async Task<IActionResult> Index()
         {
-            var organizationType = await GetCurrentOrganizationType();
+            var organizationType = AuthorizationHelper.GetOrganizationType(HttpContext);
             
             // Показываем только права для типа организации и общие (где Area = null)
             var permissions = await _db.Permissions
@@ -44,7 +34,7 @@ namespace WebApplication1.Controllers
         // GET: Permissions/Create
         public async Task<IActionResult> Create()
         {
-            var organizationType = await GetCurrentOrganizationType();
+            var organizationType = AuthorizationHelper.GetOrganizationType(HttpContext);
             ViewBag.OrganizationType = organizationType;
             ViewBag.Areas = new List<string> { "standart", "detsad", "school", "medclinic" };
             return View();
@@ -79,7 +69,7 @@ namespace WebApplication1.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var organizationType = await GetCurrentOrganizationType();
+            var organizationType = AuthorizationHelper.GetOrganizationType(HttpContext);
             ViewBag.OrganizationType = organizationType;
             ViewBag.Areas = new List<string> { "standart", "detsad", "school", "medclinic" };
             return View(permission);
@@ -101,7 +91,7 @@ namespace WebApplication1.Controllers
                 return NotFound();
             }
 
-            var organizationType = await GetCurrentOrganizationType();
+            var organizationType = AuthorizationHelper.GetOrganizationType(HttpContext);
             ViewBag.OrganizationType = organizationType;
             ViewBag.Areas = new List<string> { "standart", "detsad", "school", "medclinic" };
 
@@ -151,7 +141,7 @@ namespace WebApplication1.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var organizationType = await GetCurrentOrganizationType();
+            var organizationType = AuthorizationHelper.GetOrganizationType(HttpContext);
             ViewBag.OrganizationType = organizationType;
             ViewBag.Areas = new List<string> { "standart", "detsad", "school", "medclinic" };
             return View(permission);

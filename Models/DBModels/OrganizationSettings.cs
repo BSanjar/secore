@@ -23,6 +23,12 @@ public class OrganizationSettings
     public bool AllowedHassameaccount { get; set; }
 
     /// <summary>
+    /// Режим выбора лицевого счёта при создании счёта: new_only (только новый), duplicate_only (только существующий), both (новый и существующий).
+    /// Если null — используется AllowedHassameaccount (true → both, false → new_only).
+    /// </summary>
+    public string? InvoicePayCodeMode { get; set; }
+
+    /// <summary>
     /// За сколько дней до срока начинать отправку напоминаний по оплате.
     /// </summary>
     public int Paymentreminderdaysbefore { get; set; }

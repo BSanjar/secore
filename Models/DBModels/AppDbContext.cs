@@ -256,6 +256,10 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.AllowedHassameaccount)
                 .HasComment("если true - организации могут создавать счета с одинаковыми л/с")
                 .HasColumnName("allowed_hassameaccount");
+            entity.Property(e => e.InvoicePayCodeMode)
+                .HasComment("new_only | duplicate_only | both — режим выбора л/с при создании счёта")
+                .HasColumnType("character varying(32)")
+                .HasColumnName("invoice_pay_code_mode");
             entity.Property(e => e.Paymentreminderdaysbefore)
                 .HasComment("за сколько дней до срока начинать напоминания по оплате")
                 .HasColumnName("paymentreminderdaysbefore");

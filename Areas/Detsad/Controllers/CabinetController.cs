@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Models.DBModels;
 using WebApplication1.Helpers;
+using WebApplication1.Services;
+using WebApplication1.Dtos;
 
 namespace WebApplication1.Areas.Detsad.Controllers
 {
@@ -13,11 +15,15 @@ namespace WebApplication1.Areas.Detsad.Controllers
     {
         private readonly AppDbContext _db;
         private readonly OperationsByInvoices _operationsByInvoices;
+        private readonly ClientService _clientService;
+        private readonly ExcelExportService _excelExportService;
 
-        public CabinetController(AppDbContext db, OperationsByInvoices operationsByInvoices)
+        public CabinetController(AppDbContext db, OperationsByInvoices operationsByInvoices, ClientService clientService, ExcelExportService excelExportService)
         {
             _db = db;
             _operationsByInvoices = operationsByInvoices;
+            _clientService = clientService;
+            _excelExportService = excelExportService;
         }
 
         [RequirePermission("dashboard.view")]
@@ -188,11 +194,21 @@ namespace WebApplication1.Areas.Detsad.Controllers
                 var organizationId = HttpContext.Session.GetString("OrganizationId");
                 var userId = HttpContext.Session.GetString("UserId");
                 if (string.IsNullOrEmpty(organizationId) || string.IsNullOrEmpty(userId))
-                {
                     return Unauthorized();
-                }
 
-                var clientId = await CreateChildInternalAsync(request, organizationId, userId);
+                var input = new CreateClientInput
+                {
+                    ClientName = request.ClientName,
+                    ClientInn = request.ClientInn,
+                    OrgClientGroupId = request.OrgClientGroupId,
+                    ClientPhone = request.ClientPhone,
+                    ClientAddress = request.ClientAdres,
+                    ClientEmail = request.ClientEmail,
+                    ClientWa = request.ClientWa,
+                    ClientTg = request.ClientTg,
+                    AdditionalFields = request.AdditionalFields
+                };
+                var clientId = await _clientService.CreateClientAsync(input, organizationId, userId);
                 return Json(new { success = true, message = "Ребенок успешно добавлен", clientId });
             }
             catch (Exception ex)
@@ -201,191 +217,25 @@ namespace WebApplication1.Areas.Detsad.Controllers
             }
         }
 
-        private async Task<string> CreateChildInternalAsync(CreateChildRequest request, string organizationId, string userId)
-        {
-            using var transaction = await _db.Database.BeginTransactionAsync();
-
-            try
-            {
-                var allClientIds = await _db.OrganizationClients
-                    .Select(c => c.Id)
-                    .ToListAsync();
-
-                int newClientId = 1;
-                foreach (var idStr in allClientIds)
-                {
-                    if (int.TryParse(idStr, out var id) && id >= newClientId)
-                        newClientId = id + 1;
-                }
-
-                var organizationClient = new OrganizationClient
-                {
-                    Id = newClientId.ToString(),
-                    Organization = organizationId,
-                    OrgClientGroupId = string.IsNullOrWhiteSpace(request.OrgClientGroupId) ? null : request.OrgClientGroupId,
-                    ClientName = request.ClientName,
-                    ClientType = "fiz",
-                    ClientInn = request.ClientInn,
-                    ClientPhone = request.ClientPhone,
-                    ClientAddress = request.ClientAdres,
-                    ClientEmail = request.ClientEmail,
-                    ClientWa = request.ClientWa,
-                    ClientTg = request.ClientTg,
-                    ClientBalance = 0,
-                    ClientStatus = 1,
-                    CreatedDate = DateTime.Now,
-                    UpdatedDate = DateTime.Now,
-                    UserCreater = userId
-                };
-
-                _db.OrganizationClients.Add(organizationClient);
-
-                if (request.AdditionalFields != null && request.AdditionalFields.Count > 0)
-                {
-                    var orgFieldIds = await _db.OrganizationFields
-                        .Where(f => f.Organization == organizationId && (f.Isdeleted == null || f.Isdeleted == 0))
-                        .Select(f => f.Id)
-                        .ToListAsync();
-
-                    foreach (var kv in request.AdditionalFields)
-                    {
-                        if (string.IsNullOrWhiteSpace(kv.Value) || !orgFieldIds.Contains(kv.Key)) continue;
-                        _db.OrganizationClientsAdditionalFields.Add(new OrganizationClientsAdditionalField
-                        {
-                            Id = Guid.NewGuid().ToString(),
-                            OrganizationClient = newClientId.ToString(),
-                            Field = kv.Key,
-                            Value = kv.Value.Trim()
-                        });
-                    }
-                }
-
-                await _db.SaveChangesAsync();
-                await transaction.CommitAsync();
-                return newClientId.ToString();
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
-        }
-
-        public class CreateChildRequest
-        {
-            public string? ClientName { get; set; }
-            public string? ClientInn { get; set; }
-            public string? OrgClientGroupId { get; set; }
-            public string? ClientPhone { get; set; }
-            public string? ClientAdres { get; set; }
-            public string? ClientEmail { get; set; }
-            public string? ClientWa { get; set; }
-            public string? ClientTg { get; set; }
-            /// <summary>Ключ — Id поля (OrganizationField), значение — вvведённое значение</summary>
-            public Dictionary<string, string>? AdditionalFields { get; set; }
-        }
-
         [RequirePermission("children.view")]
         public async Task<IActionResult> Children(string search = "", string statusFilter = "active", bool debtorsOnly = false)
         {
-           
-            
             var organizationId = HttpContext.Session.GetString("OrganizationId");
             if (string.IsNullOrEmpty(organizationId))
-            {
                 return Unauthorized();
-            }
-            // Получаем клиентов напрямую по организации
-            var childrenData = await _db.OrganizationClients
-                .Include(c => c.OrganizationClientsAdditionalFields)
-                    .ThenInclude(af => af.FieldNavigation)
-                .Where(c => c.Organization == organizationId)
-                .ToListAsync();
 
-            // Применяем фильтры
-            if (!string.IsNullOrEmpty(search))
-            {
-                var searchLower = search.ToLower();
-                childrenData = childrenData.Where(c =>
-                    (c.ClientName != null && c.ClientName.ToLower().Contains(searchLower)) ||
-                    (c.ClientPhone != null && c.ClientPhone.Contains(search)) ||
-                    (c.ClientEmail != null && c.ClientEmail.ToLower().Contains(searchLower)) ||
-                    (c.ClientAddress != null && c.ClientAddress.ToLower().Contains(searchLower)) ||
-                    (c.OrganizationClientsAdditionalFields.Any(af => 
-                        af.Value != null && af.Value.ToLower().Contains(searchLower)))
-                ).ToList();
-            }
-
-            // Фильтр по статусу
-            if (statusFilter == "active")
-            {
-                childrenData = childrenData.Where(c => c.ClientStatus == 1).ToList();
-            }
-            else if (statusFilter == "inactive")
-            {
-                childrenData = childrenData.Where(c => c.ClientStatus == 0).ToList();
-            }
-            else if (statusFilter == "deleted")
-            {
-                // Предполагаем, что удаленные имеют ClientStatus = null или специальное значение
-                childrenData = childrenData.Where(c => c.ClientStatus == null || c.ClientStatus < 0).ToList();
-            }
-
-            // Сумма балансов по всем счетам для каждого клиента (нужна до фильтра должников)
-            var clientIdsForBalance = childrenData.Select(c => c.Id).ToList();
-            var totalBalanceByClient = await _db.Invoices
-                .Where(i => i.Client != null && clientIdsForBalance.Contains(i.Client) && i.InvoiceStatus == "actual")
-                .GroupBy(i => i.Client!)
-                .Select(g => new { ClientId = g.Key, TotalBalance = g.Sum(i => i.Balance ?? 0m) })
-                .ToDictionaryAsync(x => x.ClientId, x => x.TotalBalance);
-
-            // Фильтр должников (активные с отрицательной суммой балансов по счетам)
-            if (debtorsOnly)
-            {
-                childrenData = childrenData.Where(c =>
-                    c.ClientStatus == 1 &&
-                    totalBalanceByClient.GetValueOrDefault(c.Id, 0m) < 0).ToList();
-            }
-
-            // Получаем дополнительные поля для организации
-            var organizationFields = await _db.OrganizationFields
-                .Where(f => f.Organization == organizationId && (f.Isdeleted == null || f.Isdeleted == 0))
-                .ToListAsync();
-
-            // Группы клиентов организации (для модального окна добавления и фильтра)
-            var orgClientGroups = await _db.OrgClientGroups
-                .Where(g => g.OrganizationId == organizationId && g.IsDeleted == 0)
-                .OrderBy(g => g.Name)
-                .ToListAsync();
-            ViewBag.OrgClientGroups = orgClientGroups;
-            ViewBag.ClientTotalBalanceByClientId = totalBalanceByClient;
-
-            // Создаем список данных для View
-            var childrenViewData = childrenData
-                .OrderByDescending(x => x.CreatedDate)
-                .ToList();
-
-            var clientIds = childrenViewData.Select(c => c.Id).ToList();
-            var invoicesForClients = await _db.Invoices
-                .Where(i => i.Client != null && clientIds.Contains(i.Client))
-                .OrderByDescending(i => i.DateCreated)
-                .Select(i => new { i.Client, i.Id })
-                .ToListAsync();
-            var firstInvoiceIdByClient = invoicesForClients
-                .GroupBy(i => i.Client!)
-                .ToDictionary(g => g.Key, g => g.First().Id);
+            var result = await _clientService.GetClientsForCabinetAsync(organizationId, search, statusFilter, debtorsOnly);
 
             ViewBag.Search = search;
-            ViewBag.ClientTotalBalanceByClientId = totalBalanceByClient;
-            ViewBag.FirstInvoiceIdByClientId = firstInvoiceIdByClient;
             ViewBag.StatusFilter = statusFilter;
             ViewBag.DebtorsOnly = debtorsOnly;
-            ViewBag.OrganizationFields = organizationFields;
-            ViewBag.ChildrenData = childrenViewData;
-
-            var orgSettings = await _db.OrganizationSettings
-                .FirstOrDefaultAsync(s => s.OrganizationId == organizationId);
-            ViewBag.AllowedHassameaccount = orgSettings?.AllowedHassameaccount ?? false;
+            ViewBag.ChildrenData = result.ChildrenData;
+            ViewBag.ClientTotalBalanceByClientId = result.ClientTotalBalanceByClientId;
+            ViewBag.FirstInvoiceIdByClientId = result.FirstInvoiceIdByClientId;
+            ViewBag.OrganizationFields = result.OrganizationFields;
+            ViewBag.OrgClientGroups = result.OrgClientGroups;
+            ViewBag.AllowedHassameaccount = result.AllowedHassameaccount;
+            ViewBag.InvoicePayCodeMode = result.InvoicePayCodeMode;
 
             return View();
         }
@@ -395,52 +245,32 @@ namespace WebApplication1.Areas.Detsad.Controllers
         {
             var organizationId = HttpContext.Session.GetString("OrganizationId");
             if (string.IsNullOrEmpty(organizationId))
-            {
                 return Unauthorized();
-            }
 
-            var client = await _db.OrganizationClients
-                .Include(c => c.OrganizationClientsAdditionalFields)
-                    .ThenInclude(af => af.FieldNavigation)
-                .FirstOrDefaultAsync(c => c.Id == clientId && c.Organization == organizationId);
-
-            if (client == null)
-            {
+            var info = await _clientService.GetClientInfoAsync(clientId, organizationId);
+            if (info == null)
                 return NotFound();
-            }
-
-            // Получаем дополнительные поля (с FieldId для формы редактирования)
-            var additionalFields = client.OrganizationClientsAdditionalFields
-                .Where(af => af.FieldNavigation != null)
-                .Select(af => new
-                {
-                    FieldId = af.Field,
-                    FieldName = af.FieldNavigation!.FieldName,
-                    FieldType = af.FieldNavigation.FieldType,
-                    Value = af.Value
-                })
-                .ToList();
 
             return Json(new
             {
                 client = new
                 {
-                    id = client.Id,
-                    name = client.ClientName,
-                    phone = client.ClientPhone,
-                    email = client.ClientEmail,
-                    address = client.ClientAddress,
-                    inn = client.ClientInn,
-                    balance = client.ClientBalance,
-                    status = client.ClientStatus,
-                    createdDate = client.CreatedDate,
-                    updatedDate = client.UpdatedDate,
-                    logo = client.ClientLogo,
-                    orgClientGroupId = client.OrgClientGroupId,
-                    clientWa = client.ClientWa,
-                    clientTg = client.ClientTg
+                    id = info.Id,
+                    name = info.ClientName,
+                    phone = info.ClientPhone,
+                    email = info.ClientEmail,
+                    address = info.ClientAddress,
+                    inn = info.ClientInn,
+                    balance = info.ClientBalance,
+                    status = info.ClientStatus,
+                    createdDate = info.CreatedDate,
+                    updatedDate = info.UpdatedDate,
+                    logo = info.ClientLogo,
+                    orgClientGroupId = info.OrgClientGroupId,
+                    clientWa = info.ClientWa,
+                    clientTg = info.ClientTg
                 },
-                additionalFields = additionalFields
+                additionalFields = info.AdditionalFields.Select(af => new { af.FieldId, af.FieldName, af.FieldType, af.Value }).ToList()
             });
         }
 
@@ -454,67 +284,29 @@ namespace WebApplication1.Areas.Detsad.Controllers
                 if (string.IsNullOrEmpty(organizationId))
                     return Unauthorized();
 
-                var client = await _db.OrganizationClients
-                    .Include(c => c.OrganizationClientsAdditionalFields)
-                    .FirstOrDefaultAsync(c => c.Id == request.ClientId && c.Organization == organizationId);
-                if (client == null)
-                    return Json(new { success = false, message = "Клиент не найден." });
-
-                client.ClientName = request.ClientName ?? client.ClientName;
-                client.ClientInn = request.ClientInn ?? client.ClientInn;
-                client.OrgClientGroupId = string.IsNullOrWhiteSpace(request.OrgClientGroupId) ? null : request.OrgClientGroupId;
-                client.ClientPhone = request.ClientPhone ?? client.ClientPhone;
-                client.ClientAddress = request.ClientAdres ?? client.ClientAddress;
-                client.ClientEmail = request.ClientEmail ?? client.ClientEmail;
-                client.ClientWa = request.ClientWa ?? client.ClientWa;
-                client.ClientTg = request.ClientTg ?? client.ClientTg;
-                client.UpdatedDate = DateTime.Now;
-                client.ClientStatus = request.ClientStatus ?? client.ClientStatus ?? 1;
-
-                if (request.AdditionalFields != null)
+                var input = new UpdateClientInput
                 {
-                    var existing = client.OrganizationClientsAdditionalFields.ToList();
-                    foreach (var af in existing)
-                        _db.OrganizationClientsAdditionalFields.Remove(af);
-                    var orgFieldIds = await _db.OrganizationFields
-                        .Where(f => f.Organization == organizationId && (f.Isdeleted == null || f.Isdeleted == 0))
-                        .Select(f => f.Id)
-                        .ToListAsync();
-                    foreach (var kv in request.AdditionalFields)
-                    {
-                        if (string.IsNullOrWhiteSpace(kv.Key) || !orgFieldIds.Contains(kv.Key)) continue;
-                        _db.OrganizationClientsAdditionalFields.Add(new OrganizationClientsAdditionalField
-                        {
-                            Id = Guid.NewGuid().ToString(),
-                            OrganizationClient = client.Id,
-                            Field = kv.Key,
-                            Value = (kv.Value ?? "").Trim()
-                        });
-                    }
-                }
-
-                await _db.SaveChangesAsync();
+                    ClientId = request.ClientId,
+                    ClientName = request.ClientName,
+                    ClientInn = request.ClientInn,
+                    OrgClientGroupId = request.OrgClientGroupId,
+                    ClientPhone = request.ClientPhone,
+                    ClientAddress = request.ClientAdres,
+                    ClientEmail = request.ClientEmail,
+                    ClientWa = request.ClientWa,
+                    ClientTg = request.ClientTg,
+                    ClientStatus = request.ClientStatus,
+                    AdditionalFields = request.AdditionalFields
+                };
+                var updated = await _clientService.UpdateClientAsync(input, organizationId);
+                if (!updated)
+                    return Json(new { success = false, message = "Клиент не найден." });
                 return Json(new { success = true, message = "Профиль обновлён." });
             }
             catch (Exception ex)
             {
                 return Json(new { success = false, message = ex.Message });
             }
-        }
-
-        public class UpdateChildRequest
-        {
-            public string ClientId { get; set; } = null!;
-            public string? ClientName { get; set; }
-            public string? ClientInn { get; set; }
-            public string? OrgClientGroupId { get; set; }
-            public string? ClientPhone { get; set; }
-            public string? ClientAdres { get; set; }
-            public string? ClientEmail { get; set; }
-            public string? ClientWa { get; set; }
-            public string? ClientTg { get; set; }
-            public int? ClientStatus { get; set; }
-            public Dictionary<string, string>? AdditionalFields { get; set; }
         }
 
         [RequirePermission("invoices.view")]
@@ -772,7 +564,7 @@ namespace WebApplication1.Areas.Detsad.Controllers
         }
 
         [RequirePermission("transactions.view")]
-        public async Task<IActionResult> Payments(string dateFrom = "", string dateTo = "", List<string>? agentIds = null, List<string>? clientIds = null)
+        public async Task<IActionResult> Payments(string dateFrom = "", string dateTo = "", string search = "", string clientId = "", string statusFilter = "", List<string>? agentIds = null)
         {
             var organizationId = HttpContext.Session.GetString("OrganizationId");
             if (string.IsNullOrEmpty(organizationId))
@@ -794,19 +586,27 @@ namespace WebApplication1.Areas.Detsad.Controllers
             if (DateTime.TryParse(dateTo, out var toDate))
                 query = query.Where(t => t.TransactionDate != null && t.TransactionDate.Value.Date <= toDate.Date.AddDays(1));
 
+            if (!string.IsNullOrWhiteSpace(statusFilter) && (statusFilter == "success" || statusFilter == "error"))
+                query = query.Where(t => t.TransactionStatus == statusFilter);
+
+            if (!string.IsNullOrWhiteSpace(clientId))
+                query = query.Where(t => t.InvoiceNavigation != null && t.InvoiceNavigation.Client == clientId);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim().ToLower();
+                query = query.Where(t =>
+                    (t.InvoiceNavigation != null && t.InvoiceNavigation.ClientNavigation != null && t.InvoiceNavigation.ClientNavigation.ClientName != null && t.InvoiceNavigation.ClientNavigation.ClientName.ToLower().Contains(term)) ||
+                    (t.InvoiceNavigation != null && t.InvoiceNavigation.PayCode != null && t.InvoiceNavigation.PayCode.ToLower().Contains(term)) ||
+                    (t.AgentNavigation != null && t.AgentNavigation.Name != null && t.AgentNavigation.Name.ToLower().Contains(term)));
+            }
+
             var selectedAgentIds = agentIds?
                 .Where(id => !string.IsNullOrWhiteSpace(id) && id.Trim() != "__all__")
                 .Select(id => id!.Trim())
                 .ToList() ?? new List<string>();
             if (selectedAgentIds.Count > 0)
                 query = query.Where(t => t.Agent != null && selectedAgentIds.Contains(t.Agent));
-
-            var selectedClientIds = clientIds?
-                .Where(id => !string.IsNullOrWhiteSpace(id) && id.Trim() != "__all__")
-                .Select(id => id!.Trim())
-                .ToList() ?? new List<string>();
-            if (selectedClientIds.Count > 0)
-                query = query.Where(t => t.InvoiceNavigation != null && t.InvoiceNavigation.Client != null && selectedClientIds.Contains(t.InvoiceNavigation.Client));
 
             var transactions = await query.OrderByDescending(t => t.TransactionDate).ToListAsync();
 
@@ -833,13 +633,91 @@ namespace WebApplication1.Areas.Detsad.Controllers
                 .Select(c => new { c.Id, c.ClientName })
                 .ToListAsync();
 
+            var clientsForDropdown = clientsList.Select(c => new { Id = c.Id, ClientName = c.ClientName ?? c.Id }).ToList();
+            var selectedClientName = "";
+            if (!string.IsNullOrWhiteSpace(clientId))
+            {
+                var sel = clientsList.FirstOrDefault(c => c.Id == clientId);
+                selectedClientName = sel?.ClientName ?? clientId;
+            }
+
             ViewBag.DateFrom = dateFrom;
             ViewBag.DateTo = dateTo;
+            ViewBag.Search = search ?? "";
+            ViewBag.ClientId = clientId ?? "";
+            ViewBag.SelectedClientName = selectedClientName;
+            ViewBag.StatusFilter = statusFilter ?? "";
             ViewBag.SelectedAgentIds = selectedAgentIds;
-            ViewBag.SelectedClientIds = selectedClientIds;
             ViewBag.AgentsList = agentsList;
             ViewBag.ClientsList = clientsList;
+            ViewBag.Clients = clientsForDropdown;
             return View(transactions);
+        }
+
+        /// <summary>
+        /// Выгрузка транзакций в Excel с теми же фильтрами, что и на странице «Транзакции».
+        /// </summary>
+        [RequirePermission("transactions.view")]
+        [HttpGet]
+        public async Task<IActionResult> ExportTransactionsExcel(string dateFrom = "", string dateTo = "", string search = "", string clientId = "", string statusFilter = "", List<string>? agentIds = null)
+        {
+            var organizationId = HttpContext.Session.GetString("OrganizationId");
+            if (string.IsNullOrEmpty(organizationId))
+                return RedirectToAction("Login", "Account", new { area = "" });
+
+            var invoices = await _db.Invoices
+                .Where(i => i.ClientNavigation != null && i.ClientNavigation.Organization == organizationId)
+                .Select(i => i.Id)
+                .ToListAsync();
+
+            var query = _db.Transactions
+                .Include(t => t.AgentNavigation)
+                .Include(t => t.InvoiceNavigation)
+                .ThenInclude(i => i!.ClientNavigation)
+                .Where(t => t.Invoice != null && invoices.Contains(t.Invoice));
+
+            if (DateTime.TryParse(dateFrom, out var fromDate))
+                query = query.Where(t => t.TransactionDate >= fromDate.Date);
+            if (DateTime.TryParse(dateTo, out var toDate))
+                query = query.Where(t => t.TransactionDate != null && t.TransactionDate.Value.Date <= toDate.Date.AddDays(1));
+
+            if (!string.IsNullOrWhiteSpace(statusFilter) && (statusFilter == "success" || statusFilter == "error"))
+                query = query.Where(t => t.TransactionStatus == statusFilter);
+
+            if (!string.IsNullOrWhiteSpace(clientId))
+                query = query.Where(t => t.InvoiceNavigation != null && t.InvoiceNavigation.Client == clientId);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim().ToLower();
+                query = query.Where(t =>
+                    (t.InvoiceNavigation != null && t.InvoiceNavigation.ClientNavigation != null && t.InvoiceNavigation.ClientNavigation.ClientName != null && t.InvoiceNavigation.ClientNavigation.ClientName.ToLower().Contains(term)) ||
+                    (t.InvoiceNavigation != null && t.InvoiceNavigation.PayCode != null && t.InvoiceNavigation.PayCode.ToLower().Contains(term)) ||
+                    (t.AgentNavigation != null && t.AgentNavigation.Name != null && t.AgentNavigation.Name.ToLower().Contains(term)));
+            }
+
+            var selectedAgentIds = agentIds?
+                .Where(id => !string.IsNullOrWhiteSpace(id) && id.Trim() != "__all__")
+                .Select(id => id!.Trim())
+                .ToList() ?? new List<string>();
+            if (selectedAgentIds.Count > 0)
+                query = query.Where(t => t.Agent != null && selectedAgentIds.Contains(t.Agent));
+
+            var list = await query.OrderByDescending(t => t.TransactionDate).ToListAsync();
+
+            var rows = list.Select(t => new TransactionExcelRow
+            {
+                Date = t.TransactionDate,
+                ClientName = t.InvoiceNavigation?.ClientNavigation?.ClientName,
+                PayCode = t.InvoiceNavigation?.PayCode,
+                AgentName = t.AgentNavigation?.Name ?? t.Agent,
+                AmountTyiyn = t.Summ,
+                TotalTyiyn = t.TransactionSumm,
+                Status = t.TransactionStatus
+            }).ToList();
+
+            var bytes = _excelExportService.ExportTransactions(rows);
+            return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "transactions.xlsx");
         }
 
         [RequirePermission("invoices.view")]
@@ -876,6 +754,7 @@ namespace WebApplication1.Areas.Detsad.Controllers
             ViewBag.OrganizationServices = orgServices;
             ViewBag.DisableInvoiceServiceSelection = settings?.DisableInvoiceServiceSelection ?? false;
             ViewBag.AllowedHassameaccount = settings?.AllowedHassameaccount ?? false;
+            ViewBag.InvoicePayCodeMode = !string.IsNullOrEmpty(settings?.InvoicePayCodeMode) ? settings.InvoicePayCodeMode : (settings?.AllowedHassameaccount == true ? "both" : "new_only");
             return PartialView("_CreateInvoicePartial");
         }
 
@@ -917,6 +796,7 @@ namespace WebApplication1.Areas.Detsad.Controllers
             ViewBag.OrganizationServices = orgServices;
             ViewBag.DisableInvoiceServiceSelection = settings?.DisableInvoiceServiceSelection ?? false;
             ViewBag.AllowedHassameaccount = settings?.AllowedHassameaccount ?? false;
+            ViewBag.InvoicePayCodeMode = !string.IsNullOrEmpty(settings?.InvoicePayCodeMode) ? settings.InvoicePayCodeMode : (settings?.AllowedHassameaccount == true ? "both" : "new_only");
             return PartialView("_EditInvoicePartial", invoice);
         }
 
@@ -1083,28 +963,5 @@ namespace WebApplication1.Areas.Detsad.Controllers
             }
         }
 
-        public class CreateInvoicesRequest
-        {
-            public string? NameInvoice { get; set; }
-            public DateTime? DateStartInvoice { get; set; }
-            public DateTime? DateEndInvoice { get; set; }
-            public string? Periodicity { get; set; }
-            public bool AutoProlongation { get; set; }
-            public bool UseCurrentDateTime { get; set; } = true;
-            public List<string> ClientIds { get; set; } = new();
-            public List<CreateInvoiceServiceItem> ServiceItems { get; set; } = new();
-            /// <summary>Когда AllowedHassameaccount: выбранный лицевой счёт (все счета создаются с ним, Hassameaccount=true).</summary>
-            public string? PayCode { get; set; }
-            /// <summary>Когда DisableInvoiceServiceSelection: цена в сомах для одной позиции «название счёта».</summary>
-            public decimal? ManualServicePriceSom { get; set; }
-            /// <summary>Создать счёт с флагом «общий лицевой счёт» (новый PayCode, но Hassameaccount=true).</summary>
-            public bool Hassameaccount { get; set; }
-        }
-
-        public class CreateInvoiceServiceItem
-        {
-            public string? ServiceId { get; set; }
-            public int? Qty { get; set; }
-        }
     }
 }

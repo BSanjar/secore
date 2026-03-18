@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using WebApplication1.Models.DBModels;
 using WebApplication1.Helpers;
 using WebApplication1.Services;
+using WebApplication1.Dtos;
 using ClosedXML.Excel;
 using PuppeteerSharp;
 using PuppeteerSharp.Media;
@@ -17,11 +18,15 @@ namespace WebApplication1.Areas.Detsad.Controllers
     {
         private readonly AppDbContext _db;
         private readonly ViewRenderService _viewRender;
+        private readonly OperationsByInvoices _operationsByInvoices;
+        private readonly ExcelExportService _excelExportService;
 
-        public InvoicesController(AppDbContext db, ViewRenderService viewRender)
+        public InvoicesController(AppDbContext db, ViewRenderService viewRender, OperationsByInvoices operationsByInvoices, ExcelExportService excelExportService)
         {
             _db = db;
             _viewRender = viewRender;
+            _operationsByInvoices = operationsByInvoices;
+            _excelExportService = excelExportService;
         }
 
         private string? GetOrganizationId()
@@ -217,64 +222,44 @@ namespace WebApplication1.Areas.Detsad.Controllers
 
             var list = await query.OrderBy(i => i.ClientNavigation!.ClientName).ThenBy(i => i.PayCode).ThenByDescending(i => i.DateCreated).ToListAsync();
 
-            using var workbook = new XLWorkbook();
-            var ws = workbook.Worksheets.Add("Платежи по счетам");
-
-            ws.Cell(1, 1).Value = "Номер счета";
-            ws.Cell(1, 2).Value = "Лицевой счет (PayCode)";
-            ws.Cell(1, 3).Value = "Клиент";
-            ws.Cell(1, 4).Value = "Период с";
-            ws.Cell(1, 5).Value = "Период по";
-            ws.Cell(1, 6).Value = "Значение периода";
-            ws.Cell(1, 7).Value = "Сумма (сом)";
-            ws.Cell(1, 8).Value = "Статус платежа";
-            var headerRow = ws.Range(1, 1, 1, 8);
-            headerRow.Style.Font.Bold = true;
-            headerRow.Style.Fill.BackgroundColor = XLColor.LightGray;
-
-            var paymentStatusText = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-            {
-                ["paid"] = "Оплачено", ["non_paid"] = "Не оплачено", ["anulated"] = "Аннулировано"
-            };
-
-            int row = 2;
+            var rows = new List<InvoicePaymentExcelRow>();
             foreach (var inv in list)
             {
-                var payments = (inv.InvoicePayments ?? new List<InvoicePayment>()).OrderBy(p => p.DateFrom ?? DateTime.MinValue).ToList();
+                var payments = (inv.InvoicePayments ?? new List<InvoicePayment>())
+                    .OrderBy(p => p.DateFrom ?? DateTime.MinValue)
+                    .ToList();
+
                 if (payments.Count == 0)
                 {
-                    ws.Cell(row, 1).Value = inv.Id ?? "";
-                    ws.Cell(row, 2).Value = inv.PayCode ?? "";
-                    ws.Cell(row, 3).Value = inv.ClientNavigation?.ClientName ?? inv.Client ?? "";
-                    ws.Cell(row, 4).Value = "";
-                    ws.Cell(row, 5).Value = "";
-                    ws.Cell(row, 6).Value = "";
-                    ws.Cell(row, 7).Value = "";
-                    ws.Cell(row, 8).Value = "Нет записей";
-                    row++;
+                    rows.Add(new InvoicePaymentExcelRow
+                    {
+                        InvoiceId = inv.Id,
+                        PayCode = inv.PayCode,
+                        ClientName = inv.ClientNavigation?.ClientName ?? inv.Client,
+                        PaymentStatus = "Нет записей"
+                    });
                     continue;
                 }
+
                 foreach (var ip in payments)
                 {
-                    ws.Cell(row, 1).Value = inv.Id ?? "";
-                    ws.Cell(row, 2).Value = inv.PayCode ?? "";
-                    ws.Cell(row, 3).Value = inv.ClientNavigation?.ClientName ?? inv.Client ?? "";
-                    ws.Cell(row, 4).Value = ip.DateFrom.HasValue ? ip.DateFrom.Value.ToString("dd.MM.yyyy") : "";
-                    ws.Cell(row, 5).Value = ip.DateTo.HasValue ? ip.DateTo.Value.ToString("dd.MM.yyyy") : "";
-                    ws.Cell(row, 6).Value = ip.PeriodValue ?? "";
-                    ws.Cell(row, 7).Value = ip.PaymentSumm.HasValue ? ip.PaymentSumm.Value / 100m : 0m;
-                    ws.Cell(row, 8).Value = paymentStatusText.TryGetValue(ip.PaymentStatus ?? "", out var ps) ? ps : ip.PaymentStatus ?? "";
-                    row++;
+                    rows.Add(new InvoicePaymentExcelRow
+                    {
+                        InvoiceId = inv.Id,
+                        PayCode = inv.PayCode,
+                        ClientName = inv.ClientNavigation?.ClientName ?? inv.Client,
+                        PeriodFrom = ip.DateFrom,
+                        PeriodTo = ip.DateTo,
+                        PeriodValue = ip.PeriodValue,
+                        AmountTyiyn = ip.PaymentSumm,
+                        PaymentStatus = ip.PaymentStatus
+                    });
                 }
             }
 
-            ws.Columns().AdjustToContents();
-
-            using var stream = new MemoryStream();
-            workbook.SaveAs(stream, false);
-            stream.Position = 0;
+            var bytes = _excelExportService.ExportInvoicePaymentsAll(rows);
             var fileName = $"Platezhi_{DateTime.Now:yyyy-MM-dd_HH-mm}.xlsx";
-            return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+            return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
         }
 
         [RequirePermission("invoices.view")]
@@ -295,54 +280,19 @@ namespace WebApplication1.Areas.Detsad.Controllers
 
             var payments = (invoice.InvoicePayments ?? new List<InvoicePayment>()).OrderBy(p => p.DateFrom ?? DateTime.MinValue).ToList();
 
-            using var workbook = new XLWorkbook();
-            var ws = workbook.Worksheets.Add("Платежи по счёту");
-
-            ws.Cell(1, 1).Value = "Период с";
-            ws.Cell(1, 2).Value = "Период по";
-            ws.Cell(1, 3).Value = "Значение периода";
-            ws.Cell(1, 4).Value = "Сумма (сом)";
-            ws.Cell(1, 5).Value = "Статус платежа";
-            var headerRow = ws.Range(1, 1, 1, 5);
-            headerRow.Style.Font.Bold = true;
-            headerRow.Style.Fill.BackgroundColor = XLColor.LightGray;
-
-            var paymentStatusText = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            var rows = payments.Select(ip => new InvoicePaymentExcelRow
             {
-                ["paid"] = "Оплачено", ["non_paid"] = "Не оплачено", ["anulated"] = "Аннулировано"
-            };
+                PeriodFrom = ip.DateFrom,
+                PeriodTo = ip.DateTo,
+                PeriodValue = ip.PeriodValue,
+                AmountTyiyn = ip.PaymentSumm,
+                PaymentStatus = ip.PaymentStatus
+            }).ToList();
 
-            int row = 2;
-            if (payments.Count == 0)
-            {
-                ws.Cell(row, 1).Value = "";
-                ws.Cell(row, 2).Value = "";
-                ws.Cell(row, 3).Value = "";
-                ws.Cell(row, 4).Value = "";
-                ws.Cell(row, 5).Value = "Нет записей";
-                row++;
-            }
-            else
-            {
-                foreach (var ip in payments)
-                {
-                    ws.Cell(row, 1).Value = ip.DateFrom.HasValue ? ip.DateFrom.Value.ToString("dd.MM.yyyy") : "";
-                    ws.Cell(row, 2).Value = ip.DateTo.HasValue ? ip.DateTo.Value.ToString("dd.MM.yyyy") : "";
-                    ws.Cell(row, 3).Value = ip.PeriodValue ?? "";
-                    ws.Cell(row, 4).Value = ip.PaymentSumm.HasValue ? ip.PaymentSumm.Value / 100m : 0m;
-                    ws.Cell(row, 5).Value = paymentStatusText.TryGetValue(ip.PaymentStatus ?? "", out var ps) ? ps : ip.PaymentStatus ?? "";
-                    row++;
-                }
-            }
-
-            ws.Columns().AdjustToContents();
-
-            using var stream = new MemoryStream();
-            workbook.SaveAs(stream, false);
-            stream.Position = 0;
+            var bytes = _excelExportService.ExportInvoicePaymentsSingle(rows);
             var safeName = (invoice.PayCode ?? invoice.Id ?? "invoice").Replace(" ", "_");
             var fileName = $"Platezhi_{safeName}_{DateTime.Now:yyyy-MM-dd_HH-mm}.xlsx";
-            return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+            return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
         }
 
         [RequirePermission("invoices.view")]
@@ -697,72 +647,33 @@ namespace WebApplication1.Areas.Detsad.Controllers
 
             if (ModelState.IsValid)
             {
-                invoice.NameInvoice = model.NameInvoice;
-                invoice.Client = model.Client;
-                invoice.InvoiceStatus = model.InvoiceStatus;
-                invoice.Periodicity = model.Periodicity;
-                invoice.DateStartInvoice = model.DateStartInvoice;
-                invoice.DateEndInvoice = model.DateEndInvoice;
-                invoice.AutoProlongation = model.AutoProlongation;
-                invoice.NextStartInvoice = model.NextStartInvoice;
-                invoice.PayCode = model.PayCode;
-                invoice.Hassameaccount = useExistingPayCode == true;
-
-                if (manualServicePriceSom.HasValue)
+                List<UpdateInvoiceServiceItemDto>? serviceItems = null;
+                if (!string.IsNullOrWhiteSpace(serviceItemsJson))
                 {
-                    var totalTyiyn = (decimal)(manualServicePriceSom.Value * 100m);
-                    invoice.FixedSumm = totalTyiyn;
-                    foreach (var existing in invoice.InvoiceServices.ToList())
-                        _db.InvoiceServices.Remove(existing);
-                    _db.InvoiceServices.Add(new InvoiceService
-                    {
-                        Id = Guid.NewGuid().ToString(),
-                        Invoice = invoice.Id,
-                        Service = null,
-                        ServiceSumm = totalTyiyn
-                    });
-                }
-                else if (!string.IsNullOrWhiteSpace(serviceItemsJson))
-                {
-                    List<EditServiceItemDto>? items = null;
                     try
                     {
-                        items = JsonSerializer.Deserialize<List<EditServiceItemDto>>(serviceItemsJson);
+                        var items = JsonSerializer.Deserialize<List<EditServiceItemDto>>(serviceItemsJson);
+                        serviceItems = items?.Select(x => new UpdateInvoiceServiceItemDto { ServiceId = x.ServiceId, Qty = x.Qty }).ToList();
                     }
                     catch { }
-                    if (items != null && items.Count > 0)
-                    {
-                        var serviceIds = items.Select(x => x.ServiceId).Where(s => !string.IsNullOrEmpty(s)).Distinct().ToList();
-                        var orgServices = await _db.OrganizationServices
-                            .Where(s => s.Organization == organizationId && serviceIds.Contains(s.Id))
-                            .ToDictionaryAsync(s => s.Id);
-                        decimal totalTyiyn = 0;
-                        foreach (var existing in invoice.InvoiceServices.ToList())
-                            _db.InvoiceServices.Remove(existing);
-                        foreach (var item in items)
-                        {
-                            if (string.IsNullOrEmpty(item.ServiceId) || !orgServices.TryGetValue(item.ServiceId, out var orgService))
-                                continue;
-                            var qty = Math.Max(1, item.Qty ?? 1);
-                            var serviceSummTyiyn = orgService.ServiceSumm ?? 0;
-                            var lineTotal = serviceSummTyiyn * qty;
-                            totalTyiyn += lineTotal;
-                            _db.InvoiceServices.Add(new InvoiceService
-                            {
-                                Id = Guid.NewGuid().ToString(),
-                                Invoice = invoice.Id,
-                                Service = orgService.Id,
-                                ServiceSumm = lineTotal
-                            });
-                        }
-                        invoice.FixedSumm = totalTyiyn;
-                    }
                 }
-                else
+                var updateRequest = new UpdateInvoiceRequest
                 {
-                    invoice.FixedSumm = invoice.InvoiceServices.Any() ? invoice.InvoiceServices.Sum(s => s.ServiceSumm ?? 0) : invoice.FixedSumm;
-                }
-
+                    Id = invoice.Id,
+                    NameInvoice = model.NameInvoice,
+                    Client = model.Client,
+                    InvoiceStatus = model.InvoiceStatus,
+                    Periodicity = model.Periodicity,
+                    DateStartInvoice = model.DateStartInvoice,
+                    DateEndInvoice = model.DateEndInvoice,
+                    AutoProlongation = model.AutoProlongation ?? false,
+                    NextStartInvoice = model.NextStartInvoice,
+                    PayCode = model.PayCode,
+                    Hassameaccount = useExistingPayCode == true,
+                    ManualServicePriceSom = manualServicePriceSom,
+                    ServiceItems = serviceItems
+                };
+                await _operationsByInvoices.ApplyInvoiceUpdateAsync(invoice, updateRequest, organizationId);
                 await _db.SaveChangesAsync();
                 TempData["Message"] = "Изменения сохранены.";
                 if (!string.IsNullOrEmpty(returnUrl))
@@ -816,108 +727,9 @@ namespace WebApplication1.Areas.Detsad.Controllers
             if (client == null)
                 return Json(new { success = false, message = "Клиент не найден." });
 
-            invoice.NameInvoice = request.NameInvoice;
-            invoice.Client = request.Client;
-            invoice.InvoiceStatus = request.InvoiceStatus ?? "actual";
-            invoice.Periodicity = request.Periodicity ?? "monthly";
-            invoice.DateStartInvoice = request.DateStartInvoice;
-            invoice.DateEndInvoice = request.DateEndInvoice;
-            invoice.AutoProlongation = request.AutoProlongation;
-            invoice.NextStartInvoice = request.NextStartInvoice;
-            invoice.PayCode = request.PayCode;
-            invoice.Hassameaccount = request.Hassameaccount;
-
-            if (request.ManualServicePriceSom.HasValue)
-            {
-                var totalTyiyn = (decimal)(request.ManualServicePriceSom.Value * 100m);
-                invoice.FixedSumm = totalTyiyn;
-                foreach (var existing in invoice.InvoiceServices.ToList())
-                    _db.InvoiceServices.Remove(existing);
-                _db.InvoiceServices.Add(new InvoiceService
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    Invoice = invoice.Id,
-                    Service = null,
-                    ServiceSumm = totalTyiyn
-                });
-            }
-            else if (request.ServiceItems != null && request.ServiceItems.Count > 0)
-            {
-                var serviceIds = request.ServiceItems.Select(x => x.ServiceId).Where(s => !string.IsNullOrEmpty(s)).Distinct().ToList();
-                var orgServices = await _db.OrganizationServices
-                    .Where(s => s.Organization == organizationId && serviceIds.Contains(s.Id))
-                    .ToDictionaryAsync(s => s.Id);
-                decimal totalTyiyn = 0;
-                foreach (var existing in invoice.InvoiceServices.ToList())
-                    _db.InvoiceServices.Remove(existing);
-                foreach (var item in request.ServiceItems)
-                {
-                    if (string.IsNullOrEmpty(item.ServiceId) || !orgServices.TryGetValue(item.ServiceId, out var orgService))
-                        continue;
-                    var qty = Math.Max(1, item.Qty ?? 1);
-                    var serviceSummTyiyn = orgService.ServiceSumm ?? 0;
-                    var lineTotal = serviceSummTyiyn * qty;
-                    totalTyiyn += lineTotal;
-                    _db.InvoiceServices.Add(new InvoiceService
-                    {
-                        Id = Guid.NewGuid().ToString(),
-                        Invoice = invoice.Id,
-                        Service = orgService.Id,
-                        ServiceSumm = lineTotal
-                    });
-                }
-                invoice.FixedSumm = totalTyiyn;
-            }
-            else
-            {
-                invoice.FixedSumm = invoice.InvoiceServices.Any() ? invoice.InvoiceServices.Sum(s => s.ServiceSumm ?? 0) : invoice.FixedSumm;
-            }
-
+            await _operationsByInvoices.ApplyInvoiceUpdateAsync(invoice, request, organizationId);
             await _db.SaveChangesAsync();
             return Json(new { success = true, message = "Изменения сохранены." });
         }
-
-        public class UpdateInvoiceRequest
-        {
-            public string? Id { get; set; }
-            public string? Client { get; set; }
-            public string? NameInvoice { get; set; }
-            public string? PayCode { get; set; }
-            public string? Periodicity { get; set; }
-            public string? InvoiceStatus { get; set; }
-            public DateTime? DateStartInvoice { get; set; }
-            public DateTime? DateEndInvoice { get; set; }
-            public bool AutoProlongation { get; set; }
-            public DateTime? NextStartInvoice { get; set; }
-            public bool Hassameaccount { get; set; }
-            public decimal? ManualServicePriceSom { get; set; }
-            public List<UpdateInvoiceServiceItemDto>? ServiceItems { get; set; }
-        }
-
-        public class UpdateInvoiceServiceItemDto
-        {
-            public string? ServiceId { get; set; }
-            public int? Qty { get; set; }
-        }
-
-        private class EditServiceItemDto
-        {
-            public string? ServiceId { get; set; }
-            public int? Qty { get; set; }
-        }
-    }
-
-    public class StatementRowDto
-    {
-        public DateTime Date { get; set; }
-        public string Type { get; set; } = "";
-        public string TypeBadgeClass { get; set; } = "";
-        public string TypeText { get; set; } = "";
-        public string Description { get; set; } = "";
-        public string? DocumentId { get; set; }
-        public decimal? AccrualAmount { get; set; }
-        public decimal? PaymentAmount { get; set; }
-        public decimal Commission { get; set; }
-        public decimal BalanceAfter { get; set; }
     }
 }

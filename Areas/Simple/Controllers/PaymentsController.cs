@@ -1,9 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using WebApplication1.Areas.Simple.ViewModels;
+using WebApplication1.Dtos;
 using WebApplication1.Models.DBModels;
 using WebApplication1.Helpers;
-using WebApplication1.Modules.GenericModule.Models;
 using WebApplication1.Modules.GenericModule.Services;
 
 namespace WebApplication1.Areas.Simple.Controllers

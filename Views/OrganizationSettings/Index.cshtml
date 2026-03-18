@@ -41,12 +41,40 @@
             <h5 class="mb-0">Общие настройки</h5>
         </div>
         <div class="card-body">
-            <div class="form-check mb-3">
-                <input asp-for="AllowedHassameaccount" class="form-check-input" type="checkbox" />
-                <label asp-for="AllowedHassameaccount" class="form-check-label">
-                    Разрешить счета с одинаковым лицевым счётом
-                </label>
+            @{
+                var payCodeMode = Model.InvoicePayCodeMode ?? (Model.AllowedHassameaccount ? "both" : "new_only");
+            }
+            <div class="mb-3">
+                <label class="form-label">Лицевой счёт при создании счёта</label>
+                <select name="InvoicePayCodeMode" class="form-select" id="InvoicePayCodeMode">
+                    @if (payCodeMode == "new_only")
+                    {
+                        <option value="new_only" selected>Только новый</option>
+                    }
+                    else
+                    {
+                        <option value="new_only">Только новый</option>
+                    }
+                    @if (payCodeMode == "duplicate_only")
+                    {
+                        <option value="duplicate_only" selected>Только дублирующие (существующий л/с)</option>
+                    }
+                    else
+                    {
+                        <option value="duplicate_only">Только дублирующие (существующий л/с)</option>
+                    }
+                    @if (payCodeMode == "both")
+                    {
+                        <option value="both" selected>Новый и дублирующие</option>
+                    }
+                    else
+                    {
+                        <option value="both">Новый и дублирующие</option>
+                    }
+                </select>
+                <small class="form-text text-muted">Определяет, какое поле показывать в форме создания счёта: только генерация нового номера, только выбор существующего лицевого счёта или оба варианта.</small>
             </div>
+            <input type="hidden" asp-for="AllowedHassameaccount" id="AllowedHassameaccount" />
             <div class="mb-2">
                 <label asp-for="Paymentreminderdaysbefore" class="form-label">Напоминание об оплате (за сколько дней до срока)</label>
                 <input asp-for="Paymentreminderdaysbefore" class="form-control" type="number" min="0" />

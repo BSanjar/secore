@@ -1,4 +1,4 @@
-@model WebApplication1.Models.ViewModels.LoginViewModel
+@model WebApplication1.Dtos.LoginViewModel
 @using Microsoft.AspNetCore.Mvc.Localization
 @inject IHtmlLocalizer<WebApplication1.SharedResources> Localizer
 @{
@@ -69,7 +69,7 @@
                     <div class="field">
                         <label class="field-label" asp-for="Email">@Localizer["Email"]</label>
                         <div class="input-wrap">
-                            <span class="input-icon"></span>
+                          
                             <input asp-for="Email" class="input" type="email" placeholder="@Localizer["Email"]" autocomplete="username" />
                         </div>
                         <span asp-validation-for="Email" class="field-error"></span>
@@ -78,7 +78,7 @@
                     <div class="field">
                         <label class="field-label" asp-for="Password">@Localizer["Password"]</label>
                         <div class="input-wrap">
-                            <span class="input-icon">&#9679;</span>
+                           
                             <input asp-for="Password" class="input" type="password" placeholder="@Localizer["Password"]" autocomplete="current-password" />
                         </div>
                         <span asp-validation-for="Password" class="field-error"></span>

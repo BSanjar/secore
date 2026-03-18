@@ -1,7 +1,7 @@
 @model object
 
 @{
-    var item = (WebApplication1.Areas.Simple.ViewModels.PaymentListItemVm)Model;
+    var item = (WebApplication1.Dtos.PaymentListItemVm)Model;
 
     var statusClass = item.Status?.ToLower() switch
     {

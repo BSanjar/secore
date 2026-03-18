@@ -20,16 +20,6 @@ namespace WebApplication1.Controllers
             return HttpContext.Session.GetString("OrganizationId");
         }
 
-        private async Task<string?> GetCurrentOrganizationType()
-        {
-            var orgId = GetCurrentOrganizationId();
-            if (string.IsNullOrEmpty(orgId))
-                return null;
-
-            var org = await _db.Organizations.FindAsync(orgId);
-            return org?.Organizationtype;
-        }
-
         // GET: Roles
         public async Task<IActionResult> Index()
         {

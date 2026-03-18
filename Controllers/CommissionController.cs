@@ -1,6 +1,7 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using WebApplication1.Dtos;
 using WebApplication1.Helpers;
 using WebApplication1.Models.DBModels;
 
@@ -187,10 +188,4 @@ public class CommissionController : Controller
         return decimal.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out var d) ? d : null;
     }
 
-    private class TierDto
-    {
-        public decimal AmountFrom { get; set; }
-        public decimal AmountTo { get; set; }
-        public decimal Rate { get; set; }
-    }
 }

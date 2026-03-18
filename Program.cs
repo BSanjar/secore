@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 using WebApplication1.Models.BaseModels;
 using WebApplication1.Models.DBModels;
 using WebApplication1.Modules.GenericModule.Services;
-using WebApplication1.Areas.Simple.ViewModels;
+using WebApplication1.Dtos;
 using WebApplication1.Areas.Simple.Services;
 using System.Linq;
 using WebApplication1.Services;
@@ -93,6 +93,7 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddScoped<WebApplication1.Filters.XmlValidationFilter>();
 builder.Services.AddScoped<WebApplication1.Filters.SetCabinetLayoutFilter>();
 builder.Services.AddScoped<OperationsByInvoices>();
+builder.Services.AddScoped<ExcelExportService>();
 // Регистрируем сервис авторизации API
 builder.Services.AddScoped<WebApplication1.Services.WebApiAuthService>();
 
@@ -111,6 +112,7 @@ builder.Services.AddScoped<ITableSource<PaymentListItemVm>, SimplePaymentsTableS
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<TransactionCommissionService>();
 builder.Services.AddScoped<ViewRenderService>();
+builder.Services.AddScoped<ClientService>();
 
 
 // Добавление поддержки сессий

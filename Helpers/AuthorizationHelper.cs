@@ -63,7 +63,7 @@ namespace WebApplication1.Helpers
                 return;
             }
 
-            var hasPermission = PermissionHelper.HasPermission(dbContext, userId, _permissionCode);
+            var hasPermission = PermissionHelper.HasPermission(context.HttpContext, _permissionCode);
             if (!hasPermission)
             {
                 context.Result = new RedirectToActionResult("AccessDenied", "Home", new { permissionCode = _permissionCode });
@@ -112,6 +112,8 @@ namespace WebApplication1.Helpers
     /// </summary>
     public static class PermissionHelper
     {
+        private const string RequestCacheKeyPrefix = "__secore.permissions:";
+
         /// <summary>
         /// Проверяет, есть ли у пользователя указанное право
         /// </summary>
@@ -193,8 +195,16 @@ namespace WebApplication1.Helpers
                 return false;
             }
 
+            // Кэш на время одного HTTP-запроса, чтобы layout/partial'ы не били БД десятки раз.
+            var cacheKey = RequestCacheKeyPrefix + userId;
+            if (httpContext.Items.TryGetValue(cacheKey, out var cached) && cached is HashSet<string> set)
+                return set.Contains(permissionCode);
+
             var db = httpContext.RequestServices.GetRequiredService<AppDbContext>();
-            return HasPermission(db, userId, permissionCode);
+            var permissions = GetUserPermissions(db, userId);
+            set = new HashSet<string>(permissions, StringComparer.OrdinalIgnoreCase);
+            httpContext.Items[cacheKey] = set;
+            return set.Contains(permissionCode);
         }
     }
 }

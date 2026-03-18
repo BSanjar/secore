@@ -1,7 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Diagnostics;
 using System.Diagnostics;
-using WebApplication1.Models;
+using WebApplication1.Dtos;
 using WebApplication1.Helpers;
 
 namespace WebApplication1.Controllers

@@ -1,4 +1,4 @@
-using WebApplication1.Modules.GenericModule.Models;
+using WebApplication1.Dtos;
 
 namespace WebApplication1.Modules.GenericModule.Services
 {

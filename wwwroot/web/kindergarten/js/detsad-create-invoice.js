@@ -201,6 +201,9 @@
         var wrap = container.querySelector('.create-invoice-wrap') || container;
         var disableServiceSelection = wrap.getAttribute('data-disable-invoice-service-selection') === 'true';
         var allowedHassame = wrap.getAttribute('data-allowed-hassame-account') === 'true';
+        var payCodeMode = (wrap.getAttribute('data-invoice-pay-code-mode') || 'new_only');
+        var showPayCodeSelect = (payCodeMode === 'duplicate_only' || payCodeMode === 'both');
+        var allowNewPayCode = (payCodeMode === 'both');
 
         var autoProlongationEl = container.querySelector('#invoiceAutoProlongation');
         var useCurrentDateTimeEl = container.querySelector('#invoiceUseCurrentDateTime');
@@ -331,7 +334,7 @@
             if (payCodeEl) payCodeEl.value = val || '—';
             updatePreview(container);
         }
-        if (allowedHassame) {
+        if (showPayCodeSelect) {
             var payCodeSelect = container.querySelector('#invoicePayCodeSelect');
             var clientIdsParam = selectedClientIds.length ? '?clientIds=' + encodeURIComponent(selectedClientIds.join(',')) : '';
             fetch(baseUrl + '/GetInvoicePayCodeOptions' + clientIdsParam)
@@ -339,10 +342,12 @@
                 .then(function(data) {
                     if (!payCodeSelect) return;
                     payCodeSelect.innerHTML = '';
-                    var optNew = document.createElement('option');
-                    optNew.value = '__new__';
-                    optNew.textContent = 'Сгенерировать новый';
-                    payCodeSelect.appendChild(optNew);
+                    if (allowNewPayCode) {
+                        var optNew = document.createElement('option');
+                        optNew.value = '__new__';
+                        optNew.textContent = 'Сгенерировать новый';
+                        payCodeSelect.appendChild(optNew);
+                    }
                     (data.payCodeOptions || []).forEach(function(o) {
                         var opt = document.createElement('option');
                         opt.value = o.payCode || '';
@@ -361,25 +366,37 @@
                             setPayCodeAndPreview(v);
                         }
                     });
-                    payCodeSelect.value = '__new__';
-                    setPayCodeAndPreview('');
-                    fetch(baseUrl + '/GetNextInvoiceNumber')
-                        .then(function(r) { return r.json(); })
-                        .then(function(d) {
-                            setPayCodeAndPreview(d.payCode);
-                            payCodeSelect.value = '__new__';
-                        })
-                        .catch(function() {
-                            setPayCodeAndPreview('00001000000001');
-                            payCodeSelect.value = '__new__';
-                        });
+                    if (allowNewPayCode) {
+                        payCodeSelect.value = '__new__';
+                        setPayCodeAndPreview('');
+                        fetch(baseUrl + '/GetNextInvoiceNumber')
+                            .then(function(r) { return r.json(); })
+                            .then(function(d) {
+                                setPayCodeAndPreview(d.payCode);
+                                payCodeSelect.value = '__new__';
+                            })
+                            .catch(function() {
+                                setPayCodeAndPreview('00001000000001');
+                                payCodeSelect.value = '__new__';
+                            });
+                    } else {
+                        var opts = data.payCodeOptions || [];
+                        if (opts.length > 0) {
+                            payCodeSelect.value = opts[0].payCode || '';
+                            setPayCodeAndPreview(opts[0].payCode || '');
+                        } else {
+                            setPayCodeAndPreview('—');
+                        }
+                    }
                 })
                 .catch(function() {
-                    if (payCodeSelect) payCodeSelect.innerHTML = '<option value="__new__">Сгенерировать новый</option>';
-                    fetch(baseUrl + '/GetNextInvoiceNumber')
-                        .then(function(r) { return r.json(); })
-                        .then(function(d) { setPayCodeAndPreview(d.payCode); })
-                        .catch(function() { setPayCodeAndPreview('00001000000001'); });
+                    if (payCodeSelect) payCodeSelect.innerHTML = allowNewPayCode ? '<option value="__new__">Сгенерировать новый</option>' : '<option value="">Нет доступных лицевых счетов</option>';
+                    if (allowNewPayCode) {
+                        fetch(baseUrl + '/GetNextInvoiceNumber')
+                            .then(function(r) { return r.json(); })
+                            .then(function(d) { setPayCodeAndPreview(d.payCode); })
+                            .catch(function() { setPayCodeAndPreview('00001000000001'); });
+                    } else if (payCodeEl) payCodeEl.value = '—';
                 });
         } else {
             fetch(baseUrl + '/GetNextInvoiceNumber')
@@ -483,10 +500,17 @@
                         return;
                     }
                 }
-                if (allowedHassame) {
+                if (showPayCodeSelect) {
                     var payCodeSelect = container.querySelector('#invoicePayCodeSelect');
-                    var selectedPayCode = payCodeSelect && payCodeSelect.value && payCodeSelect.value !== '__new__' ? payCodeSelect.value : null;
-                    if (selectedPayCode) payload.payCode = selectedPayCode;
+                    var selectedPayCode = payCodeSelect && payCodeSelect.value && payCodeSelect.value !== '__new__' && payCodeSelect.value !== '' ? payCodeSelect.value : null;
+                    if (payCodeMode === 'duplicate_only' && !selectedPayCode) {
+                        alert('Выберите лицевой счёт из списка.');
+                        return;
+                    }
+                    if (selectedPayCode) {
+                        payload.payCode = selectedPayCode;
+                        payload.hassameaccount = true;
+                    }
                 }
                 createBtn.disabled = true;
                 createBtn.textContent = 'Создание...';

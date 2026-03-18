@@ -5,10 +5,11 @@
     var orgServices = ViewBag.OrganizationServices as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
     var disableInvoiceServiceSelection = ViewBag.DisableInvoiceServiceSelection as bool? ?? false;
     var allowedHassameaccount = ViewBag.AllowedHassameaccount as bool? ?? false;
+    var invoicePayCodeMode = ViewBag.InvoicePayCodeMode as string ?? (allowedHassameaccount ? "both" : "new_only");
 }
 <link rel="stylesheet" href="~/web/kindergarten/css/detsad-create-invoice.css" asp-append-version="true" />
 
-<div class="create-invoice-wrap" data-disable-invoice-service-selection="@(disableInvoiceServiceSelection ? "true" : "false")" data-allowed-hassame-account="@(allowedHassameaccount ? "true" : "false")">
+<div class="create-invoice-wrap" data-disable-invoice-service-selection="@(disableInvoiceServiceSelection ? "true" : "false")" data-allowed-hassame-account="@(allowedHassameaccount ? "true" : "false")" data-invoice-pay-code-mode="@invoicePayCodeMode">
     <!-- Шаг 1: Выбор получателей — две колонки: дерево слева, выбранные справа -->
     <div class="create-invoice-step" id="createInvoiceStep1">
         <div class="row g-0 create-invoice-step1-row">
@@ -107,18 +108,26 @@
                             </div>
                             <div class="row g-2 mb-2">
                                 <div class="col-6">
-                                    @if (allowedHassameaccount)
+                                    @if (invoicePayCodeMode == "new_only")
+                                    {
+                                        <label class="form-label small">Номер счёта (14 цифр)</label>
+                                        <input type="text" id="invoicePayCode" class="form-control form-control-sm" readonly placeholder="Загрузка..." />
+                                    }
+                                    else if (invoicePayCodeMode == "duplicate_only")
                                     {
                                         <label class="form-label small">Лицевой счёт</label>
-                                        <select id="invoicePayCodeSelect" class="form-select form-select-sm mb-1">
+                                        <select id="invoicePayCodeSelect" class="form-select form-select-sm mb-1" data-allow-new="false">
                                             <option value="">Загрузка...</option>
                                         </select>
                                         <input type="text" id="invoicePayCode" class="form-control form-control-sm" readonly placeholder="—" />
                                     }
                                     else
                                     {
-                                        <label class="form-label small">Номер счёта (14 цифр)</label>
-                                        <input type="text" id="invoicePayCode" class="form-control form-control-sm" readonly placeholder="Загрузка..." />
+                                        <label class="form-label small">Лицевой счёт</label>
+                                        <select id="invoicePayCodeSelect" class="form-select form-select-sm mb-1" data-allow-new="true">
+                                            <option value="">Загрузка...</option>
+                                        </select>
+                                        <input type="text" id="invoicePayCode" class="form-control form-control-sm" readonly placeholder="—" />
                                     }
                                 </div>
                                 <div class="col-6">

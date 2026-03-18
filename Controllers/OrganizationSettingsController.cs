@@ -36,6 +36,7 @@ public class OrganizationSettingsController : Controller
                 OrganizationId = organizationId,
                 DisableInvoiceServiceSelection = false,
                 AllowedHassameaccount = false,
+                InvoicePayCodeMode = null,
                 Paymentreminderdaysbefore = 0
             };
         }
@@ -57,7 +58,8 @@ public class OrganizationSettingsController : Controller
         if (existing != null)
         {
             existing.DisableInvoiceServiceSelection = model.DisableInvoiceServiceSelection;
-            existing.AllowedHassameaccount = model.AllowedHassameaccount;
+            existing.InvoicePayCodeMode = model.InvoicePayCodeMode;
+            existing.AllowedHassameaccount = string.IsNullOrEmpty(model.InvoicePayCodeMode) ? model.AllowedHassameaccount : (model.InvoicePayCodeMode != "new_only");
             existing.Paymentreminderdaysbefore = model.Paymentreminderdaysbefore;
         }
         else

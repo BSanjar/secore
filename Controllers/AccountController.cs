@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Models.DBModels;
-using WebApplication1.Models.ViewModels;
+using WebApplication1.Dtos;
 using WebApplication1.Helpers;
 
 namespace WebApplication1.Controllers
@@ -45,7 +45,6 @@ namespace WebApplication1.Controllers
                 return View(model);
             }
 
-            // Находим пользователя по email (регистронезависимое сравнение, без пробелов)
             var emailToSearch = model.Email?.Trim();
             if (string.IsNullOrWhiteSpace(emailToSearch))
             {
@@ -53,17 +52,27 @@ namespace WebApplication1.Controllers
                 return View(model);
             }
 
-            // Получаем всех не удаленных пользователей и фильтруем по email в памяти
-            // Это необходимо, так как нужно учитывать пробелы в начале/конце email в БД
-            var users = await _db.Users
+            // Сначала ищем по точному совпадению без учёта регистра в БД (индекс по LOWER(email))
+            var user = await _db.Users
                 .Include(u => u.OrganizationNavigation)
-                .Where(u => u.Isdeleted == null || u.Isdeleted == 0)
-                .ToListAsync();
+                .Where(u => (u.Isdeleted == null || u.Isdeleted == 0)
+                    && u.Email != null
+                    && u.Email.ToLower() == emailToSearch.ToLower())
+                .FirstOrDefaultAsync();
 
-            // Ищем пользователя с учетом регистра и пробелов
-            var user = users.FirstOrDefault(u => 
-                u.Email != null && 
-                string.Equals(u.Email.Trim(), emailToSearch, StringComparison.OrdinalIgnoreCase));
+            // Если не найден — возможны пробелы в начале/конце в БД: ищем среди ограниченного набора
+            if (user == null)
+            {
+                var candidates = await _db.Users
+                    .Include(u => u.OrganizationNavigation)
+                    .Where(u => (u.Isdeleted == null || u.Isdeleted == 0)
+                        && u.Email != null
+                        && u.Email.ToLower().Contains(emailToSearch.ToLower())
+                        && u.Email.Length <= emailToSearch.Length + 10)
+                    .ToListAsync();
+                user = candidates.FirstOrDefault(u =>
+                    string.Equals(u.Email?.Trim(), emailToSearch, StringComparison.OrdinalIgnoreCase));
+            }
 
             if (user == null)
             {

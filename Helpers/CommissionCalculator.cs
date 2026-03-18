@@ -1,6 +1,6 @@
 using WebApplication1.Models.DBModels;
 
-namespace WebApplication1.Services;
+namespace WebApplication1.Helpers;
 
 /// <summary>
 /// Расчёт комиссии по правилам из справочника Commission.
