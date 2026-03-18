@@ -76,6 +76,7 @@ builder.Services.AddSwaggerGen(c =>
     c.DocumentFilter<ConnectorDocumentFilter>();
     c.DocumentFilter<SortSchemasDocumentFilter>();
     c.OperationFilter<ConnectorOperationFilter>();
+    c.SchemaFilter<ConnectorSchemaFilter>();
 
     // Keep only connector endpoints in this swagger doc
     c.DocInclusionPredicate((docName, apiDesc) =>
@@ -163,6 +164,9 @@ var localizationOptions = app.Services.GetRequiredService<IOptions<RequestLocali
 app.UseRequestLocalization(localizationOptions);
 
 app.UseRouting();
+
+// IP allowlist for API agents (must run before controllers)
+app.UseMiddleware<WebApplication1.Middleware.AgentIpAllowlistMiddleware>();
 
 // Добавляем middleware для обработки ошибок XML десериализации и валидации
 // Должен быть после UseRouting, чтобы перехватывать ответы контроллеров

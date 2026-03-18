@@ -959,6 +959,10 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Name)
                 .HasColumnType("character varying")
                 .HasColumnName("name");
+
+            entity.Property(e => e.AllowlistIp)
+                .HasColumnType("character varying")
+                .HasColumnName("allowlistip");
         });
 
         OnModelCreatingPartial(modelBuilder);

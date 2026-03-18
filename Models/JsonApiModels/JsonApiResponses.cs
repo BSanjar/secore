@@ -67,6 +67,7 @@ namespace WebApplication1.Models.JsonApiModels
 
         [JsonPropertyOrder(5)]
         [JsonPropertyName("client")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public JsonClientInfo? Client { get; set; }
 
         [JsonPropertyOrder(6)]
@@ -87,6 +88,9 @@ namespace WebApplication1.Models.JsonApiModels
 
         [JsonPropertyName("txnDate")]
         public string TxnDate { get; set; } = string.Empty;
+
+        [JsonPropertyName("transactionDateTime")]
+        public string TransactionDateTime { get; set; } = string.Empty;
 
         [JsonPropertyName("balanceSum")]
         public decimal BalanceSum { get; set; }
@@ -111,6 +115,9 @@ namespace WebApplication1.Models.JsonApiModels
 
         [JsonPropertyName("paymentStatus")]
         public string PaymentStatus { get; set; } = string.Empty;
+
+        [JsonPropertyName("transactionDateTime")]
+        public string TransactionDateTime { get; set; } = string.Empty;
     }
 }
 

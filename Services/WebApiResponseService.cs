@@ -37,6 +37,7 @@ namespace WebApplication1.Services
                 ErrorCode.PaymentAlreadyExists => "Оплата уже существует с отправленным txn_id",
                 ErrorCode.PaymentNotFound => "Оплата с переданным txn_id не найдена.",
                 ErrorCode.ServiceIdNotFound => "Сервис/организация не найдена.",
+                ErrorCode.IpNotAllowed => "Доступ запрещен с данного IP адреса.",
                 ErrorCode.SystemError => "Системная ошибка",
                 ErrorCode.AuthenticationFailed => "Аутентификация не пройдена",
                 _ => "Неизвестная ошибка"

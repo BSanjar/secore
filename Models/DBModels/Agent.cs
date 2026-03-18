@@ -13,6 +13,11 @@ public partial class Agent
 
     public string? Name { get; set; }
 
+    /// <summary>
+    /// Список разрешённых IP для API (через запятую/точку с запятой). Пусто/NULL = разрешить все.
+    /// </summary>
+    public string? AllowlistIp { get; set; }
+
     public virtual ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
     public virtual ICollection<AgentCommission> AgentCommissions { get; set; } = new List<AgentCommission>();
 }

@@ -121,6 +121,11 @@ namespace WebApplication1.Models.WebApiModels
         ServiceIdNotFound = 40,
 
         /// <summary>
+        /// Доступ с данного IP запрещён для агента
+        /// </summary>
+        IpNotAllowed = 41,
+
+        /// <summary>
         /// Системная ошибка
         /// </summary>
         SystemError = 100,

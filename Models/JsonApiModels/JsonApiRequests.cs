@@ -31,9 +31,6 @@ namespace WebApplication1.Models.JsonApiModels
 
     public sealed class JsonPaymentInfoRequest
     {
-        [JsonPropertyName("serviceId")]
-        public string ServiceId { get; set; } = string.Empty;
-
         [JsonPropertyName("txnId")]
         public string TxnId { get; set; } = string.Empty;
     }

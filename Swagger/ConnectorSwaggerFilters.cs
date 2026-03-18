@@ -3,6 +3,7 @@ using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Reflection;
 using System.Text;
+using WebApplication1.Models.JsonApiModels;
 using WebApplication1.Models.WebApiModels;
 using WebApplication1.Services;
 
@@ -86,7 +87,19 @@ namespace WebApplication1.Swagger
             else if (route.Equals("WebApi/payInfo", StringComparison.OrdinalIgnoreCase))
             {
                 operation.Summary = "Payment status (JSON)";
-                operation.Description = "Returns paymentStatus: `1` success, `0` not success, `3` not found.";
+                operation.Description = "Returns paymentStatus: `1` success, `0` not success, `3` not found. `serviceId` is not required for this request.";
+            }
+        }
+    }
+
+    public sealed class ConnectorSchemaFilter : ISchemaFilter
+    {
+        public void Apply(OpenApiSchema schema, SchemaFilterContext context)
+        {
+            // Temporary contract change: do not expose `client` in check response schema
+            if (context.Type == typeof(JsonCheckResponse))
+            {
+                schema.Properties?.Remove("client");
             }
         }
     }

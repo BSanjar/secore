@@ -132,14 +132,6 @@ namespace WebApplication1.Controllers
                 RecomendedPaySum = decimal.Parse(ParsersHelper.ToMoneyStringFromCents(recommendedSum), CultureInfo.InvariantCulture),
                 Organization = organization.Name ?? string.Empty,
                 Subscriber = client?.ClientName ?? string.Empty,
-                Client = new JsonClientInfo
-                {
-                    Inn = client?.ClientInn ?? string.Empty,
-                    Address = client?.ClientAddress ?? string.Empty,
-                    Phone = client?.ClientPhone ?? string.Empty,
-                    Email = client?.ClientEmail ?? string.Empty,
-                    Name = client?.ClientName ?? string.Empty
-                },
                 InvoicesForPayment = items
             };
         }
@@ -216,6 +208,9 @@ namespace WebApplication1.Controllers
                 var rest = requestSum + oldBalance;
 
                 var secoreTrn = _oper.CreateTransaction(null, null, agent, requestSum, requestSum, request.TxnId, "payFromAPI");
+                // Заполняем, по какому инвойсу пришла оплата (для аналитики/поиска).
+                // По умолчанию (пополнение баланса) — первый актуальный инвойс аккаунта.
+                secoreTrn.Invoice = invoices.First().Id;
                 _db.Transactions.Add(secoreTrn);
 
                 async Task PayPaymentsListAsync(IEnumerable<InvoicePayment> paymentsToPay, bool requireFullAmount = false)
@@ -265,6 +260,10 @@ namespace WebApplication1.Controllers
                     await PayPaymentsListAsync(planPayments.OrderBy(p => p.DateFrom), requireFullAmount: true);
                 }
 
+                // Если что-то погасили — привяжем платеж к инвойсу первого погашенного платежа.
+                if (paidPayments.Any())
+                    secoreTrn.Invoice = paidPayments.First().Invoice;
+
                 // Всегда фиксируем новый баланс (может быть >0, =0 или <0)
                 invoices.ForEach(i => i.Balance = rest);
                 // balanceAdded: сколько "прибавилось" на положительный баланс (не может быть отрицательным)
@@ -291,6 +290,7 @@ namespace WebApplication1.Controllers
                     SecoreTxnId = secoreTrn.Id,
                     TxnId = request.TxnId,
                     TxnDate = request.TxnDate,
+                    TransactionDateTime = secoreTrn.TransactionDate?.ToString("yyyyMMddHHmmss") ?? string.Empty,
                     BalanceSum = decimal.Parse(ParsersHelper.ToMoneyStringFromCents(firstInvoice.Balance), CultureInfo.InvariantCulture),
                     PaidInvoices = paidInvoicesText,
                     PaidSum = decimal.Parse(ParsersHelper.ToMoneyStringFromCents(paidSum), CultureInfo.InvariantCulture),
@@ -327,19 +327,12 @@ namespace WebApplication1.Controllers
             if (!TryGetBasicCredentials(out var login, out var password))
                 return CreatePayInfoErrorResponse(ErrorCode.AuthenticationFailed);
 
-            if (string.IsNullOrWhiteSpace(request.ServiceId))
-                return CreatePayInfoErrorResponse(ErrorCode.ServiceIdNotFound);
-
             if (string.IsNullOrWhiteSpace(request.TxnId))
                 return CreatePayInfoErrorResponse(ErrorCode.TxnIdNotProvided);
 
             var agent = await _authService.AuthorizeAsync(login, password);
             if (agent == null)
                 return CreatePayInfoErrorResponse(ErrorCode.AuthenticationFailed);
-
-            var organization = await _db.Organizations.FirstOrDefaultAsync(o => o.Id == request.ServiceId);
-            if (organization == null)
-                return CreatePayInfoErrorResponse(ErrorCode.ServiceIdNotFound);
 
             var transaction = await _db.Transactions
                 .FirstOrDefaultAsync(t =>
@@ -356,7 +349,8 @@ namespace WebApplication1.Controllers
                     Description = "Оплата не найдена.",
                     SecoreTxnId = string.Empty,
                     TxnId = request.TxnId,
-                    PaymentStatus = "3"
+                    PaymentStatus = "3",
+                    TransactionDateTime = string.Empty
                 };
             }
 
@@ -371,7 +365,8 @@ namespace WebApplication1.Controllers
                 Description = description,
                 SecoreTxnId = transaction.Id,
                 TxnId = request.TxnId,
-                PaymentStatus = paymentStatus
+                PaymentStatus = paymentStatus,
+                TransactionDateTime = transaction.TransactionDate?.ToString("yyyyMMddHHmmss") ?? string.Empty
             };
         }
 
@@ -438,6 +433,8 @@ namespace WebApplication1.Controllers
             password = decoded.Substring(idx + 1);
             return !(string.IsNullOrWhiteSpace(login) || string.IsNullOrWhiteSpace(password));
         }
+
+        
     }
 }
 
