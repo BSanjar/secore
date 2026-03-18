@@ -116,6 +116,11 @@ namespace WebApplication1.Models.WebApiModels
         PaymentNotFound = 39,
 
         /// <summary>
+        /// Сервис/организация не найдена
+        /// </summary>
+        ServiceIdNotFound = 40,
+
+        /// <summary>
         /// Системная ошибка
         /// </summary>
         SystemError = 100,

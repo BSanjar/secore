@@ -9,381 +9,397 @@ build_property.EnforceExtendedAnalyzerRules =
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = WebApplication1
 build_property.RootNamespace = WebApplication1
-build_property.ProjectDir = C:\Users\AzatAdmin\Documents\SECORE\secore\
+build_property.ProjectDir = C:\disk\sanjar\BillingCom\secore\WebApplication1\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 build_property.RazorLangVersion = 7.0
 build_property.SupportLocalizedComponentNames = 
 build_property.GenerateRazorMetadataSourceChecksumAttributes = 
-build_property.MSBuildProjectDirectory = C:\Users\AzatAdmin\Documents\SECORE\secore
+build_property.MSBuildProjectDirectory = C:\disk\sanjar\BillingCom\secore\WebApplication1
 build_property._RazorSourceGeneratorDebug = 
 build_property.EffectiveAnalysisLevelStyle = 7.0
 build_property.EnableCodeStyleSeverity = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/Cabinet/Children.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Detsad/Views/Cabinet/Children.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXENhYmluZXRcQ2hpbGRyZW4uY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/Cabinet/CreateChild.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Detsad/Views/Cabinet/CreateChild.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXENhYmluZXRcQ3JlYXRlQ2hpbGQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/Cabinet/Index.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Detsad/Views/Cabinet/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXENhYmluZXRcSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/Cabinet/Payments.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Detsad/Views/Cabinet/Payments.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXENhYmluZXRcUGF5bWVudHMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/Cabinet/_CreateInvoicePartial.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Detsad/Views/Cabinet/_CreateInvoicePartial.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXENhYmluZXRcX0NyZWF0ZUludm9pY2VQYXJ0aWFsLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/Invoices/Create.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Detsad/Views/Cabinet/_EditInvoicePartial.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXENhYmluZXRcX0VkaXRJbnZvaWNlUGFydGlhbC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Detsad/Views/Invoices/Create.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXEludm9pY2VzXENyZWF0ZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/Invoices/Details.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Detsad/Views/Invoices/Details.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXEludm9pY2VzXERldGFpbHMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/Invoices/Edit.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Detsad/Views/Invoices/Edit.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXEludm9pY2VzXEVkaXQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/Invoices/Index.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Detsad/Views/Invoices/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXEludm9pY2VzXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/OrganizationServices/Create.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Detsad/Views/Invoices/InvoicePdf.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXEludm9pY2VzXEludm9pY2VQZGYuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Detsad/Views/Invoices/PaymentReceiptPdf.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXEludm9pY2VzXFBheW1lbnRSZWNlaXB0UGRmLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Detsad/Views/Invoices/StatementPdf.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXEludm9pY2VzXFN0YXRlbWVudFBkZi5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Detsad/Views/OrganizationServices/Create.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXE9yZ2FuaXphdGlvblNlcnZpY2VzXENyZWF0ZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/OrganizationServices/Edit.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Detsad/Views/OrganizationServices/Edit.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXE9yZ2FuaXphdGlvblNlcnZpY2VzXEVkaXQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/OrganizationServices/Index.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Detsad/Views/OrganizationServices/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXE9yZ2FuaXphdGlvblNlcnZpY2VzXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/OrgClientGroups/Create.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Detsad/Views/OrgClientGroups/Create.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXE9yZ0NsaWVudEdyb3Vwc1xDcmVhdGUuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/OrgClientGroups/Edit.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Detsad/Views/OrgClientGroups/Edit.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXE9yZ0NsaWVudEdyb3Vwc1xFZGl0LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/OrgClientGroups/Index.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Detsad/Views/OrgClientGroups/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXE9yZ0NsaWVudEdyb3Vwc1xJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/OrgClientGroups/_GroupTreeItem.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Detsad/Views/OrgClientGroups/_GroupTreeItem.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXE9yZ0NsaWVudEdyb3Vwc1xfR3JvdXBUcmVlSXRlbS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/Profile/Index.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Detsad/Views/Profile/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXFByb2ZpbGVcSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/Shared/_LanguageSwitcher.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Detsad/Views/Shared/_LanguageSwitcher.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXFNoYXJlZFxfTGFuZ3VhZ2VTd2l0Y2hlci5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/_ViewImports.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Detsad/Views/_ViewImports.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXF9WaWV3SW1wb3J0cy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/_ViewStart.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Detsad/Views/_ViewStart.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXF9WaWV3U3RhcnQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Medclinic/Views/Shared/_LanguageSwitcher.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Medclinic/Views/Shared/_LanguageSwitcher.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcTWVkY2xpbmljXFZpZXdzXFNoYXJlZFxfTGFuZ3VhZ2VTd2l0Y2hlci5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Medclinic/Views/_ViewImports.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Medclinic/Views/_ViewImports.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcTWVkY2xpbmljXFZpZXdzXF9WaWV3SW1wb3J0cy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Medclinic/Views/_ViewStart.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Medclinic/Views/_ViewStart.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcTWVkY2xpbmljXFZpZXdzXF9WaWV3U3RhcnQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/School/Views/_ViewImports.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/School/Views/_ViewImports.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2Nob29sXFZpZXdzXF9WaWV3SW1wb3J0cy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Simple/Views/Cabinet/Index.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Simple/Views/Cabinet/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2ltcGxlXFZpZXdzXENhYmluZXRcSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Simple/Views/Payments/Create.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Simple/Views/Payments/Create.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2ltcGxlXFZpZXdzXFBheW1lbnRzXENyZWF0ZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Simple/Views/Payments/Index.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Simple/Views/Payments/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2ltcGxlXFZpZXdzXFBheW1lbnRzXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Simple/Views/Payments/Partials/_PaymentsFilters.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Simple/Views/Payments/Partials/_PaymentsFilters.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2ltcGxlXFZpZXdzXFBheW1lbnRzXFBhcnRpYWxzXF9QYXltZW50c0ZpbHRlcnMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Simple/Views/Payments/Partials/_PaymentsTableHeader.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Simple/Views/Payments/Partials/_PaymentsTableHeader.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2ltcGxlXFZpZXdzXFBheW1lbnRzXFBhcnRpYWxzXF9QYXltZW50c1RhYmxlSGVhZGVyLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Simple/Views/Payments/Partials/_PaymentsTableRow.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Simple/Views/Payments/Partials/_PaymentsTableRow.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2ltcGxlXFZpZXdzXFBheW1lbnRzXFBhcnRpYWxzXF9QYXltZW50c1RhYmxlUm93LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Simple/Views/Shared/_LanguageSwitcher.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Simple/Views/Shared/_LanguageSwitcher.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2ltcGxlXFZpZXdzXFNoYXJlZFxfTGFuZ3VhZ2VTd2l0Y2hlci5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Simple/Views/_ViewImports.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Simple/Views/_ViewImports.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2ltcGxlXFZpZXdzXF9WaWV3SW1wb3J0cy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Simple/Views/_ViewStart.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Simple/Views/_ViewStart.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2ltcGxlXFZpZXdzXF9WaWV3U3RhcnQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Standart/Views/Cabinet/Index.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Standart/Views/Cabinet/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU3RhbmRhcnRcVmlld3NcQ2FiaW5ldFxJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Standart/Views/Cabinet/Invoices.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Standart/Views/Cabinet/Invoices.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU3RhbmRhcnRcVmlld3NcQ2FiaW5ldFxJbnZvaWNlcy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Standart/Views/Cabinet/PaymentHistory.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Standart/Views/Cabinet/PaymentHistory.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU3RhbmRhcnRcVmlld3NcQ2FiaW5ldFxQYXltZW50SGlzdG9yeS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Standart/Views/Shared/_LanguageSwitcher.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Standart/Views/Shared/_LanguageSwitcher.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU3RhbmRhcnRcVmlld3NcU2hhcmVkXF9MYW5ndWFnZVN3aXRjaGVyLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Standart/Views/_ViewImports.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Standart/Views/_ViewImports.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU3RhbmRhcnRcVmlld3NcX1ZpZXdJbXBvcnRzLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Standart/Views/_ViewStart.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Standart/Views/_ViewStart.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU3RhbmRhcnRcVmlld3NcX1ZpZXdTdGFydC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Modules/GenericModule/Views/Default.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Modules/GenericModule/Views/Default.cshtml]
 build_metadata.AdditionalFiles.TargetPath = TW9kdWxlc1xHZW5lcmljTW9kdWxlXFZpZXdzXERlZmF1bHQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Account/Login.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Account/Login.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxMb2dpbi5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Account/SubscriptionExpired.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Account/SubscriptionExpired.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxTdWJzY3JpcHRpb25FeHBpcmVkLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Agents/Create.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Agents/Create.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWdlbnRzXENyZWF0ZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Agents/Delete.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Agents/Delete.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWdlbnRzXERlbGV0ZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Agents/Details.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Agents/Details.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWdlbnRzXERldGFpbHMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Agents/Edit.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Agents/Edit.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWdlbnRzXEVkaXQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Agents/Index.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Agents/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWdlbnRzXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Commission/Create.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Commission/Create.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQ29tbWlzc2lvblxDcmVhdGUuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Commission/Edit.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Commission/Edit.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQ29tbWlzc2lvblxFZGl0LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Commission/Index.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Commission/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQ29tbWlzc2lvblxJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/History/Index.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/History/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSGlzdG9yeVxJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Home/AccessDenied.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Home/AccessDenied.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxBY2Nlc3NEZW5pZWQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Home/Index.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Home/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Home/Privacy.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Home/Privacy.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxQcml2YWN5LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Instructions/Index.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Instructions/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSW5zdHJ1Y3Rpb25zXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Notifications/Index.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Notifications/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcTm90aWZpY2F0aW9uc1xJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/OrganizationFields/Create.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/OrganizationFields/Create.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcT3JnYW5pemF0aW9uRmllbGRzXENyZWF0ZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/OrganizationFields/Delete.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/OrganizationFields/Delete.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcT3JnYW5pemF0aW9uRmllbGRzXERlbGV0ZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/OrganizationFields/Edit.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/OrganizationFields/Edit.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcT3JnYW5pemF0aW9uRmllbGRzXEVkaXQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/OrganizationFields/Index.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/OrganizationFields/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcT3JnYW5pemF0aW9uRmllbGRzXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/OrganizationSettings/Index.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/OrganizationSettings/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcT3JnYW5pemF0aW9uU2V0dGluZ3NcSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/OrganizationSubscription/Index.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/OrganizationSubscription/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcT3JnYW5pemF0aW9uU3Vic2NyaXB0aW9uXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Permissions/Create.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Permissions/Create.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUGVybWlzc2lvbnNcQ3JlYXRlLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Permissions/Delete.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Permissions/Delete.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUGVybWlzc2lvbnNcRGVsZXRlLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Permissions/Edit.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Permissions/Edit.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUGVybWlzc2lvbnNcRWRpdC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Permissions/Index.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Permissions/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUGVybWlzc2lvbnNcSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Roles/Create.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Roles/Create.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUm9sZXNcQ3JlYXRlLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Roles/Delete.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Roles/Delete.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUm9sZXNcRGVsZXRlLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Roles/Details.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Roles/Details.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUm9sZXNcRGV0YWlscy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Roles/Edit.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Roles/Edit.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUm9sZXNcRWRpdC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Roles/Index.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Roles/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUm9sZXNcSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Roles/ManagePermissions.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Roles/ManagePermissions.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUm9sZXNcTWFuYWdlUGVybWlzc2lvbnMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Settings/Index.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Settings/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2V0dGluZ3NcSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Shared/Error.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Shared/Error.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXEVycm9yLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Shared/_LanguageSwitcher.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Shared/_LanguageSwitcher.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9MYW5ndWFnZVN3aXRjaGVyLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Shared/_Layout.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Shared/_Layout.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9MYXlvdXQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Shared/_UserMenuPartial.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Shared/_UserMenuPartial.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9Vc2VyTWVudVBhcnRpYWwuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Shared/_ValidationScriptsPartial.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Shared/_ValidationScriptsPartial.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9WYWxpZGF0aW9uU2NyaXB0c1BhcnRpYWwuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Support/Index.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Support/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU3VwcG9ydFxJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/TariffAndCommissions/Index.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/TariffAndCommissions/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGFyaWZmQW5kQ29tbWlzc2lvbnNcSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/UserRoles/Assign.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/UserRoles/Assign.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVXNlclJvbGVzXEFzc2lnbi5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/UserRoles/Index.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/UserRoles/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVXNlclJvbGVzXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Users/Create.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Users/Create.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVXNlcnNcQ3JlYXRlLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Users/Delete.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Users/Delete.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVXNlcnNcRGVsZXRlLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Users/Edit.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Users/Edit.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVXNlcnNcRWRpdC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/Users/Index.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/Users/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVXNlcnNcSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/_ViewImports.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/_ViewImports.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcX1ZpZXdJbXBvcnRzLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Views/_ViewStart.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Views/_ViewStart.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcX1ZpZXdTdGFydC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Detsad/Views/Shared/_LayoutDetSadCabinet.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Detsad/Views/Shared/_LayoutDetSadCabinet.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcRGV0c2FkXFZpZXdzXFNoYXJlZFxfTGF5b3V0RGV0U2FkQ2FiaW5ldC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = b-kkz2e4q1ls
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Medclinic/Views/Shared/_LayoutMedCabinet.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Medclinic/Views/Shared/_LayoutMedCabinet.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcTWVkY2xpbmljXFZpZXdzXFNoYXJlZFxfTGF5b3V0TWVkQ2FiaW5ldC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = b-k8rlsnyeq6
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Simple/Views/Shared/_LayoutSimpleCabinet.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Simple/Views/Shared/_LayoutSimpleCabinet.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2ltcGxlXFZpZXdzXFNoYXJlZFxfTGF5b3V0U2ltcGxlQ2FiaW5ldC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = b-u3hw5ew1cp
 
-[C:/Users/AzatAdmin/Documents/SECORE/secore/Areas/Standart/Views/Shared/_LayoutCabinet.cshtml]
+[C:/disk/sanjar/BillingCom/secore/WebApplication1/Areas/Standart/Views/Shared/_LayoutCabinet.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU3RhbmRhcnRcVmlld3NcU2hhcmVkXF9MYXlvdXRDYWJpbmV0LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = b-855bh5u9ab

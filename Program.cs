@@ -10,6 +10,8 @@ using WebApplication1.Areas.Simple.Services;
 using System.Linq;
 using WebApplication1.Services;
 using WebApplication1.Helpers;
+using Microsoft.OpenApi.Models;
+using WebApplication1.Swagger;
 
 // Npgsql: разрешить запись DateTime с Kind=UTC в колонки timestamp without time zone
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
@@ -51,6 +53,41 @@ builder.Services.AddControllersWithViews(options =>
 })
     .AddViewLocalization(Microsoft.AspNetCore.Mvc.Razor.LanguageViewLocationExpanderFormat.Suffix)
     .AddDataAnnotationsLocalization(); 
+
+// Swagger (beautiful connector docs)
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("connector", new OpenApiInfo
+    {
+        Title = "Secore Connector API",
+        Version = "v1",
+        Description = "Billing connector (JSON + XML)."
+    });
+
+    // Basic auth for JSON connector
+    c.AddSecurityDefinition("basicAuth", new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.Http,
+        Scheme = "basic",
+        Description = "Basic auth for JSON connector: base64(login:password)"
+    });
+
+    c.DocumentFilter<ConnectorDocumentFilter>();
+    c.DocumentFilter<SortSchemasDocumentFilter>();
+    c.OperationFilter<ConnectorOperationFilter>();
+
+    // Keep only connector endpoints in this swagger doc
+    c.DocInclusionPredicate((docName, apiDesc) =>
+    {
+        if (!string.Equals(docName, "connector", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        var path = apiDesc.RelativePath ?? string.Empty;
+        return path.StartsWith("WebApi/", StringComparison.OrdinalIgnoreCase)
+               ;
+    });
+});
 
 // Регистрируем фильтры
 builder.Services.AddScoped<WebApplication1.Filters.XmlValidationFilter>();
@@ -131,6 +168,21 @@ app.UseMiddleware<WebApplication1.Middleware.XmlExceptionMiddleware>();
 app.UseMiddleware<WebApplication1.Middleware.XmlErrorResponseMiddleware>();
 
 app.UseAuthorization();
+
+// Swagger UI (served from /swagger)
+app.UseSwagger(c =>
+{
+    c.RouteTemplate = "swagger/{documentName}/swagger.json";
+});
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/connector/swagger.json", "Secore Connector API v1");
+    c.RoutePrefix = "swagger";
+    c.DocumentTitle = "Secore Connector API";
+    c.EnableDeepLinking();
+    c.DisplayRequestDuration();
+    c.InjectStylesheet("/swagger-ui/connector-theme.css");
+});
 
 // Маршрутизация для Language (должен быть до маршрута Areas)
 app.MapControllerRoute(

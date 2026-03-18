@@ -1,27 +1,25 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\AzatAdmin\\Documents\\SECORE\\secore\\WebApplication1.csproj": {}
+    "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\WebApplication1.csproj": {}
   },
   "projects": {
-    "C:\\Users\\AzatAdmin\\Documents\\SECORE\\secore\\WebApplication1.csproj": {
+    "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\WebApplication1.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\AzatAdmin\\Documents\\SECORE\\secore\\WebApplication1.csproj",
+        "projectUniqueName": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\WebApplication1.csproj",
         "projectName": "WebApplication1",
-        "projectPath": "C:\\Users\\AzatAdmin\\Documents\\SECORE\\secore\\WebApplication1.csproj",
-        "packagesPath": "C:\\Users\\AzatAdmin\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\AzatAdmin\\Documents\\SECORE\\secore\\obj\\",
+        "projectPath": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\WebApplication1.csproj",
+        "packagesPath": "C:\\Users\\Sanjar\\.nuget\\packages\\",
+        "outputPath": "C:\\disk\\sanjar\\BillingCom\\secore\\WebApplication1\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages",
-          "C:\\Program Files (x86)\\Microsoft\\Xamarin\\NuGet\\"
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\AzatAdmin\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\Sanjar\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Xamarin.Offline.config"
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net7.0"
@@ -57,6 +55,10 @@
               "target": "Package",
               "version": "[4.0.3, )"
             },
+            "ClosedXML": {
+              "target": "Package",
+              "version": "[0.102.2, )"
+            },
             "Microsoft.EntityFrameworkCore": {
               "target": "Package",
               "version": "[7.0.10, )"
@@ -81,9 +83,21 @@
               "target": "Package",
               "version": "[7.0.4, )"
             },
+            "PuppeteerSharp": {
+              "target": "Package",
+              "version": "[20.2.2, )"
+            },
             "Serilog.AspNetCore": {
               "target": "Package",
               "version": "[7.0.0, )"
+            },
+            "Swashbuckle.AspNetCore": {
+              "target": "Package",
+              "version": "[7.2.0, )"
+            },
+            "System.Text.Json": {
+              "target": "Package",
+              "version": "[8.0.5, )"
             }
           },
           "imports": [
@@ -105,7 +119,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.306\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.310\\RuntimeIdentifierGraph.json"
         }
       }
     }

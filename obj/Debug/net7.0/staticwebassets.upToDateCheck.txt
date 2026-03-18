@@ -1,6 +1,8 @@
+wwwroot\css\dashboard-soft.css
 wwwroot\css\login.css
 wwwroot\css\site.css
 wwwroot\favicon.ico
+wwwroot\img\search-icon.png
 wwwroot\js\site.js
 wwwroot\lib\bootstrap\dist\css\bootstrap-grid.css
 wwwroot\lib\bootstrap\dist\css\bootstrap-grid.css.map
@@ -59,6 +61,7 @@ wwwroot\lib\jquery\dist\jquery.js
 wwwroot\lib\jquery\dist\jquery.min.js
 wwwroot\lib\jquery\dist\jquery.min.map
 wwwroot\lib\jquery\LICENSE.txt
+wwwroot\swagger-ui\connector-theme.css
 wwwroot\web\kindergarten\css\cabinet.css
 wwwroot\web\kindergarten\css\detsad-children.css
 wwwroot\web\kindergarten\css\detsad-create-invoice.css
@@ -78,4 +81,3 @@ wwwroot\web\kindergarten\js\payment-history.js
 wwwroot\web\Simple\css\cabinet.css
 wwwroot\web\Simple\css\dashboard.css
 wwwroot\web\Simple\js\dashboard.js
-wwwroot\css\dashboard-soft.css

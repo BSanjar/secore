@@ -1,0 +1,384 @@
+:root{
+  --bg: #F7F8FB;
+  --panel: rgba(255,255,255,.86);
+  --panel2: rgba(255,255,255,.94);
+  --panel3: rgba(255,255,255,.98);
+  --text: rgba(15,18,28,.95);
+  --muted: rgba(15,18,28,.68);
+  --faint: rgba(15,18,28,.45);
+  --accent: #1B6BFF;
+  --accent2:#0EA5E9;
+  --danger:#E11D48;
+  --warning:#F59E0B;
+  --ok:#16A34A;
+  --shadow: 0 18px 60px rgba(15,18,28,.14);
+}
+
+body, html{
+  background:
+    radial-gradient(1200px 800px at 12% -10%, rgba(27,107,255,.10), transparent 55%),
+    radial-gradient(900px 600px at 92% 8%, rgba(14,165,233,.10), transparent 55%),
+    radial-gradient(900px 700px at 40% 120%, rgba(225,29,72,.07), transparent 60%),
+    var(--bg) !important;
+  color: var(--text) !important;
+}
+
+.swagger-ui{
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif !important;
+  color: var(--text) !important;
+}
+
+/* =========================================================
+   FULL REDESIGN: make everything readable + modern
+   ========================================================= */
+.swagger-ui, .swagger-ui *{
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography + links */
+.swagger-ui a, .swagger-ui a span{ color: var(--accent) !important; }
+.swagger-ui code, .swagger-ui pre, .swagger-ui kbd{ color: var(--text) !important; }
+.swagger-ui p, .swagger-ui li, .swagger-ui td, .swagger-ui th, .swagger-ui span, .swagger-ui label,
+.swagger-ui h1, .swagger-ui h2, .swagger-ui h3, .swagger-ui h4, .swagger-ui h5{
+  color: var(--text) !important;
+}
+.swagger-ui small, .swagger-ui .small, .swagger-ui .parameter__type, .swagger-ui .opblock-summary-description{
+  color: var(--muted) !important;
+}
+
+/* Icons/SVG */
+.swagger-ui svg, .swagger-ui svg *{
+  fill: currentColor !important;
+  color: var(--text) !important;
+}
+.swagger-ui .authorization__btn svg, .swagger-ui .authorization__btn svg *{
+  color: var(--accent2) !important;
+}
+.swagger-ui .opblock-summary-control svg, .swagger-ui .opblock-summary-control svg *{
+  color: var(--text) !important;
+}
+
+/* Topbar */
+.swagger-ui .topbar{
+  background: rgba(255,255,255,.80) !important;
+  backdrop-filter: blur(10px);
+}
+
+/* Big containers */
+.swagger-ui .scheme-container{
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.swagger-ui .scheme-container .schemes{
+  background: var(--panel2) !important;
+  border: 1px solid rgba(15,18,28,.10) !important;
+  border-radius: 16px !important;
+  box-shadow: var(--shadow);
+}
+.swagger-ui .info{
+  background: var(--panel2) !important;
+  border: 1px solid rgba(15,18,28,.10) !important;
+  border-radius: 16px !important;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+/* Opblocks */
+.swagger-ui .opblock{
+  background: var(--panel) !important;
+  border: 1px solid rgba(15,18,28,.10) !important;
+  border-radius: 16px !important;
+  box-shadow: var(--shadow);
+}
+.swagger-ui .opblock .opblock-summary{
+  border-bottom: 1px solid rgba(15,18,28,.08) !important;
+}
+.swagger-ui .opblock .opblock-section-header{
+  background: rgba(15,18,28,.03) !important;
+  border: 1px solid rgba(15,18,28,.08) !important;
+  border-radius: 12px !important;
+}
+.swagger-ui .opblock .opblock-summary-method{
+  color: #071018 !important;
+}
+
+/* Code blocks */
+.swagger-ui .highlight-code, .swagger-ui .microlight{
+  background: rgba(15,18,28,.04) !important;
+  border: 1px solid rgba(15,18,28,.10) !important;
+  border-radius: 12px !important;
+  color: var(--text) !important;
+}
+.swagger-ui .microlight *{ color: var(--text) !important; }
+
+/* Inputs */
+.swagger-ui input[type=text], .swagger-ui input[type=password], .swagger-ui input[type=email],
+.swagger-ui textarea, .swagger-ui select{
+  background: rgba(255,255,255,.92) !important;
+  border: 1px solid rgba(15,18,28,.16) !important;
+  border-radius: 12px !important;
+  color: var(--text) !important;
+}
+.swagger-ui input::placeholder, .swagger-ui textarea::placeholder{ color: var(--faint) !important; }
+.swagger-ui select option{ color: #0b0d12 !important; }
+
+/* Buttons */
+.swagger-ui .btn{
+  background: rgba(255,255,255,.92) !important;
+  border: 1px solid rgba(15,18,28,.16) !important;
+  border-radius: 12px !important;
+  color: var(--text) !important;
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+}
+.swagger-ui .btn:hover{
+  background: rgba(255,255,255,.98) !important;
+  border-color: rgba(15,18,28,.24) !important;
+}
+.swagger-ui .btn.execute{
+  border-color: rgba(27,107,255,.28) !important;
+  background: linear-gradient(135deg, rgba(27,107,255,.10), rgba(14,165,233,.10)) !important;
+}
+.swagger-ui .btn.cancel{
+  border-color: rgba(225,29,72,.28) !important;
+  background: rgba(225,29,72,.06) !important;
+}
+
+/* Tables */
+.swagger-ui table{
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+  border: 1px solid rgba(15,18,28,.10) !important;
+}
+.swagger-ui table thead tr th,
+.swagger-ui table thead tr td{
+  background: rgba(15,18,28,.04) !important;
+  color: var(--text) !important;
+}
+.swagger-ui table td, .swagger-ui table th{
+  border-color: rgba(15,18,28,.08) !important;
+}
+
+/* Models / Schemas */
+.swagger-ui .models,
+.swagger-ui .models-control,
+.swagger-ui .model-container{
+  background: var(--panel2) !important;
+  border: 1px solid rgba(15,18,28,.10) !important;
+  border-radius: 16px !important;
+  box-shadow: var(--shadow);
+}
+.swagger-ui .model-box{
+  background: rgba(15,18,28,.04) !important;
+  border: 1px solid rgba(15,18,28,.10) !important;
+}
+
+
+.swagger-ui .topbar{
+  background: transparent !important;
+  border-bottom: 1px solid rgba(255,255,255,.10) !important;
+  box-shadow: none !important;
+}
+.swagger-ui .topbar-wrapper{ padding: 14px 0 !important; }
+.swagger-ui .topbar a{ filter: drop-shadow(0 6px 24px rgba(0,0,0,.5)); }
+.swagger-ui .topbar .download-url-wrapper input[type=text]{
+  background: rgba(255,255,255,.06) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  color: var(--text) !important;
+}
+
+.swagger-ui .info{
+  background: var(--panel);
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 16px;
+  padding: 18px 18px 10px 18px;
+  box-shadow: var(--shadow);
+}
+.swagger-ui .info .title{
+  color: var(--text) !important;
+  letter-spacing: .2px;
+}
+.swagger-ui .info .base-url{
+  color: var(--muted) !important;
+}
+.swagger-ui .info p,
+.swagger-ui .info li,
+.swagger-ui .info table,
+.swagger-ui .info a,
+.swagger-ui .info h1,
+.swagger-ui .info h2,
+.swagger-ui .info h3,
+.swagger-ui .info h4,
+.swagger-ui .info h5,
+.swagger-ui .info span,
+.swagger-ui .info small,
+.swagger-ui .info .markdown,
+.swagger-ui .info .markdown *{
+  color: var(--text) !important;
+}
+.swagger-ui .info a{
+  color: var(--accent2) !important;
+}
+.swagger-ui .info table{
+  border-color: rgba(255,255,255,.12) !important;
+}
+.swagger-ui .info td, .swagger-ui .info th{
+  border-color: rgba(255,255,255,.10) !important;
+}
+.swagger-ui .markdown, .swagger-ui .markdown p, .swagger-ui .markdown li, .swagger-ui .markdown td{
+  color: var(--text) !important;
+}
+.swagger-ui .markdown *{
+  color: var(--text) !important;
+}
+.swagger-ui .markdown a{
+  color: var(--accent2) !important;
+  text-decoration: none !important;
+  border-bottom: 1px solid rgba(122,162,255,.35);
+}
+.swagger-ui .markdown a:hover{
+  border-bottom-color: rgba(122,162,255,.75);
+}
+.swagger-ui .markdown table{
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.12);
+}
+.swagger-ui .markdown th{
+  background: rgba(255,255,255,.08) !important;
+  color: var(--text) !important;
+}
+.swagger-ui .markdown td, .swagger-ui .markdown th{
+  border-color: rgba(255,255,255,.10) !important;
+}
+.swagger-ui table thead tr td,
+.swagger-ui table thead tr th{
+  color: var(--text) !important;
+  background: rgba(255,255,255,.08) !important;
+  border-color: rgba(255,255,255,.10) !important;
+}
+.swagger-ui .markdown code{
+  background: rgba(255,255,255,.08) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+  color: var(--accent) !important;
+}
+
+.swagger-ui .opblock{
+  background: var(--panel);
+  border: 1px solid rgba(255,255,255,.10) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--shadow);
+}
+.swagger-ui .opblock .opblock-summary{
+  border-bottom: 1px solid rgba(255,255,255,.08) !important;
+}
+.swagger-ui .opblock .opblock-summary-method{
+  border-radius: 10px !important;
+  background: linear-gradient(135deg, rgba(122,162,255,.90), rgba(155,255,182,.85)) !important;
+  color: #061015 !important;
+  font-weight: 800 !important;
+}
+.swagger-ui .opblock .opblock-summary-path,
+.swagger-ui .opblock .opblock-summary-description{
+  color: var(--text) !important;
+}
+
+/* Section tags like "JSON connector" */
+.swagger-ui .opblock-tag,
+.swagger-ui .opblock-tag *{
+  color: var(--text) !important;
+}
+.swagger-ui .opblock-tag{
+  border-bottom: 1px solid rgba(255,255,255,.10) !important;
+}
+
+.swagger-ui .btn{
+  border-radius: 12px !important;
+  border: 1px solid rgba(255,255,255,.16) !important;
+  background: rgba(255,255,255,.08) !important;
+  color: var(--text) !important;
+}
+.swagger-ui .btn.execute{
+  background: linear-gradient(135deg, rgba(155,255,182,.25), rgba(122,162,255,.25)) !important;
+  border-color: rgba(155,255,182,.35) !important;
+}
+.swagger-ui .btn.authorize{
+  border-color: rgba(122,162,255,.35) !important;
+}
+
+.swagger-ui input[type=text], .swagger-ui textarea{
+  background: rgba(255,255,255,.06) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  border-radius: 12px !important;
+  color: var(--text) !important;
+}
+.swagger-ui label, .swagger-ui .parameter__name, .swagger-ui .parameter__type,
+.swagger-ui .tab li, .swagger-ui .model-title, .swagger-ui .prop-type, .swagger-ui .prop-format{
+  color: var(--text) !important;
+}
+.swagger-ui .parameter__name.required:after{ color: var(--danger) !important; }
+.swagger-ui .opblock-description-wrapper p,
+.swagger-ui .opblock-description-wrapper,
+.swagger-ui .opblock-external-docs-wrapper,
+.swagger-ui .responses-table,
+.swagger-ui .responses-table td,
+.swagger-ui .responses-table th{
+  color: var(--text) !important;
+}
+.swagger-ui .model-box{
+  background: rgba(0,0,0,.14) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+  border-radius: 12px !important;
+}
+.swagger-ui .model, .swagger-ui .model span{
+  color: var(--text) !important;
+}
+
+/* Schemas block (bottom "Schemas") */
+.swagger-ui .models,
+.swagger-ui .models * ,
+.swagger-ui .models-control,
+.swagger-ui .models-control * ,
+.swagger-ui .model-container,
+.swagger-ui .model-container * {
+  color: var(--text) !important;
+}
+.swagger-ui .response-col_status{ color: var(--muted) !important; }
+.swagger-ui .responses-inner{ background: rgba(0,0,0,.14) !important; border-radius: 12px !important; }
+
+/* Ensure operation descriptions are readable */
+.swagger-ui .opblock-description,
+.swagger-ui .opblock-description * ,
+.swagger-ui .opblock-description-wrapper,
+.swagger-ui .opblock-description-wrapper * ,
+.swagger-ui .opblock-section-header,
+.swagger-ui .opblock-section-header * ,
+.swagger-ui .opblock-title_normal,
+.swagger-ui .opblock-title_normal * ,
+.swagger-ui .parameters-col_description,
+.swagger-ui .parameters-col_description * ,
+.swagger-ui .response-col_description,
+.swagger-ui .response-col_description * {
+  color: var(--text) !important;
+}
+.swagger-ui .opblock-section-header{
+  background: rgba(255,255,255,.05) !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+  border-radius: 12px !important;
+}
+.swagger-ui .opblock-section-header h4{
+  color: var(--text) !important;
+}
+
+/* Keep method badge readable */
+.swagger-ui .opblock .opblock-summary-method{
+  color: #061015 !important;
+}
+
+.swagger-ui .errors-wrapper{ background: rgba(255,92,122,.12) !important; border: 1px solid rgba(255,92,122,.25) !important; border-radius: 12px !important;}
+.swagger-ui .errors-wrapper *{ color: var(--text) !important; }
+
