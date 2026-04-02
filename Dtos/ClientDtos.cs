@@ -93,3 +93,14 @@ public class ClientAdditionalFieldDto
     public string? Value { get; set; }
 }
 
+public class ChildrenImportRowDto
+{
+    public string? ClientName { get; set; }
+    public string? ClientInn { get; set; }
+    public string? ClientPhone { get; set; }
+    public string? ClientAddress { get; set; }
+    public string? ClientEmail { get; set; }
+    public bool IsValid { get; set; }
+    public string? Error { get; set; }
+}
+

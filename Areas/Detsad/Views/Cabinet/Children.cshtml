@@ -14,73 +14,138 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/web/kindergarten/css/detsad-create-invoice.css" asp-append-version="true" />
+    <style>
+        /* Локальная правка компоновки: чуть шире поле поиска, чтобы между группами и меню не оставалось лишнего пустого пространства */
+        .dashboard-filters .children-search-box {
+            max-width: 420px !important;
+        }
+
+        /* Меню находится справа внутри dashboard-filters */
+        .dashboard-filters {
+            justify-content: space-between;
+        }
+
+        .children-filters-left {
+            flex: 1 1 auto;
+            min-width: 260px;
+        }
+
+        .children-actions-right {
+            flex: 0 0 auto;
+        }
+
+        /* Выпадающее меню должно быть поверх карточки таблицы */
+        .dashboard-filters {
+            position: relative;
+            z-index: 10;
+        }
+
+        .dashboard-table-card {
+            position: relative;
+            z-index: 1;
+            overflow: visible !important; /* dropdown должен выходить поверх таблицы */
+        }
+
+        .dashboard-filters .dropdown-menu,
+        .children-actions-right .dropdown-menu {
+            z-index: 3000;
+        }
+
+        .dashboard-table-card .table-wrap {
+            overflow-x: auto;
+            overflow-y: visible;
+        }
+
+        @@media (max-width: 992px) {
+            .dashboard-filters .children-search-box {
+                max-width: 320px !important;
+            }
+        }
+    </style>
 }
 
 <div class="dashboard-page">
     <!-- Фильтры и действия -->
     <div class="dashboard-filters">
-                <div class="search-box">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;color:var(--text-muted)">
-                        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/>
-                    </svg>
-            <input type="text" id="searchInput" placeholder="Поиск по имени, телефону, email..." value="@search">
-                </div>
-        <select id="statusFilter" class="form-select-soft">
-                    @if (statusFilter == "active")
-                    {
-                        <option value="active" selected>Активные</option>
-                        <option value="inactive">Неактивные</option>
-                <option value="deleted">Удалённые</option>
-                    }
-                    else if (statusFilter == "inactive")
-                    {
-                        <option value="active">Активные</option>
-                        <option value="inactive" selected>Неактивные</option>
-                <option value="deleted">Удалённые</option>
-                    }
-                    else
-                    {
-                        <option value="active">Активные</option>
-                        <option value="inactive">Неактивные</option>
-                <option value="deleted" selected>Удалённые</option>
-                    }
-                </select>
-        <label class="form-check-soft">
-            <input type="checkbox" id="debtorsFilter" @(debtorsOnly ? "checked" : "")>
-            <span>Только должники</span>
-        </label>
-        @if (orgClientGroups != null && orgClientGroups.Any())
-        {
-            <div class="groups-filter-dropdown">
-                <button type="button" class="btn-soft-secondary" id="groupsFilterBtn" aria-expanded="false" aria-haspopup="true">
-                    <span class="groups-filter-btn-text">По группам</span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5H7z"/></svg>
-                </button>
-                <div class="groups-filter-menu" id="groupsFilterMenu" role="menu" aria-hidden="true">
-                    <div class="groups-filter-search-wrap p-2 border-bottom">
-                        <input type="text" class="form-control form-control-sm groups-filter-search" id="groupsFilterSearch" placeholder="Поиск групп..." autocomplete="off">
+        <div class="children-filters-left d-flex flex-wrap align-items-center gap-2">
+            <div class="search-box children-search-box">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;color:var(--text-muted)">
+                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/>
+                </svg>
+                <input type="text" id="searchInput" placeholder="Поиск по имени, телефону, email..." value="@search">
             </div>
-                    <div class="groups-filter-list" id="groupsFilterList">
-                        @foreach (var g in orgClientGroups)
-                        {
-                            <label class="groups-filter-item">
-                                <input type="checkbox" class="form-check-input group-filter-checkbox" value="@g.Id" data-group-name="@(g.Name ?? "")">
-                                <span class="groups-filter-item-text">@(g.Name ?? g.Id)</span>
-                    </label>
-                        }
+            <select id="statusFilter" class="form-select-soft">
+                @if (statusFilter == "active")
+                {
+                    <option value="active" selected>Активные</option>
+                    <option value="inactive">Неактивные</option>
+                    <option value="deleted">Удалённые</option>
+                }
+                else if (statusFilter == "inactive")
+                {
+                    <option value="active">Активные</option>
+                    <option value="inactive" selected>Неактивные</option>
+                    <option value="deleted">Удалённые</option>
+                }
+                else
+                {
+                    <option value="active">Активные</option>
+                    <option value="inactive">Неактивные</option>
+                    <option value="deleted" selected>Удалённые</option>
+                }
+            </select>
+            <label class="form-check-soft">
+                <input type="checkbox" id="debtorsFilter" @(debtorsOnly ? "checked" : "")>
+                <span>Только должники</span>
+            </label>
+            @if (orgClientGroups != null && orgClientGroups.Any())
+            {
+                <div class="groups-filter-dropdown">
+                    <button type="button" class="btn-soft-secondary" id="groupsFilterBtn" aria-expanded="false" aria-haspopup="true">
+                        <span class="groups-filter-btn-text">По группам</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5H7z"/></svg>
+                    </button>
+                    <div class="groups-filter-menu" id="groupsFilterMenu" role="menu" aria-hidden="true">
+                        <div class="groups-filter-search-wrap p-2 border-bottom">
+                            <input type="text" class="form-control form-control-sm groups-filter-search" id="groupsFilterSearch" placeholder="Поиск групп..." autocomplete="off">
+                        </div>
+                        <div class="groups-filter-list" id="groupsFilterList">
+                            @foreach (var g in orgClientGroups)
+                            {
+                                <label class="groups-filter-item">
+                                    <input type="checkbox" class="form-check-input group-filter-checkbox" value="@g.Id" data-group-name="@(g.Name ?? "")">
+                                    <span class="groups-filter-item-text">@(g.Name ?? g.Id)</span>
+                                </label>
+                            }
+                        </div>
                     </div>
                 </div>
+            }
+        </div>
+
+        <div class="children-actions-right">
+            <div class="dropdown">
+                <button class="btn-soft-primary dropdown-toggle" type="button" id="childrenActionsMenuBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                    Меню
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="childrenActionsMenuBtn">
+                    <li>
+                        <button type="button" class="dropdown-item" onclick="openCreateInvoiceModal()">
+                            Счёт на оплату
+                        </button>
+                    </li>
+                    <li>
+                        <button type="button" class="dropdown-item" onclick="openAddChildModal()">
+                            Добавить ребёнка
+                        </button>
+                    </li>
+                    <li>
+                        <button type="button" class="dropdown-item" onclick="openImportChildrenModal()">
+                            Загрузить из Excel
+                        </button>
+                    </li>
+                </ul>
             </div>
-        }
-        <div class="ms-auto d-flex gap-2">
-            <button type="button" class="btn-soft-secondary" onclick="openCreateInvoiceModal()" title="Создать счёт на оплату">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
-                Счёт на оплату
-            </button>
-            <button type="button" class="btn-soft-primary" onclick="openAddChildModal()" title="Добавить ребёнка">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                Добавить ребёнка
-            </button>
         </div>
     </div>
 
@@ -363,6 +428,109 @@
         </div>
     </div>
 </div>
+
+<!-- Модальное окно импорта детей из Excel -->
+<div class="modal fade" id="importChildrenModal" tabindex="-1" aria-labelledby="importChildrenModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="importChildrenModalLabel">Загрузка детей из Excel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-2">
+                    Скачайте шаблон с колонками на русском языке. Обязательны только <strong>ФИО</strong> и <strong>ИНН</strong>;
+                    номер телефона, адрес и эл. почта — по желанию.
+                </p>
+                <div class="mb-3">
+                    <a asp-action="DownloadChildrenImportTemplate" class="btn btn-outline-secondary btn-sm">
+                        Скачать шаблон Excel
+                    </a>
+                </div>
+
+                @{
+                    var importPreviewRows = ViewBag.ChildrenImportPreviewRows as List<WebApplication1.Dtos.ChildrenImportRowDto>;
+                    var importPreviewId = ViewBag.ChildrenImportPreviewId as string;
+                }
+
+                @if (importPreviewRows != null && importPreviewRows.Any() && !string.IsNullOrEmpty(importPreviewId))
+                {
+                    <div class="mb-3">
+                        <div class="alert alert-info mb-2">
+                            Найден предварительный импорт. Проверьте строки ниже и нажмите «Загрузить», чтобы создать детей.
+                        </div>
+                        <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
+                            <table class="table table-sm align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>ФИО</th>
+                                        <th>ИНН</th>
+                                        <th>Номер телефона</th>
+                                        <th>Адрес</th>
+                                        <th>Эл. почта</th>
+                                        <th>Статус</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var row in importPreviewRows)
+                                    {
+                                        var isValid = row.IsValid && string.IsNullOrWhiteSpace(row.Error);
+                                        <tr class="@(isValid ? "" : "table-warning")">
+                                            <td>@(row.ClientName ?? "—")</td>
+                                            <td>@(row.ClientInn ?? "—")</td>
+                                            <td>@(row.ClientPhone ?? "—")</td>
+                                            <td>@(row.ClientAddress ?? "—")</td>
+                                            <td>@(row.ClientEmail ?? "—")</td>
+                                            <td>
+                                                @if (isValid)
+                                                {
+                                                    <span class="text-success small">OK</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-danger small">@row.Error</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        <form asp-action="ConfirmChildrenImport" method="post" class="mt-3 d-flex justify-content-end gap-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="importId" value="@importPreviewId" />
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
+                                Отмена
+                            </button>
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                Загрузить
+                            </button>
+                        </form>
+                    </div>
+                }
+                else
+                {
+                    <form asp-action="PreviewChildrenImport" method="post" enctype="multipart/form-data">
+                        @Html.AntiForgeryToken()
+                        <div class="mb-3">
+                            <label for="childrenImportFile" class="form-label">Файл Excel</label>
+                            <input type="file" class="form-control" id="childrenImportFile" name="file" accept=".xlsx,.xls" />
+                            <div class="form-text">
+                                Допустимые форматы: .xlsx, .xls. Если файл не выбран, появится сообщение — окно импорта останется доступным.
+                            </div>
+                        </div>
+                        <div class="mb-3 text-end">
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                Предпросмотр
+                            </button>
+                        </div>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+<input type="hidden" id="childrenImportModalAutoOpen" value="@(ViewBag.OpenChildrenImportModal == true ? "1" : "0")" />
 
 <!-- Модальное окно "Редактировать профиль ребенка" -->
 <div class="modal fade" id="editChildModal" tabindex="-1" aria-labelledby="editChildModalLabel" aria-hidden="true">

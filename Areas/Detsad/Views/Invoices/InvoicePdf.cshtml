@@ -6,7 +6,6 @@
     var ru = new CultureInfo("ru-RU");
     var statusText = Model.InvoiceStatus == "actual" ? "Актуальный" : Model.InvoiceStatus == "suspended" ? "Приостановлен" : Model.InvoiceStatus == "closed" ? "Закрыт" : Model.InvoiceStatus ?? "—";
     var periodicityText = Model.Periodicity == "monthly" ? "Ежемесячно" : Model.Periodicity == "yearly" ? "Ежегодно" : Model.Periodicity == "weekly" ? "Еженедельно" : Model.Periodicity == "daily" ? "Ежедневно" : Model.Periodicity == "oneTime" ? "Разовая" : Model.Periodicity ?? "—";
-    var balanceSoms = Model.Balance ?? 0;
     var fixedSoms = (Model.FixedSumm ?? 0) / 100m;
     var clientName = Model.ClientNavigation?.ClientName ?? "—";
     var receiverName = ViewBag.ReceiverName as string ?? "—";
@@ -91,7 +90,7 @@
       <div class="invoice-header-left">
         <span class="invoice-header-system">SECORE / Billing</span>
         <h1>Счет на оплату</h1>
-        <span class="invoice-header-desc">Платежный документ для оплаты по лицевому счету — не чек, не выписка и не уведомление.</span>
+        <span class="invoice-header-desc">Платежный документ для оплаты по лицевому счету.</span>
       </div>
       <div class="invoice-header-right">
         <div class="info-line"><span>Номер счета</span><strong>@invoiceNumber</strong></div>
@@ -116,9 +115,14 @@
         </div>
         <div class="card gray">
           <h2>Сводка</h2>
-          <div class="metric-box"><div class="label">Фиксированная сумма</div><div class="value">@fixedSoms.ToString("N2", ru) сом</div></div>
-          <div class="metric-box"><div class="label">Текущий баланс</div><div class="value @(balanceSoms < 0 ? "debt" : "")">@((balanceSoms / 100m).ToString("N2", ru)) сом</div></div>
-          <div class="metric-box"><div class="label">Следующий период</div><div class="value">@(Model.NextStartInvoice?.ToString("dd.MM.yyyy", ru) ?? "—")</div></div>
+          <div class="metric-box">
+            <div class="label">Фиксированная сумма</div>
+            <div class="value">@fixedSoms.ToString("N2", ru) сом</div>
+          </div>
+          <div class="metric-box">
+            <div class="label">Следующий период</div>
+            <div class="value">@(Model.NextStartInvoice?.ToString("dd.MM.yyyy", ru) ?? "—")</div>
+          </div>
         </div>
       </div>
 
@@ -173,12 +177,21 @@
         </div>
         <div class="card total-block">
           <h2>Итого к оплате</h2>
-          <div class="summary-line"><span class="title">Начислено</span><span class="amount">@fixedSoms.ToString("N2", ru) сом</span></div>
-          <div class="summary-line"><span class="title">Переплата / долг</span><span class="amount @(balanceSoms < 0 ? "red" : "")">@((balanceSoms / 100m).ToString("N2", ru)) сом</span></div>
-          <div class="summary-line"><span class="title">Комиссия</span><span class="amount">0.00 сом</span></div>
-          @{ var totalToPay = fixedSoms + (balanceSoms / 100m); }
-          <div class="summary-line total"><span class="title">Итого к оплате</span><span class="amount">@(totalToPay < 0 ? "0.00" : totalToPay.ToString("N2", ru)) сом</span></div>
-          <div class="paycode-box">Оплатить можно по коду <strong>@(Model.PayCode ?? "—")</strong> через кассу, банковское приложение или QR.</div>
+          <div class="summary-line">
+            <span class="title">Начислено</span>
+            <span class="amount">@fixedSoms.ToString("N2", ru) сом</span>
+          </div>
+          <div class="summary-line">
+            <span class="title">Комиссия</span>
+            <span class="amount">0.00 сом</span>
+          </div>
+          <div class="summary-line total">
+            <span class="title">Итого к оплате</span>
+            <span class="amount">@fixedSoms.ToString("N2", ru) сом</span>
+          </div>
+          <div class="paycode-box">
+            Оплатить можно по коду <strong>@(Model.PayCode ?? "—")</strong> через кассу, банковское приложение или QR.
+          </div>
         </div>
       </div>
     </div>

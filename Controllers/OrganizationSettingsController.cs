@@ -61,6 +61,12 @@ public class OrganizationSettingsController : Controller
             existing.InvoicePayCodeMode = model.InvoicePayCodeMode;
             existing.AllowedHassameaccount = string.IsNullOrEmpty(model.InvoicePayCodeMode) ? model.AllowedHassameaccount : (model.InvoicePayCodeMode != "new_only");
             existing.Paymentreminderdaysbefore = model.Paymentreminderdaysbefore;
+            existing.Email = model.Email;
+            existing.WhatsappPhone = model.WhatsappPhone;
+            existing.ContactPhone = model.ContactPhone;
+            existing.DirectorFullName = model.DirectorFullName;
+            existing.Address = model.Address;
+            existing.LogoPath = model.LogoPath;
         }
         else
         {

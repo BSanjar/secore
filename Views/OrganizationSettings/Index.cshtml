@@ -2,12 +2,12 @@
 @{
     ViewData["Title"] = "Настройки организации";
 }
-
 <div class="mb-4">
     <h1 class="h2 mb-1">Настройки организации</h1>
-    <p class="text-muted small mb-0">Параметры, влияющие на работу системы во всех разделах</p>
+    <p class="text-muted small mb-0">
+        Глобальные параметры, которые влияют на создание счетов, напоминания об оплате и контактные данные во всех разделах системы.
+    </p>
 </div>
-
 @if (TempData["Success"] != null)
 {
     <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -15,77 +15,165 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
     </div>
 }
-
 <form asp-action="Index" method="post" class="mb-4">
-    <div asp-validation-summary="All" class="text-danger"></div>
-
-    <div class="card mb-3">
-        <div class="card-header">
-            <h5 class="mb-0">Создание счёта на оплату</h5>
-        </div>
-        <div class="card-body">
-            <div class="form-check">
-                <input asp-for="DisableInvoiceServiceSelection" class="form-check-input" type="checkbox" />
-                <label asp-for="DisableInvoiceServiceSelection" class="form-check-label">
-                    Отключить выбор услуги при создании счёта
-                </label>
+    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+    <div class="row g-3">
+        <div class="col-12 col-xl-8">
+            <!-- Создание счёта -->
+            <div class="card mb-3 shadow-sm border-0">
+                <div class="card-header bg-white border-0 pb-0">
+                    <h5 class="mb-1">Создание счёта на оплату</h5>
+                    <p class="text-muted small mb-0">
+                        Управляет тем, как пользователь заполняет услуги и цену при создании счёта.
+                    </p>
+                </div>
+                <div class="card-body">
+                    <div class="form-check mb-2">
+                        <input asp-for="DisableInvoiceServiceSelection" class="form-check-input" type="checkbox" />
+                        <label asp-for="DisableInvoiceServiceSelection" class="form-check-label">
+                            Отключить выбор услуги при создании счёта
+                        </label>
+                    </div>
+                    <small class="form-text text-muted">
+                        Если включено: при создании счёта выбор услуг в таблице блокируется, подставляется название счёта и доступен только ввод цены.
+                    </small>
+                </div>
             </div>
-            <small class="form-text text-muted">
-                Если включено: при создании счёта выбор услуг в таблице блокируется, подставляется название счёта и доступен только ввод цены.
-            </small>
-        </div>
-    </div>
-
-    <div class="card mb-3">
-        <div class="card-header">
-            <h5 class="mb-0">Общие настройки</h5>
-        </div>
-        <div class="card-body">
-            @{
-                var payCodeMode = Model.InvoicePayCodeMode ?? (Model.AllowedHassameaccount ? "both" : "new_only");
-            }
-            <div class="mb-3">
-                <label class="form-label">Лицевой счёт при создании счёта</label>
-                <select name="InvoicePayCodeMode" class="form-select" id="InvoicePayCodeMode">
-                    @if (payCodeMode == "new_only")
-                    {
-                        <option value="new_only" selected>Только новый</option>
+            <!-- Общие параметры -->
+            <div class="card mb-3 shadow-sm border-0">
+                <div class="card-header bg-white border-0 pb-0">
+                    <h5 class="mb-1">Общие параметры</h5>
+                    <p class="text-muted small mb-0">
+                        Настройки лицевого счёта и напоминаний, используемые при генерации счетов.
+                    </p>
+                </div>
+                <div class="card-body">
+                    @{
+                        var payCodeMode = Model.InvoicePayCodeMode ?? (Model.AllowedHassameaccount ? "both" : "new_only");
                     }
-                    else
-                    {
-                        <option value="new_only">Только новый</option>
-                    }
-                    @if (payCodeMode == "duplicate_only")
-                    {
-                        <option value="duplicate_only" selected>Только дублирующие (существующий л/с)</option>
-                    }
-                    else
-                    {
-                        <option value="duplicate_only">Только дублирующие (существующий л/с)</option>
-                    }
-                    @if (payCodeMode == "both")
-                    {
-                        <option value="both" selected>Новый и дублирующие</option>
-                    }
-                    else
-                    {
-                        <option value="both">Новый и дублирующие</option>
-                    }
-                </select>
-                <small class="form-text text-muted">Определяет, какое поле показывать в форме создания счёта: только генерация нового номера, только выбор существующего лицевого счёта или оба варианта.</small>
+                    <div class="mb-3">
+                        <label class="form-label">Лицевой счёт при создании счёта</label>
+                        <select name="InvoicePayCodeMode" class="form-select" id="InvoicePayCodeMode">
+                            @if (payCodeMode == "new_only")
+                            {
+                                <option value="new_only" selected>Только новый</option>
+                            }
+                            else
+                            {
+                                <option value="new_only">Только новый</option>
+                            }
+                            @if (payCodeMode == "duplicate_only")
+                            {
+                                <option value="duplicate_only" selected>Только дублирующие (существующий л/с)</option>
+                            }
+                            else
+                            {
+                                <option value="duplicate_only">Только дублирующие (существующий л/с)</option>
+                            }
+                            @if (payCodeMode == "both")
+                            {
+                                <option value="both" selected>Новый и дублирующие</option>
+                            }
+                            else
+                            {
+                                <option value="both">Новый и дублирующие</option>
+                            }
+                        </select>
+                        <small class="form-text text-muted">
+                            Определяет, какое поле показывать в форме создания счёта: только генерация нового номера,
+                            только выбор существующего лицевого счёта или оба варианта.
+                        </small>
+                    </div>
+                    <input type="hidden" asp-for="AllowedHassameaccount" id="AllowedHassameaccount" />
+                    <div class="mb-2">
+                        <label asp-for="Paymentreminderdaysbefore" class="form-label">
+                            Напоминание об оплате (за сколько дней до срока)
+                        </label>
+                        <input asp-for="Paymentreminderdaysbefore" class="form-control" type="number" min="0" />
+                        <span asp-validation-for="Paymentreminderdaysbefore" class="text-danger"></span>
+                        <small class="form-text text-muted">
+                            Указывает, за сколько дней до даты оплаты будет отправлено напоминание
+                            (если эта функция включена в других разделах).
+                        </small>
+                    </div>
+                </div>
             </div>
-            <input type="hidden" asp-for="AllowedHassameaccount" id="AllowedHassameaccount" />
-            <div class="mb-2">
-                <label asp-for="Paymentreminderdaysbefore" class="form-label">Напоминание об оплате (за сколько дней до срока)</label>
-                <input asp-for="Paymentreminderdaysbefore" class="form-control" type="number" min="0" />
-                <span asp-validation-for="Paymentreminderdaysbefore" class="text-danger"></span>
+            <!-- Контактные данные -->
+            <div class="card mb-3 shadow-sm border-0">
+                <div class="card-header bg-white border-0 pb-0">
+                    <h5 class="mb-1">Контактные данные организации</h5>
+                    <p class="text-muted small mb-0">
+                        Используются в уведомлениях, выписках и других документах.
+                    </p>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="Email" class="form-label">Email</label>
+                            <input asp-for="Email" class="form-control" type="email" />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="WhatsappPhone" class="form-label">Номер телефона (WhatsApp)</label>
+                            <input asp-for="WhatsappPhone" class="form-control" />
+                            <span asp-validation-for="WhatsappPhone" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="ContactPhone" class="form-label">Номер телефона для обратной связи</label>
+                            <input asp-for="ContactPhone" class="form-control" />
+                            <span asp-validation-for="ContactPhone" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="DirectorFullName" class="form-label">ФИО директора</label>
+                            <input asp-for="DirectorFullName" class="form-control" />
+                            <span asp-validation-for="DirectorFullName" class="text-danger"></span>
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="Address" class="form-label">Адрес</label>
+                            <input asp-for="Address" class="form-control" />
+                            <span asp-validation-for="Address" class="text-danger"></span>
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="LogoPath" class="form-label">Логотип (URL или путь)</label>
+                            <input asp-for="LogoPath" class="form-control" />
+                            <span asp-validation-for="LogoPath" class="text-danger"></span>
+                            <small class="form-text text-muted">
+                                Логотип используется в документах и интерфейсе (если поддерживается текущей темой).
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex flex-wrap gap-2 mt-2">
+                <button type="submit" class="btn btn-primary">
+                    Сохранить настройки
+                </button>
+                <a asp-controller="TariffAndCommissions" asp-action="Index" class="btn btn-outline-secondary">
+                    Тариф и комиссии
+                </a>
+                <a asp-controller="Settings" asp-action="Index" class="btn btn-outline-secondary">
+                    К общей странице настроек
+                </a>
             </div>
         </div>
-    </div>
-
-    <div class="mb-3">
-        <button type="submit" class="btn btn-primary">Сохранить</button>
-        <a asp-controller="TariffAndCommissions" asp-action="Index" class="btn btn-outline-secondary">Тариф и комиссии</a>
-        <a asp-controller="Settings" asp-action="Index" class="btn btn-secondary">К настройкам</a>
+        <div class="col-12 col-xl-4">
+            <div class="card mb-3 border-0 bg-light">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-muted small mb-2">Подсказки</h6>
+                    <p class="small mb-2">
+                        Здесь настраиваются базовые параметры, которые используются во всех разделах:
+                        создание счёта, напоминания об оплате и контактные данные.
+                    </p>
+                    <p class="small mb-2">
+                        Изменения применяются ко всем новым операциям.
+                        Уже созданные счета и документы не переименовываются автоматически.
+                    </p>
+                    <p class="small mb-0">
+                        Дополнительные финансовые параметры и комиссии — на странице
+                        <a asp-controller="TariffAndCommissions" asp-action="Index">«Тариф и комиссии»</a>.
+                    </p>
+                </div>
+            </div>
+        </div>
     </div>
 </form>

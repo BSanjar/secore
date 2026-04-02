@@ -34,6 +34,36 @@ public class OrganizationSettings
     public int Paymentreminderdaysbefore { get; set; }
 
     /// <summary>
+    /// Email организации для уведомлений и контактов.
+    /// </summary>
+    public string? Email { get; set; }
+
+    /// <summary>
+    /// Номер телефона WhatsApp.
+    /// </summary>
+    public string? WhatsappPhone { get; set; }
+
+    /// <summary>
+    /// Номер телефона для обратной связи.
+    /// </summary>
+    public string? ContactPhone { get; set; }
+
+    /// <summary>
+    /// ФИО директора организации.
+    /// </summary>
+    public string? DirectorFullName { get; set; }
+
+    /// <summary>
+    /// Адрес организации.
+    /// </summary>
+    public string? Address { get; set; }
+
+    /// <summary>
+    /// Путь/URL логотипа организации.
+    /// </summary>
+    public string? LogoPath { get; set; }
+
+    /// <summary>
     /// Вид тарифа: subscription (подписка) или комбинация комиссий через флаги ниже.
     /// </summary>
     public string? BillingType { get; set; }

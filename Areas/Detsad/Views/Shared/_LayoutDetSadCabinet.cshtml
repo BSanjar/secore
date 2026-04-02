@@ -140,8 +140,11 @@
                 </div>
                 <div class="dashboard-topbar-actions">
                     <div class="dashboard-search" id="dashboardSearch">
-                        <input type="text" placeholder="Поиск..." id="dashboardSearchInput" />
-                        <button type="button" class="dashboard-search-btn" aria-label="Поиск"><img src="~/img/search-icon.png" alt="" class="dashboard-search-icon" /></button>
+                        <input type="text" placeholder="Поиск..." id="dashboardSearchInput" autocomplete="off" />
+                        <button type="button" class="dashboard-search-btn" aria-label="Поиск">
+                            <img src="~/img/search-icon.png" alt="" class="dashboard-search-icon" />
+                        </button>
+                        <div class="dashboard-search-suggestions" id="dashboardSearchSuggestions" style="display: none;"></div>
                     </div>
                     <div class="dashboard-notifications-wrap">
                         <button type="button" class="dashboard-notifications-btn" id="dashboardNotificationsBtn" aria-label="Уведомления">
@@ -185,7 +188,7 @@
             </main>
 
             <footer class="cabinet-footer">
-                <div class="container">
+                <div class="container-fluid px-3 px-md-4">
                     <div class="row">
                         <div class="col-md-12 text-center">
                             <p class="mb-0">&copy; @DateTime.Now.Year - @Localizer["OrganizationCabinet"]. @Localizer["AllRightsReserved"].</p>
@@ -201,29 +204,115 @@
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script>
         (function () {
+            var globalSearchUrl = '@Url.Action("Suggest", "GlobalSearch", new { area = "Detsad" })';
             var search = document.getElementById('dashboardSearch');
             var searchInput = document.getElementById('dashboardSearchInput');
-            if (search && searchInput) {
-                searchInput.addEventListener('focus', function () { search.classList.add('is-expanded'); });
-                searchInput.addEventListener('blur', function () { search.classList.remove('is-expanded'); });
+            var suggestions = document.getElementById('dashboardSearchSuggestions');
+            var debounceTimer;
+
+            function clearSuggestions() {
+                if (!suggestions) return;
+                suggestions.innerHTML = '';
+                suggestions.style.display = 'none';
             }
+
+            function renderSuggestions(data) {
+                if (!suggestions) return;
+                suggestions.innerHTML = '';
+                var groups = (data && data.groups) || [];
+                if (!groups.length) {
+                    clearSuggestions();
+                    return;
+                }
+                groups.forEach(function (g) {
+                    var groupEl = document.createElement('div');
+                    groupEl.className = 'dashboard-search-suggestion-group';
+
+                    var titleEl = document.createElement('div');
+                    titleEl.className = 'dashboard-search-suggestion-group-title';
+                    titleEl.textContent = g.title || '';
+                    groupEl.appendChild(titleEl);
+
+                    (g.items || []).forEach(function (item) {
+                        var itemEl = document.createElement('div');
+                        itemEl.className = 'dashboard-search-suggestion-item';
+                        itemEl.innerHTML =
+                            '<span class="dashboard-search-suggestion-main">' + (item.title || '') + '</span>' +
+                            '<span class="dashboard-search-suggestion-sub text-muted small">' + (item.subtitle || '') + '</span>';
+                        itemEl.addEventListener('click', function () {
+                            if (item.url) {
+                                window.location.href = item.url;
+                            }
+                        });
+                        groupEl.appendChild(itemEl);
+                    });
+
+                    suggestions.appendChild(groupEl);
+                });
+                suggestions.style.display = 'block';
+            }
+
+            if (search && searchInput) {
+                searchInput.addEventListener('focus', function () {
+                    search.classList.add('is-expanded');
+                });
+                searchInput.addEventListener('blur', function () {
+                    search.classList.remove('is-expanded');
+                });
+            }
+
+            if (search && searchInput && suggestions) {
+                searchInput.addEventListener('input', function () {
+                    var q = searchInput.value.trim();
+                    clearTimeout(debounceTimer);
+                    if (q.length < 2) {
+                        clearSuggestions();
+                        return;
+                    }
+                    debounceTimer = setTimeout(function () {
+                        var url = globalSearchUrl;
+                        url += (url.indexOf('?') === -1 ? '?q=' : '&q=') + encodeURIComponent(q);
+                        fetch(url, {
+                            headers: { 'Accept': 'application/json' }
+                        })
+                            .then(function (r) { return r.ok ? r.json() : null; })
+                            .then(function (data) { renderSuggestions(data || {}); })
+                            .catch(function () { clearSuggestions(); });
+                    }, 250);
+                });
+
+                document.addEventListener('click', function (e) {
+                    if (!search.contains(e.target)) {
+                        clearSuggestions();
+                    }
+                });
+
+                searchInput.addEventListener('keydown', function (e) {
+                    if (e.key === 'Escape') {
+                        clearSuggestions();
+                        searchInput.blur();
+                    }
+                });
+            }
+
             var notifBtn = document.getElementById('dashboardNotificationsBtn');
             var notifDropdown = document.getElementById('dashboardNotificationsDropdown');
             if (notifBtn && notifDropdown) {
                 notifBtn.addEventListener('click', function (e) {
                     e.stopPropagation();
                     notifDropdown.classList.toggle('is-open');
-                    if (langDropdown) langDropdown.classList.remove('is-open');
+                    if (window.langDropdown) window.langDropdown.classList.remove('is-open');
                 });
                 document.addEventListener('click', function () { notifDropdown.classList.remove('is-open'); });
             }
             var langBtn = document.getElementById('dashboardLangBtn');
             var langDropdown = document.getElementById('dashboardLangDropdown');
             if (langBtn && langDropdown) {
+                window.langDropdown = langDropdown;
                 langBtn.addEventListener('click', function (e) {
                     e.stopPropagation();
                     langDropdown.classList.toggle('is-open');
-                    document.getElementById('dashboardNotificationsDropdown').classList.remove('is-open');
+                    if (notifDropdown) notifDropdown.classList.remove('is-open');
                 });
                 document.addEventListener('click', function () { langDropdown.classList.remove('is-open'); });
             }

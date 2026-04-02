@@ -1,7 +1,9 @@
 using System.Globalization;
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using ClosedXML.Excel;
 using WebApplication1.Models.DBModels;
 using WebApplication1.Helpers;
 using WebApplication1.Services;
@@ -17,6 +19,7 @@ namespace WebApplication1.Areas.Detsad.Controllers
         private readonly OperationsByInvoices _operationsByInvoices;
         private readonly ClientService _clientService;
         private readonly ExcelExportService _excelExportService;
+        private const string ChildrenImportSessionPrefix = "__children_import:";
 
         public CabinetController(AppDbContext db, OperationsByInvoices operationsByInvoices, ClientService clientService, ExcelExportService excelExportService)
         {
@@ -24,6 +27,262 @@ namespace WebApplication1.Areas.Detsad.Controllers
             _operationsByInvoices = operationsByInvoices;
             _clientService = clientService;
             _excelExportService = excelExportService;
+        }
+
+        [RequirePermission("children.create")]
+        [HttpGet]
+        public IActionResult DownloadChildrenImportTemplate()
+        {
+            using var workbook = new XLWorkbook();
+            var ws = workbook.Worksheets.Add("Дети");
+            ws.Cell(1, 1).Value = "ФИО";
+            ws.Cell(1, 2).Value = "ИНН";
+            ws.Cell(1, 3).Value = "Номер телефона";
+            ws.Cell(1, 4).Value = "Адрес";
+            ws.Cell(1, 5).Value = "Эл. почта";
+            ws.Row(1).Style.Font.Bold = true;
+            ws.Columns().AdjustToContents();
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            var bytes = stream.ToArray();
+            var fileName = $"children_import_template_{DateTime.Now:yyyyMMdd}.xlsx";
+            return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+        }
+
+        private static string NormalizeImportHeader(string? s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return "";
+            return s.Trim().ToLowerInvariant().Replace("ё", "е");
+        }
+
+        /// <summary>
+        /// Сопоставляет колонки по первой строке (русские/англ. заголовки) или фиксированному порядку A–E.
+        /// </summary>
+        private static Dictionary<string, int> BuildChildrenImportColumnMap(IXLWorksheet ws)
+        {
+            var map = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var firstRow = ws.FirstRowUsed();
+            if (firstRow == null) return map;
+            var r = firstRow.RowNumber();
+            var lastCol = ws.LastColumnUsed()?.ColumnNumber() ?? 5;
+            for (var c = 1; c <= lastCol; c++)
+            {
+                var h = NormalizeImportHeader(ws.Cell(r, c).GetString());
+                if (string.IsNullOrEmpty(h)) continue;
+
+                if (!map.ContainsKey("fio") && (h == "фио" || h.Contains("фио")))
+                    map["fio"] = c;
+                else if (!map.ContainsKey("inn") && h.Contains("инн"))
+                    map["inn"] = c;
+                else if (!map.ContainsKey("phone") && (h.Contains("телефон") || h.Contains("номер")))
+                    map["phone"] = c;
+                else if (!map.ContainsKey("address") && h.Contains("адрес"))
+                    map["address"] = c;
+                else if (!map.ContainsKey("email") && (h.Contains("почт") || h.Contains("email") || h.Contains("e-mail") || h.Contains("эл")))
+                    map["email"] = c;
+            }
+
+            return map;
+        }
+
+        private static int ImportCol(Dictionary<string, int> map, string key, int fallback) =>
+            map.TryGetValue(key, out var col) ? col : fallback;
+
+        private static string GetImportCellTrim(IXLWorksheet ws, int rowNum, int col)
+        {
+            if (col < 1 || rowNum < 1) return "";
+            try
+            {
+                var v = ws.Cell(rowNum, col).GetString();
+                return v?.Trim() ?? "";
+            }
+            catch
+            {
+                return "";
+            }
+        }
+
+        private static bool IsChildrenImportRowBlank(string fio, string inn, string phone, string addr, string email) =>
+            string.IsNullOrWhiteSpace(fio) && string.IsNullOrWhiteSpace(inn) && string.IsNullOrWhiteSpace(phone) &&
+            string.IsNullOrWhiteSpace(addr) && string.IsNullOrWhiteSpace(email);
+
+        [RequirePermission("children.create")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult PreviewChildrenImport(IFormFile file)
+        {
+            var organizationId = HttpContext.Session.GetString("OrganizationId");
+            var userId = HttpContext.Session.GetString("UserId");
+            if (string.IsNullOrEmpty(organizationId) || string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+
+            if (file == null || file.Length == 0)
+            {
+                TempData["Error"] = "Выберите файл Excel и повторите попытку.";
+                TempData["OpenChildrenImportModal"] = true;
+                return RedirectToAction(nameof(Children));
+            }
+
+            try
+            {
+                using var stream = file.OpenReadStream();
+                using var workbook = new XLWorkbook(stream);
+                var ws = workbook.Worksheets.FirstOrDefault();
+                if (ws == null)
+                {
+                    TempData["Error"] = "Не удалось прочитать лист Excel.";
+                    TempData["OpenChildrenImportModal"] = true;
+                    return RedirectToAction(nameof(Children));
+                }
+
+                var colMap = BuildChildrenImportColumnMap(ws);
+                var colFio = ImportCol(colMap, "fio", 1);
+                var colInn = ImportCol(colMap, "inn", 2);
+                var colPhone = ImportCol(colMap, "phone", 3);
+                var colAddr = ImportCol(colMap, "address", 4);
+                var colEmail = ImportCol(colMap, "email", 5);
+
+                var headerRow = ws.FirstRowUsed()?.RowNumber() ?? 1;
+                var firstDataRow = headerRow + 1;
+                var lastRow = ws.LastRowUsed()?.RowNumber() ?? headerRow;
+                var rows = new List<ChildrenImportRowDto>();
+
+                for (var r = firstDataRow; r <= lastRow; r++)
+                {
+                    var fio = GetImportCellTrim(ws, r, colFio);
+                    var inn = GetImportCellTrim(ws, r, colInn);
+                    var phone = GetImportCellTrim(ws, r, colPhone);
+                    var addr = GetImportCellTrim(ws, r, colAddr);
+                    var email = GetImportCellTrim(ws, r, colEmail);
+
+                    if (IsChildrenImportRowBlank(fio, inn, phone, addr, email))
+                        continue;
+
+                    var model = new ChildrenImportRowDto
+                    {
+                        ClientName = string.IsNullOrWhiteSpace(fio) ? null : fio,
+                        ClientInn = string.IsNullOrWhiteSpace(inn) ? null : inn,
+                        ClientPhone = string.IsNullOrWhiteSpace(phone) ? null : phone,
+                        ClientAddress = string.IsNullOrWhiteSpace(addr) ? null : addr,
+                        ClientEmail = string.IsNullOrWhiteSpace(email) ? null : email
+                    };
+
+                    var missing = new List<string>();
+                    if (string.IsNullOrWhiteSpace(model.ClientName))
+                        missing.Add("ФИО");
+                    if (string.IsNullOrWhiteSpace(model.ClientInn))
+                        missing.Add("ИНН");
+
+                    if (missing.Count > 0)
+                    {
+                        model.IsValid = false;
+                        model.Error = "Обязательно: " + string.Join(", ", missing);
+                    }
+                    else
+                    {
+                        model.IsValid = true;
+                    }
+
+                    rows.Add(model);
+                }
+
+                if (!rows.Any())
+                {
+                    TempData["Error"] = "В файле нет строк с данными (проверьте ФИО и ИНН в каждой строке).";
+                    TempData["OpenChildrenImportModal"] = true;
+                    return RedirectToAction(nameof(Children));
+                }
+
+                var importId = Guid.NewGuid().ToString("N");
+                var sessionKey = ChildrenImportSessionPrefix + importId;
+                HttpContext.Session.SetString(sessionKey, JsonSerializer.Serialize(rows));
+                TempData["ChildrenImportId"] = importId;
+                TempData["OpenChildrenImportModal"] = true;
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Ошибка при разборе файла: {ex.Message}";
+                TempData["OpenChildrenImportModal"] = true;
+            }
+
+            return RedirectToAction(nameof(Children));
+        }
+
+        [RequirePermission("children.create")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ConfirmChildrenImport(string importId)
+        {
+            var organizationId = HttpContext.Session.GetString("OrganizationId");
+            var userId = HttpContext.Session.GetString("UserId");
+            if (string.IsNullOrEmpty(organizationId) || string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+
+            if (string.IsNullOrWhiteSpace(importId))
+            {
+                TempData["Error"] = "Не найден идентификатор импорта.";
+                return RedirectToAction(nameof(Children));
+            }
+
+            var sessionKey = ChildrenImportSessionPrefix + importId;
+            var json = HttpContext.Session.GetString(sessionKey);
+            if (string.IsNullOrEmpty(json))
+            {
+                TempData["Error"] = "Данные импорта не найдены или устарели.";
+                return RedirectToAction(nameof(Children));
+            }
+
+            List<ChildrenImportRowDto>? rows;
+            try
+            {
+                rows = JsonSerializer.Deserialize<List<ChildrenImportRowDto>>(json) ?? new List<ChildrenImportRowDto>();
+            }
+            catch
+            {
+                TempData["Error"] = "Не удалось прочитать данные импорта.";
+                return RedirectToAction(nameof(Children));
+            }
+
+            int imported = 0;
+            int skipped = 0;
+
+            foreach (var model in rows)
+            {
+                if (model == null || !model.IsValid || string.IsNullOrWhiteSpace(model.ClientName) ||
+                    string.IsNullOrWhiteSpace(model.ClientInn))
+                {
+                    skipped++;
+                    continue;
+                }
+
+                try
+                {
+                    var input = new CreateClientInput
+                    {
+                        ClientName = model.ClientName,
+                        ClientInn = model.ClientInn.Trim(),
+                        ClientPhone = string.IsNullOrWhiteSpace(model.ClientPhone) ? null : model.ClientPhone,
+                        ClientAddress = string.IsNullOrWhiteSpace(model.ClientAddress) ? null : model.ClientAddress,
+                        ClientEmail = string.IsNullOrWhiteSpace(model.ClientEmail) ? null : model.ClientEmail
+                    };
+                    await _clientService.CreateClientAsync(input, organizationId, userId);
+                    imported++;
+                }
+                catch
+                {
+                    skipped++;
+                }
+            }
+
+            HttpContext.Session.Remove(sessionKey);
+            TempData["Success"] = $"Импорт завершён. Добавлено: {imported}, пропущено: {skipped}.";
+
+            return RedirectToAction(nameof(Children));
         }
 
         [RequirePermission("dashboard.view")]
@@ -225,6 +484,35 @@ namespace WebApplication1.Areas.Detsad.Controllers
                 return Unauthorized();
 
             var result = await _clientService.GetClientsForCabinetAsync(organizationId, search, statusFilter, debtorsOnly);
+
+            var openChildrenImportModal = TempData["OpenChildrenImportModal"] != null;
+
+            // Предпросмотр импорта детей из Excel
+            if (TempData.ContainsKey("ChildrenImportId"))
+            {
+                var importId = TempData["ChildrenImportId"]?.ToString();
+                if (!string.IsNullOrEmpty(importId))
+                {
+                    var sessionKey = ChildrenImportSessionPrefix + importId;
+                    var json = HttpContext.Session.GetString(sessionKey);
+                    if (!string.IsNullOrEmpty(json))
+                    {
+                        try
+                        {
+                            var previewRows = JsonSerializer.Deserialize<List<ChildrenImportRowDto>>(json) ?? new List<ChildrenImportRowDto>();
+                            ViewBag.ChildrenImportPreviewId = importId;
+                            ViewBag.ChildrenImportPreviewRows = previewRows;
+                            openChildrenImportModal = true;
+                        }
+                        catch
+                        {
+                            // если не удалось разобрать — quietly ignore, покажем ошибку только при подтверждении
+                        }
+                    }
+                }
+            }
+
+            ViewBag.OpenChildrenImportModal = openChildrenImportModal;
 
             ViewBag.Search = search;
             ViewBag.StatusFilter = statusFilter;

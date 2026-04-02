@@ -263,6 +263,24 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Paymentreminderdaysbefore)
                 .HasComment("за сколько дней до срока начинать напоминания по оплате")
                 .HasColumnName("paymentreminderdaysbefore");
+            entity.Property(e => e.Email)
+                .HasColumnType("character varying")
+                .HasColumnName("email");
+            entity.Property(e => e.WhatsappPhone)
+                .HasColumnType("character varying")
+                .HasColumnName("whatsapp_phone");
+            entity.Property(e => e.ContactPhone)
+                .HasColumnType("character varying")
+                .HasColumnName("contact_phone");
+            entity.Property(e => e.DirectorFullName)
+                .HasColumnType("character varying")
+                .HasColumnName("director_full_name");
+            entity.Property(e => e.Address)
+                .HasColumnType("character varying")
+                .HasColumnName("address");
+            entity.Property(e => e.LogoPath)
+                .HasColumnType("character varying")
+                .HasColumnName("logo_path");
             entity.Property(e => e.BillingType)
                 .HasComment("subscription или комбинация комиссий через флаги")
                 .HasColumnType("character varying")

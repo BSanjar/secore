@@ -542,13 +542,30 @@ body.dashboard-body .chart-period-btn.active {
 .dashboard-main {
   display: flex;
   flex-direction: column;
+  align-items: stretch;
   gap: 18px;
   min-width: 0;
+  width: 100%;
 }
 
 body.dashboard-body .cabinet-main {
   padding-top: 0;
   flex: 1;
+}
+
+/* Футер кабинета: на всю ширину колонки main (не «коробкой» по центру) */
+body.dashboard-body .dashboard-main > footer.cabinet-footer {
+  width: 100%;
+  max-width: none;
+  align-self: stretch;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+body.dashboard-body .cabinet-footer .container,
+body.dashboard-body .cabinet-footer .container-fluid {
+  max-width: none;
+  width: 100%;
 }
 
 .dashboard-topbar {
@@ -771,10 +788,11 @@ body.dashboard-body .cabinet-main {
   border-radius: 999px;
   display: flex;
   align-items: center;
-  padding: 8px 8px 8px 14px;
+  padding: 6px 6px 6px 14px;
   box-shadow: var(--card-shadow);
   width: 280px;
   transition: width 0.25s ease-out;
+  position: relative;
 }
 
 .dashboard-search.is-expanded {
@@ -795,12 +813,67 @@ body.dashboard-body .cabinet-main {
   color: var(--input-placeholder);
 }
 
+.dashboard-search-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 1050;
+  background: #ffffff;
+  border: 1px solid var(--input-border);
+  border-radius: 10px;
+  margin-top: 0;
+  max-height: 320px;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15);
+  font-size: 0.875rem;
+}
+
+.dashboard-search-suggestion-group {
+  padding: 6px 10px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.dashboard-search-suggestion-group:last-child {
+  border-bottom: none;
+}
+
+.dashboard-search-suggestion-group-title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.dashboard-search-suggestion-item {
+  padding: 4px 8px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  border-radius: 6px;
+}
+
+.dashboard-search-suggestion-item:hover {
+  background: #f9fafb;
+}
+
+.dashboard-search-suggestion-main {
+  color: var(--text-primary);
+}
+
+.dashboard-search-suggestion-sub {
+  color: var(--text-secondary);
+}
+
 .dashboard-search-btn,
 .dashboard-circle-btn {
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
-  min-height: 40px;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
   flex-shrink: 0;
   border-radius: 50%;
   border: 1px solid transparent;

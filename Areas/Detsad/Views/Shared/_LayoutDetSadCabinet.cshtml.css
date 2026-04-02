@@ -1,4 +1,4 @@
-﻿/* ============================================
+/* ============================================
    Detsad Cabinet Layout Styles
    Современный компактный стиль для детского сада
    ============================================ */
@@ -239,8 +239,10 @@
     background: var(--surface);
 }
 
-.cabinet-footer .container {
-    max-width: 1200px;
+.cabinet-footer .container,
+.cabinet-footer .container-fluid {
+    max-width: none;
+    width: 100%;
 }
 
 .cabinet-footer p {

@@ -181,8 +181,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Клик по строке таблицы — открыть модальное окно
     if (childrenCards) {
-        childrenCards.querySelectorAll('.child-row').forEach(function(row) {
-            row.addEventListener('click', function(e) {
+        childrenCards.querySelectorAll('.child-row').forEach(function (row) {
+            row.addEventListener('click', function (e) {
                 if (e.target.closest('.btn-row-action')) return;
                 const clientId = row.getAttribute('data-client-id');
                 const clientName = row.getAttribute('data-client-name') || 'Ребенок';
@@ -191,8 +191,26 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Открыть модальное окно импорта детей из Excel
+    window.openImportChildrenModal = function () {
+        var modalEl = document.getElementById('importChildrenModal');
+        if (!modalEl) return;
+        var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+    };
+
+    // После редиректа (ошибка / предпросмотр) снова открыть окно импорта
+    var importAutoOpen = document.getElementById('childrenImportModalAutoOpen');
+    if (importAutoOpen && importAutoOpen.value === '1' && typeof bootstrap !== 'undefined') {
+        var importModalEl = document.getElementById('importChildrenModal');
+        if (importModalEl) {
+            bootstrap.Modal.getOrCreateInstance(importModalEl).show();
+        }
+    }
+
     console.log('Detsad children page loaded');
 });
+
 
 // Текущий клиент в модальном окне с вкладками (для загрузки Счета/Платежи при переключении вкладок)
 let currentDetailClientId = null;
