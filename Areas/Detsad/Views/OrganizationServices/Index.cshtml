@@ -29,6 +29,7 @@
     <div class="page-header">
         <div class="d-flex justify-content-between align-items-center">
             <div>
+                <h1 class="page-title">Услуги</h1>
                 <p class="page-subtitle mb-0">Услуги организации для счетов и платежей</p>
             </div>
             <button type="button" class="action-btn action-btn--add" id="openAddServiceModalBtn" title="Добавить услугу">
@@ -85,9 +86,9 @@
                         {
                             var isFixed = s.FixedSum == 1;
                             var sumInfo = isFixed && s.ServiceSumm.HasValue
-                                ? (s.ServiceSumm.Value / 100m).ToString("N2") + " сом"
+                                ? s.ServiceSumm.Value.ToString("N2") + " сом"
                                 : (s.MinSumm.HasValue || s.MaxSumm.HasValue)
-                                    ? (s.MinSumm.HasValue ? (s.MinSumm.Value / 100m).ToString("N2") + " — " : "— ") + (s.MaxSumm.HasValue ? (s.MaxSumm.Value / 100m).ToString("N2") + " сом" : "—")
+                                    ? (s.MinSumm.HasValue ? s.MinSumm.Value.ToString("N2") + " — " : "— ") + (s.MaxSumm.HasValue ? s.MaxSumm.Value.ToString("N2") + " сом" : "—")
                                     : "—";
                             <tr class="org-service-row" data-search-name="@(s.Name ?? "")">
                                 <td><strong>@(s.Name ?? "—")</strong></td>
@@ -261,6 +262,28 @@
             var deleteServiceName = document.getElementById('deleteServiceName');
             var deleteServiceForm = document.getElementById('deleteServiceForm');
             var deleteServiceConfirmBtn = document.getElementById('deleteServiceConfirmBtn');
+            var serviceFormError = document.getElementById('serviceFormError');
+            var deleteServiceError = document.getElementById('deleteServiceError');
+
+            function postModalForm(url, formData) {
+                return fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Form-Modal': '1',
+                        'Accept': 'application/json'
+                    }
+                }).then(function (res) {
+                    return res.json().then(function (data) {
+                        if (!res.ok) {
+                            return { success: false, message: (data && data.message) || ('Ошибка ' + res.status) };
+                        }
+                        return data;
+                    }).catch(function () {
+                        return { success: false, message: 'Не удалось разобрать ответ сервера.' };
+                    });
+                });
+            }
 
             function applySearchLocal() {
                 if (!searchInput || !tbody) return;
@@ -347,13 +370,59 @@
                 btn.addEventListener('click', function () { openEditModal(btn); });
             });
 
+            function normalizeDecimalValue(inputEl) {
+                if (!inputEl) return;
+                var v = (inputEl.value || '').trim();
+                if (!v) return;
+                v = v.replace(/\s/g, '');
+                var decSep = (1.1).toLocaleString().includes(',') ? ',' : '.';
+                var otherSep = decSep === ',' ? '.' : ',';
+                v = v.replace(new RegExp('\\' + otherSep, 'g'), decSep);
+                inputEl.value = v;
+            }
+
             if (modalSubmitBtn && serviceForm) {
                 modalSubmitBtn.addEventListener('click', function () {
                     if (!serviceFormName || !serviceFormName.value.trim()) {
                         serviceFormName.focus();
                         return;
                     }
-                    serviceForm.submit();
+                    normalizeDecimalValue(serviceFormServiceSumm);
+                    normalizeDecimalValue(serviceFormMinSumm);
+                    normalizeDecimalValue(serviceFormMaxSumm);
+
+                    var url = serviceForm.getAttribute('action');
+                    if (!url) return;
+
+                    if (serviceFormError) {
+                        serviceFormError.style.display = 'none';
+                        serviceFormError.textContent = '';
+                    }
+                    modalSubmitBtn.disabled = true;
+
+                    var formData = new FormData(serviceForm);
+                    postModalForm(url, formData)
+                        .then(function (data) {
+                            if (data && data.success) {
+                                var inst = modalEl ? bootstrap.Modal.getInstance(modalEl) : null;
+                                if (inst) inst.hide();
+                                window.location.reload();
+                            } else {
+                                if (serviceFormError) {
+                                    serviceFormError.textContent = (data && data.message) ? data.message : 'Ошибка сохранения';
+                                    serviceFormError.style.display = 'block';
+                                }
+                            }
+                        })
+                        .catch(function () {
+                            if (serviceFormError) {
+                                serviceFormError.textContent = 'Ошибка связи с сервером';
+                                serviceFormError.style.display = 'block';
+                            }
+                        })
+                        .finally(function () {
+                            modalSubmitBtn.disabled = false;
+                        });
                 });
             }
 
@@ -369,7 +438,36 @@
 
             if (deleteServiceConfirmBtn && deleteServiceForm) {
                 deleteServiceConfirmBtn.addEventListener('click', function () {
-                    deleteServiceForm.submit();
+                    var url = deleteServiceForm.getAttribute('action');
+                    if (!url) return;
+                    if (deleteServiceError) {
+                        deleteServiceError.style.display = 'none';
+                        deleteServiceError.textContent = '';
+                    }
+                    deleteServiceConfirmBtn.disabled = true;
+                    var fd = new FormData(deleteServiceForm);
+                    postModalForm(url, fd)
+                        .then(function (data) {
+                            if (data && data.success) {
+                                var inst = deleteModalEl ? bootstrap.Modal.getInstance(deleteModalEl) : null;
+                                if (inst) inst.hide();
+                                window.location.reload();
+                            } else {
+                                if (deleteServiceError) {
+                                    deleteServiceError.textContent = (data && data.message) ? data.message : 'Ошибка удаления';
+                                    deleteServiceError.style.display = 'block';
+                                }
+                            }
+                        })
+                        .catch(function () {
+                            if (deleteServiceError) {
+                                deleteServiceError.textContent = 'Ошибка связи с сервером';
+                                deleteServiceError.style.display = 'block';
+                            }
+                        })
+                        .finally(function () {
+                            deleteServiceConfirmBtn.disabled = false;
+                        });
                 });
             }
 

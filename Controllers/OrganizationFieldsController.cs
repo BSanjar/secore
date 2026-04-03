@@ -41,7 +41,7 @@ namespace WebApplication1.Controllers
         // GET: OrganizationFields/Create
         public IActionResult Create()
         {
-            return View();
+            return View(new OrganizationField { Filterbyfield = false });
         }
 
         // POST: OrganizationFields/Create
@@ -173,7 +173,7 @@ namespace WebApplication1.Controllers
                 }
             }
 
-            return View(field);
+            return View(existingField);
         }
 
         // GET: OrganizationFields/Delete/5

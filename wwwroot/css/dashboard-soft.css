@@ -571,7 +571,7 @@ body.dashboard-body .cabinet-footer .container-fluid {
 .dashboard-topbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 18px;
 }
 

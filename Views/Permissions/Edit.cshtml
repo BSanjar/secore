@@ -2,63 +2,85 @@
 @{
     ViewData["Title"] = "Редактировать право";
     var areas = ViewBag.Areas as List<string> ?? new List<string>();
-    var organizationType = ViewBag.OrganizationType as string;
 }
 
-<div class="container mt-4">
-    <h2>Редактировать право доступа</h2>
-    <hr />
+@section Styles {
+    <link rel="stylesheet" href="~/css/dashboard-soft.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/web/kindergarten/css/detsad-children.css" asp-append-version="true" />
+}
 
-    <form asp-action="Edit" method="post">
-        <input type="hidden" asp-for="Id" />
-        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+<div class="children-page settings-page settings-subpage">
+    <nav class="detsad-breadcrumb" aria-label="Навигация">
+        <a asp-controller="Settings" asp-action="Index">Настройки</a>
+        <span class="breadcrumb-sep">/</span>
+        <a asp-action="Index" asp-controller="Permissions">Права</a>
+        <span class="breadcrumb-sep">/</span>
+        <span>Редактирование</span>
+    </nav>
 
-        <div class="mb-3">
-            <label asp-for="Name" class="form-label">Название</label>
-            <input asp-for="Name" class="form-control" />
-            <span asp-validation-for="Name" class="text-danger"></span>
-        </div>
+    <div class="page-header">
+        <h1 class="page-title">Редактировать право</h1>
+        <p class="page-subtitle mb-0">@Model.Name</p>
+    </div>
 
-        <div class="mb-3">
-            <label asp-for="Code" class="form-label">Код (уникальный идентификатор)</label>
-            <input asp-for="Code" class="form-control" />
-            <span asp-validation-for="Code" class="text-danger"></span>
-            <small class="form-text text-muted">Используется для программной проверки прав доступа</small>
-        </div>
+    <div class="filters-section">
+        <form asp-action="Edit" asp-controller="Permissions" asp-route-id="@Model.Id" method="post">
+            <input type="hidden" asp-for="Id" />
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
-        <div class="mb-3">
-            <label asp-for="Category" class="form-label">Категория</label>
-            <input asp-for="Category" class="form-control" />
-            <span asp-validation-for="Category" class="text-danger"></span>
-        </div>
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label">Название</label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
 
-        <div class="mb-3">
-            <label asp-for="Area" class="form-label">Область применения (Area)</label>
-            <select asp-for="Area" class="form-select">
-                <option value="">Общее право (для всех типов организаций)</option>
-                @foreach (var area in areas)
-                {
-                    <option value="@area" selected="@(area == Model.Area)">@area</option>
-                }
-            </select>
-            <span asp-validation-for="Area" class="text-danger"></span>
-            <small class="form-text text-muted">Выберите тип организации или оставьте пустым для общего права</small>
-        </div>
+            <div class="mb-3">
+                <label asp-for="Code" class="form-label">Код (уникальный идентификатор)</label>
+                <input asp-for="Code" class="form-control" />
+                <span asp-validation-for="Code" class="text-danger"></span>
+                <small class="form-text text-muted">Используется для программной проверки прав доступа</small>
+            </div>
 
-        <div class="mb-3">
-            <label asp-for="Description" class="form-label">Описание</label>
-            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
-            <span asp-validation-for="Description" class="text-danger"></span>
-        </div>
+            <div class="mb-3">
+                <label asp-for="Category" class="form-label">Категория</label>
+                <input asp-for="Category" class="form-control" />
+                <span asp-validation-for="Category" class="text-danger"></span>
+            </div>
 
-        <div class="mb-3">
-            <button type="submit" class="btn btn-primary">Сохранить</button>
-            <a asp-action="Index" class="btn btn-secondary">Отмена</a>
-        </div>
-    </form>
+            <div class="mb-3">
+                <label asp-for="Area" class="form-label">Область применения (Area)</label>
+                <select asp-for="Area" class="form-select filter-select">
+                    <option value="">Общее право (для всех типов организаций)</option>
+                    @foreach (var area in areas)
+                    {
+                        if (area == Model.Area)
+                        {
+                            <option value="@area" selected>@area</option>
+                        }
+                        else
+                        {
+                            <option value="@area">@area</option>
+                        }
+                    }
+                </select>
+                <span asp-validation-for="Area" class="text-danger"></span>
+                <small class="form-text text-muted">Тип организации или пусто для общего права</small>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Description" class="form-label">Описание</label>
+                <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                <button type="submit" class="detsad-btn-primary">Сохранить</button>
+                <a asp-action="Index" class="detsad-btn-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
 </div>
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 }
-

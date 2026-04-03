@@ -19,13 +19,11 @@
     <div class="page-header">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
+                <h1 class="page-title">Отчетность</h1>
                 <p class="page-subtitle mb-0">Отчетность по счетам на оплату организации. Создание счёта — на странице «Дети».</p>
             </div>
             <div class="d-flex align-items-center gap-2">
-                <a href="@Url.Action("ExportPaymentsExcel", "Invoices", new { area = "Detsad", search, statusFilter, clientId, periodicity, dateCreatedFrom, dateCreatedTo })" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 15.01l1.41 1.41L11 14.84V19h2v-4.16l1.59 1.59L16 15.01 12.01 11 8 15.01z" fill="currentColor"/></svg>
-                    Выгрузить платежи в Excel
-                </a>
+              
                 <a href="@Url.Action("ExportExcel", "Invoices", new { area = "Detsad", search, statusFilter, clientId, periodicity, dateCreatedFrom, dateCreatedTo })" class="btn btn-outline-success btn-sm d-flex align-items-center gap-1">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 15.01l1.41 1.41L11 14.84V19h2v-4.16l1.59 1.59L16 15.01 12.01 11 8 15.01z" fill="currentColor"/></svg>
                     Выгрузить в Excel

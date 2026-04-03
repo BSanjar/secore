@@ -1,7 +1,6 @@
 @using System.Linq
 @{
     ViewData["Title"] = "Дети";
-    ViewData["Subtitle"] = "Список клиентов с основной информацией и статусами";
     var organizationFields = ViewBag.OrganizationFields as List<WebApplication1.Models.DBModels.OrganizationField> ?? new List<WebApplication1.Models.DBModels.OrganizationField>();
     var orgClientGroups = ViewBag.OrgClientGroups as List<WebApplication1.Models.DBModels.OrgClientGroup> ?? new List<WebApplication1.Models.DBModels.OrgClientGroup>();
     var search = ViewBag.Search as string ?? "";
@@ -13,6 +12,7 @@
 }
 
 @section Styles {
+    <link rel="stylesheet" href="~/web/kindergarten/css/detsad-children.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/web/kindergarten/css/detsad-create-invoice.css" asp-append-version="true" />
     <style>
         /* Локальная правка компоновки: чуть шире поле поиска, чтобы между группами и меню не оставалось лишнего пустого пространства */
@@ -56,6 +56,11 @@
             overflow-y: visible;
         }
 
+        /* При position:fixed из JS меню не обрезается overflow таблицы */
+        .child-actions-menu.is-open .child-actions-menu-dropdown {
+            z-index: 5000;
+        }
+
         @@media (max-width: 992px) {
             .dashboard-filters .children-search-box {
                 max-width: 320px !important;
@@ -65,6 +70,10 @@
 }
 
 <div class="dashboard-page">
+    <div class="page-header">
+        <h1 class="page-title">Дети</h1>
+        <p class="page-subtitle mb-0">Список клиентов с основной информацией и статусами</p>
+    </div>
     <!-- Фильтры и действия -->
     <div class="dashboard-filters">
         <div class="children-filters-left d-flex flex-wrap align-items-center gap-2">
@@ -680,6 +689,67 @@
     <script src="~/web/kindergarten/js/detsad-create-invoice.js" asp-append-version="true"></script>
     <script>
         (function() {
+            function clearChildActionsMenuPosition(menu) {
+                var dd = menu.querySelector('.child-actions-menu-dropdown');
+                if (!dd) return;
+                dd.style.position = '';
+                dd.style.left = '';
+                dd.style.top = '';
+                dd.style.right = '';
+                dd.style.bottom = '';
+                dd.style.marginTop = '';
+                dd.style.zIndex = '';
+            }
+
+            function positionChildActionsMenu(menu) {
+                var dd = menu.querySelector('.child-actions-menu-dropdown');
+                var btn = menu.querySelector('.child-actions-menu-btn');
+                if (!dd || !btn) return;
+                requestAnimationFrame(function() {
+                    if (!menu.classList.contains('is-open')) return;
+                    var ddW = dd.offsetWidth;
+                    var ddH = dd.offsetHeight;
+                    var br = btn.getBoundingClientRect();
+                    var margin = 4;
+                    var pad = 8;
+                    var left = br.right - ddW;
+                    if (left < pad) left = pad;
+                    if (left + ddW > window.innerWidth - pad) left = Math.max(pad, window.innerWidth - ddW - pad);
+                    var top = br.bottom + margin;
+                    if (top + ddH > window.innerHeight - pad) {
+                        top = br.top - ddH - margin;
+                    }
+                    if (top < pad) top = pad;
+                    dd.style.position = 'fixed';
+                    dd.style.left = left + 'px';
+                    dd.style.top = top + 'px';
+                    dd.style.right = 'auto';
+                    dd.style.bottom = 'auto';
+                    dd.style.marginTop = '0';
+                    dd.style.zIndex = '5000';
+                });
+            }
+
+            var childMenuRepositionHandler = null;
+            function bindChildMenuReposition(menu) {
+                if (childMenuRepositionHandler) {
+                    window.removeEventListener('scroll', childMenuRepositionHandler, true);
+                    window.removeEventListener('resize', childMenuRepositionHandler);
+                }
+                childMenuRepositionHandler = function() {
+                    if (menu.classList.contains('is-open')) positionChildActionsMenu(menu);
+                };
+                window.addEventListener('scroll', childMenuRepositionHandler, true);
+                window.addEventListener('resize', childMenuRepositionHandler);
+            }
+            function unbindChildMenuReposition() {
+                if (childMenuRepositionHandler) {
+                    window.removeEventListener('scroll', childMenuRepositionHandler, true);
+                    window.removeEventListener('resize', childMenuRepositionHandler);
+                    childMenuRepositionHandler = null;
+                }
+            }
+
             document.addEventListener('click', function(e) {
                 var menu = e.target.closest('.child-actions-menu');
                 if (menu) {
@@ -690,6 +760,7 @@
                         open.forEach(function(m) {
                             if (m !== menu) {
                                 m.classList.remove('is-open');
+                                clearChildActionsMenuPosition(m);
                                 var btn = m.querySelector('.child-actions-menu-btn');
                                 if (btn) btn.setAttribute('aria-expanded', 'false');
                             }
@@ -697,6 +768,13 @@
                         var isOpen = menu.classList.toggle('is-open');
                         var thisBtn = menu.querySelector('.child-actions-menu-btn');
                         if (thisBtn) thisBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                        if (isOpen) {
+                            positionChildActionsMenu(menu);
+                            bindChildMenuReposition(menu);
+                        } else {
+                            clearChildActionsMenuPosition(menu);
+                            unbindChildMenuReposition();
+                        }
                         return;
                     }
                     var item = e.target.closest('.child-actions-menu-item');
@@ -709,6 +787,8 @@
                         var firstInvoiceId = row.dataset.firstInvoiceId || '';
                         var action = item.getAttribute('data-action');
                         menu.classList.remove('is-open');
+                        clearChildActionsMenuPosition(menu);
+                        unbindChildMenuReposition();
                         var menuBtn = menu.querySelector('.child-actions-menu-btn');
                         if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
                         if (action === 'profile') {
@@ -722,13 +802,23 @@
                         }
                         return;
                     }
+                    if (item && item.classList.contains('child-actions-menu-item-link')) {
+                        menu.classList.remove('is-open');
+                        clearChildActionsMenuPosition(menu);
+                        unbindChildMenuReposition();
+                        var linkBtn = menu.querySelector('.child-actions-menu-btn');
+                        if (linkBtn) linkBtn.setAttribute('aria-expanded', 'false');
+                        return;
+                    }
                     return;
                 }
                 document.querySelectorAll('.child-actions-menu.is-open').forEach(function(m) {
                     m.classList.remove('is-open');
+                    clearChildActionsMenuPosition(m);
                     var btn = m.querySelector('.child-actions-menu-btn');
                     if (btn) btn.setAttribute('aria-expanded', 'false');
                 });
+                unbindChildMenuReposition();
             }, true);
         })();
 

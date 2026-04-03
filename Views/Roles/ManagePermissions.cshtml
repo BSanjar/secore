@@ -1,35 +1,51 @@
 @model WebApplication1.Models.DBModels.Role
 @{
-    ViewData["Title"] = "Настроить права роли";
+    ViewData["Title"] = "Права роли";
     var permissions = ViewBag.Permissions as List<WebApplication1.Models.DBModels.Permission> ?? new List<WebApplication1.Models.DBModels.Permission>();
     var categories = ViewBag.PermissionCategories as List<string> ?? new List<string>();
     var selectedPermissionIds = ViewBag.SelectedPermissionIds as List<string> ?? new List<string>();
     var organization = ViewBag.Organization as WebApplication1.Models.DBModels.Organization;
 }
 
-<div class="container mt-4">
-    <h2>Настроить права для роли: @Model.Name</h2>
-    <hr />
+@section Styles {
+    <link rel="stylesheet" href="~/css/dashboard-soft.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/web/kindergarten/css/detsad-children.css" asp-append-version="true" />
+}
+
+<div class="children-page settings-page settings-subpage">
+    <nav class="detsad-breadcrumb" aria-label="Навигация">
+        <a asp-controller="Settings" asp-action="Index">Настройки</a>
+        <span class="breadcrumb-sep">/</span>
+        <a asp-action="Index" asp-controller="Roles">Роли</a>
+        <span class="breadcrumb-sep">/</span>
+        <span>Права</span>
+    </nav>
+
+    <div class="page-header">
+        <h1 class="page-title">Права роли</h1>
+        <p class="page-subtitle mb-0">@Model.Name</p>
+    </div>
+
     @if (organization != null)
     {
-        <div class="alert alert-info mb-3">
+        <div class="alert alert-info border-0 mb-3" style="border-radius: 12px;">
             <strong>Организация:</strong> @organization.Name (@organization.Organizationtype)
         </div>
     }
 
-    <form asp-action="ManagePermissions" method="post">
+    <form asp-action="ManagePermissions" asp-route-id="@Model.Id" method="post">
         <input type="hidden" asp-for="Id" />
 
         <div class="mb-3">
-            <label class="form-label">Права доступа для выбранной организации</label>
-            <div class="border p-3" style="max-height: 500px; overflow-y: auto;">
+            <label class="form-label fw-semibold">Права доступа для выбранной организации</label>
+            <div class="settings-scroll-panel">
                 @if (categories.Any())
                 {
                     @foreach (var category in categories)
                     {
                         <div class="mb-4">
-                            <h5 class="text-primary">@category</h5>
-                            <div class="ms-3">
+                            <h2 class="settings-perm-category">@category</h2>
+                            <div class="ms-1 ms-md-2">
                                 @foreach (var permission in permissions.Where(p => p.Category == category))
                                 {
                                     var isChecked = selectedPermissionIds.Contains(permission.Id);
@@ -70,16 +86,16 @@
 
                 @if (!permissions.Any())
                 {
-                    <div class="alert alert-warning">
+                    <div class="alert alert-warning mb-0">
                         Права доступа не найдены. <a asp-controller="Permissions" asp-action="Create">Создайте первое право</a>.
                     </div>
                 }
             </div>
         </div>
 
-        <div class="mb-3">
-            <button type="submit" class="btn btn-primary">Сохранить права</button>
-            <a asp-action="Index" class="btn btn-secondary">Назад к списку</a>
+        <div class="d-flex flex-wrap gap-2">
+            <button type="submit" class="detsad-btn-primary">Сохранить права</button>
+            <a asp-action="Index" class="detsad-btn-secondary">Назад к списку</a>
         </div>
     </form>
 </div>
@@ -87,4 +103,3 @@
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 }
-

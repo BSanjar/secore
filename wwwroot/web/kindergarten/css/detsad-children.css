@@ -1198,3 +1198,134 @@
     color: #10b981;
 }
 
+/* Подстраницы настроек: История, Уведомления (в едином стиле с dashboard-soft) */
+.settings-page.settings-subpage .page-header {
+    margin-bottom: 1.25rem;
+}
+
+.settings-page.settings-subpage .dashboard-filters {
+    margin-bottom: 1.25rem;
+}
+
+.settings-page.settings-subpage .dashboard-filters .settings-filters-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px;
+    width: 100%;
+}
+
+.settings-page.settings-subpage .dashboard-filters .filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.settings-page.settings-subpage .dashboard-filters .filter-field label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary, #607284);
+    margin: 0;
+}
+
+.settings-page.settings-subpage .dashboard-filters input[type="date"] {
+    padding: 10px 12px;
+    font-size: 14px;
+    border-radius: var(--radius-sm, 14px);
+    border: 1px solid var(--input-border, #D9E4EC);
+    background: var(--input-bg, #FDFEFF);
+    color: var(--input-text, #2E3B4A);
+    min-width: 140px;
+}
+
+.settings-page.settings-subpage .dashboard-filters input[type="date"]:focus {
+    outline: none;
+    border-color: var(--input-border-focus, #8EAFCC);
+    box-shadow: 0 0 0 3px rgba(142, 175, 204, 0.15);
+}
+
+.settings-page.settings-subpage .settings-meta {
+    font-size: 13px;
+    color: var(--text-secondary, #607284);
+    margin-top: 0.75rem;
+}
+
+.settings-page.settings-subpage .settings-pagination {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-top: 1rem;
+}
+
+.settings-page.settings-subpage .settings-pagination .settings-page-info {
+    font-size: 14px;
+    color: var(--text-secondary, #607284);
+    padding: 8px 4px;
+}
+
+.settings-page.settings-subpage .empty-state-settings {
+    background: var(--surface, #fff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    padding: 2rem 1.5rem;
+    text-align: center;
+}
+
+.settings-page.settings-subpage .empty-state-settings p {
+    color: var(--text-secondary, #607284);
+    margin-bottom: 1rem;
+}
+
+/* Бейджи статусов уведомлений в стиле dashboard-table-card */
+.settings-page.settings-subpage .notify-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.settings-page.settings-subpage .notify-status--sent {
+    background: var(--success-soft, #E8F4ED);
+    color: var(--success-text, #4F7C67);
+}
+
+.settings-page.settings-subpage .notify-status--failed {
+    background: var(--error-soft, #F9EAEA);
+    color: var(--error-text, #9C5C5C);
+}
+
+.settings-page.settings-subpage .notify-status--processing {
+    background: var(--warning-soft, #F8F1E2);
+    color: var(--warning-text, #8B7340);
+}
+
+.settings-page.settings-subpage .notify-status--new {
+    background: var(--accent-primary-soft, #E4EEF7);
+    color: var(--text-secondary, #607284);
+}
+
+/* Блоки со списком прав/ролей (настройки) */
+.settings-page.settings-subpage .settings-scroll-panel {
+    max-height: 500px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    background: var(--surface, #fff);
+}
+
+.settings-page.settings-subpage .settings-scroll-panel--sm {
+    max-height: 400px;
+}
+
+.settings-page.settings-subpage .settings-perm-category {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--accent-primary, #6E93B7);
+    margin-bottom: 0.75rem;
+}
+

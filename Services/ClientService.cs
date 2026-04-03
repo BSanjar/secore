@@ -1,3 +1,4 @@
+using System;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Models.DBModels;
 using WebApplication1.Dtos;
@@ -25,20 +26,11 @@ public class ClientService
         using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
-            var allClientIds = await _db.OrganizationClients
-                .Select(c => c.Id)
-                .ToListAsync(cancellationToken);
-
-            int newClientId = 1;
-            foreach (var idStr in allClientIds)
-            {
-                if (int.TryParse(idStr, out var id) && id >= newClientId)
-                    newClientId = id + 1;
-            }
+            var newClientId = Guid.NewGuid().ToString();
 
             var organizationClient = new OrganizationClient
             {
-                Id = newClientId.ToString(),
+                Id = newClientId,
                 Organization = organizationId,
                 OrgClientGroupId = string.IsNullOrWhiteSpace(input.OrgClientGroupId) ? null : input.OrgClientGroupId,
                 ClientName = input.ClientName,
@@ -71,7 +63,7 @@ public class ClientService
                     _db.OrganizationClientsAdditionalFields.Add(new OrganizationClientsAdditionalField
                     {
                         Id = Guid.NewGuid().ToString(),
-                        OrganizationClient = newClientId.ToString(),
+                        OrganizationClient = newClientId,
                         Field = kv.Key,
                         Value = kv.Value.Trim()
                     });
@@ -80,7 +72,7 @@ public class ClientService
 
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
-            return newClientId.ToString();
+            return newClientId;
         }
         catch
         {

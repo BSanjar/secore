@@ -1,3 +1,5 @@
+using System.Linq;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Models.DBModels;
@@ -20,6 +22,17 @@ namespace WebApplication1.Areas.Detsad.Controllers
         {
             return HttpContext.Session.GetString("OrganizationId");
         }
+
+        /// <summary>Запрос из модального окна на Index (fetch + JSON), как в OrgClientGroups.</summary>
+        private static bool IsFormModal(HttpRequest request) =>
+            string.Equals(request.Headers["X-Form-Modal"].ToString(), "1", StringComparison.Ordinal);
+
+        private static string FirstModelError(ModelStateDictionary modelState) =>
+            modelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage)
+                .FirstOrDefault(m => !string.IsNullOrWhiteSpace(m))
+            ?? "Проверьте введённые данные.";
 
         [RequirePermission("children.view")]
         public async Task<IActionResult> Index(string search = "", string isDeletedFilter = "active")
@@ -66,7 +79,14 @@ namespace WebApplication1.Areas.Detsad.Controllers
         {
             var organizationId = GetOrganizationId();
             if (string.IsNullOrEmpty(organizationId))
+            {
+                if (IsFormModal(Request))
+                    return Json(new { success = false, message = "Не авторизован." });
                 return RedirectToAction("Login", "Account", new { area = "" });
+            }
+
+            // Id не приходит из формы при создании; задаём Guid при сохранении. Иначе валидация: "The Id field is required."
+            ModelState.Remove(nameof(OrganizationService.Id));
 
             model.Organization = organizationId;
             model.Isdeleted = 0;
@@ -83,8 +103,12 @@ namespace WebApplication1.Areas.Detsad.Controllers
                 _db.OrganizationServices.Add(model);
                 await _db.SaveChangesAsync();
                 TempData["Message"] = "Услуга создана.";
+                if (IsFormModal(Request))
+                    return Json(new { success = true, message = "Услуга создана." });
                 return RedirectToAction(nameof(Index));
             }
+            if (IsFormModal(Request))
+                return Json(new { success = false, message = FirstModelError(ModelState) });
             return View(model);
         }
 
@@ -111,19 +135,35 @@ namespace WebApplication1.Areas.Detsad.Controllers
         {
             var organizationId = GetOrganizationId();
             if (string.IsNullOrEmpty(organizationId))
+            {
+                if (IsFormModal(Request))
+                    return Json(new { success = false, message = "Не авторизован." });
                 return RedirectToAction("Login", "Account", new { area = "" });
+            }
 
             if (id != model.Id)
+            {
+                if (IsFormModal(Request))
+                    return Json(new { success = false, message = "Услуга не найдена." });
                 return NotFound();
+            }
 
             var service = await _db.OrganizationServices
                 .FirstOrDefaultAsync(s => s.Id == id && s.Organization == organizationId);
             if (service == null)
+            {
+                if (IsFormModal(Request))
+                    return Json(new { success = false, message = "Услуга не найдена." });
                 return NotFound();
+            }
 
             if (string.IsNullOrWhiteSpace(model.Name))
-            {
                 ModelState.AddModelError("Name", "Укажите название услуги.");
+
+            if (!ModelState.IsValid)
+            {
+                if (IsFormModal(Request))
+                    return Json(new { success = false, message = FirstModelError(ModelState) });
                 return View(model);
             }
 
@@ -134,6 +174,8 @@ namespace WebApplication1.Areas.Detsad.Controllers
             service.MaxSumm = model.MaxSumm;
             await _db.SaveChangesAsync();
             TempData["Message"] = "Изменения сохранены.";
+            if (IsFormModal(Request))
+                return Json(new { success = true, message = "Изменения сохранены." });
             return RedirectToAction(nameof(Index));
         }
 
@@ -144,23 +186,36 @@ namespace WebApplication1.Areas.Detsad.Controllers
         {
             var organizationId = GetOrganizationId();
             if (string.IsNullOrEmpty(organizationId))
+            {
+                if (IsFormModal(Request))
+                    return Json(new { success = false, message = "Не авторизован." });
                 return RedirectToAction("Login", "Account", new { area = "" });
+            }
 
             var service = await _db.OrganizationServices
                 .FirstOrDefaultAsync(s => s.Id == id && s.Organization == organizationId);
             if (service == null)
+            {
+                if (IsFormModal(Request))
+                    return Json(new { success = false, message = "Услуга не найдена." });
                 return NotFound();
+            }
 
             var usedInInvoices = await _db.InvoiceServices.AnyAsync(i => i.Service == id);
             if (usedInInvoices)
             {
-                TempData["Error"] = "Услугу нельзя удалить: она используется в счетах.";
+                var msg = "Услугу нельзя удалить: она используется в счетах.";
+                if (IsFormModal(Request))
+                    return Json(new { success = false, message = msg });
+                TempData["Error"] = msg;
                 return RedirectToAction(nameof(Index));
             }
 
             service.Isdeleted = 1;
             await _db.SaveChangesAsync();
             TempData["Message"] = "Услуга удалена.";
+            if (IsFormModal(Request))
+                return Json(new { success = true, message = "Услуга удалена." });
             return RedirectToAction(nameof(Index));
         }
     }

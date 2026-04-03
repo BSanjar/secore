@@ -5,53 +5,69 @@
     ViewData["Title"] = Localizer["EditField"].Value;
 }
 
-<div class="container mt-4">
-    <h2>@Localizer["EditField"]</h2>
-    <hr />
+@section Styles {
+    <link rel="stylesheet" href="~/css/dashboard-soft.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/web/kindergarten/css/detsad-children.css" asp-append-version="true" />
+}
 
-    <form asp-action="Edit" method="post">
-        <input type="hidden" asp-for="Id" />
-        <div asp-validation-summary="All" class="text-danger"></div>
+<div class="children-page settings-page settings-subpage">
+    <nav class="detsad-breadcrumb" aria-label="Навигация">
+        <a asp-controller="Settings" asp-action="Index">@Localizer["Settings"]</a>
+        <span class="breadcrumb-sep">/</span>
+        <a asp-action="Index">@Localizer["AdditionalFields"]</a>
+        <span class="breadcrumb-sep">/</span>
+        <span>@Localizer["EditField"]</span>
+    </nav>
 
-        <div class="mb-3">
-            <label asp-for="FieldName" class="form-label">@Localizer["FieldName"]</label>
-            <input asp-for="FieldName" class="form-control" />
-            <span asp-validation-for="FieldName" class="text-danger"></span>
-        </div>
+    <div class="page-header">
+        <h1 class="page-title">@Localizer["EditField"]</h1>
+        <p class="page-subtitle mb-0">@Model.FieldName</p>
+    </div>
 
-        <div class="mb-3">
-            <label asp-for="FieldType" class="form-label">@Localizer["FieldType"]</label>
-            <select asp-for="FieldType" class="form-select">
-                <option value="">@Localizer["SelectFieldType"]</option>
-                <option value="string">@Localizer["String"]</option>
-                <option value="int">@Localizer["Integer"]</option>
-                <option value="money">@Localizer["Money"]</option>
-                <option value="selected">@Localizer["Selected"]</option>
-                <option value="datetime">@Localizer["DateTime"]</option>
-            </select>
-            <span asp-validation-for="FieldType" class="text-danger"></span>
-        </div>
+    <div class="filters-section">
+        <form asp-action="Edit" asp-controller="OrganizationFields" asp-route-id="@Model.Id" method="post">
+            <input type="hidden" asp-for="Id" />
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
-        <div class="mb-3">
-            <label asp-for="FieldSelectValues" class="form-label">@Localizer["SelectValues"]</label>
-            <input asp-for="FieldSelectValues" class="form-control" placeholder="@Localizer["SelectValuesPlaceholder"]" />
-            <small class="form-text text-muted">@Localizer["SelectValuesHint"]</small>
-            <span asp-validation-for="FieldSelectValues" class="text-danger"></span>
-        </div>
+            <div class="mb-3">
+                <label asp-for="FieldName" class="form-label">@Localizer["FieldName"]</label>
+                <input asp-for="FieldName" class="form-control" />
+                <span asp-validation-for="FieldName" class="text-danger"></span>
+            </div>
 
-        <div class="mb-3 form-check">
-            <input asp-for="Filterbyfield" class="form-check-input" type="checkbox" />
-            <label asp-for="Filterbyfield" class="form-check-label">@Localizer["FilterByField"]</label>
-        </div>
+            <div class="mb-3">
+                <label asp-for="FieldType" class="form-label">@Localizer["FieldType"]</label>
+                <select asp-for="FieldType" class="form-select filter-select">
+                    <option value="">@Localizer["SelectFieldType"]</option>
+                    <option value="string">@Localizer["String"]</option>
+                    <option value="int">@Localizer["Integer"]</option>
+                    <option value="money">@Localizer["Money"]</option>
+                    <option value="selected">@Localizer["Selected"]</option>
+                    <option value="datetime">@Localizer["DateTime"]</option>
+                </select>
+                <span asp-validation-for="FieldType" class="text-danger"></span>
+            </div>
 
-        <div class="mb-3">
-            <button type="submit" class="btn btn-primary">@Localizer["Save"]</button>
-            <a asp-action="Index" class="btn btn-secondary">@Localizer["Cancel"]</a>
-        </div>
-    </form>
+            <div class="mb-3">
+                <label asp-for="FieldSelectValues" class="form-label">@Localizer["SelectValues"]</label>
+                <input asp-for="FieldSelectValues" class="form-control" placeholder="@Localizer["SelectValuesPlaceholder"]" />
+                <small class="form-text text-muted">@Localizer["SelectValuesHint"]</small>
+                <span asp-validation-for="FieldSelectValues" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3 form-check">
+                <input asp-for="Filterbyfield" class="form-check-input" type="checkbox" />
+                <label asp-for="Filterbyfield" class="form-check-label">@Localizer["FilterByField"]</label>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                <button type="submit" class="detsad-btn-primary">@Localizer["Save"]</button>
+                <a asp-action="Index" class="detsad-btn-secondary">@Localizer["Cancel"]</a>
+            </div>
+        </form>
+    </div>
 </div>
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 }
-
