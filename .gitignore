@@ -5,3 +5,7 @@ TestResults/
 *.user
 *.suo
 *.cache
+
+# Загруженные фото клиентов (структура папки в репозитории)
+wwwroot/uploads/clients/*
+!wwwroot/uploads/clients/.gitkeep

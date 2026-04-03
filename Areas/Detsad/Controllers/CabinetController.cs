@@ -18,14 +18,16 @@ namespace WebApplication1.Areas.Detsad.Controllers
         private readonly AppDbContext _db;
         private readonly OperationsByInvoices _operationsByInvoices;
         private readonly ClientService _clientService;
+        private readonly ClientPhotoService _clientPhotoService;
         private readonly ExcelExportService _excelExportService;
         private const string ChildrenImportSessionPrefix = "__children_import:";
-
-        public CabinetController(AppDbContext db, OperationsByInvoices operationsByInvoices, ClientService clientService, ExcelExportService excelExportService)
+        
+        public CabinetController(AppDbContext db, OperationsByInvoices operationsByInvoices, ClientService clientService, ClientPhotoService clientPhotoService, ExcelExportService excelExportService)
         {
             _db = db;
             _operationsByInvoices = operationsByInvoices;
             _clientService = clientService;
+            _clientPhotoService = clientPhotoService;
             _excelExportService = excelExportService;
         }
 
@@ -590,6 +592,51 @@ namespace WebApplication1.Areas.Detsad.Controllers
                 if (!updated)
                     return Json(new { success = false, message = "Клиент не найден." });
                 return Json(new { success = true, message = "Профиль обновлён." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Загрузка или удаление фото клиента (сжатие JPEG на сервере, лимит размера файла).
+        /// </summary>
+        [HttpPost]
+        [RequirePermission("children.create")]
+        [RequestSizeLimit(3 * 1024 * 1024)]
+        public async Task<IActionResult> UploadChildPhoto([FromForm] string? clientId, IFormFile? photo, [FromForm] bool removePhoto = false)
+        {
+            if (string.IsNullOrWhiteSpace(clientId))
+                return Json(new { success = false, message = "Не указан клиент." });
+
+            var organizationId = HttpContext.Session.GetString("OrganizationId");
+            if (string.IsNullOrEmpty(organizationId))
+                return Unauthorized();
+
+            var client = await _db.OrganizationClients
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == clientId && c.Organization == organizationId);
+
+            if (client == null)
+                return Json(new { success = false, message = "Клиент не найден." });
+
+            try
+            {
+                if (removePhoto)
+                {
+                    _clientPhotoService.DeleteFileIfExists(client.ClientLogo);
+                    await _clientService.SetClientLogoAsync(clientId, organizationId, null);
+                    return Json(new { success = true, message = "Фото удалено.", logoUrl = (string?)null });
+                }
+
+                if (photo == null || photo.Length == 0)
+                    return Json(new { success = false, message = "Выберите файл изображения." });
+
+                _clientPhotoService.DeleteFileIfExists(client.ClientLogo);
+                var relativeUrl = await _clientPhotoService.SaveAndCompressAsync(photo, organizationId, clientId);
+                await _clientService.SetClientLogoAsync(clientId, organizationId, relativeUrl);
+                return Json(new { success = true, message = "Фото сохранено.", logoUrl = relativeUrl });
             }
             catch (Exception ex)
             {

@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const search = searchInput.value.toLowerCase().trim();
         const selectedGroupIds = getSelectedGroupIds();
         const filterByGroups = selectedGroupIds.length > 0;
-
+        
         const cards = childrenCards.querySelectorAll('.child-card');
         const rows = childrenCards.querySelectorAll('.child-row');
         const items = rows.length ? rows : cards;
@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             let matchesSearch = !search || searchText.includes(search);
             let matchesGroups = !filterByGroups || selectedGroupIds.includes(groupId);
-
+            
             if (matchesSearch && matchesGroups) {
                 item.style.display = showDisplay;
                 visibleCount++;
@@ -122,7 +122,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         window.location.search = params.toString();
     });
-
+    
     // Фильтр по группам: открытие/закрытие выпадающего списка
     if (groupsFilterBtn && groupsFilterMenu) {
         groupsFilterBtn.addEventListener('click', function(e) {
@@ -207,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function() {
             bootstrap.Modal.getOrCreateInstance(importModalEl).show();
         }
     }
-
+    
     console.log('Detsad children page loaded');
 });
 
@@ -233,7 +233,7 @@ function openChildDetailModal(clientId, clientName, onShown) {
 
     const modal = new bootstrap.Modal(modalEl);
     modal.show();
-
+    
     loadChildInfoInto(clientId, infoContent);
 
     modalEl.addEventListener('shown.bs.modal', function onceShown() {
@@ -261,7 +261,7 @@ async function loadChildInfoInto(clientId, contentEl) {
         const data = await response.json();
         const client = data.client;
         const additionalFields = data.additionalFields || [];
-
+        
         // Основные данные по ребёнку
         let statusText = 'Неизвестно', statusClass = 'status-unknown';
         if (client.status == 1) { statusText = 'Активный'; statusClass = 'status-active'; }
@@ -271,9 +271,13 @@ async function loadChildInfoInto(clientId, contentEl) {
         const updatedDate = client.updatedDate ? new Date(client.updatedDate).toLocaleDateString('ru-RU') : '-';
         const balance = client.balance ? (client.balance / 100).toFixed(2) : '0.00';
         const balanceClass = client.balance < 0 ? 'text-danger' : '';
+        const logoBlock = client.logo
+            ? `<div class="mb-3 text-center"><img src="${client.logo}" alt="" class="rounded-circle border" style="width:96px;height:96px;object-fit:cover;" loading="lazy" /></div>`
+            : '';
         let html = `
             <div class="details-section">
                 <h6 class="details-section-title">Основные данные</h6>
+                ${logoBlock}
                 <div class="details-grid">
                     <div class="detail-item"><span class="detail-label">ФИО</span><span class="detail-value">${client.name || '-'}</span></div>
                     <div class="detail-item"><span class="detail-label">Телефон</span><span class="detail-value">${client.phone || '-'}</span></div>
@@ -284,7 +288,7 @@ async function loadChildInfoInto(clientId, contentEl) {
                     <div class="detail-item"><span class="detail-label">Статус</span><span class="detail-value"><span class="child-status-badge ${statusClass}">${statusText}</span></span></div>
                     <div class="detail-item"><span class="detail-label">Дата регистрации</span><span class="detail-value">${createdDate}</span></div>
                     <div class="detail-item"><span class="detail-label">Дата обновления</span><span class="detail-value">${updatedDate}</span></div>
-                </div>
+                    </div>
             </div>`;
 
         // Информация о счёте (по умолчанию используем первый/выбранный счёт из GetInvoicesInfo)
@@ -297,10 +301,10 @@ async function loadChildInfoInto(clientId, contentEl) {
                     const invDateCreated = selectedInvoice.dateCreated ? new Date(selectedInvoice.dateCreated).toLocaleDateString('ru-RU') : '-';
                     const invBalance = selectedInvoice.balance ? (selectedInvoice.balance / 100).toFixed(2) : '0.00';
                     const invBalanceClass = selectedInvoice.balance < 0 ? 'text-danger' : '';
-                    html += `
-            <div class="details-section">
+            html += `
+                <div class="details-section">
                 <h6 class="details-section-title">Информация о счёте</h6>
-                <div class="details-grid">
+                    <div class="details-grid">
                     <div class="detail-item"><span class="detail-label">Название счёта</span><span class="detail-value">${selectedInvoice.nameInvoice || '-'}</span></div>
                     <div class="detail-item"><span class="detail-label">Лицевой счёт</span><span class="detail-value">${selectedInvoice.payCode || '-'}</span></div>
                     <div class="detail-item"><span class="detail-label">Дата создания</span><span class="detail-value">${invDateCreated}</span></div>
@@ -341,7 +345,7 @@ async function loadPaymentsTab(clientId, contentEl, invoiceId) {
     if (!contentEl) return;
     contentEl.innerHTML = '<div class="loading-spinner"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div></div>';
     try {
-        const url = invoiceId
+        const url = invoiceId 
             ? `/Detsad/Cabinet/GetInvoicesInfo?clientId=${clientId}&invoiceId=${encodeURIComponent(invoiceId)}`
             : `/Detsad/Cabinet/GetInvoicesInfo?clientId=${clientId}`;
         const response = await fetch(url);
@@ -370,7 +374,7 @@ async function loadPaymentsTab(clientId, contentEl, invoiceId) {
             html += `<option value="${inv.id}"${sel}>${inv.name} (${inv.payCode || 'без кода'})</option>`;
         });
         html += `</select>
-                    </div>
+                </div>
                     <a href="${downloadPdfUrl}" class="btn btn-primary btn-sm" download title="Счет на оплату PDF">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="me-1"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
                         Скачать счет (PDF)
@@ -462,6 +466,8 @@ function initWhatsAppSync() {
 
 function resetModal() {
     document.getElementById('childForm').reset();
+    const addPhoto = document.getElementById('addChildPhoto');
+    if (addPhoto) addPhoto.value = '';
     document.getElementById('errorMessage').style.display = 'none';
     const nameEl = document.getElementById('addChildInvoiceName');
     const amountEl = document.getElementById('addChildInvoiceAmount');
@@ -471,14 +477,14 @@ function resetModal() {
     showAddChildStep(1);
 
     const form = document.getElementById('childForm');
-    if (form) {
-        form.classList.remove('was-validated');
-        const inputs = form.querySelectorAll('.form-control');
-        inputs.forEach(input => {
-            input.classList.remove('is-invalid', 'is-valid');
-        });
-    }
-
+        if (form) {
+            form.classList.remove('was-validated');
+            const inputs = form.querySelectorAll('.form-control');
+            inputs.forEach(input => {
+                input.classList.remove('is-invalid', 'is-valid');
+            });
+        }
+    
     initPhoneMask();
 }
 
@@ -515,32 +521,32 @@ function goAddChildToStep2() {
     errorDiv.style.display = 'none';
 
     const form = document.getElementById('childForm');
-    const innInput = document.getElementById('clientInn');
+        const innInput = document.getElementById('clientInn');
     const innValue = (innInput && innInput.value.replace(/\D/g, '')) || '';
-    if (innValue.length !== 14) {
+        if (innValue.length !== 14) {
         if (innInput) { innInput.classList.add('is-invalid'); innInput.classList.remove('is-valid'); }
-        form.classList.add('was-validated');
-        return;
-    }
+            form.classList.add('was-validated');
+            return;
+        }
     if (innInput) { innInput.classList.remove('is-invalid'); innInput.classList.add('is-valid'); }
-
-    const phoneInput = document.getElementById('clientPhone');
+        
+        const phoneInput = document.getElementById('clientPhone');
     const phoneValue = (phoneInput && phoneInput.value) || '';
-    const phoneRegex = /^\+996\(\d{3}\) \d{3} \d{3}$/;
-    if (!phoneRegex.test(phoneValue)) {
+        const phoneRegex = /^\+996\(\d{3}\) \d{3} \d{3}$/;
+        if (!phoneRegex.test(phoneValue)) {
         if (phoneInput) { phoneInput.classList.add('is-invalid'); phoneInput.classList.remove('is-valid'); }
-        form.classList.add('was-validated');
+            form.classList.add('was-validated');
         form.reportValidity();
-        return;
-    }
+            return;
+        }
     if (phoneInput) { phoneInput.classList.remove('is-invalid'); phoneInput.classList.add('is-valid'); }
-
-    if (!form.checkValidity()) {
+        
+        if (!form.checkValidity()) {
+            form.classList.add('was-validated');
+            form.reportValidity();
+            return;
+        }
         form.classList.add('was-validated');
-        form.reportValidity();
-        return;
-    }
-    form.classList.add('was-validated');
     showAddChildStep(2);
 }
 
@@ -576,6 +582,25 @@ function getChildFormData() {
         if (Object.keys(additionalFields).length > 0) childData.additionalFields = additionalFields;
     }
     return childData;
+}
+
+/** Загрузка фото клиента после создания/редактирования (multipart). */
+async function uploadChildPhoto(clientId, file, removePhoto) {
+    if (!clientId) return { success: false, message: 'Нет clientId' };
+    const fd = new FormData();
+    fd.append('clientId', clientId);
+    if (removePhoto) {
+        fd.append('removePhoto', 'true');
+    } else if (file) {
+        fd.append('photo', file);
+        } else {
+        return { success: true };
+    }
+    const response = await fetch('/Detsad/Cabinet/UploadChildPhoto', {
+        method: 'POST',
+        body: fd
+    });
+    return await response.json();
 }
 
 async function submitChild() {
@@ -631,6 +656,18 @@ async function submitChildOnly() {
         const result = await response.json();
 
         if (result.success) {
+            const clientId = result.clientId;
+            const photoInput = document.getElementById('addChildPhoto');
+            if (clientId && photoInput && photoInput.files && photoInput.files.length) {
+                const up = await uploadChildPhoto(clientId, photoInput.files[0], false);
+                if (!up.success) {
+                    showError((result.message || 'Ребёнок создан.') + ' ' + (up.message || 'Не удалось загрузить фото.'));
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Зарегистрировать и создать счёт';
+                    if (btnSkip) btnSkip.disabled = false;
+        return;
+                }
+            }
             bootstrap.Modal.getInstance(document.getElementById('addChildModal')).hide();
             window.location.reload();
         } else {
@@ -683,11 +720,11 @@ async function submitChildAndInvoice() {
     }
 
     const childData = getChildFormData();
-    const submitBtn = document.getElementById('submitBtn');
+        const submitBtn = document.getElementById('submitBtn');
     const btnSkip = document.getElementById('addChildBtnSkip');
-    submitBtn.disabled = true;
+        submitBtn.disabled = true;
     if (btnSkip) btnSkip.disabled = true;
-    submitBtn.textContent = 'Регистрация...';
+        submitBtn.textContent = 'Регистрация...';
 
     try {
         const createChildRes = await fetch('/Detsad/Cabinet/CreateChild', {
@@ -711,6 +748,18 @@ async function submitChildAndInvoice() {
             submitBtn.textContent = 'Зарегистрировать и создать счёт';
             if (btnSkip) btnSkip.disabled = false;
             return;
+        }
+
+        const photoInput = document.getElementById('addChildPhoto');
+        if (photoInput && photoInput.files && photoInput.files.length) {
+            const up = await uploadChildPhoto(clientId, photoInput.files[0], false);
+            if (!up.success) {
+                showError('Ребёнок создан, но фото не загрузилось: ' + (up.message || ''));
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Зарегистрировать и создать счёт';
+                if (btnSkip) btnSkip.disabled = false;
+                return;
+            }
         }
 
         const invoicePayload = {
@@ -854,3 +903,4 @@ document.addEventListener('DOMContentLoaded', function() {
 // Экспортируем функции для глобального доступа
 window.openAddChildModal = openAddChildModal;
 window.submitChild = submitChild;
+window.uploadChildPhoto = uploadChildPhoto;

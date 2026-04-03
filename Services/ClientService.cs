@@ -177,6 +177,23 @@ public class ClientService
     }
 
     /// <summary>
+    /// Сохраняет путь к фото клиента (относительный URL) или очищает при <paramref name="relativeLogoUrl"/> = null.
+    /// </summary>
+    public async Task<bool> SetClientLogoAsync(string clientId, string organizationId, string? relativeLogoUrl, CancellationToken cancellationToken = default)
+    {
+        var client = await _db.OrganizationClients
+            .FirstOrDefaultAsync(c => c.Id == clientId && c.Organization == organizationId, cancellationToken);
+
+        if (client == null)
+            return false;
+
+        client.ClientLogo = relativeLogoUrl;
+        client.UpdatedDate = DateTime.Now;
+        await _db.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    /// <summary>
     /// Загружает данные для страницы «Дети» (список клиентов кабинета): клиенты с фильтрами, балансы, первый счёт по клиенту, поля организации, группы, настройки.
     /// </summary>
     public async Task<ClientsForCabinetResult> GetClientsForCabinetAsync(

@@ -15,26 +15,36 @@
     <link rel="stylesheet" href="~/web/kindergarten/css/detsad-children.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/web/kindergarten/css/detsad-create-invoice.css" asp-append-version="true" />
     <style>
-        /* Локальная правка компоновки: чуть шире поле поиска, чтобы между группами и меню не оставалось лишнего пустого пространства */
-        .dashboard-filters .children-search-box {
-            max-width: 420px !important;
+        /* Верхняя строка — фильтры на всю ширину; ниже — кнопки действий */
+        .dashboard-filters.children-filters-wrap {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 14px;
         }
 
-        /* Меню находится справа внутри dashboard-filters */
-        .dashboard-filters {
-            justify-content: space-between;
+        .children-filters-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
         }
 
-        .children-filters-left {
-            flex: 1 1 auto;
-            min-width: 260px;
+        .children-filters-row .children-search-box {
+            flex: 1 1 220px;
+            min-width: 200px;
+            max-width: none !important;
         }
 
-        .children-actions-right {
-            flex: 0 0 auto;
+        .children-actions-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            padding-top: 2px;
+            border-top: 1px solid var(--card-border, #e2eaf0);
         }
 
-        /* Выпадающее меню должно быть поверх карточки таблицы */
         .dashboard-filters {
             position: relative;
             z-index: 10;
@@ -43,12 +53,7 @@
         .dashboard-table-card {
             position: relative;
             z-index: 1;
-            overflow: visible !important; /* dropdown должен выходить поверх таблицы */
-        }
-
-        .dashboard-filters .dropdown-menu,
-        .children-actions-right .dropdown-menu {
-            z-index: 3000;
+            overflow: visible !important;
         }
 
         .dashboard-table-card .table-wrap {
@@ -61,9 +66,29 @@
             z-index: 5000;
         }
 
+        .child-row-avatar {
+            object-fit: cover;
+            border: 1px solid var(--card-border, #e2eaf0);
+        }
+        .child-row-avatar-placeholder {
+            width: 40px;
+            height: 40px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-muted, #8c9aaa);
+            background: var(--card-bg-soft, #f6fafd);
+            border: 1px dashed var(--card-border, #e2eaf0);
+        }
+
         @@media (max-width: 992px) {
-            .dashboard-filters .children-search-box {
-                max-width: 320px !important;
+            .children-actions-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .children-actions-row .btn-soft-primary,
+            .children-actions-row .btn-soft-secondary {
+                width: 100%;
+                justify-content: center;
             }
         }
     </style>
@@ -71,38 +96,38 @@
 
 <div class="dashboard-page">
     <div class="page-header">
-        <h1 class="page-title">Дети</h1>
+                <h1 class="page-title">Дети</h1>
         <p class="page-subtitle mb-0">Список клиентов с основной информацией и статусами</p>
     </div>
-    <!-- Фильтры и действия -->
-    <div class="dashboard-filters">
-        <div class="children-filters-left d-flex flex-wrap align-items-center gap-2">
+    <!-- Фильтры и кнопки действий -->
+    <div class="dashboard-filters children-filters-wrap">
+        <div class="children-filters-row">
             <div class="search-box children-search-box">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;color:var(--text-muted)">
-                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/>
-                </svg>
+                        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/>
+                    </svg>
                 <input type="text" id="searchInput" placeholder="Поиск по имени, телефону, email..." value="@search">
             </div>
             <select id="statusFilter" class="form-select-soft">
-                @if (statusFilter == "active")
-                {
-                    <option value="active" selected>Активные</option>
-                    <option value="inactive">Неактивные</option>
+                    @if (statusFilter == "active")
+                    {
+                        <option value="active" selected>Активные</option>
+                        <option value="inactive">Неактивные</option>
                     <option value="deleted">Удалённые</option>
-                }
-                else if (statusFilter == "inactive")
-                {
-                    <option value="active">Активные</option>
-                    <option value="inactive" selected>Неактивные</option>
+                    }
+                    else if (statusFilter == "inactive")
+                    {
+                        <option value="active">Активные</option>
+                        <option value="inactive" selected>Неактивные</option>
                     <option value="deleted">Удалённые</option>
-                }
-                else
-                {
-                    <option value="active">Активные</option>
-                    <option value="inactive">Неактивные</option>
+                    }
+                    else
+                    {
+                        <option value="active">Активные</option>
+                        <option value="inactive">Неактивные</option>
                     <option value="deleted" selected>Удалённые</option>
-                }
-            </select>
+                    }
+                </select>
             <label class="form-check-soft">
                 <input type="checkbox" id="debtorsFilter" @(debtorsOnly ? "checked" : "")>
                 <span>Только должники</span>
@@ -117,14 +142,14 @@
                     <div class="groups-filter-menu" id="groupsFilterMenu" role="menu" aria-hidden="true">
                         <div class="groups-filter-search-wrap p-2 border-bottom">
                             <input type="text" class="form-control form-control-sm groups-filter-search" id="groupsFilterSearch" placeholder="Поиск групп..." autocomplete="off">
-                        </div>
+            </div>
                         <div class="groups-filter-list" id="groupsFilterList">
                             @foreach (var g in orgClientGroups)
                             {
                                 <label class="groups-filter-item">
                                     <input type="checkbox" class="form-check-input group-filter-checkbox" value="@g.Id" data-group-name="@(g.Name ?? "")">
                                     <span class="groups-filter-item-text">@(g.Name ?? g.Id)</span>
-                                </label>
+                    </label>
                             }
                         </div>
                     </div>
@@ -132,29 +157,16 @@
             }
         </div>
 
-        <div class="children-actions-right">
-            <div class="dropdown">
-                <button class="btn-soft-primary dropdown-toggle" type="button" id="childrenActionsMenuBtn" data-bs-toggle="dropdown" aria-expanded="false">
-                    Меню
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="childrenActionsMenuBtn">
-                    <li>
-                        <button type="button" class="dropdown-item" onclick="openCreateInvoiceModal()">
-                            Счёт на оплату
-                        </button>
-                    </li>
-                    <li>
-                        <button type="button" class="dropdown-item" onclick="openAddChildModal()">
-                            Добавить ребёнка
-                        </button>
-                    </li>
-                    <li>
-                        <button type="button" class="dropdown-item" onclick="openImportChildrenModal()">
-                            Загрузить из Excel
-                        </button>
-                    </li>
-                </ul>
-            </div>
+        <div class="children-actions-row">
+            <button type="button" class="btn-soft-primary" onclick="openCreateInvoiceModal()">
+                Счёт на оплату
+            </button>
+            <button type="button" class="btn-soft-secondary" onclick="openAddChildModal()">
+                Добавить ребёнка
+            </button>
+            <button type="button" class="btn-soft-secondary" onclick="openImportChildrenModal()">
+                Загрузить из Excel
+            </button>
         </div>
     </div>
 
@@ -166,6 +178,7 @@
                 <table class="table-soft" id="childrenTable">
                     <thead>
                         <tr>
+                            <th class="text-center" style="width:52px">Фото</th>
                             <th>ФИО</th>
                             <th>Телефон</th>
                             <th>Регистрация</th>
@@ -192,6 +205,16 @@
                                 data-org-client-group-id="@(client.OrgClientGroupId ?? "")"
                                 data-first-invoice-id="@firstInvoiceId"
                                 data-search-text="@searchText">
+                                <td class="text-center align-middle">
+                                    @if (!string.IsNullOrEmpty(client.ClientLogo))
+                                    {
+                                        <img src="@client.ClientLogo" alt="" class="rounded-circle child-row-avatar" width="40" height="40" loading="lazy" />
+                }
+                else
+                {
+                                        <span class="child-row-avatar-placeholder rounded-circle d-inline-flex align-items-center justify-content-center" title="Нет фото">?</span>
+                                    }
+                                </td>
                                 <td><span class="cell-name">@(client.ClientName ?? "—")</span></td>
                                 <td class="cell-muted">@(client.ClientPhone ?? "—")</td>
                                 <td class="cell-muted">@(client.CreatedDate?.ToString("dd.MM.yyyy") ?? "—")</td>
@@ -368,6 +391,11 @@
                             <label for="clientAdres" class="form-label">Адрес</label>
                             <input type="text" class="form-control form-control-compact" id="clientAdres" name="clientAdres">
                         </div>
+                        <div class="mb-3">
+                            <label for="addChildPhoto" class="form-label">Фото (необязательно)</label>
+                            <input type="file" class="form-control form-control-sm" id="addChildPhoto" accept="image/jpeg,image/png,image/webp,image/gif" />
+                            <small class="text-muted">До 2 МБ. На сервере изображение уменьшается и сжимается (до 400×400 px, JPEG).</small>
+                        </div>
                     @if (organizationFields != null && organizationFields.Any())
                     {
                         <div class="form-section-divider mb-3">
@@ -515,7 +543,7 @@
                                 Загрузить
                             </button>
                         </form>
-                    </div>
+                            </div>
                 }
                 else
                 {
@@ -566,6 +594,23 @@
                         <div class="col-4">
                             <label for="editClientInn" class="form-label">ИНН <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="editClientInn" name="clientInn" maxlength="14" pattern="[0-9]{14}" required>
+                        </div>
+                    </div>
+                    <div class="mb-3" id="editChildPhotoSection">
+                        <label class="form-label">Фото</label>
+                        <div class="d-flex align-items-start gap-3 flex-wrap">
+                            <div class="position-relative flex-shrink-0">
+                                <img id="editChildPhotoPreview" src="" alt="" class="rounded-circle border d-none" style="width:72px;height:72px;object-fit:cover;" />
+                                <div id="editChildPhotoPlaceholder" class="rounded-circle border d-flex align-items-center justify-content-center" style="width:72px;height:72px;font-size:1.25rem;color:#94a3b8;background:#f1f5f9;">?</div>
+                            </div>
+                            <div class="flex-grow-1" style="min-width:200px;">
+                                <input type="file" class="form-control form-control-sm" id="editChildPhoto" accept="image/jpeg,image/png,image/webp,image/gif" />
+                                <div class="form-check mt-2">
+                                    <input type="checkbox" class="form-check-input" id="editChildPhotoRemove" />
+                                    <label class="form-check-label small" for="editChildPhotoRemove">Удалить фото</label>
+                                </div>
+                                <small class="text-muted d-block">До 2 МБ. JPEG, PNG, WebP, GIF — на сервере сжимаются (до 400×400 px).</small>
+                            </div>
                         </div>
                     </div>
                     @if (orgClientGroups != null && orgClientGroups.Any())
@@ -854,6 +899,23 @@
                         var el = document.querySelector('#editChildForm [data-field-id="' + (f.fieldId || f.FieldId) + '"]');
                         if (el) el.value = f.value || f.Value || '';
                     });
+                    var photoPrev = document.getElementById('editChildPhotoPreview');
+                    var photoPh = document.getElementById('editChildPhotoPlaceholder');
+                    var photoInp = document.getElementById('editChildPhoto');
+                    var photoRem = document.getElementById('editChildPhotoRemove');
+                    if (photoInp) photoInp.value = '';
+                    if (photoRem) photoRem.checked = false;
+                    if (photoPrev && photoPh) {
+                        if (c.logo) {
+                            photoPrev.src = c.logo + (c.logo.indexOf('?') >= 0 ? '' : ('?t=' + Date.now()));
+                            photoPrev.classList.remove('d-none');
+                            photoPh.classList.add('d-none');
+                        } else {
+                            photoPrev.classList.add('d-none');
+                            photoPrev.removeAttribute('src');
+                            photoPh.classList.remove('d-none');
+                        }
+                    }
                     loading.style.display = 'none';
                     form.style.display = 'block';
                     footer.style.display = 'flex';
@@ -876,11 +938,12 @@
                 var id = el.getAttribute('data-field-id');
                 if (id && el.name) additionalFields[id] = el.value || '';
             });
+            var editGroupEl = document.getElementById('editOrgClientGroupId');
             var payload = {
                 clientId: clientId,
                 clientName: document.getElementById('editClientName').value,
                 clientInn: document.getElementById('editClientInn').value,
-                orgClientGroupId: document.getElementById('editOrgClientGroupId').value || null,
+                orgClientGroupId: editGroupEl ? (editGroupEl.value || null) : null,
                 clientPhone: document.getElementById('editClientPhone').value,
                 clientAdres: document.getElementById('editClientAdres').value,
                 clientEmail: document.getElementById('editClientEmail').value,
@@ -891,26 +954,45 @@
             };
             fetch('/Detsad/Cabinet/UpdateChild', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]') && document.querySelector('input[name="__RequestVerificationToken"]').value },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             }).then(function(r) { return r.json(); })
-            .then(function(res) {
-                if (res.success) {
-                    bootstrap.Modal.getInstance(document.getElementById('editChildModal')).hide();
-                    if (typeof loadChildInfoInto === 'function' && currentDetailClientId === clientId) {
-                        var infoContent = document.getElementById('childDetailInfoContent');
-                        if (infoContent) loadChildInfoInto(clientId, infoContent);
-                    }
-                    location.reload();
-                } else {
+            .then(async function(res) {
+                if (!res.success) {
                     errEl.textContent = res.message || 'Ошибка сохранения';
                     errEl.style.display = 'block';
+                    return;
                 }
+                var photoFileEl = document.getElementById('editChildPhoto');
+                var removePhotoCb = document.getElementById('editChildPhotoRemove');
+                var needPhoto = (removePhotoCb && removePhotoCb.checked) || (photoFileEl && photoFileEl.files && photoFileEl.files.length);
+                if (needPhoto && typeof uploadChildPhoto === 'function') {
+                    var pr = await uploadChildPhoto(clientId, photoFileEl && photoFileEl.files && photoFileEl.files.length ? photoFileEl.files[0] : null, removePhotoCb && removePhotoCb.checked);
+                    if (!pr.success) {
+                        errEl.textContent = 'Данные сохранены, но фото: ' + (pr.message || 'ошибка');
+                        errEl.style.display = 'block';
+                        return;
+                    }
+                }
+                bootstrap.Modal.getInstance(document.getElementById('editChildModal')).hide();
+                if (typeof loadChildInfoInto === 'function' && typeof currentDetailClientId !== 'undefined' && currentDetailClientId === clientId) {
+                    var infoContent = document.getElementById('childDetailInfoContent');
+                    if (infoContent) loadChildInfoInto(clientId, infoContent);
+                }
+                location.reload();
             }).catch(function() {
                 errEl.textContent = 'Ошибка сети';
                 errEl.style.display = 'block';
             });
         });
+        (function() {
+            var rem = document.getElementById('editChildPhotoRemove');
+            var fin = document.getElementById('editChildPhoto');
+            if (rem && fin) {
+                rem.addEventListener('change', function() { if (this.checked) fin.value = ''; });
+                fin.addEventListener('change', function() { if (this.files && this.files.length && rem) rem.checked = false; });
+            }
+        })();
 
         document.getElementById('editChildDeleteBtn') && document.getElementById('editChildDeleteBtn').addEventListener('click', function() {
             if (!confirm('Удалить ребёнка из списка? Статус будет установлен как «Удалён».')) return;

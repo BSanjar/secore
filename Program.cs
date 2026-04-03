@@ -114,6 +114,7 @@ builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<TransactionCommissionService>();
 builder.Services.AddScoped<ViewRenderService>();
 builder.Services.AddScoped<ClientService>();
+builder.Services.AddScoped<ClientPhotoService>();
 
 
 // Добавление поддержки сессий
