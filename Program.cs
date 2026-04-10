@@ -6,10 +6,10 @@ using WebApplication1.Models.BaseModels;
 using WebApplication1.Models.DBModels;
 using WebApplication1.Modules.GenericModule.Services;
 using WebApplication1.Dtos;
-using WebApplication1.Areas.Simple.Services;
 using System.Linq;
 using WebApplication1.Services;
 using WebApplication1.Helpers;
+using WebApplication1.Services.Cabinets;
 using Microsoft.OpenApi.Models;
 using WebApplication1.Swagger;
 
@@ -34,7 +34,6 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
 // Add services to the container.
 builder.Services.AddControllersWithViews(options =>
 {
-    options.Filters.Add<WebApplication1.Filters.SetCabinetLayoutFilter>();
     // Удаляем стандартный XML input форматтер и добавляем кастомный с обработкой ошибок
     var xmlInputFormatter = options.InputFormatters.OfType<Microsoft.AspNetCore.Mvc.Formatters.XmlSerializerInputFormatter>().FirstOrDefault();
     if (xmlInputFormatter != null)
@@ -92,9 +91,11 @@ builder.Services.AddSwaggerGen(c =>
 
 // Регистрируем фильтры
 builder.Services.AddScoped<WebApplication1.Filters.XmlValidationFilter>();
-builder.Services.AddScoped<WebApplication1.Filters.SetCabinetLayoutFilter>();
 builder.Services.AddScoped<OperationsByInvoices>();
 builder.Services.AddScoped<ExcelExportService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICabinetProfileResolver, CabinetProfileResolver>();
+builder.Services.AddScoped<ICurrentTenantService, CurrentTenantService>();
 // Регистрируем сервис авторизации API
 builder.Services.AddScoped<WebApplication1.Services.WebApiAuthService>();
 
@@ -106,15 +107,19 @@ builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options 
     options.SuppressModelStateInvalidFilter = false;
 });
 
-builder.Services.AddScoped<ITableSource<PaymentListItemVm>, SimplePaymentsTableSource>();
 
 // Регистрация сервисов
 
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<TransactionCommissionService>();
 builder.Services.AddScoped<ViewRenderService>();
+builder.Services.AddSingleton<PuppeteerPdfBrowserService>();
 builder.Services.AddScoped<ClientService>();
 builder.Services.AddScoped<ClientPhotoService>();
+builder.Services.AddScoped<IDepartmentService, DepartmentService>();
+builder.Services.AddScoped<ISpecializationService, SpecializationService>();
+builder.Services.AddScoped<IDoctorDirectoryService, DoctorDirectoryService>();
+builder.Services.AddScoped<IServiceCatalogService, ServiceCatalogService>();
 
 
 // Добавление поддержки сессий
@@ -208,10 +213,6 @@ app.MapControllerRoute(
     defaults: new { controller = "Account", action = "Login" });
 
 // Маршрутизация для Areas (не должен перехватывать /api/*)
-app.MapControllerRoute(
-    name: "areas",
-    pattern: "{area:exists}/{controller=Cabinet}/{action=Index}/{id?}");
-
 // Маршрутизация по умолчанию (должен быть последним)
 app.MapControllerRoute(
     name: "default",

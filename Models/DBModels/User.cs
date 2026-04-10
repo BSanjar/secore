@@ -48,9 +48,19 @@ public partial class User
 
     public DateTime? LastLogin { get; set; }
 
+    public virtual ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
+
+    public virtual ICollection<UserWorkSchedule> UserWorkSchedules { get; set; } = new List<UserWorkSchedule>();
+
+    public virtual ICollection<UserWorkScheduleOverride> UserWorkScheduleOverrides { get; set; } = new List<UserWorkScheduleOverride>();
+
     public virtual ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
 
     public virtual ICollection<OrganizationClient> OrganizationClients { get; set; } = new List<OrganizationClient>();
+
+    public virtual ICollection<UserDepartment> UserDepartments { get; set; } = new List<UserDepartment>();
+
+    public virtual ICollection<UserSpecialization> UserSpecializations { get; set; } = new List<UserSpecialization>();
 
     public virtual Organization? OrganizationNavigation { get; set; }
 

@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,6 +15,7 @@ namespace WebApplication1.Helpers
         {
             var organizationId = context.HttpContext.Session.GetString("OrganizationId");
             var userId = context.HttpContext.Session.GetString("UserId");
+            var organizationType = context.HttpContext.Session.GetString("OrganizationType");
 
             if (string.IsNullOrEmpty(organizationId) || string.IsNullOrEmpty(userId))
             {
@@ -27,6 +28,33 @@ namespace WebApplication1.Helpers
             {
                 context.Result = new RedirectToActionResult("SubscriptionExpired", "Account", new { area = "" });
                 return;
+            }
+
+            if (string.Equals(organizationType, "medclinic", StringComparison.OrdinalIgnoreCase) && AuthorizationHelper.IsDoctorRole(context.HttpContext))
+            {
+                var controller = context.RouteData.Values["controller"]?.ToString();
+                var allowedWithoutPermission = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "Account",
+                    "Language",
+                    "Home"
+                };
+
+                if (!string.IsNullOrWhiteSpace(controller) && !allowedWithoutPermission.Contains(controller))
+                {
+                    var requiredPermission = controller.Equals("Appointments", StringComparison.OrdinalIgnoreCase)
+                        ? "appointments.view"
+                        : controller.Equals("Payments", StringComparison.OrdinalIgnoreCase)
+                            ? "transactions.view"
+                            : null;
+
+                    if (string.IsNullOrWhiteSpace(requiredPermission) ||
+                        !PermissionHelper.HasPermission(context.HttpContext, requiredPermission))
+                    {
+                        context.Result = new RedirectToActionResult("AccessDenied", "Home", new { permissionCode = requiredPermission ?? "restricted.controller" });
+                        return;
+                    }
+                }
             }
 
             await next();
@@ -79,6 +107,8 @@ namespace WebApplication1.Helpers
     /// </summary>
     public static class AuthorizationHelper
     {
+        private const string RequestRoleCacheKeyPrefix = "__secore.roles:";
+
         public static bool IsAuthenticated(HttpContext httpContext)
         {
             var organizationId = httpContext.Session.GetString("OrganizationId");
@@ -104,6 +134,30 @@ namespace WebApplication1.Helpers
         public static string? GetUserName(HttpContext httpContext)
         {
             return httpContext.Session.GetString("UserName");
+        }
+
+        public static bool IsDoctorRole(HttpContext httpContext)
+        {
+            var userId = GetUserId(httpContext);
+            if (string.IsNullOrEmpty(userId))
+                return false;
+
+            var cacheKey = RequestRoleCacheKeyPrefix + userId;
+            if (!httpContext.Items.TryGetValue(cacheKey, out var cached) || cached is not HashSet<string> roles)
+            {
+                var db = httpContext.RequestServices.GetRequiredService<AppDbContext>();
+                roles = db.UserRoles
+                    .Where(ur => ur.User == userId && (ur.Isdeleted == null || ur.Isdeleted == 0))
+                    .Include(ur => ur.RoleNavigation)
+                    .Select(ur => ur.RoleNavigation != null ? ur.RoleNavigation.Name : ur.Role)
+                    .Where(name => !string.IsNullOrWhiteSpace(name))
+                    .Select(name => name!.Trim().ToLower())
+                    .ToHashSet();
+
+                httpContext.Items[cacheKey] = roles;
+            }
+
+            return roles.Contains("doctor") || roles.Contains("����");
         }
     }
 
@@ -208,3 +262,4 @@ namespace WebApplication1.Helpers
         }
     }
 }
+

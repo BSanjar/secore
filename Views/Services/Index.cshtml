@@ -1,0 +1,78 @@
+@model WebApplication1.ViewModels.Services.ServicesIndexViewModel
+@{
+    ViewData["Title"] = "Услуги";
+}
+
+<div class="dashboard-page">
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm mb-4">@TempData["Message"]</div>
+    }
+
+    <div class="medclinic-surface p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h1 class="h3 mb-1">Услуги</h1>
+                <p class="text-muted mb-0">Каталог услуг клиники для записей, счетов и оплаты.</p>
+            </div>
+            <a asp-action="Create" class="btn btn-primary">Добавить услугу</a>
+        </div>
+    </div>
+
+    <div class="medclinic-surface p-4">
+        <form method="get" class="row g-3 mb-4">
+            <div class="col-md-8">
+                <label class="form-label">Поиск</label>
+                <input name="search" value="@Model.Search" class="form-control" placeholder="По названию услуги" />
+            </div>
+            <div class="col-md-4 d-flex align-items-end gap-2">
+                <button type="submit" class="btn btn-outline-primary">Найти</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Сбросить</a>
+            </div>
+        </form>
+
+        @if (Model.Services.Count == 0)
+        {
+            <div class="text-muted">Список услуг пока пуст.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Название</th>
+                            <th>Тип</th>
+                            <th>Фиксированная цена</th>
+                            <th>Диапазон</th>
+                            <th class="text-end">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Services)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@item.Name</td>
+                                <td>@(item.IsFixed ? "Фиксированная" : "Диапазон")</td>
+                                <td>@(item.IsFixed ? $"{item.FixedAmount:N2} сом" : "—")</td>
+                                <td>
+                                    @if (!item.IsFixed && (item.MinAmount.HasValue || item.MaxAmount.HasValue))
+                                    {
+                                        <span>@(item.MinAmount?.ToString("N2") ?? "—") - @(item.MaxAmount?.ToString("N2") ?? "—") сом</span>
+                                    }
+                                    else
+                                    {
+                                        <span>—</span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Редактировать</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

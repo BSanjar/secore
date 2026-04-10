@@ -36,7 +36,7 @@ namespace WebApplication1.Controllers
         {
             var organizationType = AuthorizationHelper.GetOrganizationType(HttpContext);
             ViewBag.OrganizationType = organizationType;
-            ViewBag.Areas = new List<string> { "standart", "detsad", "school", "medclinic" };
+            ViewBag.Areas = new List<string> { "standart", "detsad", "school", "medclinic", "simple" };
             return View();
         }
 
@@ -71,7 +71,7 @@ namespace WebApplication1.Controllers
 
             var organizationType = AuthorizationHelper.GetOrganizationType(HttpContext);
             ViewBag.OrganizationType = organizationType;
-            ViewBag.Areas = new List<string> { "standart", "detsad", "school", "medclinic" };
+            ViewBag.Areas = new List<string> { "standart", "detsad", "school", "medclinic", "simple" };
             return View(permission);
         }
 
@@ -93,7 +93,7 @@ namespace WebApplication1.Controllers
 
             var organizationType = AuthorizationHelper.GetOrganizationType(HttpContext);
             ViewBag.OrganizationType = organizationType;
-            ViewBag.Areas = new List<string> { "standart", "detsad", "school", "medclinic" };
+            ViewBag.Areas = new List<string> { "standart", "detsad", "school", "medclinic", "simple" };
 
             return View(permission);
         }
@@ -143,7 +143,7 @@ namespace WebApplication1.Controllers
 
             var organizationType = AuthorizationHelper.GetOrganizationType(HttpContext);
             ViewBag.OrganizationType = organizationType;
-            ViewBag.Areas = new List<string> { "standart", "detsad", "school", "medclinic" };
+            ViewBag.Areas = new List<string> { "standart", "detsad", "school", "medclinic", "simple" };
             return View(permission);
         }
 

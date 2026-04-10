@@ -7,15 +7,15 @@
     let deleteGroupId = null;
 
     function getCreateUrl() {
-        return document.getElementById('groupsCards')?.dataset?.createUrl || '/Detsad/OrgClientGroups/Create';
+        return document.getElementById('groupsCards')?.dataset?.createUrl || '/OrgClientGroups/Create';
     }
     function getEditUrl(id) {
         const template = document.getElementById('groupsCards')?.dataset?.editUrlTemplate;
-        return template ? template.replace('__ID__', encodeURIComponent(id)) : '/Detsad/OrgClientGroups/Edit/' + encodeURIComponent(id);
+        return template ? template.replace('__ID__', encodeURIComponent(id)) : '/OrgClientGroups/Edit/' + encodeURIComponent(id);
     }
     function getDeleteUrl(id) {
         const template = document.getElementById('groupsCards')?.dataset?.deleteUrlTemplate;
-        return template ? template.replace('__ID__', encodeURIComponent(id)) : '/Detsad/OrgClientGroups/Delete/' + encodeURIComponent(id);
+        return template ? template.replace('__ID__', encodeURIComponent(id)) : '/OrgClientGroups/Delete/' + encodeURIComponent(id);
     }
 
     function getRequestVerificationToken() {

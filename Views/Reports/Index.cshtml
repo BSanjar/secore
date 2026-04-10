@@ -1,0 +1,42 @@
+@model WebApplication1.ViewModels.Reports.ReportsIndexViewModel
+@{
+    ViewData["Title"] = "Отчеты";
+}
+
+<div class="dashboard-page">
+    <div class="page-header">
+        <h1 class="page-title">Отчеты</h1>
+        <p class="page-subtitle mb-0">Быстрый срез по пациентам, команде, услугам и сумме транзакций клиники.</p>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-3 col-md-6">
+            <article class="medclinic-metric h-100">
+                <div class="medclinic-metric__label">Пациенты</div>
+                <div class="medclinic-metric__value">@Model.PatientsCount</div>
+                <p class="medclinic-metric__description">Карточки пациентов текущей организации.</p>
+            </article>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <article class="medclinic-metric h-100">
+                <div class="medclinic-metric__label">Доктора</div>
+                <div class="medclinic-metric__value">@Model.DoctorsCount</div>
+                <p class="medclinic-metric__description">Пользователи клиники, доступные в медицинском контуре.</p>
+            </article>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <article class="medclinic-metric h-100">
+                <div class="medclinic-metric__label">Услуги</div>
+                <div class="medclinic-metric__value">@Model.ServicesCount</div>
+                <p class="medclinic-metric__description">Активные услуги организации.</p>
+            </article>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <article class="medclinic-metric h-100">
+                <div class="medclinic-metric__label">Сумма транзакций</div>
+                <div class="medclinic-metric__value">@Model.TransactionsAmount.ToString("N2") c</div>
+                <p class="medclinic-metric__description">Успешные транзакции по организации.</p>
+            </article>
+        </div>
+    </div>
+</div>

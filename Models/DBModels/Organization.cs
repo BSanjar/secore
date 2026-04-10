@@ -14,6 +14,7 @@ public partial class Organization
     /// detsad
     /// school
     /// medclinic
+    /// simple
     /// </summary>
     public string? Organizationtype { get; set; }
 
@@ -22,11 +23,21 @@ public partial class Organization
 
     public virtual ICollection<OrganizationClient> OrganizationClients { get; set; } = new List<OrganizationClient>();
 
+    public virtual ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
+
+    public virtual ICollection<UserWorkSchedule> UserWorkSchedules { get; set; } = new List<UserWorkSchedule>();
+
+    public virtual ICollection<UserWorkScheduleOverride> UserWorkScheduleOverrides { get; set; } = new List<UserWorkScheduleOverride>();
+
+    public virtual ICollection<Department> Departments { get; set; } = new List<Department>();
+
     public virtual ICollection<OrgClientGroup> OrgClientGroups { get; set; } = new List<OrgClientGroup>();
 
     public virtual ICollection<OrganizationField> OrganizationFields { get; set; } = new List<OrganizationField>();
 
     public virtual ICollection<OrganizationService> OrganizationServices { get; set; } = new List<OrganizationService>();
+
+    public virtual ICollection<Specialization> Specializations { get; set; } = new List<Specialization>();
 
 
     public virtual ICollection<User> Users { get; set; } = new List<User>();

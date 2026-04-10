@@ -1,0 +1,485 @@
+@model List<WebApplication1.Models.DBModels.OrganizationService>
+@using System.Linq
+@{
+    ViewData["Title"] = "Услуги";
+    var search = ViewBag.Search as string ?? "";
+    var isDeletedFilter = ViewBag.IsDeletedFilter as string ?? "active";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/web/kindergarten/css/detsad-clients.css" asp-append-version="true" />
+}
+
+<div class="children-page">
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Message"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">Услуги</h1>
+                <p class="page-subtitle mb-0">Услуги организации для счетов и платежей</p>
+            </div>
+            <button type="button" class="action-btn action-btn--add" id="openAddServiceModalBtn" title="Добавить услугу">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
+                </svg>
+                Добавить услугу
+            </button>
+        </div>
+    </div>
+
+    <div class="filters-section" id="orgServicesContainer"
+         data-create-url="@Url.Action("Create", "OrganizationServices")"
+         data-edit-url-template="@Url.Action("Edit", "OrganizationServices", new { id = "__ID__" })"
+         data-delete-url-template="@Url.Action("Delete", "OrganizationServices", new { id = "__ID__" })">
+        <div class="row g-2 mb-2">
+            <div class="col-md-6">
+                <label class="form-label small text-muted mb-1">Поиск</label>
+                <div class="search-box">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="search-icon">
+                        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/>
+                    </svg>
+                    <input type="text" id="orgServicesSearchInput" class="form-control search-input" placeholder="По названию услуги..." value="@search">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">Статус</label>
+                <form method="get" asp-action="Index" id="orgServicesFilterForm" class="d-inline">
+                    <input type="hidden" name="search" id="orgServicesSearchHidden" value="@search">
+                    <select name="isDeletedFilter" id="orgServicesIsDeletedFilter" class="form-select filter-select w-100">
+                        <option value="active" selected="@(isDeletedFilter == "active")">Активные</option>
+                        <option value="deleted" selected="@(isDeletedFilter == "deleted")">Удалённые</option>
+                    </select>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="filters-section">
+        @if (Model != null && Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Название</th>
+                            <th>Тип суммы</th>
+                            <th>Сумма / диапазон</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="orgServicesTableBody">
+                        @foreach (var s in Model)
+                        {
+                            var isFixed = s.FixedSum == 1;
+                            var sumInfo = isFixed && s.ServiceSumm.HasValue
+                                ? s.ServiceSumm.Value.ToString("N2") + " сом"
+                                : (s.MinSumm.HasValue || s.MaxSumm.HasValue)
+                                    ? (s.MinSumm.HasValue ? s.MinSumm.Value.ToString("N2") + " — " : "— ") + (s.MaxSumm.HasValue ? s.MaxSumm.Value.ToString("N2") + " сом" : "—")
+                                    : "—";
+                            <tr class="org-service-row" data-search-name="@(s.Name ?? "")">
+                                <td><strong>@(s.Name ?? "—")</strong></td>
+                                <td>@(isFixed ? "Фиксированная" : "Диапазон")</td>
+                                <td>@sumInfo</td>
+                                <td>
+                                    @if (s.Isdeleted != 1)
+                                    {
+                                        <button type="button"
+                                                class="action-btn action-btn--edit js-edit-service"
+                                                title="Редактировать"
+                                                data-id="@s.Id"
+                                                data-name="@(s.Name ?? "")"
+                                                data-fixed-sum="@(s.FixedSum == 1 ? "1" : "0")"
+                                                data-service-summ="@(s.ServiceSumm?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")"
+                                                data-min-summ="@(s.MinSumm?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")"
+                                                data-max-summ="@(s.MaxSumm?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor"/>
+                                            </svg>
+                                            Изменить
+                                        </button>
+                                        <button type="button"
+                                                class="action-btn action-btn--delete js-delete-service"
+                                                title="Удалить"
+                                                data-id="@s.Id"
+                                                data-name="@(s.Name ?? "")">
+                                            Удалить
+                                        </button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-muted small mt-2">Всего услуг: @Model.Count</p>
+        }
+        else
+        {
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z" fill="currentColor"/>
+                    </svg>
+                </div>
+                <h3 class="empty-state-title">Услуг пока нет</h3>
+                <p class="empty-state-description">@(string.IsNullOrEmpty(search) ? "Создайте услуги для добавления в счета (например: питание, обучение)" : "По вашему запросу ничего не найдено.")</p>
+                @if (string.IsNullOrEmpty(search))
+                {
+                    <button type="button" class="action-btn action-btn--add mt-3" id="openAddServiceModalBtnEmpty" title="Добавить услугу">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
+                        </svg>
+                        Добавить услугу
+                    </button>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Модальное окно: Добавить / Редактировать услугу -->
+<div class="modal fade" id="addEditServiceModal" tabindex="-1" aria-labelledby="addEditServiceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addEditServiceModalLabel">Добавить услугу</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="serviceForm" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="serviceFormId" name="Id" value="" />
+
+                    <div class="mb-3">
+                        <label for="serviceFormName" class="form-label text-muted small">Название услуги <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="serviceFormName" name="Name" required placeholder="Например: Питание, Обучение" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Тип суммы</label>
+                        <div class="d-flex gap-3">
+                            <div class="form-check">
+                                <input type="radio" name="FixedSum" value="0" id="serviceFixedSum0" class="form-check-input" checked>
+                                <label class="form-check-label" for="serviceFixedSum0">Диапазон (мин — макс)</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="radio" name="FixedSum" value="1" id="serviceFixedSum1" class="form-check-input">
+                                <label class="form-check-label" for="serviceFixedSum1">Фиксированная сумма</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3" id="serviceFixedSumBlock" style="display: none;">
+                        <label for="serviceFormServiceSumm" class="form-label text-muted small">Фиксированная сумма (сом)</label>
+                        <input type="number" step="0.01" min="0" class="form-control" id="serviceFormServiceSumm" name="ServiceSumm" placeholder="0.00" />
+                    </div>
+
+                    <div class="row mb-3" id="serviceRangeSumBlock">
+                        <div class="col-md-6">
+                            <label for="serviceFormMinSumm" class="form-label text-muted small">Мин. сумма (сом)</label>
+                            <input type="number" step="1" min="0" class="form-control" id="serviceFormMinSumm" name="MinSumm" placeholder="0" />
+                        </div>
+                        <div class="col-md-6">
+                            <label for="serviceFormMaxSumm" class="form-label text-muted small">Макс. сумма (сом)</label>
+                            <input type="number" step="1" min="0" class="form-control" id="serviceFormMaxSumm" name="MaxSumm" placeholder="0" />
+                        </div>
+                    </div>
+                </form>
+                <div id="serviceFormError" class="alert alert-danger" style="display: none;" role="alert"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="serviceFormSubmitBtn">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно: Подтверждение удаления услуги -->
+<div class="modal fade" id="deleteServiceModal" tabindex="-1" aria-labelledby="deleteServiceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteServiceModalLabel">Удалить услугу?</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Вы уверены, что хотите удалить услугу <strong id="deleteServiceName"></strong>?</p>
+                <div id="deleteServiceError" class="alert alert-danger" style="display: none;" role="alert"></div>
+                <form id="deleteServiceForm" method="post">
+                    @Html.AntiForgeryToken()
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-danger" id="deleteServiceConfirmBtn">Удалить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var servicesContainer = document.getElementById('orgServicesContainer');
+            var form = document.getElementById('orgServicesFilterForm');
+            var searchInput = document.getElementById('orgServicesSearchInput');
+            var searchHidden = document.getElementById('orgServicesSearchHidden');
+            var isDeletedFilter = document.getElementById('orgServicesIsDeletedFilter');
+            var tbody = document.getElementById('orgServicesTableBody');
+            var addBtn = document.getElementById('openAddServiceModalBtn');
+            var addBtnEmpty = document.getElementById('openAddServiceModalBtnEmpty');
+            var editButtons = document.querySelectorAll('.js-edit-service');
+            var deleteButtons = document.querySelectorAll('.js-delete-service');
+
+            var modalEl = document.getElementById('addEditServiceModal');
+            var modalTitle = document.getElementById('addEditServiceModalLabel');
+            var modalSubmitBtn = document.getElementById('serviceFormSubmitBtn');
+            var serviceForm = document.getElementById('serviceForm');
+            var serviceFormId = document.getElementById('serviceFormId');
+            var serviceFormName = document.getElementById('serviceFormName');
+            var serviceFormServiceSumm = document.getElementById('serviceFormServiceSumm');
+            var serviceFormMinSumm = document.getElementById('serviceFormMinSumm');
+            var serviceFormMaxSumm = document.getElementById('serviceFormMaxSumm');
+            var serviceRangeBlock = document.getElementById('serviceRangeSumBlock');
+            var serviceFixedBlock = document.getElementById('serviceFixedSumBlock');
+
+            var deleteModalEl = document.getElementById('deleteServiceModal');
+            var deleteServiceName = document.getElementById('deleteServiceName');
+            var deleteServiceForm = document.getElementById('deleteServiceForm');
+            var deleteServiceConfirmBtn = document.getElementById('deleteServiceConfirmBtn');
+            var serviceFormError = document.getElementById('serviceFormError');
+            var deleteServiceError = document.getElementById('deleteServiceError');
+
+            function postModalForm(url, formData) {
+                return fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Form-Modal': '1',
+                        'Accept': 'application/json'
+                    }
+                }).then(function (res) {
+                    return res.json().then(function (data) {
+                        if (!res.ok) {
+                            return { success: false, message: (data && data.message) || ('Ошибка ' + res.status) };
+                        }
+                        return data;
+                    }).catch(function () {
+                        return { success: false, message: 'Не удалось разобрать ответ сервера.' };
+                    });
+                });
+            }
+
+            function applySearchLocal() {
+                if (!searchInput || !tbody) return;
+                var term = searchInput.value.toLowerCase().trim();
+                var rows = tbody.querySelectorAll('tr.org-service-row');
+                rows.forEach(function (tr) {
+                    var name = (tr.getAttribute('data-search-name') || '').toLowerCase();
+                    tr.style.display = !term || name.indexOf(term) !== -1 ? '' : 'none';
+                });
+            }
+
+            if (searchInput) {
+                var searchTimeout;
+                searchInput.addEventListener('input', function () {
+                    if (searchHidden) searchHidden.value = searchInput.value;
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(applySearchLocal, 300);
+                });
+            }
+
+            function toggleServiceSumMode() {
+                var isFixed = document.querySelector('input[name="FixedSum"]:checked')?.value === '1';
+                if (serviceFixedBlock) serviceFixedBlock.style.display = isFixed ? 'block' : 'none';
+                if (serviceRangeBlock) serviceRangeBlock.style.display = isFixed ? 'none' : 'flex';
+            }
+
+            document.querySelectorAll('input[name="FixedSum"]').forEach(function (r) {
+                r.addEventListener('change', toggleServiceSumMode);
+            });
+
+            function getEditUrl(id) {
+                if (!servicesContainer) return '';
+                var tpl = servicesContainer.getAttribute('data-edit-url-template') || '';
+                return tpl.replace('__ID__', encodeURIComponent(id || ''));
+            }
+
+            function getDeleteUrl(id) {
+                if (!servicesContainer) return '';
+                var tpl = servicesContainer.getAttribute('data-delete-url-template') || '';
+                return tpl.replace('__ID__', encodeURIComponent(id || ''));
+            }
+
+            function openCreateModal() {
+                if (!modalEl || !serviceForm || !servicesContainer) return;
+                modalTitle.textContent = 'Добавить услугу';
+                modalSubmitBtn.textContent = 'Создать';
+                serviceForm.setAttribute('action', servicesContainer.getAttribute('data-create-url') || '');
+                serviceFormId.value = '';
+                serviceFormName.value = '';
+                serviceFormServiceSumm.value = '';
+                serviceFormMinSumm.value = '';
+                serviceFormMaxSumm.value = '';
+                var rangeRadio = document.getElementById('serviceFixedSum0');
+                if (rangeRadio) rangeRadio.checked = true;
+                toggleServiceSumMode();
+                bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            }
+
+            function openEditModal(btn) {
+                if (!modalEl || !serviceForm) return;
+                var id = btn.getAttribute('data-id') || '';
+                modalTitle.textContent = 'Редактировать услугу';
+                modalSubmitBtn.textContent = 'Сохранить';
+                serviceForm.setAttribute('action', getEditUrl(id));
+                serviceFormId.value = id;
+                serviceFormName.value = btn.getAttribute('data-name') || '';
+                serviceFormServiceSumm.value = btn.getAttribute('data-service-summ') || '';
+                serviceFormMinSumm.value = btn.getAttribute('data-min-summ') || '';
+                serviceFormMaxSumm.value = btn.getAttribute('data-max-summ') || '';
+                var isFixed = (btn.getAttribute('data-fixed-sum') || '0') === '1';
+                var fixedRadio = document.getElementById('serviceFixedSum1');
+                var rangeRadio = document.getElementById('serviceFixedSum0');
+                if (fixedRadio && rangeRadio) {
+                    fixedRadio.checked = isFixed;
+                    rangeRadio.checked = !isFixed;
+                }
+                toggleServiceSumMode();
+                bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            }
+
+            if (addBtn) addBtn.addEventListener('click', openCreateModal);
+            if (addBtnEmpty) addBtnEmpty.addEventListener('click', openCreateModal);
+            editButtons.forEach(function (btn) {
+                btn.addEventListener('click', function () { openEditModal(btn); });
+            });
+
+            function normalizeDecimalValue(inputEl) {
+                if (!inputEl) return;
+                var v = (inputEl.value || '').trim();
+                if (!v) return;
+                v = v.replace(/\s/g, '');
+                var decSep = (1.1).toLocaleString().includes(',') ? ',' : '.';
+                var otherSep = decSep === ',' ? '.' : ',';
+                v = v.replace(new RegExp('\\' + otherSep, 'g'), decSep);
+                inputEl.value = v;
+            }
+
+            if (modalSubmitBtn && serviceForm) {
+                modalSubmitBtn.addEventListener('click', function () {
+                    if (!serviceFormName || !serviceFormName.value.trim()) {
+                        serviceFormName.focus();
+                        return;
+                    }
+                    normalizeDecimalValue(serviceFormServiceSumm);
+                    normalizeDecimalValue(serviceFormMinSumm);
+                    normalizeDecimalValue(serviceFormMaxSumm);
+
+                    var url = serviceForm.getAttribute('action');
+                    if (!url) return;
+
+                    if (serviceFormError) {
+                        serviceFormError.style.display = 'none';
+                        serviceFormError.textContent = '';
+                    }
+                    modalSubmitBtn.disabled = true;
+
+                    var formData = new FormData(serviceForm);
+                    postModalForm(url, formData)
+                        .then(function (data) {
+                            if (data && data.success) {
+                                var inst = modalEl ? bootstrap.Modal.getInstance(modalEl) : null;
+                                if (inst) inst.hide();
+                                window.location.reload();
+                            } else {
+                                if (serviceFormError) {
+                                    serviceFormError.textContent = (data && data.message) ? data.message : 'Ошибка сохранения';
+                                    serviceFormError.style.display = 'block';
+                                }
+                            }
+                        })
+                        .catch(function () {
+                            if (serviceFormError) {
+                                serviceFormError.textContent = 'Ошибка связи с сервером';
+                                serviceFormError.style.display = 'block';
+                            }
+                        })
+                        .finally(function () {
+                            modalSubmitBtn.disabled = false;
+                        });
+                });
+            }
+
+            deleteButtons.forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var id = btn.getAttribute('data-id') || '';
+                    var name = btn.getAttribute('data-name') || '—';
+                    if (deleteServiceName) deleteServiceName.textContent = name;
+                    if (deleteServiceForm) deleteServiceForm.setAttribute('action', getDeleteUrl(id));
+                    if (deleteModalEl) bootstrap.Modal.getOrCreateInstance(deleteModalEl).show();
+                });
+            });
+
+            if (deleteServiceConfirmBtn && deleteServiceForm) {
+                deleteServiceConfirmBtn.addEventListener('click', function () {
+                    var url = deleteServiceForm.getAttribute('action');
+                    if (!url) return;
+                    if (deleteServiceError) {
+                        deleteServiceError.style.display = 'none';
+                        deleteServiceError.textContent = '';
+                    }
+                    deleteServiceConfirmBtn.disabled = true;
+                    var fd = new FormData(deleteServiceForm);
+                    postModalForm(url, fd)
+                        .then(function (data) {
+                            if (data && data.success) {
+                                var inst = deleteModalEl ? bootstrap.Modal.getInstance(deleteModalEl) : null;
+                                if (inst) inst.hide();
+                                window.location.reload();
+                            } else {
+                                if (deleteServiceError) {
+                                    deleteServiceError.textContent = (data && data.message) ? data.message : 'Ошибка удаления';
+                                    deleteServiceError.style.display = 'block';
+                                }
+                            }
+                        })
+                        .catch(function () {
+                            if (deleteServiceError) {
+                                deleteServiceError.textContent = 'Ошибка связи с сервером';
+                                deleteServiceError.style.display = 'block';
+                            }
+                        })
+                        .finally(function () {
+                            deleteServiceConfirmBtn.disabled = false;
+                        });
+                });
+            }
+
+            if (isDeletedFilter && form) {
+                isDeletedFilter.addEventListener('change', function () {
+                    if (searchHidden) searchHidden.value = searchInput ? searchInput.value : '';
+                    form.submit();
+                });
+            }
+            toggleServiceSumMode();
+            applySearchLocal();
+        });
+    </script>
+}
+

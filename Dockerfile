@@ -18,5 +18,14 @@ RUN dotnet publish "WebApplication1.csproj" -c Release -o /app/publish /p:UseApp
 
 FROM base AS final
 WORKDIR /app
+# Chromium для PuppeteerSharp (PDF счетов/выписок). В aspnet-образе нет библиотек для скачанного Chrome.
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    chromium \
+    fonts-liberation \
+    fonts-dejavu-core \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+ENV CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "WebApplication1.dll"]

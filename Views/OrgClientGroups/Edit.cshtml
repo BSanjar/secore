@@ -1,0 +1,48 @@
+@model WebApplication1.Models.DBModels.OrgClientGroup
+@{
+    ViewData["Title"] = "Редактировать группу";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/web/kindergarten/css/detsad-clients.css" asp-append-version="true" />
+}
+
+<div class="children-page">
+<div class="page-header mb-4">
+    <h1 class="page-title">Редактировать группу</h1>
+    <p class="page-subtitle mb-0">@(Model.Name ?? Model.Id)</p>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="Edit" method="post" asp-route-id="@Model.Id">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="OrganizationId" />
+
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label">Название группы <span class="text-danger">*</span></label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ParentGroupId" class="form-label">Родительская группа</label>
+                <select asp-for="ParentGroupId" class="form-select" asp-items="ViewBag.ParentGroups">
+                    <option value="">— без родительской группы —</option>
+                </select>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="action-btn action-btn--edit">Сохранить</button>
+                <a asp-action="Index" class="btn btn-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+

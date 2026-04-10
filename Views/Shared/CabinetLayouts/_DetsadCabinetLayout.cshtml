@@ -1,0 +1,319 @@
+@using Microsoft.AspNetCore.Mvc.Localization
+@using Microsoft.AspNetCore.Localization
+@using WebApplication1.Helpers
+@inject IHtmlLocalizer<WebApplication1.SharedResources> Localizer
+@inject WebApplication1.Models.DBModels.AppDbContext _layoutDb
+
+@{
+    var requestCulture = Context.Features.Get<IRequestCultureFeature>();
+    var currentCulture = requestCulture?.RequestCulture?.UICulture ?? System.Globalization.CultureInfo.CurrentUICulture;
+    var currentCultureName = currentCulture.Name ?? "ru";
+    if (currentCultureName.Length > 2) { currentCultureName = currentCultureName.Substring(0, 2); }
+    var returnUrl = string.IsNullOrEmpty(Context.Request.Path) ? "/" : $"{Context.Request.Path.Value}{Context.Request.QueryString}";
+    var userId = Context.Session.GetString("UserId");
+    var userPerms = string.IsNullOrEmpty(userId) ? new List<string>() : PermissionHelper.GetUserPermissions(_layoutDb, userId);
+}
+<!DOCTYPE html>
+<html lang="@currentCulture.TwoLetterISOLanguageName">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Личный кабинет</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/dashboard-soft.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/web/kindergarten/css/cabinet.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/WebApplication1.styles.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="cabinet-body dashboard-body">
+    @{
+        var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+        var action = ViewContext.RouteData.Values["action"]?.ToString();
+        var area = ViewContext.RouteData.Values["area"]?.ToString();
+    }
+    <div class="dashboard-app">
+        <aside class="dashboard-sidebar">
+            <div class="dashboard-sidebar-top">
+                <a class="dashboard-sidebar-brand" asp-controller="Cabinet" asp-action="Index">
+                    <span class="dashboard-sidebar-brand-mark">✺</span>
+                    <span class="dashboard-sidebar-brand-text">Secore</span>
+                </a>
+                <nav class="dashboard-sidebar-nav">
+                    @if (userPerms.Contains("nav.children"))
+                    {
+                    <a class="dashboard-nav-item @(controller == "Clients" ? "active" : "")" asp-controller="Clients" asp-action="Index">
+                        <span class="dashboard-nav-item-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" fill="currentColor" />
+                            </svg>
+                        </span>
+                        <span class="dashboard-nav-item-label">@Localizer["Children"]</span>
+                    </a>
+                    }
+                    @if (userPerms.Contains("nav.services"))
+                    {
+                    <a class="dashboard-nav-item @(controller == "OrganizationServices" ? "active" : "")" asp-controller="OrganizationServices" asp-action="Index">
+                        <span class="dashboard-nav-item-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z" fill="currentColor" />
+                            </svg>
+                        </span>
+                        <span class="dashboard-nav-item-label">Услуги</span>
+                    </a>
+                    }
+                    @if (userPerms.Contains("nav.groups"))
+                    {
+                    <a class="dashboard-nav-item @(controller == "OrgClientGroups" ? "active" : "")" asp-controller="OrgClientGroups" asp-action="Index">
+                        <span class="dashboard-nav-item-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z" fill="currentColor" />
+                            </svg>
+                        </span>
+                        <span class="dashboard-nav-item-label">Группы</span>
+                    </a>
+                    }
+                    @if (userPerms.Contains("nav.invoices"))
+                    {
+                    <a class="dashboard-nav-item @(controller == "Invoices" ? "active" : "")" asp-controller="Invoices" asp-action="Index">
+                        <span class="dashboard-nav-item-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.1-.9-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" fill="currentColor" />
+                            </svg>
+                        </span>
+                        <span class="dashboard-nav-item-label">Отчетность</span>
+                    </a>
+                    }
+                    @if (userPerms.Contains("nav.transactions"))
+                    {
+                    <a class="dashboard-nav-item @(controller == "Payments" ? "active" : "")" asp-controller="Payments" asp-action="Index">
+                        <span class="dashboard-nav-item-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.87 0 .53-.39 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-1.67c1.52-.29 2.72-1.16 2.73-2.77-.01-2.2-1.9-2.96-3.66-3.42z" fill="currentColor" />
+                            </svg>
+                        </span>
+                        <span class="dashboard-nav-item-label">Транзакции</span>
+                    </a>
+                    }
+                </nav>
+            </div>
+            <div class="dashboard-sidebar-bottom">
+                @if (userPerms.Contains("nav.settings"))
+                {
+                <a class="dashboard-sidebar-bottom-item" href="@Url.Action("Index", "Settings")" title="@Localizer["Settings"]">
+                    <span class="dashboard-nav-item-icon">⚙</span>
+                    <span class="dashboard-nav-item-label">@Localizer["Settings"]</span>
+                </a>
+                }
+                @if (userPerms.Contains("nav.support"))
+                {
+                <a class="dashboard-sidebar-bottom-item" href="@Url.Action("Index", "Support")" title="@Localizer["Support"]">
+                    <span class="dashboard-nav-item-icon">?</span>
+                    <span class="dashboard-nav-item-label">@Localizer["Support"]</span>
+                </a>
+                }
+                @if (userPerms.Contains("nav.profile"))
+                {
+                <a class="dashboard-sidebar-bottom-item" href="@Url.Action("Index", "Profile")" title="Профиль">
+                    <span class="dashboard-avatar-small">
+                        @(AuthorizationHelper.GetUserName(Context)?[0].ToString().ToUpperInvariant() ?? "U")
+                    </span>
+                    <span class="dashboard-nav-item-label">Профиль</span>
+                </a>
+                }
+                <form asp-controller="Account" asp-action="Logout" method="post" class="dashboard-sidebar-bottom-item dashboard-logout-form">
+                    <button type="submit" class="dashboard-logout-btn" title="@Localizer["Logout"]">
+                        <span class="dashboard-nav-item-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" fill="currentColor"/></svg>
+                        </span>
+                        <span class="dashboard-nav-item-label">@Localizer["Logout"]</span>
+                    </button>
+                </form>
+            </div>
+        </aside>
+
+        <div class="dashboard-main">
+            <header class="dashboard-topbar">
+                <div class="dashboard-topbar-actions">
+                    <div class="dashboard-search" id="dashboardSearch">
+                        <input type="text" placeholder="Поиск..." id="dashboardSearchInput" autocomplete="off" />
+                        <button type="button" class="dashboard-search-btn" aria-label="Поиск">
+                            <img src="~/img/search-icon.png" alt="" class="dashboard-search-icon" />
+                        </button>
+                        <div class="dashboard-search-suggestions" id="dashboardSearchSuggestions" style="display: none;"></div>
+                    </div>
+                    <div class="dashboard-notifications-wrap">
+                        <button type="button" class="dashboard-notifications-btn" id="dashboardNotificationsBtn" aria-label="Уведомления">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" fill="currentColor"/></svg>
+                            <span class="dashboard-notifications-badge count" id="dashboardNotificationsBadge" style="display: none;">3</span>
+                        </button>
+                        <div class="dashboard-notifications-dropdown" id="dashboardNotificationsDropdown">
+                            <div class="dashboard-notifications-dropdown-header">Уведомления</div>
+                            <div class="dashboard-notifications-dropdown-list">
+                                <div class="dashboard-notifications-dropdown-empty">Нет новых уведомлений</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="dashboard-lang-wrap">
+                        <button type="button" class="dashboard-lang-btn" id="dashboardLangBtn" aria-label="@Localizer["Language"]" title="@Localizer["Language"]">
+                            <span class="dashboard-lang-flag">@(currentCultureName == "ru" ? "🇷🇺" : currentCultureName == "en" ? "🇬🇧" : "🇰🇬")</span>
+                        </button>
+                        <div class="dashboard-lang-dropdown" id="dashboardLangDropdown">
+                            <div class="dashboard-lang-dropdown-header">@Localizer["Language"]</div>
+                            <form asp-controller="Language" asp-action="SetLanguage" method="post" asp-route-returnUrl="@returnUrl" class="dashboard-lang-form">
+                                <input type="hidden" name="culture" value="ru" />
+                                <button type="submit" class="dashboard-lang-option @(currentCultureName == "ru" ? "active" : "")">🇷🇺 Русский</button>
+                            </form>
+                            <form asp-controller="Language" asp-action="SetLanguage" method="post" asp-route-returnUrl="@returnUrl" class="dashboard-lang-form">
+                                <input type="hidden" name="culture" value="en" />
+                                <button type="submit" class="dashboard-lang-option @(currentCultureName == "en" ? "active" : "")">🇬🇧 English</button>
+                            </form>
+                            <form asp-controller="Language" asp-action="SetLanguage" method="post" asp-route-returnUrl="@returnUrl" class="dashboard-lang-form">
+                                <input type="hidden" name="culture" value="ky" />
+                                <button type="submit" class="dashboard-lang-option @(currentCultureName == "ky" ? "active" : "")">🇰🇬 Кыргызча</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="cabinet-main">
+                <div class="container">
+                    @RenderBody()
+                </div>
+            </main>
+
+            <footer class="cabinet-footer">
+                <div class="container-fluid px-3 px-md-4">
+                    <div class="row">
+                        <div class="col-md-12 text-center">
+                            <p class="mb-0">&copy; @DateTime.Now.Year - @Localizer["OrganizationCabinet"]. @Localizer["AllRightsReserved"].</p>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script>
+        (function () {
+            var globalSearchUrl = '@Url.Action("Suggest", "GlobalSearch")';
+            var search = document.getElementById('dashboardSearch');
+            var searchInput = document.getElementById('dashboardSearchInput');
+            var suggestions = document.getElementById('dashboardSearchSuggestions');
+            var debounceTimer;
+
+            function clearSuggestions() {
+                if (!suggestions) return;
+                suggestions.innerHTML = '';
+                suggestions.style.display = 'none';
+            }
+
+            function renderSuggestions(data) {
+                if (!suggestions) return;
+                suggestions.innerHTML = '';
+                var groups = (data && data.groups) || [];
+                if (!groups.length) {
+                    clearSuggestions();
+                    return;
+                }
+                groups.forEach(function (g) {
+                    var groupEl = document.createElement('div');
+                    groupEl.className = 'dashboard-search-suggestion-group';
+
+                    var titleEl = document.createElement('div');
+                    titleEl.className = 'dashboard-search-suggestion-group-title';
+                    titleEl.textContent = g.title || '';
+                    groupEl.appendChild(titleEl);
+
+                    (g.items || []).forEach(function (item) {
+                        var itemEl = document.createElement('div');
+                        itemEl.className = 'dashboard-search-suggestion-item';
+                        itemEl.innerHTML =
+                            '<span class="dashboard-search-suggestion-main">' + (item.title || '') + '</span>' +
+                            '<span class="dashboard-search-suggestion-sub text-muted small">' + (item.subtitle || '') + '</span>';
+                        itemEl.addEventListener('click', function () {
+                            if (item.url) {
+                                window.location.href = item.url;
+                            }
+                        });
+                        groupEl.appendChild(itemEl);
+                    });
+
+                    suggestions.appendChild(groupEl);
+                });
+                suggestions.style.display = 'block';
+            }
+
+            if (search && searchInput) {
+                searchInput.addEventListener('focus', function () {
+                    search.classList.add('is-expanded');
+                });
+                searchInput.addEventListener('blur', function () {
+                    search.classList.remove('is-expanded');
+                });
+            }
+
+            if (search && searchInput && suggestions) {
+                searchInput.addEventListener('input', function () {
+                    var q = searchInput.value.trim();
+                    clearTimeout(debounceTimer);
+                    if (q.length < 2) {
+                        clearSuggestions();
+                        return;
+                    }
+                    debounceTimer = setTimeout(function () {
+                        var url = globalSearchUrl;
+                        url += (url.indexOf('?') === -1 ? '?q=' : '&q=') + encodeURIComponent(q);
+                        fetch(url, {
+                            headers: { 'Accept': 'application/json' }
+                        })
+                            .then(function (r) { return r.ok ? r.json() : null; })
+                            .then(function (data) { renderSuggestions(data || {}); })
+                            .catch(function () { clearSuggestions(); });
+                    }, 250);
+                });
+
+                document.addEventListener('click', function (e) {
+                    if (!search.contains(e.target)) {
+                        clearSuggestions();
+                    }
+                });
+
+                searchInput.addEventListener('keydown', function (e) {
+                    if (e.key === 'Escape') {
+                        clearSuggestions();
+                        searchInput.blur();
+                    }
+                });
+            }
+
+            var notifBtn = document.getElementById('dashboardNotificationsBtn');
+            var notifDropdown = document.getElementById('dashboardNotificationsDropdown');
+            if (notifBtn && notifDropdown) {
+                notifBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    notifDropdown.classList.toggle('is-open');
+                    if (window.langDropdown) window.langDropdown.classList.remove('is-open');
+                });
+                document.addEventListener('click', function () { notifDropdown.classList.remove('is-open'); });
+            }
+            var langBtn = document.getElementById('dashboardLangBtn');
+            var langDropdown = document.getElementById('dashboardLangDropdown');
+            if (langBtn && langDropdown) {
+                window.langDropdown = langDropdown;
+                langBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    langDropdown.classList.toggle('is-open');
+                    if (notifDropdown) notifDropdown.classList.remove('is-open');
+                });
+                document.addEventListener('click', function () { langDropdown.classList.remove('is-open'); });
+            }
+        })();
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

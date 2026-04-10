@@ -33,6 +33,8 @@ public partial class OrganizationService
 
     public int? Isdeleted { get; set; }
 
+    public virtual ICollection<AppointmentService> AppointmentServices { get; set; } = new List<AppointmentService>();
+
     public virtual ICollection<InvoiceService> InvoiceServices { get; set; } = new List<InvoiceService>();
 
     public virtual Organization? OrganizationNavigation { get; set; }

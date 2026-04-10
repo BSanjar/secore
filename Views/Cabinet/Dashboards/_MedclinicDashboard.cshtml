@@ -1,0 +1,386 @@
+﻿@model WebApplication1.ViewModels.Cabinet.MedclinicDashboardViewModel
+@{
+    ViewData["Title"] = "Главная";
+}
+
+@section Styles {
+    <style>
+        .medclinic-dashboard {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .medclinic-dashboard__metrics {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 1rem;
+        }
+
+        .medclinic-dashboard__info {
+            display: grid;
+            grid-template-columns: minmax(0, 1.7fr) minmax(320px, 1fr);
+            gap: 1rem;
+        }
+
+        .medclinic-dashboard__surface {
+            background: #fff;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            border-radius: 1rem;
+            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+            overflow: hidden;
+        }
+
+        .medclinic-dashboard__header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 1.1rem 1.25rem;
+            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+        }
+
+        .medclinic-dashboard__title {
+            margin: 0;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .medclinic-dashboard__subtitle {
+            margin: 0.35rem 0 0;
+            color: #64748b;
+            font-size: 0.92rem;
+        }
+
+        .medclinic-dashboard__metric {
+            padding: 1.1rem 1.15rem;
+            border-radius: 1rem;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
+        }
+
+        .medclinic-dashboard__metric-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #64748b;
+        }
+
+        .medclinic-dashboard__metric-value {
+            margin-top: 0.55rem;
+            font-size: 1.9rem;
+            line-height: 1.1;
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        .medclinic-dashboard__metric-description {
+            margin: 0.55rem 0 0;
+            color: #64748b;
+            font-size: 0.92rem;
+        }
+
+        .medclinic-dashboard__chart-wrap {
+            padding: 1.25rem;
+        }
+
+        .medclinic-dashboard__period {
+            display: inline-flex;
+            gap: 0.4rem;
+            padding: 0.25rem;
+            border-radius: 999px;
+            background: #eff6ff;
+            margin-bottom: 1rem;
+        }
+
+        .medclinic-dashboard__period-btn {
+            border: 0;
+            background: transparent;
+            color: #1d4ed8;
+            padding: 0.45rem 0.9rem;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .medclinic-dashboard__period-btn.active {
+            background: #1d4ed8;
+            color: #fff;
+            box-shadow: 0 10px 25px rgba(29, 78, 216, 0.22);
+        }
+
+        .medclinic-dashboard__canvas {
+            position: relative;
+            min-height: 320px;
+        }
+
+        .medclinic-dashboard__terms {
+            padding: 1.25rem;
+        }
+
+        .medclinic-dashboard__terms-name {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 1rem;
+        }
+
+        .medclinic-dashboard__terms-list {
+            display: grid;
+            gap: 0.85rem;
+        }
+
+        .medclinic-dashboard__terms-row {
+            display: grid;
+            gap: 0.2rem;
+            padding-bottom: 0.85rem;
+            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+        }
+
+        .medclinic-dashboard__terms-row:last-child {
+            padding-bottom: 0;
+            border-bottom: 0;
+        }
+
+        .medclinic-dashboard__terms-label {
+            color: #64748b;
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .medclinic-dashboard__terms-value {
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+        .medclinic-dashboard__table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .medclinic-dashboard__table th,
+        .medclinic-dashboard__table td {
+            padding: 0.95rem 1.25rem;
+            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        .medclinic-dashboard__table th:last-child,
+        .medclinic-dashboard__table td:last-child {
+            text-align: right;
+        }
+
+        .medclinic-dashboard__table tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        .medclinic-dashboard__status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.35rem 0.7rem;
+            border-radius: 999px;
+            font-size: 0.84rem;
+            font-weight: 600;
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .medclinic-dashboard__empty {
+            padding: 2.5rem 1.25rem;
+            text-align: center;
+            color: #64748b;
+        }
+
+        @@media (max-width: 1199px) {
+            .medclinic-dashboard__metrics,
+            .medclinic-dashboard__info {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+}
+
+<div class="medclinic-dashboard">
+    <section class="medclinic-dashboard__metrics">
+        @foreach (var metric in Model.Metrics)
+        {
+            <article class="medclinic-dashboard__metric">
+                <div class="medclinic-dashboard__metric-label">@metric.Label</div>
+                <div class="medclinic-dashboard__metric-value">@metric.Value</div>
+                <p class="medclinic-dashboard__metric-description">@metric.Description</p>
+            </article>
+        }
+    </section>
+
+    <section class="medclinic-dashboard__info">
+        <div class="medclinic-dashboard__surface">
+            <div class="medclinic-dashboard__header">
+                <div>
+                    <h2 class="medclinic-dashboard__title">Динамика оплат</h2>
+                    <p class="medclinic-dashboard__subtitle">Сумма успешных транзакций за неделю, месяц и год.</p>
+                </div>
+            </div>
+            <div class="medclinic-dashboard__chart-wrap">
+                <div class="medclinic-dashboard__period">
+                    <button type="button" class="medclinic-dashboard__period-btn active" data-period="week">Неделя</button>
+                    <button type="button" class="medclinic-dashboard__period-btn" data-period="month">Месяц</button>
+                    <button type="button" class="medclinic-dashboard__period-btn" data-period="year">Год</button>
+                </div>
+                <div class="medclinic-dashboard__canvas">
+                    <canvas id="medclinicDashboardChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <aside class="medclinic-dashboard__surface">
+            <div class="medclinic-dashboard__header">
+                <div>
+                    <h2 class="medclinic-dashboard__title">Условия обслуживания</h2>
+                    <p class="medclinic-dashboard__subtitle">Текущая модель расчётов и параметры обслуживания организации.</p>
+                </div>
+            </div>
+            <div class="medclinic-dashboard__terms">
+                <div class="medclinic-dashboard__terms-name">@Model.OrganizationName</div>
+                <div class="medclinic-dashboard__terms-list">
+                    <div class="medclinic-dashboard__terms-row">
+                        <span class="medclinic-dashboard__terms-label">Тариф</span>
+                        <span class="medclinic-dashboard__terms-value">@(Model.HasSubscription ? "Подписка" : "Комиссия по операциям")</span>
+                    </div>
+                    <div class="medclinic-dashboard__terms-row">
+                        <span class="medclinic-dashboard__terms-label">Статус</span>
+                        <span class="medclinic-dashboard__terms-value">@Model.BillingStatus</span>
+                    </div>
+                    <div class="medclinic-dashboard__terms-row">
+                        <span class="medclinic-dashboard__terms-label">Тип комиссии</span>
+                        <span class="medclinic-dashboard__terms-value">@Model.CommissionKindText</span>
+                    </div>
+                    <div class="medclinic-dashboard__terms-row">
+                        <span class="medclinic-dashboard__terms-label">Значение комиссии</span>
+                        <span class="medclinic-dashboard__terms-value">@Model.CommissionValueText</span>
+                    </div>
+                    <div class="medclinic-dashboard__terms-row">
+                        <span class="medclinic-dashboard__terms-label">Модель расчёта</span>
+                        <span class="medclinic-dashboard__terms-value">@Model.CommissionModelName</span>
+                    </div>
+                    <div class="medclinic-dashboard__terms-row">
+                        <span class="medclinic-dashboard__terms-label">Валюта</span>
+                        <span class="medclinic-dashboard__terms-value">KGS (сом)</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </section>
+
+    <section class="medclinic-dashboard__surface">
+        <div class="medclinic-dashboard__header">
+            <div>
+                <h2 class="medclinic-dashboard__title">Транзакции</h2>
+                <p class="medclinic-dashboard__subtitle">Последние успешные транзакции организации.</p>
+            </div>
+            <a asp-controller="Payments" asp-action="Index" class="btn btn-outline-primary">Открыть транзакции</a>
+        </div>
+
+        @if (Model.Transactions.Count == 0)
+        {
+            <div class="medclinic-dashboard__empty">Транзакций пока нет.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="medclinic-dashboard__table">
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>Пациент</th>
+                            <th>Описание</th>
+                            <th>Статус</th>
+                            <th>Сумма</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var transaction in Model.Transactions)
+                        {
+                            <tr>
+                                <td>@(transaction.TransactionDate?.ToString("dd.MM.yyyy HH:mm") ?? "—")</td>
+                                <td>@transaction.PatientName</td>
+                                <td>@transaction.Description</td>
+                                <td><span class="medclinic-dashboard__status">Успешно</span></td>
+                                <td>@transaction.Amount.ToString("N2") сом</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        (function () {
+            var chartWeek = @Html.Raw(Model.ChartWeekJson);
+            var chartMonth = @Html.Raw(Model.ChartMonthJson);
+            var chartYear = @Html.Raw(Model.ChartYearJson);
+
+            var canvas = document.getElementById('medclinicDashboardChart');
+            if (!canvas) return;
+
+            var datasets = {
+                week: { labels: chartWeek.map(function (x) { return x.label; }), values: chartWeek.map(function (x) { return x.value; }) },
+                month: { labels: chartMonth.map(function (x) { return x.label; }), values: chartMonth.map(function (x) { return x.value; }) },
+                year: { labels: chartYear.map(function (x) { return x.label; }), values: chartYear.map(function (x) { return x.value; }) }
+            };
+
+            var chart = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: datasets.week.labels,
+                    datasets: [{
+                        label: 'Оплаты, сом',
+                        data: datasets.week.values,
+                        backgroundColor: 'rgba(14, 116, 144, 0.75)',
+                        borderRadius: 12,
+                        maxBarThickness: 28
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function (value) { return value + ' сом'; }
+                            }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+
+            document.querySelectorAll('.medclinic-dashboard__period-btn').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    var period = this.dataset.period;
+                    if (!period) return;
+
+                    document.querySelectorAll('.medclinic-dashboard__period-btn').forEach(function (item) {
+                        item.classList.remove('active');
+                    });
+                    this.classList.add('active');
+
+                    chart.data.labels = datasets[period].labels;
+                    chart.data.datasets[0].data = datasets[period].values;
+                    chart.update();
+                });
+            });
+        })();
+    </script>
+}

@@ -1,0 +1,106 @@
+@model WebApplication1.Models.DBModels.Invoice
+@{
+    ViewData["Title"] = "Добавить счёт";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/web/kindergarten/css/detsad-clients.css" asp-append-version="true" />
+}
+
+<div class="children-page">
+    <nav class="detsad-breadcrumb" aria-label="Навигация">
+        <a asp-action="Index">Отчетность</a>
+        <span class="breadcrumb-sep">›</span>
+        <span>Добавление счёта</span>
+    </nav>
+
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">Добавить счёт</h1>
+                <p class="page-subtitle mb-0">Создание нового счёта на оплату</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="filters-section">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <div class="mb-3">
+                <label asp-for="Client" class="form-label text-muted small">Клиент <span class="text-danger">*</span></label>
+                <select asp-for="Client" asp-items="ViewBag.Clients" class="form-select filter-select" required>
+                    <option value="">— Выберите клиента —</option>
+                </select>
+                <span asp-validation-for="Client" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="NameInvoice" class="form-label text-muted small">Название счёта</label>
+                <input asp-for="NameInvoice" class="form-control" placeholder="Например: Оплата за детский сад" />
+                <span asp-validation-for="NameInvoice" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="PayCode" class="form-label text-muted small">Лицевой счёт (код оплаты)</label>
+                <input asp-for="PayCode" class="form-control" placeholder="Уникальный код для оплаты" />
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="InvoiceStatus" class="form-label text-muted small">Статус</label>
+                    <select asp-for="InvoiceStatus" class="form-select filter-select">
+                        <option value="actual">Активный</option>
+                        <option value="suspended">Приостановлен</option>
+                        <option value="closed">Закрыт</option>
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="Periodicity" class="form-label text-muted small">Периодичность оплаты</label>
+                    <select asp-for="Periodicity" class="form-select filter-select">
+                        <option value="daily">Ежедневно</option>
+                        <option value="weekly">Еженедельно</option>
+                        <option value="monthly">Ежемесячно</option>
+                        <option value="yearly">Ежегодно</option>
+                        <option value="oneTime">Разовая</option>
+                        <option value="any">Любая</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="DateStartInvoice" class="form-label text-muted small">Дата начала счёта</label>
+                    <input asp-for="DateStartInvoice" type="date" class="form-control" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="FixedSumm" class="form-label text-muted small">Фиксированная сумма (тыйыны)</label>
+                    <input asp-for="FixedSumm" type="number" step="1" min="0" class="form-control" placeholder="0 — любая сумма" />
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <div class="form-check">
+                    <input asp-for="AutoProlongation" class="form-check-input" />
+                    <label asp-for="AutoProlongation" class="form-check-label">Автопролонгация (создавать следующий период при оплате)</label>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="detsad-btn-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
+                    </svg>
+                    Создать счёт
+                </button>
+                <a asp-action="Index" class="detsad-btn-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+

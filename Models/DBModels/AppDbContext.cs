@@ -19,6 +19,22 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<Invoice> Invoices { get; set; }
 
+    public virtual DbSet<Appointment> Appointments { get; set; }
+
+    public virtual DbSet<AppointmentService> AppointmentServices { get; set; }
+
+    public virtual DbSet<UserWorkSchedule> UserWorkSchedules { get; set; }
+
+    public virtual DbSet<UserWorkScheduleOverride> UserWorkScheduleOverrides { get; set; }
+
+    public virtual DbSet<Department> Departments { get; set; }
+
+    public virtual DbSet<Specialization> Specializations { get; set; }
+
+    public virtual DbSet<UserDepartment> UserDepartments { get; set; }
+
+    public virtual DbSet<UserSpecialization> UserSpecializations { get; set; }
+
     public virtual DbSet<InvoicePayment> InvoicePayments { get; set; }
 
     public virtual DbSet<InvoiceService> InvoiceServices { get; set; }
@@ -150,6 +166,406 @@ public partial class AppDbContext : DbContext
             entity.HasOne(d => d.UserCreaterNavigation).WithMany(p => p.Invoices)
                 .HasForeignKey(d => d.UserCreater)
                 .HasConstraintName("invoice_fk");
+        });
+
+        modelBuilder.Entity<Appointment>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("appointments_pk");
+
+            entity.ToTable("appointments");
+
+            entity.HasIndex(e => e.OrganizationId, "idx_appointments_organization_id");
+            entity.HasIndex(e => e.PatientId, "idx_appointments_patient_id");
+            entity.HasIndex(e => e.DoctorId, "idx_appointments_doctor_id");
+            entity.HasIndex(e => e.StartsAt, "idx_appointments_starts_at");
+
+            entity.Property(e => e.Id)
+                .HasColumnType("character varying")
+                .HasColumnName("id");
+            entity.Property(e => e.OrganizationId)
+                .HasColumnType("character varying")
+                .HasColumnName("organization_id");
+            entity.Property(e => e.PatientId)
+                .HasColumnType("character varying")
+                .HasColumnName("patient_id");
+            entity.Property(e => e.DoctorId)
+                .HasColumnType("character varying")
+                .HasColumnName("doctor_id");
+            entity.Property(e => e.Title)
+                .HasColumnType("character varying")
+                .HasColumnName("title");
+            entity.Property(e => e.Phone)
+                .HasColumnType("character varying")
+                .HasColumnName("phone");
+            entity.Property(e => e.Email)
+                .HasColumnType("character varying")
+                .HasColumnName("email");
+            entity.Property(e => e.Notes)
+                .HasColumnType("text")
+                .HasColumnName("notes");
+            entity.Property(e => e.ReferralSource)
+                .HasColumnType("character varying")
+                .HasColumnName("referral_source");
+            entity.Property(e => e.PaymentType)
+                .HasColumnType("character varying")
+                .HasColumnName("payment_type");
+            entity.Property(e => e.AppointmentStatus)
+                .HasColumnType("character varying")
+                .HasColumnName("appointment_status");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValueSql("true")
+                .HasColumnName("is_active");
+            entity.Property(e => e.StartsAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("starts_at");
+            entity.Property(e => e.EndsAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("ends_at");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("updated_at");
+            entity.Property(e => e.CreatedBy)
+                .HasColumnType("character varying")
+                .HasColumnName("created_by");
+
+            entity.HasOne(d => d.Organization)
+                .WithMany(p => p.Appointments)
+                .HasForeignKey(d => d.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("appointments_fk_organization");
+
+            entity.HasOne(d => d.Patient)
+                .WithMany(p => p.Appointments)
+                .HasForeignKey(d => d.PatientId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("appointments_fk_patient");
+
+            entity.HasOne(d => d.Doctor)
+                .WithMany(p => p.Appointments)
+                .HasForeignKey(d => d.DoctorId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("appointments_fk_doctor");
+        });
+
+        modelBuilder.Entity<AppointmentService>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("appointment_services_pk");
+
+            entity.ToTable("appointment_services");
+
+            entity.HasIndex(e => e.AppointmentId, "idx_appointment_services_appointment_id");
+            entity.HasIndex(e => e.OrganizationServiceId, "idx_appointment_services_org_service_id");
+
+            entity.Property(e => e.Id)
+                .HasColumnType("character varying")
+                .HasColumnName("id");
+            entity.Property(e => e.AppointmentId)
+                .HasColumnType("character varying")
+                .HasColumnName("appointment_id");
+            entity.Property(e => e.OrganizationServiceId)
+                .HasColumnType("character varying")
+                .HasColumnName("organization_service_id");
+            entity.Property(e => e.ServiceName)
+                .HasColumnType("character varying")
+                .HasColumnName("service_name");
+            entity.Property(e => e.PriceTyiyn)
+                .HasColumnType("numeric(18,2)")
+                .HasColumnName("price_tyiyn");
+            entity.Property(e => e.Quantity)
+                .HasDefaultValueSql("1")
+                .HasColumnName("quantity");
+
+            entity.HasOne(d => d.Appointment)
+                .WithMany(p => p.AppointmentServices)
+                .HasForeignKey(d => d.AppointmentId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("appointment_services_fk_appointment");
+
+            entity.HasOne(d => d.OrganizationService)
+                .WithMany(p => p.AppointmentServices)
+                .HasForeignKey(d => d.OrganizationServiceId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("appointment_services_fk_org_service");
+        });
+
+        modelBuilder.Entity<UserWorkSchedule>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("user_work_schedules_pk");
+
+            entity.ToTable("user_work_schedules");
+
+            entity.HasIndex(e => e.OrganizationId, "idx_user_work_schedules_organization_id");
+            entity.HasIndex(e => e.UserId, "idx_user_work_schedules_user_id");
+            entity.HasIndex(e => new { e.UserId, e.DayOfWeek }, "ux_user_work_schedules_user_day").IsUnique();
+
+            entity.Property(e => e.Id)
+                .HasColumnType("character varying")
+                .HasColumnName("id");
+            entity.Property(e => e.OrganizationId)
+                .HasColumnType("character varying")
+                .HasColumnName("organization_id");
+            entity.Property(e => e.UserId)
+                .HasColumnType("character varying")
+                .HasColumnName("user_id");
+            entity.Property(e => e.DayOfWeek)
+                .HasColumnName("day_of_week");
+            entity.Property(e => e.StartTime)
+                .HasColumnType("time without time zone")
+                .HasColumnName("start_time");
+            entity.Property(e => e.EndTime)
+                .HasColumnType("time without time zone")
+                .HasColumnName("end_time");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValueSql("true")
+                .HasColumnName("is_active");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("updated_at");
+
+            entity.HasOne(d => d.Organization)
+                .WithMany(p => p.UserWorkSchedules)
+                .HasForeignKey(d => d.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("user_work_schedules_fk_organization");
+
+            entity.HasOne(d => d.User)
+                .WithMany(p => p.UserWorkSchedules)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("user_work_schedules_fk_user");
+        });
+
+        modelBuilder.Entity<UserWorkScheduleOverride>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("user_work_schedule_overrides_pk");
+
+            entity.ToTable("user_work_schedule_overrides");
+
+            entity.HasIndex(e => e.OrganizationId, "idx_user_work_schedule_overrides_organization_id");
+            entity.HasIndex(e => e.UserId, "idx_user_work_schedule_overrides_user_id");
+            entity.HasIndex(e => new { e.UserId, e.WorkDate }, "ux_user_work_schedule_overrides_user_date").IsUnique();
+
+            entity.Property(e => e.Id)
+                .HasColumnType("character varying")
+                .HasColumnName("id");
+            entity.Property(e => e.OrganizationId)
+                .HasColumnType("character varying")
+                .HasColumnName("organization_id");
+            entity.Property(e => e.UserId)
+                .HasColumnType("character varying")
+                .HasColumnName("user_id");
+            entity.Property(e => e.WorkDate)
+                .HasColumnType("date")
+                .HasColumnName("work_date");
+            entity.Property(e => e.IsWorking)
+                .HasDefaultValueSql("true")
+                .HasColumnName("is_working");
+            entity.Property(e => e.StartTime)
+                .HasColumnType("time without time zone")
+                .HasColumnName("start_time");
+            entity.Property(e => e.EndTime)
+                .HasColumnType("time without time zone")
+                .HasColumnName("end_time");
+            entity.Property(e => e.Comment)
+                .HasColumnType("character varying")
+                .HasColumnName("comment");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("updated_at");
+
+            entity.HasOne(d => d.Organization)
+                .WithMany(p => p.UserWorkScheduleOverrides)
+                .HasForeignKey(d => d.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("user_work_schedule_overrides_fk_organization");
+
+            entity.HasOne(d => d.User)
+                .WithMany(p => p.UserWorkScheduleOverrides)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("user_work_schedule_overrides_fk_user");
+        });
+
+        modelBuilder.Entity<Department>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("departments_pk");
+
+            entity.ToTable("departments");
+
+            entity.HasIndex(e => e.OrganizationId, "idx_departments_organization_id");
+            entity.HasIndex(e => new { e.OrganizationId, e.Name }, "ux_departments_org_name").IsUnique();
+
+            entity.Property(e => e.Id)
+                .HasColumnType("character varying")
+                .HasColumnName("id");
+            entity.Property(e => e.OrganizationId)
+                .HasColumnType("character varying")
+                .HasColumnName("organization_id");
+            entity.Property(e => e.Name)
+                .HasColumnType("character varying")
+                .HasColumnName("name");
+            entity.Property(e => e.Code)
+                .HasColumnType("character varying")
+                .HasColumnName("code");
+            entity.Property(e => e.Description)
+                .HasColumnType("text")
+                .HasColumnName("description");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValueSql("true")
+                .HasColumnName("is_active");
+            entity.Property(e => e.SortOrder)
+                .HasDefaultValueSql("0")
+                .HasColumnName("sort_order");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("updated_at");
+
+            entity.HasOne(d => d.Organization)
+                .WithMany(p => p.Departments)
+                .HasForeignKey(d => d.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("departments_fk_organization");
+        });
+
+        modelBuilder.Entity<Specialization>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("specializations_pk");
+
+            entity.ToTable("specializations");
+
+            entity.HasIndex(e => e.OrganizationId, "idx_specializations_organization_id");
+            entity.HasIndex(e => e.DepartmentId, "idx_specializations_department_id");
+            entity.HasIndex(e => new { e.OrganizationId, e.Name }, "ux_specializations_org_name").IsUnique();
+
+            entity.Property(e => e.Id)
+                .HasColumnType("character varying")
+                .HasColumnName("id");
+            entity.Property(e => e.OrganizationId)
+                .HasColumnType("character varying")
+                .HasColumnName("organization_id");
+            entity.Property(e => e.DepartmentId)
+                .HasColumnType("character varying")
+                .HasColumnName("department_id");
+            entity.Property(e => e.Name)
+                .HasColumnType("character varying")
+                .HasColumnName("name");
+            entity.Property(e => e.Description)
+                .HasColumnType("text")
+                .HasColumnName("description");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValueSql("true")
+                .HasColumnName("is_active");
+            entity.Property(e => e.SortOrder)
+                .HasDefaultValueSql("0")
+                .HasColumnName("sort_order");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("updated_at");
+
+            entity.HasOne(d => d.Organization)
+                .WithMany(p => p.Specializations)
+                .HasForeignKey(d => d.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("specializations_fk_organization");
+
+            entity.HasOne(d => d.Department)
+                .WithMany(p => p.Specializations)
+                .HasForeignKey(d => d.DepartmentId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("specializations_fk_department");
+        });
+
+        modelBuilder.Entity<UserDepartment>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("user_departments_pk");
+
+            entity.ToTable("user_departments");
+
+            entity.HasIndex(e => e.UserId, "idx_user_departments_user_id");
+            entity.HasIndex(e => e.DepartmentId, "idx_user_departments_department_id");
+            entity.HasIndex(e => new { e.UserId, e.DepartmentId }, "ux_user_departments_user_department").IsUnique();
+
+            entity.Property(e => e.Id)
+                .HasColumnType("character varying")
+                .HasColumnName("id");
+            entity.Property(e => e.UserId)
+                .HasColumnType("character varying")
+                .HasColumnName("user_id");
+            entity.Property(e => e.DepartmentId)
+                .HasColumnType("character varying")
+                .HasColumnName("department_id");
+            entity.Property(e => e.IsPrimary)
+                .HasDefaultValueSql("false")
+                .HasColumnName("is_primary");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+
+            entity.HasOne(d => d.User)
+                .WithMany(p => p.UserDepartments)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("user_departments_fk_user");
+
+            entity.HasOne(d => d.Department)
+                .WithMany(p => p.UserDepartments)
+                .HasForeignKey(d => d.DepartmentId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("user_departments_fk_department");
+        });
+
+        modelBuilder.Entity<UserSpecialization>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("user_specializations_pk");
+
+            entity.ToTable("user_specializations");
+
+            entity.HasIndex(e => e.UserId, "idx_user_specializations_user_id");
+            entity.HasIndex(e => e.SpecializationId, "idx_user_specializations_specialization_id");
+            entity.HasIndex(e => new { e.UserId, e.SpecializationId }, "ux_user_specializations_user_specialization").IsUnique();
+
+            entity.Property(e => e.Id)
+                .HasColumnType("character varying")
+                .HasColumnName("id");
+            entity.Property(e => e.UserId)
+                .HasColumnType("character varying")
+                .HasColumnName("user_id");
+            entity.Property(e => e.SpecializationId)
+                .HasColumnType("character varying")
+                .HasColumnName("specialization_id");
+            entity.Property(e => e.IsPrimary)
+                .HasDefaultValueSql("false")
+                .HasColumnName("is_primary");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+
+            entity.HasOne(d => d.User)
+                .WithMany(p => p.UserSpecializations)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("user_specializations_fk_user");
+
+            entity.HasOne(d => d.Specialization)
+                .WithMany(p => p.UserSpecializations)
+                .HasForeignKey(d => d.SpecializationId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("user_specializations_fk_specialization");
         });
 
         modelBuilder.Entity<InvoicePayment>(entity =>

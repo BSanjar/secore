@@ -1,0 +1,80 @@
+@model WebApplication1.Dtos.ServiceUpsertDto
+@{
+    ViewData["Title"] = "Редактирование услуги";
+}
+
+<div class="dashboard-page">
+    <div class="medclinic-surface p-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+            <div>
+                <h1 class="h3 mb-1">Редактирование услуги</h1>
+                <p class="text-muted mb-0">Обновление параметров услуги клиники.</p>
+            </div>
+            <a class="btn btn-outline-secondary" asp-action="Index">Назад к списку</a>
+        </div>
+
+        <form method="post" class="row g-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+            <div asp-validation-summary="ModelOnly" class="text-danger small"></div>
+
+            <div class="col-md-6">
+                <label asp-for="Name" class="form-label">Название</label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-6 d-flex align-items-end">
+                <div class="form-check form-switch">
+                    <input asp-for="IsFixed" class="form-check-input" id="isFixedSwitch" />
+                    <label asp-for="IsFixed" class="form-check-label">Фиксированная цена</label>
+                </div>
+            </div>
+
+            <div class="col-md-4" data-fixed-block>
+                <label asp-for="FixedAmount" class="form-label">Цена</label>
+                <input asp-for="FixedAmount" class="form-control" />
+                <span asp-validation-for="FixedAmount" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4" data-range-block>
+                <label asp-for="MinAmount" class="form-label">Мин. сумма</label>
+                <input asp-for="MinAmount" class="form-control" />
+                <span asp-validation-for="MinAmount" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4" data-range-block>
+                <label asp-for="MaxAmount" class="form-label">Макс. сумма</label>
+                <input asp-for="MaxAmount" class="form-control" />
+                <span asp-validation-for="MaxAmount" class="text-danger small"></span>
+            </div>
+
+            <div class="col-12 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Сохранить</button>
+                <a class="btn btn-outline-secondary" asp-action="Index">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const toggle = document.getElementById('isFixedSwitch');
+            const fixedBlock = document.querySelector('[data-fixed-block]');
+            const rangeBlocks = document.querySelectorAll('[data-range-block]');
+
+            function syncMode() {
+                const isFixed = toggle && toggle.checked;
+                if (fixedBlock) fixedBlock.style.display = isFixed ? '' : 'none';
+                rangeBlocks.forEach(block => block.style.display = isFixed ? 'none' : '');
+            }
+
+            if (toggle) {
+                toggle.addEventListener('change', syncMode);
+                syncMode();
+            }
+        });
+    </script>
+}

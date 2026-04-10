@@ -1,0 +1,263 @@
+@using System.Globalization
+@{
+    ViewData["Title"] = "Главная";
+    var monthIncome = ViewBag.MonthIncome as decimal? ?? 0m;
+    var yearIncome = ViewBag.YearIncome as decimal? ?? 0m;
+    var totalClients = (int)(ViewBag.TotalClients ?? 0);
+    var activeInvoices = (int)(ViewBag.ActiveInvoices ?? 0);
+    var chartWeek = ViewBag.ChartWeek as string ?? "[]";
+    var chartMonth = ViewBag.ChartMonth as string ?? "[]";
+    var chartYear = ViewBag.ChartYear as string ?? "[]";
+    var organization = ViewBag.Organization as WebApplication1.Models.DBModels.Organization;
+    var hasSubscription = ViewBag.HasSubscription as bool? ?? false;
+    var commissionName = ViewBag.CommissionName as string;
+    var commissionKind = ViewBag.CommissionKind as string;
+    var commissionRate = ViewBag.CommissionRate as decimal?;
+    var commissionFixed = ViewBag.CommissionFixed as decimal?;
+    var debtorsList = ViewBag.DebtorsList as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var recentInvoices = ViewBag.RecentInvoices as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+
+    string CommissionKindText(string k)
+    {
+        if (string.IsNullOrEmpty(k)) return "—";
+        return k switch { "percent" => "Процентная", "fixed" => "Фиксированная", "mixed" => "Смешанная", "single_tier" => "Ступенчатая", "progressive" => "Прогрессивная", _ => k };
+    }
+    string CommissionValue()
+    {
+        if (commissionRate.HasValue && commissionRate.Value != 0) return (commissionRate.Value * 100).ToString("0.##") + "%";
+        if (commissionFixed.HasValue && commissionFixed.Value != 0) return commissionFixed.Value.ToString("N2") + " сом";
+        return "—";
+    }
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/web/kindergarten/css/detsad-dashboard-v2.css" asp-append-version="true" />
+}
+
+<div class="dashboard-v2">
+    <header class="dashboard-v2__header">
+        <h1 class="dashboard-v2__title">Панель управления</h1>
+        <p class="dashboard-v2__subtitle">@(organization?.Name ?? "Организация")</p>
+    </header>
+
+    <!-- Верхний блок: 4 карточки -->
+    <section class="dashboard-v2__cards">
+        <div class="card-v2 card-v2--primary">
+            <div class="card-v2__icon">
+                <!-- Календарь + монета -->
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M7 3v3M17 3v3"/>
+                    <path d="M4 7h16"/>
+                    <path d="M5 5h14a2 2 0 0 1 2 2v7"/>
+                    <path d="M5 5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h7"/>
+                    <circle cx="17.5" cy="17.5" r="3.5"/>
+                    <path d="M17.5 15.6v3.8"/>
+                    <path d="M16 16.7h3"/>
+                    <path d="M16 18.3h3"/>
+                </svg>
+            </div>
+            <div class="card-v2__body">
+                <div class="card-v2__label">Поступления за месяц</div>
+                <div class="card-v2__value">@monthIncome.ToString("N0") <span class="card-v2__currency">сом</span></div>
+                <div class="card-v2__hint">текущий месяц</div>
+            </div>
+        </div>
+        <div class="card-v2 card-v2--accent">
+            <div class="card-v2__icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+            </div>
+            <div class="card-v2__body">
+                <div class="card-v2__label">Активные счета</div>
+                <div class="card-v2__value">@activeInvoices <span class="card-v2__unit">шт.</span></div>
+                <div class="card-v2__hint">требуют внимания</div>
+            </div>
+        </div>
+        <div class="card-v2 card-v2--info">
+            <div class="card-v2__icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div class="card-v2__body">
+                <div class="card-v2__label">Клиенты</div>
+                <div class="card-v2__value">@totalClients <span class="card-v2__unit">чел.</span></div>
+                <div class="card-v2__hint">активных</div>
+            </div>
+        </div>
+        <div class="card-v2 card-v2--success">
+            <div class="card-v2__icon">
+                <!-- График + монета -->
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 19V5"/>
+                    <path d="M4 19h11"/>
+                    <path d="M7 16v-4"/>
+                    <path d="M11 16v-7"/>
+                    <path d="M15 16v-2"/>
+                    <circle cx="18" cy="8" r="3"/>
+                    <path d="M18 6.5v3"/>
+                    <path d="M16.7 7.4h2.6"/>
+                    <path d="M16.7 8.6h2.6"/>
+                </svg>
+            </div>
+            <div class="card-v2__body">
+                <div class="card-v2__label">Оборот за год</div>
+                <div class="card-v2__value">@yearIncome.ToString("N0") <span class="card-v2__currency">сом</span></div>
+                <div class="card-v2__hint">@DateTime.Now.Year</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Центр: график + правая карточка организации -->
+    <section class="dashboard-v2__main">
+        <div class="dashboard-v2__chart-wrap">
+            <div class="chart-block">
+                <h2 class="chart-block__title">Динамика оплат</h2>
+                <div class="chart-block__period">
+                    <button type="button" class="chart-period-btn active" data-period="week">Неделя</button>
+                    <button type="button" class="chart-period-btn" data-period="month">Месяц</button>
+                    <button type="button" class="chart-period-btn" data-period="year">Год</button>
+                </div>
+                <div class="chart-block__canvas-wrap">
+                    <canvas id="dashboardChart" height="260"></canvas>
+                </div>
+            </div>
+        </div>
+        <aside class="dashboard-v2__org-card">
+            <div class="org-card">
+                <h3 class="org-card__title">Условия обслуживания</h3>
+                <div class="org-card__name">@(organization?.Name ?? "—")</div>
+                <dl class="org-card__list">
+                    <dt>Тариф</dt>
+                    <dd>@(hasSubscription ? "Подписка" : "Без подписки, комиссия по операциям")</dd>
+                    <dt>Статус</dt>
+                    <dd>@(hasSubscription ? "Активна" : "Комиссионный")</dd>
+                    <dt>Тип комиссии</dt>
+                    <dd>@CommissionKindText(commissionKind)</dd>
+                    <dt>Значение комиссии</dt>
+                    <dd>@CommissionValue()</dd>
+                    <dt>Модель расчёта</dt>
+                    <dd>@(commissionName ?? "—")</dd>
+                    <dt>Валюта</dt>
+                    <dd>KGS (сом)</dd>
+                </dl>
+            </div>
+        </aside>
+    </section>
+
+    <!-- Нижний блок: Должники + Отчетность -->
+    <section class="dashboard-v2__bottom">
+        <div class="dashboard-v2__debtors">
+            <div class="block-card">
+                <div class="block-card__head">
+                    <h3 class="block-card__title">Должники</h3>
+                    <a href="@Url.Action("Index", "Clients", new { debtorsOnly = true })" class="block-card__link">Все должники</a>
+                </div>
+                <div class="block-card__body">
+                    @if (debtorsList.Any())
+                    {
+                        <ul class="debtors-list">
+                            @foreach (var d in debtorsList)
+                            {
+                                <li class="debtors-list__item">
+                                    <div class="debtors-list__name">@d.ClientName</div>
+                                    <div class="debtors-list__amount">@(((decimal)d.DebtAmount).ToString("N2")) сом</div>
+                                    <span class="debtors-list__status">@d.Status</span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <p class="block-card__empty">Нет должников</p>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="dashboard-v2__invoices">
+            <div class="block-card">
+                <div class="block-card__head">
+                    <h3 class="block-card__title">Отчетность</h3>
+                    <a href="@Url.Action("Index", "Invoices")" class="block-card__link">Вся отчётность</a>
+                </div>
+                <div class="block-card__body">
+                    @if (recentInvoices.Any())
+                    {
+                        <ul class="invoices-list">
+                            @foreach (var inv in recentInvoices)
+                            {
+                                <li class="invoices-list__item">
+                                    <a href="@Url.Action("Details", "Invoices", new { id = inv.Id })" class="invoices-list__name">@inv.Name</a>
+                                    <div class="invoices-list__sum">@(((decimal)inv.Balance).ToString("N2")) сом</div>
+                                    <span class="invoices-list__status">@inv.Status</span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <p class="block-card__empty">Нет активных счетов</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+(function() {
+    var chartWeek = @Html.Raw(chartWeek);
+    var chartMonth = @Html.Raw(chartMonth);
+    var chartYear = @Html.Raw(chartYear);
+
+    var ctx = document.getElementById('dashboardChart');
+    if (!ctx) return;
+
+    var datasets = {
+        week: { labels: chartWeek.map(function(x) { return x.label; }), values: chartWeek.map(function(x) { return x.value; }) },
+        month: { labels: chartMonth.map(function(x) { return x.label; }), values: chartMonth.map(function(x) { return x.value; }) },
+        year: { labels: chartYear.map(function(x) { return x.label; }), values: chartYear.map(function(x) { return x.value; }) }
+    };
+
+    var current = 'week';
+    var chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: datasets.week.labels,
+            datasets: [{
+                label: 'Поступления, сом',
+                data: datasets.week.values,
+                backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                borderColor: 'rgb(59, 130, 246)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { callback: function(v) { return v + ' сом'; } } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    document.querySelectorAll('.chart-period-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var period = this.getAttribute('data-period');
+            if (!period || current === period) return;
+            current = period;
+            document.querySelectorAll('.chart-period-btn').forEach(function(b) { b.classList.remove('active'); });
+            this.classList.add('active');
+            var d = datasets[period];
+            chart.data.labels = d.labels;
+            chart.data.datasets[0].data = d.values;
+            chart.update();
+        });
+    });
+})();
+    </script>
+}

@@ -14,7 +14,7 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/dashboard-soft.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/web/kindergarten/css/detsad-children.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/web/kindergarten/css/detsad-clients.css" asp-append-version="true" />
 }
 
 <div class="children-page settings-page settings-subpage">
@@ -27,10 +27,22 @@
     <div class="page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
         <div>
             <h1 class="page-title">Уведомления</h1>
-            <p class="page-subtitle mb-0">Отправка и статус уведомлений по каналам (email, telegram и др.)</p>
+            <p class="page-subtitle mb-0">Журнал очереди уведомлений по каналам email, telegram и whatsapp.</p>
         </div>
-        <a asp-controller="Settings" asp-action="Index" class="detsad-btn-secondary">← К настройкам</a>
+        <div class="d-flex gap-2 flex-wrap">
+            <a asp-action="Create" class="detsad-btn-primary">Новая рассылка</a>
+            <a asp-controller="Settings" asp-action="Index" class="detsad-btn-secondary">← К настройкам</a>
+        </div>
     </div>
+
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-success">@TempData["Message"]</div>
+    }
+    @if (TempData["Warning"] != null)
+    {
+        <div class="alert alert-warning">@TempData["Warning"]</div>
+    }
 
     <form method="get" asp-action="Index" class="dashboard-filters">
         <div class="settings-filters-inner">
@@ -54,19 +66,19 @@
                 </select>
             </div>
             <div class="filter-field">
-                <label for="createdFrom">Created_at с</label>
+                <label for="createdFrom">Создано с</label>
                 <input type="date" name="createdFrom" id="createdFrom" value="@createdFrom" />
             </div>
             <div class="filter-field">
-                <label for="createdTo">Created_at по</label>
+                <label for="createdTo">Создано по</label>
                 <input type="date" name="createdTo" id="createdTo" value="@createdTo" />
             </div>
             <div class="filter-field">
-                <label for="sentFrom">Sent_at с</label>
+                <label for="sentFrom">Отправлено с</label>
                 <input type="date" name="sentFrom" id="sentFrom" value="@sentFrom" />
             </div>
             <div class="filter-field">
-                <label for="sentTo">Sent_at по</label>
+                <label for="sentTo">Отправлено по</label>
                 <input type="date" name="sentTo" id="sentTo" value="@sentTo" />
             </div>
             <div class="filter-field d-flex flex-row gap-2 align-items-end">
@@ -102,9 +114,7 @@
                             <tr>
                                 <td class="cell-muted">@(n.CreatedAt?.ToString("dd.MM.yyyy HH:mm") ?? "—")</td>
                                 <td>@(n.Channel ?? "—")</td>
-                                <td>
-                                    <span class="notify-status @statusClass">@(n.Status ?? "—")</span>
-                                </td>
+                                <td><span class="notify-status @statusClass">@(n.Status ?? "—")</span></td>
                                 <td class="text-break cell-name">@(n.Subject != null && n.Subject.Length > 50 ? n.Subject.Substring(0, 50) + "…" : n.Subject ?? "—")</td>
                                 <td>@(n.ClientNavigation?.ClientName ?? n.ClientId ?? "—")</td>
                                 <td class="cell-muted small">@(n.ContactInfo ?? "—")</td>
@@ -117,7 +127,8 @@
 
         @if (totalPages > 1)
         {
-            var routeVals = new Dictionary<string, string> {
+            var routeVals = new Dictionary<string, string>
+            {
                 ["status"] = status,
                 ["channel"] = channel,
                 ["createdFrom"] = createdFrom,
@@ -134,7 +145,7 @@
                 {
                     <span class="btn-soft-secondary" style="opacity: .5; pointer-events: none;">Назад</span>
                 }
-                <span class="settings-page-info">Страница @(pageNum) из @totalPages</span>
+                <span class="settings-page-info">Страница @pageNum из @totalPages</span>
                 @if (pageNum < totalPages)
                 {
                     <a class="btn-soft-secondary" asp-action="Index" asp-route-page="@(pageNum + 1)" asp-all-route-data="@routeVals">Вперёд</a>
@@ -145,13 +156,17 @@
                 }
             </nav>
         }
+
         <p class="settings-meta mb-0">Всего записей: @totalCount</p>
     }
     else
     {
         <div class="empty-state-settings">
             <p class="mb-0">Уведомлений пока нет.</p>
-            <a asp-controller="Settings" asp-action="Index" class="detsad-btn-secondary mt-3 d-inline-flex">← К настройкам</a>
+            <div class="d-flex gap-2 flex-wrap mt-3">
+                <a asp-action="Create" class="detsad-btn-primary">Создать рассылку</a>
+                <a asp-controller="Settings" asp-action="Index" class="detsad-btn-secondary">← К настройкам</a>
+            </div>
         </div>
     }
 </div>

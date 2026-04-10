@@ -18,13 +18,21 @@ namespace WebApplication1.Controllers
         // GET: UserRoles
         public async Task<IActionResult> Index()
         {
+            var organizationId = AuthorizationHelper.GetOrganizationId(HttpContext);
+            if (string.IsNullOrEmpty(organizationId))
+            {
+                return Unauthorized();
+            }
+
+            // Только пользователи текущей организации (как в UsersController)
             var users = await _db.Users
-                .Where(u => u.Isdeleted == null || u.Isdeleted == 0)
+                .Where(u => u.Organization == organizationId && (u.Isdeleted == null || u.Isdeleted == 0))
                 .Include(u => u.UserRoles)
                     .ThenInclude(ur => ur.RoleNavigation)
                 .OrderBy(u => u.Name)
                 .ToListAsync();
 
+            ViewBag.CurrentOrganizationId = organizationId;
             return View(users);
         }
 
@@ -36,10 +44,18 @@ namespace WebApplication1.Controllers
                 return NotFound();
             }
 
+            var organizationId = AuthorizationHelper.GetOrganizationId(HttpContext);
+            if (string.IsNullOrEmpty(organizationId))
+            {
+                return Unauthorized();
+            }
+
             var user = await _db.Users
                 .Include(u => u.UserRoles)
                     .ThenInclude(ur => ur.RoleNavigation)
-                .FirstOrDefaultAsync(m => m.Id == id && (m.Isdeleted == null || m.Isdeleted == 0));
+                .FirstOrDefaultAsync(m => m.Id == id
+                    && m.Organization == organizationId
+                    && (m.Isdeleted == null || m.Isdeleted == 0));
 
             if (user == null)
             {
@@ -47,14 +63,16 @@ namespace WebApplication1.Controllers
             }
 
             var roles = await _db.Roles
-                .Where(r => r.Isdeleted == null || r.Isdeleted == 0)
+                .Where(r => r.Organization == organizationId && (r.Isdeleted == null || r.Isdeleted == 0))
                 .OrderBy(r => r.Name)
                 .ToListAsync();
 
             ViewBag.Roles = roles;
+            // Только роли этой организации в списке выбранных (на случай устаревших связей в БД)
+            var orgRoleIds = roles.Select(r => r.Id).ToHashSet();
             ViewBag.SelectedRoleIds = user.UserRoles
-                .Where(ur => ur.Isdeleted == null || ur.Isdeleted == 0)
-                .Select(ur => ur.Role)
+                .Where(ur => (ur.Isdeleted == null || ur.Isdeleted == 0) && ur.Role != null && orgRoleIds.Contains(ur.Role))
+                .Select(ur => ur.Role!)
                 .ToList();
 
             return View(user);
@@ -65,18 +83,32 @@ namespace WebApplication1.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Assign(string id, List<string>? selectedRoles)
         {
+            var organizationId = AuthorizationHelper.GetOrganizationId(HttpContext);
+            if (string.IsNullOrEmpty(organizationId))
+            {
+                return Unauthorized();
+            }
+
             var user = await _db.Users
                 .Include(u => u.UserRoles)
-                .FirstOrDefaultAsync(u => u.Id == id && (u.Isdeleted == null || u.Isdeleted == 0));
+                .FirstOrDefaultAsync(u => u.Id == id
+                    && u.Organization == organizationId
+                    && (u.Isdeleted == null || u.Isdeleted == 0));
 
             if (user == null)
             {
                 return NotFound();
             }
 
-            // Удаляем все существующие роли пользователя
+            var validOrgRoleIds = await _db.Roles
+                .Where(r => r.Organization == organizationId && (r.Isdeleted == null || r.Isdeleted == 0))
+                .Select(r => r.Id)
+                .ToListAsync();
+            var validRoleSet = validOrgRoleIds.ToHashSet();
+
+            // Снимаем только роли текущей организации (связи по чужим ролям не трогаем)
             var existingUserRoles = user.UserRoles
-                .Where(ur => ur.Isdeleted == null || ur.Isdeleted == 0)
+                .Where(ur => (ur.Isdeleted == null || ur.Isdeleted == 0) && ur.Role != null && validRoleSet.Contains(ur.Role))
                 .ToList();
 
             foreach (var ur in existingUserRoles)
@@ -84,11 +116,16 @@ namespace WebApplication1.Controllers
                 ur.Isdeleted = 1;
             }
 
-            // Добавляем новые роли
+            // Добавляем новые роли (только из списка ролей этой организации)
             if (selectedRoles != null && selectedRoles.Any())
             {
                 foreach (var roleId in selectedRoles)
                 {
+                    if (string.IsNullOrEmpty(roleId) || !validRoleSet.Contains(roleId))
+                    {
+                        continue;
+                    }
+
                     // Проверяем, не существует ли уже такая связь
                     var existing = user.UserRoles
                         .FirstOrDefault(ur => ur.Role == roleId && (ur.Isdeleted == null || ur.Isdeleted == 0));

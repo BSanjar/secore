@@ -1,0 +1,77 @@
+@model WebApplication1.ViewModels.Patients.PatientsIndexViewModel
+
+@{
+    ViewData["Title"] = "Пациенты";
+}
+
+<div class="dashboard-page">
+    <div class="medclinic-toolbar">
+        <a asp-controller="Patients" asp-action="Create" class="btn btn-primary">Добавить пациента</a>
+    </div>
+
+    @if (TempData["Message"] is string message && !string.IsNullOrWhiteSpace(message))
+    {
+        <div class="alert alert-success" role="alert">@message</div>
+    }
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-4">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-10">
+                    <label for="search" class="form-label">Поиск</label>
+                    <input id="search" name="search" value="@Model.Search" class="form-control" placeholder="Имя, телефон, email, ИИН/ИНН" />
+                </div>
+                <div class="col-md-2 d-grid">
+                    <button type="submit" class="btn btn-outline-primary">Найти</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            @if (Model.Patients.Count == 0)
+            {
+                <div class="p-4">
+                    <p class="text-muted mb-0">Пациенты пока не добавлены.</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Пациент</th>
+                                <th>ИИН/ИНН</th>
+                                <th>Телефон</th>
+                                <th>Email</th>
+                                <th>Статус</th>
+                                <th>Создан</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var patient in Model.Patients)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold">@patient.Name</div>
+                                        @if (!string.IsNullOrWhiteSpace(patient.Address))
+                                        {
+                                            <div class="text-muted small">@patient.Address</div>
+                                        }
+                                    </td>
+                                    <td>@(string.IsNullOrWhiteSpace(patient.Identifier) ? "—" : patient.Identifier)</td>
+                                    <td>@(string.IsNullOrWhiteSpace(patient.Phone) ? "—" : patient.Phone)</td>
+                                    <td>@(string.IsNullOrWhiteSpace(patient.Email) ? "—" : patient.Email)</td>
+                                    <td>@patient.StatusLabel</td>
+                                    <td>@(patient.CreatedDate?.ToString("dd.MM.yyyy HH:mm") ?? "—")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>

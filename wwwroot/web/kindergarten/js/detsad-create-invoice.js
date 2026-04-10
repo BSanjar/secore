@@ -1,5 +1,5 @@
 (function() {
-    var baseUrl = '/Detsad/Cabinet';
+    var baseUrl = '/Clients';
     var selectedClientIds = [];
 
     function fmtDate(d) {

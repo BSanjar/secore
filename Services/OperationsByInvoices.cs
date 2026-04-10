@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Dtos;
 using WebApplication1.Helpers;
@@ -549,6 +549,87 @@ public class OperationsByInvoices
 
         await _db.SaveChangesAsync(cancellationToken);
         return createdIds;
+    }
+
+    public async Task<CreateOneTimeInvoiceResult> CreateOneTimeInvoiceAsync(
+        CreateOneTimeInvoiceInput input,
+        CancellationToken cancellationToken = default)
+    {
+        var client = await _db.OrganizationClients
+            .FirstOrDefaultAsync(c =>
+                c.Id == input.ClientId &&
+                c.Organization == input.OrganizationId &&
+                c.ClientStatus == 1,
+                cancellationToken);
+
+        if (client == null)
+            throw new InvalidOperationException("Клиент не найден.");
+
+        var invoiceId = Guid.NewGuid().ToString();
+        var payCode = string.IsNullOrWhiteSpace(input.PayCode)
+            ? Random.Shared.Next(100000, 999999).ToString()
+            : input.PayCode.Trim();
+        var now = ParsersHelper.NowForTimestamp();
+
+        using var tx = await _db.Database.BeginTransactionAsync(cancellationToken);
+
+        var invoice = new Invoice
+        {
+            Id = invoiceId,
+            DateCreated = now,
+            UserCreater = input.UserId,
+            InvoiceStatus = "actual",
+            Periodicity = "oneTime",
+            DateStartInvoice = input.DateStartInvoice ?? now,
+            DateEndInvoice = input.DateEndInvoice,
+            Balance = input.Balance,
+            PayCode = payCode,
+            Client = client.Id,
+            FixedSumm = input.FixedSumm,
+            AutoProlongation = false,
+            NextStartInvoice = null,
+            Hassameaccount = input.Hassameaccount,
+            NameInvoice = string.IsNullOrWhiteSpace(input.InvoiceName)
+                ? "Разовый платёж"
+                : input.InvoiceName.Trim()
+        };
+
+        _db.Invoices.Add(invoice);
+        await _db.SaveChangesAsync(cancellationToken);
+
+        foreach (var serviceLine in input.ServiceLines)
+        {
+            _db.InvoiceServices.Add(new InvoiceService
+            {
+                Id = Guid.NewGuid().ToString(),
+                Invoice = invoiceId,
+                Service = serviceLine.OrganizationServiceId,
+                ServiceSumm = serviceLine.ServiceSumm
+            });
+        }
+
+        if (input.CreateInvoicePayment)
+        {
+            _db.InvoicePayments.Add(new InvoicePayment
+            {
+                Id = Guid.NewGuid().ToString(),
+                Invoice = invoiceId,
+                DateFrom = input.PaymentDateFrom,
+                DateTo = input.PaymentDateTo,
+                PaymentStatus = "non_paid",
+                PeriodValue = input.PaymentPeriodValue,
+                PaymentSumm = input.PaymentSumm ?? input.FixedSumm
+            });
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+        await tx.CommitAsync(cancellationToken);
+
+        return new CreateOneTimeInvoiceResult
+        {
+            InvoiceId = invoiceId,
+            PayCode = payCode
+        };
     }
 }
 

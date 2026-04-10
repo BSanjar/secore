@@ -1,0 +1,204 @@
+@model WebApplication1.Models.DBModels.Invoice
+@using System.Globalization
+@{
+    Layout = null;
+    var ru = new CultureInfo("ru-RU");
+    var operations = ViewBag.Operations as List<StatementRowDto> ?? new List<StatementRowDto>();
+    var periodStart = ViewBag.PeriodStart is DateTime ps ? ps : DateTime.Today.AddMonths(-3);
+    var periodEnd = ViewBag.PeriodEnd is DateTime pe ? pe : DateTime.Today;
+    var totalAccrued = ViewBag.TotalAccrued is decimal ta ? ta : 0m;
+    var totalPaid = ViewBag.TotalPaid is decimal tp ? tp : 0m;
+    var openingBalance = ViewBag.OpeningBalance is decimal ob ? ob : 0m;
+    var closingBalance = ViewBag.ClosingBalance is decimal cb ? cb : 0m;
+    var statementNumber = ViewBag.StatementNumber as string ?? "—";
+    var clientName = Model.ClientNavigation?.ClientName ?? "—";
+    var orgName = Model.ClientNavigation?.OrganizationNavigation?.Name ?? "—";
+    var payCode = Model.PayCode ?? "—";
+    var statusText = Model.InvoiceStatus == "actual" ? "Активный" : Model.InvoiceStatus == "suspended" ? "Приостановлен" : Model.InvoiceStatus == "closed" ? "Закрыт" : Model.InvoiceStatus ?? "—";
+    var periodicityText = Model.Periodicity == "monthly" ? "Ежемесячно" : Model.Periodicity == "yearly" ? "Ежегодно" : Model.Periodicity == "weekly" ? "Еженедельно" : Model.Periodicity == "daily" ? "Ежедневно" : Model.Periodicity == "oneTime" ? "Разовая" : Model.Periodicity ?? "—";
+}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Выписка по лицевому счету</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 0; font-family: Arial, sans-serif; background: #fff; color: #1f2937; font-size: 12px; }
+    .statement-page { width: 100%; max-width: none; margin: 0; background: #fff; overflow: hidden; }
+    .statement-header { background: linear-gradient(135deg, #111827, #334155); color: #fff; padding: 16px 20px; display: flex; justify-content: space-between; align-items: stretch; gap: 20px; min-height: 78px; }
+    .statement-header-left { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+    .statement-header-system { display: block; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #cbd5e1; margin-bottom: 4px; }
+    .statement-header-left h1 { margin: 0 0 6px; font-size: 20px; font-weight: 700; line-height: 1.2; }
+    .statement-header-desc { display: block; margin: 0; font-size: 11px; line-height: 1.4; color: #e5e7eb; }
+    .statement-header-right { flex-shrink: 0; width: 200px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
+    .statement-header-right .info-line { display: flex; justify-content: space-between; gap: 8px; font-size: 10px; }
+    .statement-header-right .info-line span:first-child { color: #94a3b8; }
+    .statement-header-right .info-line strong { color: #fff; font-weight: 600; }
+    .status-badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 10px; background: rgba(59,130,246,0.25); border: 1px solid rgba(147,197,253,0.4); color: #dbeafe; }
+    .statement-content { padding: 14px 18px 18px; }
+    .top-grid { display: grid; grid-template-columns: 65% 1fr; gap: 12px; margin-bottom: 12px; width: 100%; }
+    .top-grid .card { min-width: 0; }
+    .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px 14px; background: #fff; }
+    .card.gray { background: #f9fafb; }
+    .card h2 { margin: 0 0 10px; font-size: 14px; color: #111827; }
+    .field-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .field-box { border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 10px; }
+    .field-box .label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; color: #9ca3af; margin-bottom: 4px; }
+    .field-box .value { font-size: 11px; font-weight: 600; color: #111827; line-height: 1.3; }
+    .metric-box { border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; padding: 8px 10px; margin-bottom: 8px; }
+    .metric-box:last-child { margin-bottom: 0; }
+    .metric-box .label { font-size: 9px; text-transform: uppercase; color: #9ca3af; margin-bottom: 4px; }
+    .metric-box .value { font-size: 13px; font-weight: 700; color: #111827; }
+    .metric-box .value.blue { color: #1d4ed8; }
+    .metric-box .value.red { color: #dc2626; }
+    .metric-box .value.green { color: #047857; }
+    .table-card { border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; margin-bottom: 12px; }
+    .table-header { padding: 10px 14px; border-bottom: 1px solid #e5e7eb; background: #f9fafb; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+    .table-header h2 { margin: 0; font-size: 14px; }
+    .table-note { font-size: 11px; color: #6b7280; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 700px; }
+    thead { background: #fff; }
+    th, td { padding: 8px 10px; border-bottom: 1px solid #e5e7eb; text-align: left; font-size: 11px; vertical-align: top; }
+    th { color: #6b7280; font-weight: 600; }
+    td { color: #111827; }
+    td.num, th.num { text-align: right; white-space: nowrap; }
+    .type-badge { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 600; }
+    .type-badge.accrual { background: #fef3c7; color: #92400e; }
+    .type-badge.payment { background: #dcfce7; color: #166534; }
+    .type-badge.adjustment { background: #dbeafe; color: #1d4ed8; }
+    .num.red { color: #dc2626; font-weight: 700; }
+    .num.green { color: #047857; font-weight: 700; }
+    .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
+    .bottom-grid .card { min-width: 0; }
+    .details-list p { margin: 0 0 6px; font-size: 11px; line-height: 1.4; color: #374151; }
+    .details-list strong { color: #111827; }
+    .notice-box { margin-top: 10px; border: 1px dashed #cbd5e1; border-radius: 10px; padding: 12px; background: #f8fafc; color: #475569; font-size: 11px; line-height: 1.5; }
+    .summary-line { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 6px; font-size: 11px; }
+    .summary-line .title { color: #6b7280; }
+    .summary-line .amount { font-weight: 700; color: #111827; }
+    .summary-line .amount.red { color: #dc2626; }
+    .summary-line .amount.green { color: #047857; }
+    .summary-line.total { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #cbd5e1; font-size: 13px; }
+    .summary-line.total .amount { font-size: 18px; color: #1d4ed8; }
+    .statement-footer { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; padding: 12px 18px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 10px; }
+    .statement-footer-left { max-width: 55%; }
+    .signatures { display: flex; gap: 24px; flex-wrap: wrap; }
+    .signature-block { min-width: 140px; }
+    .signature-title { margin-bottom: 14px; font-size: 9px; text-transform: uppercase; color: #9ca3af; letter-spacing: 0.5px; }
+    .signature-line { border-top: 1px solid #6b7280; padding-top: 4px; color: #374151; font-size: 10px; }
+  </style>
+</head>
+<body>
+  <div class="statement-page">
+    <div class="statement-header">
+      <div class="statement-header-left">
+        <span class="statement-header-system">SECORE / Billing</span>
+        <h1>Выписка по лицевому счету</h1>
+        <span class="statement-header-desc">Документ содержит историю начислений, оплат и текущее состояние баланса по лицевому счету за выбранный период.</span>
+      </div>
+      <div class="statement-header-right">
+        <div class="info-line"><span>Номер выписки</span><strong>@statementNumber</strong></div>
+        <div class="info-line"><span>Дата формирования</span><strong>@DateTime.Now.ToString("dd.MM.yyyy", ru)</strong></div>
+        <div class="info-line"><span>Статус счета</span><span class="status-badge">@statusText</span></div>
+      </div>
+    </div>
+
+    <div class="statement-content">
+      <div class="top-grid">
+        <div class="card">
+          <h2>Данные лицевого счета</h2>
+          <div class="field-grid">
+            <div class="field-box"><div class="label">Клиент</div><div class="value">@clientName</div></div>
+            <div class="field-box"><div class="label">Лицевой счет / PayCode</div><div class="value">@payCode</div></div>
+            <div class="field-box"><div class="label">Наименование счета</div><div class="value">@(Model.NameInvoice ?? "—")</div></div>
+            <div class="field-box"><div class="label">Период выписки</div><div class="value">@periodStart.ToString("dd.MM.yyyy", ru) — @periodEnd.ToString("dd.MM.yyyy", ru)</div></div>
+            <div class="field-box"><div class="label">Периодичность</div><div class="value">@periodicityText</div></div>
+            <div class="field-box"><div class="label">Поставщик услуг</div><div class="value">@orgName</div></div>
+          </div>
+        </div>
+        <div class="card gray">
+          <h2>Сводка по счету</h2>
+          <div class="metric-box"><div class="label">Начальный баланс</div><div class="value blue">@openingBalance.ToString("N2", ru) сом</div></div>
+          <div class="metric-box"><div class="label">Всего начислено</div><div class="value red">@totalAccrued.ToString("N2", ru) сом</div></div>
+          <div class="metric-box"><div class="label">Всего оплачено</div><div class="value green">@totalPaid.ToString("N2", ru) сом</div></div>
+          <div class="metric-box"><div class="label">Текущий остаток / долг</div><div class="value @(closingBalance < 0 ? "red" : "green")">@closingBalance.ToString("N2", ru) сом</div></div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <h2>История операций</h2>
+          <div class="table-note">Начисления и оплаты по выбранному периоду</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Дата</th>
+                <th>Тип операции</th>
+                <th>Описание</th>
+                <th>Документ</th>
+                <th class="num">Начисление</th>
+                <th class="num">Оплата</th>
+                <th class="num">Комиссия</th>
+                <th class="num">Остаток после</th>
+              </tr>
+            </thead>
+            <tbody>
+              @foreach (var op in operations)
+              {
+                var balanceClass = op.BalanceAfter < 0 ? "red" : "green";
+                <tr>
+                  <td>@op.Date.ToString("dd.MM.yyyy", ru)</td>
+                  <td><span class="type-badge @op.TypeBadgeClass">@op.TypeText</span></td>
+                  <td>@op.Description</td>
+                  <td>@(op.DocumentId ?? "—")</td>
+                  <td class="num @(op.AccrualAmount.HasValue && op.AccrualAmount > 0 ? "red" : "")">@(op.AccrualAmount.HasValue ? op.AccrualAmount.Value.ToString("N2", ru) : "—")</td>
+                  <td class="num @(op.PaymentAmount.HasValue && op.PaymentAmount > 0 ? "green" : "")">@(op.PaymentAmount.HasValue ? op.PaymentAmount.Value.ToString("N2", ru) : "—")</td>
+                  <td class="num">@op.Commission.ToString("N2", ru)</td>
+                  <td class="num @balanceClass">@op.BalanceAfter.ToString("N2", ru)</td>
+                </tr>
+              }
+              @if (!operations.Any())
+              {
+                <tr><td colspan="8" class="text-center text-muted" style="padding: 24px;">Операций за период нет</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="bottom-grid">
+        <div class="card details-list">
+          <h2>Информация по выписке</h2>
+          <p><strong>Получатель услуг:</strong> @clientName</p>
+          <p><strong>Поставщик услуг:</strong> @orgName</p>
+          <p><strong>Номер счета:</strong> @Model.Id</p>
+          <p><strong>Код оплаты:</strong> @payCode</p>
+          <p><strong>Дата формирования:</strong> @DateTime.Now.ToString("dd.MM.yyyy HH:mm", ru)</p>
+          <div class="notice-box">Выписка отражает финансовое движение по лицевому счету за указанный период. Отрицательное значение остатка означает задолженность, положительное — переплату.</div>
+        </div>
+        <div class="card">
+          <h2>Итоги периода</h2>
+          <div class="summary-line"><span class="title">Начальный баланс</span><span class="amount">@openingBalance.ToString("N2", ru) сом</span></div>
+          <div class="summary-line"><span class="title">Начислено за период</span><span class="amount red">@totalAccrued.ToString("N2", ru) сом</span></div>
+          <div class="summary-line"><span class="title">Оплачено за период</span><span class="amount green">@totalPaid.ToString("N2", ru) сом</span></div>
+          <div class="summary-line"><span class="title">Комиссия</span><span class="amount">0.00 сом</span></div>
+          <div class="summary-line total"><span class="title">Конечный баланс</span><span class="amount @(closingBalance < 0 ? "red" : "")">@closingBalance.ToString("N2", ru) сом</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="statement-footer">
+      <div class="statement-footer-left">Документ сформирован автоматически на основании операций по лицевому счету.</div>
+      <div class="signatures">
+        <div class="signature-block"><div class="signature-title">Исполнитель</div><div class="signature-line">__________________</div></div>
+        <div class="signature-block"><div class="signature-title">Плательщик</div><div class="signature-line">__________________</div></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

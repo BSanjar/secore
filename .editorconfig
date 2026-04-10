@@ -1,0 +1,4 @@
+root = true
+
+[*.{cs,cshtml,js,css,html,json,xml,config,md,txt,sql}]
+charset = utf-8-bom

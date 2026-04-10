@@ -78,6 +78,9 @@ public partial class OrganizationClient
     [InverseProperty("ClientNavigation")]
     public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 
+    [InverseProperty(nameof(Appointment.Patient))]
+    public virtual ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
+
     [ForeignKey("Organization")]
     [InverseProperty("OrganizationClients")]
     public virtual Organization? OrganizationNavigation { get; set; }

@@ -1,0 +1,120 @@
+@model WebApplication1.ViewModels.Doctors.DoctorsIndexViewModel
+@{
+    ViewData["Title"] = "Доктора";
+}
+
+<div class="dashboard-page">
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm mb-4">@TempData["Message"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger border-0 shadow-sm mb-4">@TempData["Error"]</div>
+    }
+
+    <div class="medclinic-surface p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h1 class="h3 mb-1">Доктора</h1>
+                <p class="text-muted mb-0">Пользователи клиники, их роли, отделения и специализации.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a asp-controller="Users" asp-action="Index" class="btn btn-outline-secondary">Пользователи</a>
+                <a asp-controller="Users" asp-action="Create" class="btn btn-primary">Добавить пользователя</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="medclinic-surface p-4">
+        <form method="get" class="row g-3 mb-4">
+            <div class="col-md-8">
+                <label for="search" class="form-label">Поиск</label>
+                <input id="search" name="search" value="@Model.Search" class="form-control" placeholder="Имя, email или телефон" />
+            </div>
+            <div class="col-md-4 d-flex align-items-end gap-2">
+                <button type="submit" class="btn btn-outline-primary">Найти</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Сбросить</a>
+            </div>
+        </form>
+
+        @if (Model.Doctors.Count == 0)
+        {
+            <div class="text-muted">В реестре пока нет докторов.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Доктор</th>
+                            <th>Контакты</th>
+                            <th>Роли</th>
+                            <th>Отделения</th>
+                            <th>Специализации</th>
+                            <th class="text-end">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var doctor in Model.Doctors)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@doctor.Name</td>
+                                <td>
+                                    <div>@(doctor.Email ?? "—")</div>
+                                    <div class="text-muted small">@(doctor.Phone ?? "—")</div>
+                                </td>
+                                <td>
+                                    @if (doctor.Roles.Count == 0)
+                                    {
+                                        <span class="text-muted">Без ролей</span>
+                                    }
+                                    else
+                                    {
+                                        foreach (var role in doctor.Roles)
+                                        {
+                                            <span class="badge bg-info-subtle text-dark me-1">@role</span>
+                                        }
+                                    }
+                                </td>
+                                <td>
+                                    @if (doctor.Departments.Count == 0)
+                                    {
+                                        <span class="text-muted">Не назначены</span>
+                                    }
+                                    else
+                                    {
+                                        foreach (var department in doctor.Departments)
+                                        {
+                                            <span class="badge bg-light text-dark border me-1">@department</span>
+                                        }
+                                    }
+                                </td>
+                                <td>
+                                    @if (doctor.Specializations.Count == 0)
+                                    {
+                                        <span class="text-muted">Не назначены</span>
+                                    }
+                                    else
+                                    {
+                                        foreach (var specialization in doctor.Specializations)
+                                        {
+                                            <span class="badge bg-light text-dark border me-1">@specialization</span>
+                                        }
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <a asp-action="Edit" asp-route-id="@doctor.Id" class="btn btn-sm btn-outline-primary">Назначения</a>
+                                        <a asp-controller="Users" asp-action="Edit" asp-route-id="@doctor.Id" class="btn btn-sm btn-outline-secondary">Карточка</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
