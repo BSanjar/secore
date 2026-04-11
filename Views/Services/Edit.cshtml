@@ -1,6 +1,8 @@
 @model WebApplication1.Dtos.ServiceUpsertDto
+@using Microsoft.AspNetCore.Mvc.Rendering
 @{
     ViewData["Title"] = "Редактирование услуги";
+    var specializations = ViewBag.Specializations as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
 }
 
 <div class="dashboard-page">
@@ -47,6 +49,12 @@
                 <label asp-for="MaxAmount" class="form-label">Макс. сумма</label>
                 <input asp-for="MaxAmount" class="form-control" />
                 <span asp-validation-for="MaxAmount" class="text-danger small"></span>
+            </div>
+
+            <div class="col-12">
+                <label asp-for="SpecializationIds" class="form-label">Специализации</label>
+                <select asp-for="SpecializationIds" asp-items="specializations" class="form-select" multiple size="8"></select>
+                <div class="form-text">При сохранении обновится список специализаций для этой услуги.</div>
             </div>
 
             <div class="col-12 d-flex gap-2">

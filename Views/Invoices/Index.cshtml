@@ -1,4 +1,4 @@
-@model List<WebApplication1.Models.DBModels.Invoice>
+﻿@model List<WebApplication1.Models.DBModels.Invoice>
 @using System.Linq
 @{
     ViewData["Title"] = "Отчетность";
@@ -138,7 +138,7 @@
                 <table class="table table-hover align-middle">
                     <thead>
                         <tr>
-                            <th>Название / Лицевой счёт</th>
+                            <th>Название счета</th>
                             <th>Клиент</th>
                             <th>Статус</th>
                             <th>Периодичность</th>
@@ -152,6 +152,12 @@
                         {
                             var statusText = inv.InvoiceStatus == "actual" ? "Активный" : inv.InvoiceStatus == "suspended" ? "Приостановлен" : inv.InvoiceStatus == "closed" ? "Закрыт" : inv.InvoiceStatus ?? "—";
                             var statusClass = inv.InvoiceStatus == "actual" ? "badge bg-success" : inv.InvoiceStatus == "suspended" ? "badge bg-warning text-dark" : inv.InvoiceStatus == "closed" ? "badge bg-secondary" : "badge bg-light text-dark";
+                            if (inv.Periodicity == "oneTime")
+                            {
+                                var hasSuccessfulTransaction = inv.Transactions != null && inv.Transactions.Any(t => t.TransactionStatus == "success");
+                                statusText = hasSuccessfulTransaction ? "Активный-Оплачен" : "Не оплачено";
+                                statusClass = hasSuccessfulTransaction ? "badge bg-success" : "badge bg-danger";
+                            }
                             var balanceSoms = inv.Balance.HasValue ? inv.Balance.Value / 100m : 0m;
                             <tr class="invoice-row" data-search-name="@(inv.NameInvoice ?? "")" data-search-paycode="@(inv.PayCode ?? "")">
                                 <td>

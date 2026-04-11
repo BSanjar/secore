@@ -40,6 +40,8 @@ public class DepartmentsController : Controller
         if (gate != null)
             return gate;
 
+        var organizationId = _currentTenantService.GetCurrent().OrganizationId!;
+        ViewBag.Specializations = await _departmentService.GetSpecializationOptionsAsync(organizationId);
         return View(new DepartmentUpsertDto { IsActive = true, SortOrder = 0 });
     }
 
@@ -51,15 +53,19 @@ public class DepartmentsController : Controller
         if (gate != null)
             return gate;
 
-        if (!ModelState.IsValid)
-            return View(dto);
-
         var organizationId = _currentTenantService.GetCurrent().OrganizationId!;
+        if (!ModelState.IsValid)
+        {
+            ViewBag.Specializations = await _departmentService.GetSpecializationOptionsAsync(organizationId, dto.SpecializationIds);
+            return View(dto);
+        }
+
         var result = await _departmentService.CreateAsync(organizationId, dto);
 
         if (!result.Success)
         {
             ModelState.AddModelError(string.Empty, result.Message);
+            ViewBag.Specializations = await _departmentService.GetSpecializationOptionsAsync(organizationId, dto.SpecializationIds);
             return View(dto);
         }
 
@@ -79,6 +85,7 @@ public class DepartmentsController : Controller
         if (dto == null)
             return NotFound();
 
+        ViewBag.Specializations = await _departmentService.GetSpecializationOptionsAsync(organizationId, dto.SpecializationIds);
         return View(dto);
     }
 
@@ -90,19 +97,45 @@ public class DepartmentsController : Controller
         if (gate != null)
             return gate;
 
-        if (!ModelState.IsValid)
-            return View(dto);
-
         var organizationId = _currentTenantService.GetCurrent().OrganizationId!;
+        if (!ModelState.IsValid)
+        {
+            ViewBag.Specializations = await _departmentService.GetSpecializationOptionsAsync(organizationId, dto.SpecializationIds);
+            return View(dto);
+        }
+
         var result = await _departmentService.UpdateAsync(organizationId, id, dto);
 
         if (!result.Success)
         {
             ModelState.AddModelError(string.Empty, result.Message);
+            ViewBag.Specializations = await _departmentService.GetSpecializationOptionsAsync(organizationId, dto.SpecializationIds);
             return View(dto);
         }
 
         TempData["Message"] = result.Message;
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Import(IFormFile file)
+    {
+        var gate = await EnsureAccessAsync();
+        if (gate != null)
+            return gate;
+
+        if (file == null || file.Length == 0)
+        {
+            TempData["Error"] = "Выберите Excel-файл для загрузки.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var organizationId = _currentTenantService.GetCurrent().OrganizationId!;
+        await using var stream = file.OpenReadStream();
+        var result = await _departmentService.ImportAsync(organizationId, stream);
+
+        TempData[result.Success ? "Message" : "Error"] = result.ToMessage("Отделения");
         return RedirectToAction(nameof(Index));
     }
 

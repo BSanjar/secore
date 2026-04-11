@@ -31,6 +31,8 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<Specialization> Specializations { get; set; }
 
+    public virtual DbSet<ServiceSpecialization> ServiceSpecializations { get; set; }
+
     public virtual DbSet<UserDepartment> UserDepartments { get; set; }
 
     public virtual DbSet<UserSpecialization> UserSpecializations { get; set; }
@@ -566,6 +568,42 @@ public partial class AppDbContext : DbContext
                 .HasForeignKey(d => d.SpecializationId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("user_specializations_fk_specialization");
+        });
+
+        modelBuilder.Entity<ServiceSpecialization>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("service_specializations_pk");
+
+            entity.ToTable("service_specializations");
+
+            entity.HasIndex(e => e.OrganizationServiceId, "idx_service_specializations_service_id");
+            entity.HasIndex(e => e.SpecializationId, "idx_service_specializations_specialization_id");
+            entity.HasIndex(e => new { e.OrganizationServiceId, e.SpecializationId }, "ux_service_specializations_service_specialization").IsUnique();
+
+            entity.Property(e => e.Id)
+                .HasColumnType("character varying")
+                .HasColumnName("id");
+            entity.Property(e => e.OrganizationServiceId)
+                .HasColumnType("character varying")
+                .HasColumnName("organization_service_id");
+            entity.Property(e => e.SpecializationId)
+                .HasColumnType("character varying")
+                .HasColumnName("specialization_id");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+
+            entity.HasOne(d => d.OrganizationService)
+                .WithMany(p => p.ServiceSpecializations)
+                .HasForeignKey(d => d.OrganizationServiceId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("service_specializations_fk_service");
+
+            entity.HasOne(d => d.Specialization)
+                .WithMany(p => p.ServiceSpecializations)
+                .HasForeignKey(d => d.SpecializationId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("service_specializations_fk_specialization");
         });
 
         modelBuilder.Entity<InvoicePayment>(entity =>

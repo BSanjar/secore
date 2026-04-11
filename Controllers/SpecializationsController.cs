@@ -45,6 +45,7 @@ public class SpecializationsController : Controller
 
         var organizationId = _currentTenantService.GetCurrent().OrganizationId!;
         ViewBag.Departments = await _specializationService.GetDepartmentOptionsAsync(organizationId);
+        ViewBag.Services = await _specializationService.GetServiceOptionsAsync(organizationId);
         return View(new SpecializationUpsertDto { IsActive = true, SortOrder = 0 });
     }
 
@@ -60,6 +61,7 @@ public class SpecializationsController : Controller
         if (!ModelState.IsValid)
         {
             ViewBag.Departments = await _specializationService.GetDepartmentOptionsAsync(organizationId, dto.DepartmentId);
+            ViewBag.Services = await _specializationService.GetServiceOptionsAsync(organizationId, dto.ServiceIds);
             return View(dto);
         }
 
@@ -69,6 +71,7 @@ public class SpecializationsController : Controller
         {
             ModelState.AddModelError(string.Empty, result.Message);
             ViewBag.Departments = await _specializationService.GetDepartmentOptionsAsync(organizationId, dto.DepartmentId);
+            ViewBag.Services = await _specializationService.GetServiceOptionsAsync(organizationId, dto.ServiceIds);
             return View(dto);
         }
 
@@ -89,6 +92,7 @@ public class SpecializationsController : Controller
             return NotFound();
 
         ViewBag.Departments = await _specializationService.GetDepartmentOptionsAsync(organizationId, dto.DepartmentId);
+        ViewBag.Services = await _specializationService.GetServiceOptionsAsync(organizationId, dto.ServiceIds);
         return View(dto);
     }
 
@@ -104,6 +108,7 @@ public class SpecializationsController : Controller
         if (!ModelState.IsValid)
         {
             ViewBag.Departments = await _specializationService.GetDepartmentOptionsAsync(organizationId, dto.DepartmentId);
+            ViewBag.Services = await _specializationService.GetServiceOptionsAsync(organizationId, dto.ServiceIds);
             return View(dto);
         }
 
@@ -113,10 +118,33 @@ public class SpecializationsController : Controller
         {
             ModelState.AddModelError(string.Empty, result.Message);
             ViewBag.Departments = await _specializationService.GetDepartmentOptionsAsync(organizationId, dto.DepartmentId);
+            ViewBag.Services = await _specializationService.GetServiceOptionsAsync(organizationId, dto.ServiceIds);
             return View(dto);
         }
 
         TempData["Message"] = result.Message;
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Import(IFormFile file)
+    {
+        var gate = await EnsureAccessAsync();
+        if (gate != null)
+            return gate;
+
+        if (file == null || file.Length == 0)
+        {
+            TempData["Error"] = "Выберите Excel-файл для загрузки.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var organizationId = _currentTenantService.GetCurrent().OrganizationId!;
+        await using var stream = file.OpenReadStream();
+        var result = await _specializationService.ImportAsync(organizationId, stream);
+
+        TempData[result.Success ? "Message" : "Error"] = result.ToMessage("Специализации");
         return RedirectToAction(nameof(Index));
     }
 
@@ -147,5 +175,6 @@ public class SpecializationsController : Controller
         public bool IsActive { get; set; }
         public int SortOrder { get; set; }
         public int DoctorsCount { get; set; }
+        public int ServicesCount { get; set; }
     }
 }

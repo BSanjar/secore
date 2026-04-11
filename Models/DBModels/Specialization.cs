@@ -44,4 +44,7 @@ public partial class Specialization
 
     [InverseProperty("Specialization")]
     public virtual ICollection<UserSpecialization> UserSpecializations { get; set; } = new List<UserSpecialization>();
+
+    [InverseProperty("Specialization")]
+    public virtual ICollection<ServiceSpecialization> ServiceSpecializations { get; set; } = new List<ServiceSpecialization>();
 }

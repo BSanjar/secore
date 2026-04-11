@@ -8,4 +8,5 @@ public class ServiceListItemViewModel
     public decimal? MinAmount { get; set; }
     public decimal? MaxAmount { get; set; }
     public bool IsFixed { get; set; }
+    public IReadOnlyList<string> SpecializationNames { get; set; } = Array.Empty<string>();
 }

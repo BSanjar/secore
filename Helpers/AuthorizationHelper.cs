@@ -44,9 +44,11 @@ namespace WebApplication1.Helpers
                 {
                     var requiredPermission = controller.Equals("Appointments", StringComparison.OrdinalIgnoreCase)
                         ? "appointments.view"
-                        : controller.Equals("Payments", StringComparison.OrdinalIgnoreCase)
-                            ? "transactions.view"
-                            : null;
+                        : controller.Equals("Invoices", StringComparison.OrdinalIgnoreCase)
+                            ? "invoices.view"
+                            : controller.Equals("Payments", StringComparison.OrdinalIgnoreCase)
+                                ? "transactions.view"
+                                : null;
 
                     if (string.IsNullOrWhiteSpace(requiredPermission) ||
                         !PermissionHelper.HasPermission(context.HttpContext, requiredPermission))
@@ -157,7 +159,7 @@ namespace WebApplication1.Helpers
                 httpContext.Items[cacheKey] = roles;
             }
 
-            return roles.Contains("doctor") || roles.Contains("����");
+            return roles.Contains("doctor") || roles.Contains("врач");
         }
     }
 

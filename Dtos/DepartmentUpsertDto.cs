@@ -18,4 +18,5 @@ public class DepartmentUpsertDto
 
     public bool IsActive { get; set; } = true;
     public int SortOrder { get; set; }
+    public List<string> SpecializationIds { get; set; } = new();
 }

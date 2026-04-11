@@ -39,12 +39,14 @@ public class ServicesController : Controller
     }
 
     [HttpGet]
-    public IActionResult Create()
+    public async Task<IActionResult> Create()
     {
         var gate = EnsureAccess();
         if (gate != null)
             return gate;
 
+        var organizationId = _currentTenantService.GetCurrent().OrganizationId!;
+        ViewBag.Specializations = await _serviceCatalogService.GetSpecializationOptionsAsync(organizationId);
         return View(new ServiceUpsertDto());
     }
 
@@ -56,14 +58,18 @@ public class ServicesController : Controller
         if (gate != null)
             return gate;
 
-        if (!ModelState.IsValid)
-            return View(dto);
-
         var organizationId = _currentTenantService.GetCurrent().OrganizationId!;
+        if (!ModelState.IsValid)
+        {
+            ViewBag.Specializations = await _serviceCatalogService.GetSpecializationOptionsAsync(organizationId, dto.SpecializationIds);
+            return View(dto);
+        }
+
         var result = await _serviceCatalogService.CreateAsync(organizationId, dto);
         if (!result.Success)
         {
             ModelState.AddModelError(string.Empty, result.Message);
+            ViewBag.Specializations = await _serviceCatalogService.GetSpecializationOptionsAsync(organizationId, dto.SpecializationIds);
             return View(dto);
         }
 
@@ -83,6 +89,7 @@ public class ServicesController : Controller
         if (dto == null)
             return NotFound();
 
+        ViewBag.Specializations = await _serviceCatalogService.GetSpecializationOptionsAsync(organizationId, dto.SpecializationIds);
         return View(dto);
     }
 
@@ -94,18 +101,44 @@ public class ServicesController : Controller
         if (gate != null)
             return gate;
 
-        if (!ModelState.IsValid)
-            return View(dto);
-
         var organizationId = _currentTenantService.GetCurrent().OrganizationId!;
+        if (!ModelState.IsValid)
+        {
+            ViewBag.Specializations = await _serviceCatalogService.GetSpecializationOptionsAsync(organizationId, dto.SpecializationIds);
+            return View(dto);
+        }
+
         var result = await _serviceCatalogService.UpdateAsync(organizationId, id, dto);
         if (!result.Success)
         {
             ModelState.AddModelError(string.Empty, result.Message);
+            ViewBag.Specializations = await _serviceCatalogService.GetSpecializationOptionsAsync(organizationId, dto.SpecializationIds);
             return View(dto);
         }
 
         TempData["Message"] = result.Message;
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Import(IFormFile file)
+    {
+        var gate = EnsureAccess();
+        if (gate != null)
+            return gate;
+
+        if (file == null || file.Length == 0)
+        {
+            TempData["Error"] = "Выберите Excel-файл для загрузки.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var organizationId = _currentTenantService.GetCurrent().OrganizationId!;
+        await using var stream = file.OpenReadStream();
+        var result = await _serviceCatalogService.ImportAsync(organizationId, stream);
+
+        TempData[result.Success ? "Message" : "Error"] = result.ToMessage("Услуги");
         return RedirectToAction(nameof(Index));
     }
 

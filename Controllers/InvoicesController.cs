@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -48,6 +48,7 @@ namespace WebApplication1.Controllers
 
             var query = _db.Invoices
                 .Include(i => i.ClientNavigation)
+                .Include(i => i.Transactions)
                 .Where(i => i.ClientNavigation != null && i.ClientNavigation.Organization == organizationId);
 
             if (!string.IsNullOrWhiteSpace(statusFilter))
@@ -140,7 +141,7 @@ namespace WebApplication1.Controllers
             using var workbook = new XLWorkbook();
             var ws = workbook.Worksheets.Add("Отчетность");
 
-            ws.Cell(1, 1).Value = "Название / Лицевой счёт";
+            ws.Cell(1, 1).Value = "Название счета";
             ws.Cell(1, 2).Value = "Клиент";
             ws.Cell(1, 3).Value = "Статус";
             ws.Cell(1, 4).Value = "Периодичность";

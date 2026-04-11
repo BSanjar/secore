@@ -35,6 +35,8 @@ public partial class OrganizationService
 
     public virtual ICollection<AppointmentService> AppointmentServices { get; set; } = new List<AppointmentService>();
 
+    public virtual ICollection<ServiceSpecialization> ServiceSpecializations { get; set; } = new List<ServiceSpecialization>();
+
     public virtual ICollection<InvoiceService> InvoiceServices { get; set; } = new List<InvoiceService>();
 
     public virtual Organization? OrganizationNavigation { get; set; }

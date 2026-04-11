@@ -19,7 +19,7 @@
     var canViewSpecializations = HasAny("specializations.view", "nav.specializations");
     var canViewPatients = HasAny("patients.view", "nav.patients");
     var canViewServices = HasAny("services.view", "orgservices.view", "nav.services");
-    var canViewTransactions = HasAny("transactions.view", "nav.transactions");
+    var canViewInvoices = HasAny("invoices.view", "nav.invoices", "transactions.view", "nav.transactions");
     var canViewNotifications = HasAny("notifications.view", "nav.notifications");
     var canViewProfile = HasAny("profile.view", "nav.profile");
     var canViewSettings = HasAny("settings.view", "nav.settings");
@@ -118,10 +118,10 @@
                     </details>
                 }
 
-                @if (canViewTransactions)
+                @if (canViewInvoices)
                 {
-                    <a class="medclinic-nav__link @NavClass("Payments")" asp-controller="Payments" asp-action="Index" title="Транзакции">
-                        <span class="medclinic-nav__icon">&#x21C4;</span><span class="medclinic-nav__label">Транзакции</span>
+                    <a class="medclinic-nav__link @NavClass("Invoices")" asp-controller="Invoices" asp-action="Index" title="Счета">
+                        <span class="medclinic-nav__icon">&#x21C4;</span><span class="medclinic-nav__label">Счета</span>
                     </a>
                 }
 

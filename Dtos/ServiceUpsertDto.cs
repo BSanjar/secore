@@ -20,4 +20,6 @@ public class ServiceUpsertDto
 
     [Range(0, double.MaxValue, ErrorMessage = "Сумма не может быть отрицательной.")]
     public decimal? MaxAmount { get; set; }
+
+    public List<string> SpecializationIds { get; set; } = new();
 }

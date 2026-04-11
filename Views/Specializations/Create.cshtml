@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "Новая специализация";
     var departments = ViewBag.Departments as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var services = ViewBag.Services as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
 }
 
 <div class="dashboard-page">
@@ -42,6 +43,11 @@
                 <label asp-for="Description" class="form-label">Описание</label>
                 <textarea asp-for="Description" class="form-control" rows="4"></textarea>
                 <span asp-validation-for="Description" class="text-danger small"></span>
+            </div>
+            <div class="col-12">
+                <label asp-for="ServiceIds" class="form-label">Услуги для специализации</label>
+                <select asp-for="ServiceIds" asp-items="services" class="form-select" multiple size="8"></select>
+                <div class="form-text">Можно назначить несколько услуг сразу.</div>
             </div>
             <div class="col-12 d-flex gap-2">
                 <button type="submit" class="btn btn-primary">Сохранить</button>

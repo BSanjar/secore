@@ -70,3 +70,19 @@ create table if not exists user_specializations
 create unique index if not exists ux_user_specializations_user_specialization on user_specializations (user_id, specialization_id);
 create index if not exists idx_user_specializations_user_id on user_specializations (user_id);
 create index if not exists idx_user_specializations_specialization_id on user_specializations (specialization_id);
+
+create table if not exists service_specializations
+(
+    id character varying primary key,
+    organization_service_id character varying not null,
+    specialization_id character varying not null,
+    created_at timestamp without time zone not null default now(),
+    constraint service_specializations_fk_service
+        foreign key (organization_service_id) references organization_services (id) on delete cascade,
+    constraint service_specializations_fk_specialization
+        foreign key (specialization_id) references specializations (id) on delete cascade
+);
+
+create unique index if not exists ux_service_specializations_service_specialization on service_specializations (organization_service_id, specialization_id);
+create index if not exists idx_service_specializations_service_id on service_specializations (organization_service_id);
+create index if not exists idx_service_specializations_specialization_id on service_specializations (specialization_id);
