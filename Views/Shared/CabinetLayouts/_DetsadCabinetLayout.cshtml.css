@@ -5,8 +5,8 @@
 
 /* Компактная шапка для детсада */
 .detsad-header {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15), 0 1px 3px rgba(16, 185, 129, 0.1);
+    background: linear-gradient(135deg, #4fc3f7 0%, #ff8a65 100%);
+    box-shadow: 0 2px 8px rgba(79, 195, 247, 0.2), 0 1px 3px rgba(255, 138, 101, 0.18);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 

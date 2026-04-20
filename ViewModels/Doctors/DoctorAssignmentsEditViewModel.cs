@@ -18,6 +18,7 @@ public class DoctorAssignmentsEditViewModel
     public IReadOnlyList<DoctorScheduleViewModel> DoctorSchedules { get; set; } = Array.Empty<DoctorScheduleViewModel>();
     public IReadOnlyList<DoctorScheduleOverrideViewModel> DoctorScheduleOverrides { get; set; } = Array.Empty<DoctorScheduleOverrideViewModel>();
     public IReadOnlyList<AppointmentCalendarEventViewModel> Events { get; set; } = Array.Empty<AppointmentCalendarEventViewModel>();
+    public int AppointmentDurationMinutes { get; set; } = 30;
     public bool DoctorSchedulesReady { get; set; }
     public string? DoctorSchedulesMessage { get; set; }
     public bool DoctorScheduleOverridesReady { get; set; }

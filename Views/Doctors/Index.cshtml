@@ -104,12 +104,13 @@
                                         }
                                     }
                                 </td>
-                                <td class="text-end">
-                                    <div class="d-flex justify-content-end gap-2">
-                                        <a asp-action="Edit" asp-route-id="@doctor.Id" class="btn btn-sm btn-outline-primary">Назначения</a>
-                                        <a asp-controller="Users" asp-action="Edit" asp-route-id="@doctor.Id" class="btn btn-sm btn-outline-secondary">Карточка</a>
-                                    </div>
-                                </td>
+                                 <td class="text-end">
+                                     <div class="d-flex justify-content-end gap-2">
+                                         <a asp-action="Appointments" asp-route-id="@doctor.Id" class="btn btn-sm btn-primary">Приемы</a>
+                                         <a asp-action="Edit" asp-route-id="@doctor.Id" class="btn btn-sm btn-outline-primary">Назначения</a>
+                                         <a asp-controller="Users" asp-action="Edit" asp-route-id="@doctor.Id" class="btn btn-sm btn-outline-secondary">Карточка</a>
+                                     </div>
+                                 </td>
                             </tr>
                         }
                     </tbody>

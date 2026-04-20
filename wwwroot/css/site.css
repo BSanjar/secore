@@ -9,7 +9,7 @@ html {
 }
 
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #0284c7;
 }
 
 html {
@@ -49,56 +49,56 @@ body {
 
 /* Добавить / создать — зелёный */
 .action-btn--add {
-  border-color: rgba(16, 185, 129, 0.5);
-  color: #0d9488;
+  border-color: rgba(4, 120, 87, 0.4);
+  color: #047857;
 }
 
 .action-btn--add:hover {
-  border-color: #10b981;
-  color: #10b981;
-  background: rgba(16, 185, 129, 0.1);
+  border-color: #047857;
+  color: #047857;
+  background: #ecfdf5;
 }
 
 .action-btn--add:active {
-  border-color: #059669;
-  color: #059669;
-  background: rgba(16, 185, 129, 0.15);
+  border-color: #065f46;
+  color: #065f46;
+  background: #d1fae5;
 }
 
 /* Просмотр — синий */
 .action-btn--view {
-  border-color: rgba(59, 130, 246, 0.5);
-  color: #2563eb;
+  border-color: rgba(2, 132, 199, 0.45);
+  color: #0284c7;
 }
 
 .action-btn--view:hover {
-  border-color: #3b82f6;
-  color: #3b82f6;
-  background: rgba(59, 130, 246, 0.1);
+  border-color: #0284c7;
+  color: #0284c7;
+  background: #e0f2fe;
 }
 
 .action-btn--view:active {
-  border-color: #1d4ed8;
-  color: #1d4ed8;
-  background: rgba(59, 130, 246, 0.15);
+  border-color: #0369a1;
+  color: #0369a1;
+  background: #bae6fd;
 }
 
 /* Редактирование — оранжевый/янтарный */
 .action-btn--edit {
-  border-color: rgba(245, 158, 11, 0.5);
-  color: #d97706;
+  border-color: rgba(180, 83, 9, 0.45);
+  color: #b45309;
 }
 
 .action-btn--edit:hover {
-  border-color: #f59e0b;
-  color: #f59e0b;
-  background: rgba(245, 158, 11, 0.1);
+  border-color: #b45309;
+  color: #b45309;
+  background: #fffbeb;
 }
 
 .action-btn--edit:active {
   border-color: #b45309;
   color: #b45309;
-  background: rgba(245, 158, 11, 0.15);
+  background: #fef3c7;
 }
 
 /* Удаление — красный */

@@ -1,0 +1,407 @@
+:root {
+    --med-bg: #f0fdfa;
+    --med-surface: #ffffff;
+    --med-border: #d1fae5;
+    --med-text: #0f172a;
+    --med-muted: #0f766e;
+    --med-accent: #0f766e;
+    --med-accent-soft: #ccfbf1;
+    --med-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+    --med-secondary: #14b8a6;
+    --med-highlight: #38bdf8;
+}
+
+body.medclinic-shell {
+    margin: 0;
+    background: radial-gradient(circle at top, #ecfeff 0%, var(--med-bg) 52%, #e6fffa 100%);
+    color: var(--med-text);
+}
+
+.medclinic-shell__layout {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 236px 1fr;
+    transition: grid-template-columns .2s ease;
+}
+
+body.medclinic-shell--collapsed .medclinic-shell__layout {
+    grid-template-columns: 92px 1fr;
+}
+
+.medclinic-sidebar {
+    background: linear-gradient(180deg, #0f766e 0%, #14b8a6 100%);
+    color: #fff;
+    padding: 28px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+}
+
+.medclinic-sidebar__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.medclinic-brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    color: #fff;
+    text-decoration: none;
+}
+
+.medclinic-brand__logo {
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #38bdf8 0%, #0f766e 100%);
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    font-size: 1.2rem;
+    box-shadow: 0 10px 22px rgba(15, 118, 110, 0.35);
+}
+
+.medclinic-brand strong,
+.medclinic-brand small {
+    display: block;
+}
+
+.medclinic-brand small {
+    opacity: .72;
+}
+
+body.medclinic-shell--collapsed .medclinic-brand__text {
+    display: none;
+}
+
+body.medclinic-shell--collapsed .medclinic-sidebar__top {
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+body.medclinic-shell--collapsed .medclinic-brand {
+    justify-content: center;
+}
+
+.medclinic-sidebar__toggle {
+    width: 40px;
+    height: 40px;
+    border: 1px solid rgba(255,255,255,.14);
+    background: rgba(255,255,255,.08);
+    border-radius: 12px;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    color: #fff;
+}
+
+.medclinic-sidebar__toggle span {
+    display: block;
+    width: 16px;
+    height: 2px;
+    background: currentColor;
+    border-radius: 999px;
+}
+
+.medclinic-nav,
+.medclinic-sidebar__footer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.medclinic-sidebar__footer {
+    margin-top: auto;
+}
+
+.medclinic-nav__link {
+    color: rgba(255, 255, 255, 0.84);
+    text-decoration: none;
+    padding: 11px 12px;
+    border-radius: 14px;
+    font-weight: 500;
+    transition: .2s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.medclinic-nav__link:hover,
+.medclinic-nav__link.active {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.medclinic-nav__link--muted {
+    opacity: .55;
+    cursor: default;
+}
+
+/* Сворачиваемая группа «Таблицы» (Отделения, Специализации, Пациенты, Услуги) */
+.medclinic-nav__group {
+    border-radius: 14px;
+}
+
+.medclinic-nav__group > summary {
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+    color: rgba(255, 255, 255, 0.84);
+    padding: 11px 12px;
+    border-radius: 14px;
+    font-weight: 500;
+    transition: .2s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.medclinic-nav__group > summary::-webkit-details-marker {
+    display: none;
+}
+
+.medclinic-nav__group > summary:hover,
+.medclinic-nav__group--active-child > summary {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.medclinic-nav__group-chevron {
+    margin-left: auto;
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(-45deg);
+    opacity: 0.75;
+    transition: transform .2s ease;
+    flex-shrink: 0;
+}
+
+.medclinic-nav__group[open] > summary .medclinic-nav__group-chevron {
+    transform: rotate(45deg);
+}
+
+.medclinic-nav__group-items {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px 0 2px 0;
+    margin-top: 2px;
+}
+
+.medclinic-nav__link--nested {
+    padding-left: 20px;
+    font-size: 0.94rem;
+}
+
+body.medclinic-shell--collapsed .medclinic-nav__group-items {
+    display: none;
+}
+
+body.medclinic-shell--collapsed .medclinic-nav__group > summary {
+    justify-content: center;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+body.medclinic-shell--collapsed .medclinic-nav__group-chevron {
+    display: none;
+}
+
+.medclinic-nav__icon {
+    width: 22px;
+    min-width: 22px;
+    text-align: center;
+    font-size: 1rem;
+}
+
+.medclinic-nav__label {
+    white-space: nowrap;
+}
+
+body.medclinic-shell--collapsed .medclinic-sidebar {
+    padding-left: 14px;
+    padding-right: 14px;
+}
+
+body.medclinic-shell--collapsed .medclinic-sidebar__toggle {
+    width: 100%;
+    max-width: 48px;
+}
+
+body.medclinic-shell--collapsed .medclinic-nav__label {
+    display: none;
+}
+
+body.medclinic-shell--collapsed .medclinic-nav__link {
+    justify-content: center;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.medclinic-content {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.medclinic-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    padding: 26px 32px 18px;
+}
+
+.medclinic-topbar__title {
+    font-size: 1.35rem;
+    font-weight: 700;
+}
+
+.medclinic-topbar__subtitle {
+    color: var(--med-muted);
+    margin-top: 2px;
+}
+
+.medclinic-topbar__actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.medclinic-topbar-dropdown-toggle {
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    background: rgba(255, 255, 255, 0.94);
+    color: #0f172a;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+}
+
+.medclinic-topbar-dropdown-toggle:hover,
+.medclinic-topbar-dropdown-toggle:focus,
+.medclinic-topbar-dropdown-toggle.show {
+    background: #ffffff;
+    color: #0f172a;
+    border-color: rgba(15, 23, 42, 0.2);
+}
+
+#languageDropdown + .dropdown-menu,
+#userDropdown + .dropdown-menu {
+    background: #ffffff;
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+}
+
+.medclinic-page {
+    padding: 14px 32px 32px;
+}
+
+.medclinic-page .card,
+.medclinic-surface,
+.medclinic-metric {
+    border: 1px solid var(--med-border);
+    border-radius: 18px;
+    box-shadow: 0 12px 28px rgba(20, 34, 53, 0.06);
+}
+
+.medclinic-page .page-header {
+    margin-bottom: 16px;
+}
+
+.medclinic-page .page-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.medclinic-page .page-subtitle,
+.medclinic-metric__description,
+.medclinic-metric__label,
+.medclinic-table thead th {
+    color: var(--med-muted);
+}
+
+.medclinic-page .page-header .page-title,
+.medclinic-page .page-header .page-subtitle {
+    display: none;
+}
+
+.medclinic-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.medclinic-metric {
+    background: var(--med-surface);
+    padding: 22px;
+}
+
+.medclinic-metric__value {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.medclinic-surface {
+    background: var(--med-surface);
+    padding: 0;
+}
+
+.medclinic-table thead th {
+    font-weight: 600;
+    background: #f8fbff;
+}
+
+.medclinic-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: .35rem .7rem;
+    font-size: .8rem;
+    font-weight: 600;
+}
+
+.medclinic-badge--success {
+    background: #ecfdf5;
+    color: #047857;
+}
+
+.medclinic-badge--busy {
+    background: #fffbeb;
+    color: #b45309;
+}
+
+.medclinic-badge--available {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+.dropdown-menu {
+    border-radius: 16px;
+    border: 1px solid var(--med-border);
+    box-shadow: var(--med-shadow);
+}
+
+@media (max-width: 768px) {
+    .medclinic-topbar,
+    .medclinic-page {
+        padding-left: 18px;
+        padding-right: 18px;
+    }
+
+    .medclinic-page .page-title {
+        font-size: 1.6rem;
+    }
+}

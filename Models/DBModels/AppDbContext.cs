@@ -23,9 +23,13 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<AppointmentService> AppointmentServices { get; set; }
 
+    public virtual DbSet<AppointmentMedicalTemplate> AppointmentMedicalTemplates { get; set; }
+
     public virtual DbSet<UserWorkSchedule> UserWorkSchedules { get; set; }
 
     public virtual DbSet<UserWorkScheduleOverride> UserWorkScheduleOverrides { get; set; }
+
+    public virtual DbSet<AppointmentSetting> AppointmentSettings { get; set; }
 
     public virtual DbSet<Department> Departments { get; set; }
 
@@ -38,6 +42,8 @@ public partial class AppDbContext : DbContext
     public virtual DbSet<UserSpecialization> UserSpecializations { get; set; }
 
     public virtual DbSet<InvoicePayment> InvoicePayments { get; set; }
+
+    public virtual DbSet<InvoiceQr> InvoiceQrs { get; set; }
 
     public virtual DbSet<InvoiceService> InvoiceServices { get; set; }
 
@@ -157,6 +163,9 @@ public partial class AppDbContext : DbContext
                 .HasComment("периодичность оплаты:\r\ndaily - ежедневно\r\nweekly - еженедельно\r\nmonthly - ежемесячно\r\nyearly - ежегодно\r\nесли указывается конкретное число то значит каждые указанное число дней. \r\nт.е если к примеру 30 то каждые 30 дней.\r\noneTime - однаразовый и прием в любой момент\r\nany - прием в любой момент")
                 .HasColumnType("character varying")
                 .HasColumnName("periodicity");
+            entity.Property(e => e.QrMode)
+                .HasColumnType("character varying")
+                .HasColumnName("qr_mode");
             entity.Property(e => e.UserCreater)
                 .HasColumnType("character varying")
                 .HasColumnName("user_creater");
@@ -252,6 +261,52 @@ public partial class AppDbContext : DbContext
                 .HasConstraintName("appointments_fk_doctor");
         });
 
+        modelBuilder.Entity<InvoiceQr>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("invoice_qr_pk");
+
+            entity.ToTable("invoice_qr");
+
+            entity.HasIndex(e => e.InvoiceId, "idx_invoice_qr_invoice_id");
+
+            entity.HasIndex(e => e.Transaction, "idx_invoice_qr_transaction");
+
+            entity.HasIndex(e => e.InvoiceId, "ux_invoice_qr_active_per_invoice")
+                .IsUnique()
+                .HasFilter("((status)::text = 'active'::text)");
+
+            entity.Property(e => e.Id)
+                .HasColumnType("character varying")
+                .HasColumnName("id");
+            entity.Property(e => e.InvoiceId)
+                .HasColumnType("character varying")
+                .HasColumnName("invoice_id");
+            entity.Property(e => e.Transaction)
+                .HasColumnType("character varying")
+                .HasColumnName("transaction");
+            entity.Property(e => e.Status)
+                .HasColumnType("character varying")
+                .HasColumnName("status");
+            entity.Property(e => e.QrLink)
+                .HasColumnType("text")
+                .HasColumnName("qr_link");
+            entity.Property(e => e.QrCodeBase64)
+                .HasColumnType("text")
+                .HasColumnName("qr_code_base64");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.DisabledAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("disabled_at");
+
+            entity.HasOne(d => d.Invoice).WithMany(p => p.InvoiceQrs)
+                .HasForeignKey(d => d.InvoiceId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("invoice_qr_fk_invoice");
+        });
+
         modelBuilder.Entity<AppointmentService>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("appointment_services_pk");
@@ -291,6 +346,45 @@ public partial class AppDbContext : DbContext
                 .HasForeignKey(d => d.OrganizationServiceId)
                 .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("appointment_services_fk_org_service");
+        });
+
+        modelBuilder.Entity<AppointmentMedicalTemplate>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("appointment_medical_templates_pk");
+
+            entity.ToTable("appointment_medical_templates");
+
+            entity.HasIndex(e => e.OrganizationId, "idx_appointment_medical_templates_org_id");
+            entity.HasIndex(e => e.TemplateType, "idx_appointment_medical_templates_type");
+            entity.HasIndex(e => e.IsActive, "idx_appointment_medical_templates_active");
+
+            entity.Property(e => e.Id)
+                .HasColumnType("character varying")
+                .HasColumnName("id");
+            entity.Property(e => e.OrganizationId)
+                .HasColumnType("character varying")
+                .HasColumnName("organization_id");
+            entity.Property(e => e.TemplateType)
+                .HasColumnType("character varying")
+                .HasColumnName("template_type");
+            entity.Property(e => e.Title)
+                .HasColumnType("character varying")
+                .HasColumnName("title");
+            entity.Property(e => e.Content)
+                .HasColumnType("text")
+                .HasColumnName("content");
+            entity.Property(e => e.SortOrder)
+                .HasDefaultValueSql("0")
+                .HasColumnName("sort_order");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValueSql("true")
+                .HasColumnName("is_active");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("updated_at");
         });
 
         modelBuilder.Entity<UserWorkSchedule>(entity =>
@@ -395,6 +489,48 @@ public partial class AppDbContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("user_work_schedule_overrides_fk_user");
+        });
+
+        modelBuilder.Entity<AppointmentSetting>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("appointment_settings_pk");
+
+            entity.ToTable("appointment_settings");
+
+            entity.HasIndex(e => e.OrganizationId, "idx_appointment_settings_org_id");
+            entity.HasIndex(e => e.UserId, "idx_appointment_settings_user_id");
+            entity.HasIndex(e => new { e.OrganizationId, e.UserId }, "ux_appointment_settings_org_user").IsUnique();
+
+            entity.Property(e => e.Id)
+                .HasColumnType("character varying")
+                .HasColumnName("id");
+            entity.Property(e => e.OrganizationId)
+                .HasColumnType("character varying")
+                .HasColumnName("organization_id");
+            entity.Property(e => e.UserId)
+                .HasColumnType("character varying")
+                .HasColumnName("user_id");
+            entity.Property(e => e.AppointmentDurationMinutes)
+                .HasDefaultValueSql("30")
+                .HasColumnName("appointment_duration_minutes");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("updated_at");
+
+            entity.HasOne(d => d.Organization)
+                .WithMany(p => p.AppointmentSettings)
+                .HasForeignKey(d => d.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("appointment_settings_fk_organization");
+
+            entity.HasOne(d => d.User)
+                .WithMany(p => p.AppointmentSettings)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("appointment_settings_fk_user");
         });
 
         modelBuilder.Entity<Department>(entity =>
@@ -682,7 +818,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("character varying")
                 .HasColumnName("name");
             entity.Property(e => e.Organizationtype)
-                .HasComment("standart\r\ndetsad\r\nschool\r\nmedclinic")
+                .HasComment("standart\r\ndetsad\r\nmedclinic")
                 .HasColumnType("character varying")
                 .HasColumnName("organizationtype");
             entity.Property(e => e.IsActive)
@@ -739,6 +875,9 @@ public partial class AppDbContext : DbContext
                 .HasComment("subscription или комбинация комиссий через флаги")
                 .HasColumnType("character varying")
                 .HasColumnName("billing_type");
+            entity.Property(e => e.DefaultQrMode)
+                .HasColumnType("character varying")
+                .HasColumnName("default_qr_mode");
             entity.Property(e => e.UseLowerCommissionFromOrg)
                 .HasColumnName("use_lower_commission_from_org");
             entity.Property(e => e.CommissionId)
@@ -1353,6 +1492,9 @@ public partial class AppDbContext : DbContext
                 .HasComment("user\r\nadmin\r\nsuperadmin")
                 .HasColumnType("character varying")
                 .HasColumnName("role");
+            entity.Property(e => e.StartPage)
+                .HasColumnType("character varying")
+                .HasColumnName("start_page");
             entity.Property(e => e.TwoFactorCode)
                 .HasColumnType("character varying")
                 .HasColumnName("two_factor_code");

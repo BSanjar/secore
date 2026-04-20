@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using ClosedXML.Excel;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -87,7 +87,192 @@ public class ClientsController : Controller
         ViewBag.InvoicePayCodeMode = result.InvoicePayCodeMode;
         ViewBag.AllowedHassameaccount = result.AllowedHassameaccount;
 
+        var clientIds = result.ChildrenData
+            .Select(x => x.Id)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct()
+            .ToList();
+
+        var activeInvoiceCountByClientId = new Dictionary<string, int>();
+        var debtInvoiceCountByClientId = new Dictionary<string, int>();
+        var nearestDueByClientId = new Dictionary<string, DateTime?>();
+
+        if (clientIds.Count > 0)
+        {
+            var invoices = await _db.Invoices
+                .Where(i => i.Client != null && clientIds.Contains(i.Client))
+                .Include(i => i.InvoicePayments)
+                .ToListAsync();
+
+            activeInvoiceCountByClientId = invoices
+                .Where(i => !string.IsNullOrWhiteSpace(i.Client))
+                .GroupBy(i => i.Client!)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Count(i => string.Equals(i.InvoiceStatus, "actual", StringComparison.OrdinalIgnoreCase)));
+
+            debtInvoiceCountByClientId = invoices
+                .Where(i => !string.IsNullOrWhiteSpace(i.Client))
+                .GroupBy(i => i.Client!)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Count(i => (i.Balance ?? 0m) < 0m));
+
+            nearestDueByClientId = invoices
+                .Where(i => !string.IsNullOrWhiteSpace(i.Client))
+                .GroupBy(i => i.Client!)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.SelectMany(i => i.InvoicePayments ?? Array.Empty<InvoicePayment>())
+                        .Where(p => string.Equals(p.PaymentStatus, "non_paid", StringComparison.OrdinalIgnoreCase))
+                        .Select(p => p.DateFrom)
+                        .Where(d => d.HasValue)
+                        .OrderBy(d => d)
+                        .FirstOrDefault());
+        }
+
+        ViewBag.ActiveInvoiceCountByClientId = activeInvoiceCountByClientId;
+        ViewBag.DebtInvoiceCountByClientId = debtInvoiceCountByClientId;
+        ViewBag.NearestDueByClientId = nearestDueByClientId;
+
+        var organizationType = AuthorizationHelper.GetOrganizationType(HttpContext);
+        if (string.Equals(organizationType, "standart", StringComparison.OrdinalIgnoreCase))
+            return View("~/Views/Clients/StandartIndex.cshtml");
+
         return View();
+    }
+
+    [RequirePermission("nav.children")]
+    [HttpGet]
+    public async Task<IActionResult> GetClientInvoicesDashboard(string clientId)
+    {
+        var organizationId = GetOrganizationIdOrNull();
+        if (organizationId == null)
+            return Unauthorized();
+
+        var featureGuard = EnsureClientsFeature();
+        if (featureGuard != null)
+            return featureGuard;
+
+        if (string.IsNullOrWhiteSpace(clientId))
+            return BadRequest(new { success = false, message = "Не указан clientId." });
+
+        var client = await _db.OrganizationClients
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == clientId && c.Organization == organizationId);
+
+        if (client == null)
+            return NotFound(new { success = false, message = "Клиент не найден." });
+
+        var invoices = await _db.Invoices
+            .AsNoTracking()
+            .Where(i => i.Client == clientId)
+            .Include(i => i.InvoiceServices)
+                .ThenInclude(s => s.ServiceNavigation)
+            .Include(i => i.InvoicePayments)
+            .Include(i => i.Transactions)
+                .ThenInclude(t => t.AgentNavigation)
+            .Include(i => i.InvoiceQrs)
+            .OrderByDescending(i => i.DateCreated)
+            .ToListAsync();
+
+        var totalBalanceSom = invoices.Sum(i => (i.Balance ?? 0m) / 100m);
+        var activeInvoices = invoices.Count(i => string.Equals(i.InvoiceStatus, "actual", StringComparison.OrdinalIgnoreCase));
+        var debtInvoices = invoices.Count(i => (i.Balance ?? 0m) < 0m);
+        var nearestDue = invoices
+            .SelectMany(i => i.InvoicePayments ?? Array.Empty<InvoicePayment>())
+            .Where(p => string.Equals(p.PaymentStatus, "non_paid", StringComparison.OrdinalIgnoreCase))
+            .Select(p => p.DateFrom)
+            .Where(d => d.HasValue)
+            .OrderBy(d => d)
+            .FirstOrDefault();
+
+        var payload = new
+        {
+            success = true,
+            client = new
+            {
+                id = client.Id,
+                name = client.ClientName ?? "Клиент",
+                phone = client.ClientPhone,
+                totalBalanceSom,
+                nearestDue,
+                activeInvoices,
+                debtInvoices
+            },
+            invoices = invoices.Select(i =>
+            {
+                var latestQr = (i.InvoiceQrs ?? Array.Empty<InvoiceQr>())
+                    .OrderByDescending(q => q.CreatedAt)
+                    .FirstOrDefault();
+
+                return new
+                {
+                    id = i.Id,
+                    nameInvoice = i.NameInvoice,
+                    payCode = i.PayCode,
+                    invoiceStatus = i.InvoiceStatus,
+                    periodicity = i.Periodicity,
+                    dateCreated = i.DateCreated,
+                    dateStartInvoice = i.DateStartInvoice,
+                    dateEndInvoice = i.DateEndInvoice,
+                    nextStartInvoice = i.NextStartInvoice,
+                    fixedSummSom = (i.FixedSumm ?? 0m) / 100m,
+                    balanceSom = (i.Balance ?? 0m) / 100m,
+                    hasSameAccount = i.Hassameaccount,
+                    autoProlongation = i.AutoProlongation ?? false,
+                    services = (i.InvoiceServices ?? Array.Empty<InvoiceService>())
+                        .Select(s => new
+                        {
+                            serviceName = s.ServiceNavigation?.Name ?? i.NameInvoice ?? "Услуга",
+                            serviceSummSom = (s.ServiceSumm ?? 0m) / 100m
+                        })
+                        .ToList(),
+                    payments = (i.InvoicePayments ?? Array.Empty<InvoicePayment>())
+                        .OrderBy(p => p.DateFrom)
+                        .Select(p => new
+                        {
+                            dateFrom = p.DateFrom,
+                            dateTo = p.DateTo,
+                            periodValue = p.PeriodValue,
+                            paymentSummSom = (p.PaymentSumm ?? 0m) / 100m,
+                            paymentStatus = p.PaymentStatus
+                        })
+                        .ToList(),
+                    transactions = (i.Transactions ?? Array.Empty<Transaction>())
+                        .OrderByDescending(t => t.TransactionDate)
+                        .Select(t => new
+                        {
+                            transactionDate = t.TransactionDate,
+                            transactionStatus = t.TransactionStatus,
+                            summSom = (t.Summ ?? 0m) / 100m,
+                            transactionSummSom = (t.TransactionSumm ?? 0m) / 100m,
+                            transactionType = t.TransactionType,
+                            transactionSystem = t.TransactionSystem,
+                            agent = t.AgentNavigation == null
+                                ? null
+                                : new
+                                {
+                                    name = t.AgentNavigation.Name
+                                },
+                            txnId = t.TxnId
+                        })
+                        .ToList(),
+                    qr = latestQr == null
+                        ? null
+                        : new
+                        {
+                            status = latestQr.Status,
+                            createdAt = latestQr.CreatedAt,
+                            disabledAt = latestQr.DisabledAt,
+                            qrLink = latestQr.QrLink,
+                            qrCodeBase64 = latestQr.QrCodeBase64
+                        }
+                };
+            }).ToList()
+        };
+
+        return Json(payload);
     }
 
     [RequirePermission("children.create")]
@@ -246,6 +431,7 @@ public class ClientsController : Controller
 
     [RequirePermission("children.create")]
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create([FromBody] CreateChildRequest request)
     {
         try
@@ -304,6 +490,7 @@ public class ClientsController : Controller
 
     [RequirePermission("children.edit")]
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Update([FromBody] UpdateChildRequest request)
     {
         try
@@ -342,217 +529,13 @@ public class ClientsController : Controller
         }
     }
 
-    [RequirePermission("invoices.view")]
-    [HttpGet]
-    public async Task<IActionResult> CreateInvoicePartial()
-    {
-        var organizationId = GetOrganizationIdOrNull();
-        if (organizationId == null)
-            return Unauthorized();
-
-        var featureGuard = EnsureClientsFeature();
-        if (featureGuard != null)
-            return featureGuard;
-
-        var groups = await _db.OrgClientGroups
-            .Where(g => g.OrganizationId == organizationId && g.IsDeleted == 0)
-            .OrderBy(g => g.Name)
-            .Select(g => new { g.Id, g.Name })
-            .ToListAsync();
-
-        var clients = await _db.OrganizationClients
-            .Where(c => c.Organization == organizationId && c.ClientStatus == 1)
-            .OrderBy(c => c.ClientName)
-            .Select(c => new { c.Id, c.ClientName, c.OrgClientGroupId })
-            .ToListAsync();
-
-        var orgServices = await _db.OrganizationServices
-            .Where(s => s.Organization == organizationId && (s.Isdeleted == null || s.Isdeleted == 0))
-            .OrderBy(s => s.Name)
-            .Select(s => new { s.Id, s.Name, s.ServiceSumm, s.MinSumm, s.MaxSumm })
-            .ToListAsync();
-
-        var settings = await _db.OrganizationSettings
-            .FirstOrDefaultAsync(s => s.OrganizationId == organizationId);
-
-        ViewBag.OrgClientGroups = groups;
-        ViewBag.OrganizationClients = clients;
-        ViewBag.OrganizationServices = orgServices;
-        ViewBag.DisableInvoiceServiceSelection = settings?.DisableInvoiceServiceSelection ?? false;
-        ViewBag.AllowedHassameaccount = settings?.AllowedHassameaccount ?? false;
-        ViewBag.InvoicePayCodeMode = !string.IsNullOrEmpty(settings?.InvoicePayCodeMode)
-            ? settings.InvoicePayCodeMode
-            : (settings?.AllowedHassameaccount == true ? "both" : "new_only");
-
-        return PartialView("_CreateInvoicePartial");
-    }
-
-    [RequirePermission("invoices.view")]
-    [HttpGet]
-    public async Task<IActionResult> GetEditInvoicePartial([FromQuery] string invoiceId)
-    {
-        var organizationId = GetOrganizationIdOrNull();
-        if (organizationId == null)
-            return Unauthorized();
-
-        var featureGuard = EnsureClientsFeature();
-        if (featureGuard != null)
-            return featureGuard;
-
-        if (string.IsNullOrEmpty(invoiceId))
-            return BadRequest();
-
-        var invoice = await _db.Invoices
-            .Include(i => i.ClientNavigation)
-            .Include(i => i.InvoiceServices)
-                .ThenInclude(s => s.ServiceNavigation)
-            .Include(i => i.InvoicePayments)
-            .FirstOrDefaultAsync(i => i.Id == invoiceId && i.ClientNavigation != null && i.ClientNavigation.Organization == organizationId);
-        if (invoice == null)
-            return NotFound();
-
-        var clients = await _db.OrganizationClients
-            .Where(c => c.Organization == organizationId && c.ClientStatus == 1)
-            .OrderBy(c => c.ClientName)
-            .Select(c => new { c.Id, c.ClientName })
-            .ToListAsync();
-
-        var orgServices = await _db.OrganizationServices
-            .Where(s => s.Organization == organizationId && (s.Isdeleted == null || s.Isdeleted == 0))
-            .OrderBy(s => s.Name)
-            .Select(s => new { s.Id, s.Name, s.ServiceSumm, s.MinSumm, s.MaxSumm })
-            .ToListAsync();
-
-        var settings = await _db.OrganizationSettings.FirstOrDefaultAsync(s => s.OrganizationId == organizationId);
-
-        ViewBag.Clients = new SelectList(clients, "Id", "ClientName", invoice.Client);
-        ViewBag.OrganizationServices = orgServices;
-        ViewBag.DisableInvoiceServiceSelection = settings?.DisableInvoiceServiceSelection ?? false;
-        ViewBag.AllowedHassameaccount = settings?.AllowedHassameaccount ?? false;
-        ViewBag.InvoicePayCodeMode = !string.IsNullOrEmpty(settings?.InvoicePayCodeMode)
-            ? settings.InvoicePayCodeMode
-            : (settings?.AllowedHassameaccount == true ? "both" : "new_only");
-
-        return PartialView("_EditInvoicePartial", invoice);
-    }
-
-    [RequirePermission("invoices.view")]
-    [HttpGet]
-    public async Task<IActionResult> GetInvoicePayCodeOptions([FromQuery] string clientIds)
-    {
-        var organizationId = GetOrganizationIdOrNull();
-        if (organizationId == null)
-            return Unauthorized();
-
-        var featureGuard = EnsureClientsFeature();
-        if (featureGuard != null)
-            return featureGuard;
-
-        var ids = (clientIds ?? "")
-            .Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
-            .Select(x => x.Trim())
-            .Where(x => x.Length > 0)
-            .Distinct()
-            .ToList();
-
-        if (ids.Count == 0)
-            return Json(new { payCodeOptions = Array.Empty<object>() });
-
-        var list = await _db.Invoices
-            .Where(i => i.ClientNavigation != null &&
-                        i.ClientNavigation.Organization == organizationId &&
-                        i.Client != null &&
-                        ids.Contains(i.Client) &&
-                        i.Hassameaccount &&
-                        i.PayCode != null &&
-                        i.PayCode.Length > 0)
-            .Select(i => new { i.PayCode, i.Id, i.NameInvoice })
-            .ToListAsync();
-
-        var distinctPayCodes = list
-            .GroupBy(x => x.PayCode)
-            .Select(g => new { payCode = g.Key, invoiceId = g.First().Id, nameInvoice = g.First().NameInvoice })
-            .ToList();
-
-        return Json(new { payCodeOptions = distinctPayCodes });
-    }
-
-    [RequirePermission("invoices.view")]
-    [HttpGet]
-    public async Task<IActionResult> GetOrganizationHassamePayCodeOptions()
-    {
-        var organizationId = GetOrganizationIdOrNull();
-        if (organizationId == null)
-            return Unauthorized();
-
-        var featureGuard = EnsureClientsFeature();
-        if (featureGuard != null)
-            return featureGuard;
-
-        var list = await _db.Invoices
-            .Where(i => i.ClientNavigation != null &&
-                        i.ClientNavigation.Organization == organizationId &&
-                        i.Hassameaccount &&
-                        i.PayCode != null &&
-                        i.PayCode.Length > 0)
-            .Select(i => new { i.PayCode, i.NameInvoice })
-            .ToListAsync();
-
-        var distinctPayCodes = list
-            .GroupBy(x => x.PayCode)
-            .Select(g => new { payCode = g.Key, nameInvoice = g.First().NameInvoice })
-            .ToList();
-
-        return Json(new { payCodeOptions = distinctPayCodes });
-    }
-
-    [RequirePermission("invoices.view")]
-    [HttpGet]
-    public async Task<IActionResult> GetNextInvoiceNumber()
-    {
-        var organizationId = GetOrganizationIdOrNull();
-        if (organizationId == null)
-            return Unauthorized();
-
-        var featureGuard = EnsureClientsFeature();
-        if (featureGuard != null)
-            return featureGuard;
-
-        var prefixLen = organizationId.Length;
-        var clientIds = await _db.OrganizationClients
-            .Where(c => c.Organization == organizationId)
-            .Select(c => c.Id)
-            .ToListAsync();
-
-        var payCodes = await _db.Invoices
-            .Where(i => i.Client != null &&
-                        clientIds.Contains(i.Client) &&
-                        i.PayCode != null &&
-                        i.PayCode.Length == prefixLen + 9 &&
-                        i.PayCode.StartsWith(organizationId))
-            .Select(i => i.PayCode)
-            .ToListAsync();
-
-        long maxCounter = 0;
-        foreach (var payCode in payCodes)
-        {
-            if (payCode != null &&
-                payCode.Length > prefixLen &&
-                long.TryParse(payCode.Substring(prefixLen), out var counter) &&
-                counter > maxCounter)
-            {
-                maxCounter = counter;
-            }
-        }
-
-        return Json(new { payCode = organizationId + (maxCounter + 1).ToString("D9") });
-    }
 
     /// <summary>
     /// Загрузка или удаление фото клиента.
     /// </summary>
     [HttpPost]
     [RequirePermission("children.create")]
+    [ValidateAntiForgeryToken]
     [RequestSizeLimit(3 * 1024 * 1024)]
     public async Task<IActionResult> UploadPhoto([FromForm] string? clientId, IFormFile? photo, [FromForm] bool removePhoto = false)
     {
@@ -597,184 +580,6 @@ public class ClientsController : Controller
         }
     }
 
-    [RequirePermission("invoices.view")]
-    [HttpGet]
-    public async Task<IActionResult> GetInvoicesInfo(string clientId, string? invoiceId = null)
-    {
-        var organizationId = GetOrganizationIdOrNull();
-        if (organizationId == null)
-            return Unauthorized();
-
-        var featureGuard = EnsureClientsFeature();
-        if (featureGuard != null)
-            return featureGuard;
-
-        var client = await _db.OrganizationClients
-            .FirstOrDefaultAsync(c => c.Id == clientId && c.Organization == organizationId);
-
-        if (client == null)
-            return NotFound();
-
-        var invoices = await _db.Invoices
-            .Include(i => i.UserCreaterNavigation)
-            .Where(i => i.Client == clientId)
-            .OrderByDescending(i => i.DateCreated)
-            .ToListAsync();
-
-        if (!invoices.Any())
-        {
-            return Json(new
-            {
-                client = new { name = client.ClientName },
-                invoices = new List<object>(),
-                selectedInvoice = (object?)null,
-                invoicePayments = new List<object>(),
-                transactions = new List<object>()
-            });
-        }
-
-        var selectedInvoice = invoiceId != null
-            ? invoices.FirstOrDefault(i => i.Id == invoiceId) ?? invoices.First()
-            : invoices.First();
-
-        var invoicePayments = await _db.InvoicePayments
-            .Where(ip => ip.Invoice == selectedInvoice.Id)
-            .OrderByDescending(ip => ip.DateFrom)
-            .ToListAsync();
-
-        var transactions = await _db.Transactions
-            .Where(t => t.Invoice == selectedInvoice.Id)
-            .OrderByDescending(t => t.TransactionDate)
-            .ToListAsync();
-
-        return Json(new
-        {
-            client = new
-            {
-                name = client.ClientName
-            },
-            invoices = invoices.Select(i => new
-            {
-                id = i.Id,
-                name = i.NameInvoice ?? "Счет без названия",
-                payCode = i.PayCode
-            }).ToList(),
-            selectedInvoice = new
-            {
-                id = selectedInvoice.Id,
-                nameInvoice = selectedInvoice.NameInvoice,
-                payCode = selectedInvoice.PayCode,
-                dateCreated = selectedInvoice.DateCreated,
-                userCreater = selectedInvoice.UserCreaterNavigation?.Name ?? selectedInvoice.UserCreater ?? "Неизвестно",
-                periodicity = GetPeriodicityText(selectedInvoice.Periodicity),
-                balance = selectedInvoice.Balance,
-                autoProlongation = selectedInvoice.AutoProlongation ?? false
-            },
-            invoicePayments = invoicePayments.Select(ip => new
-            {
-                id = ip.Id,
-                dateFrom = ip.DateFrom,
-                dateTo = ip.DateTo,
-                paymentSumm = ip.PaymentSumm.HasValue ? ip.PaymentSumm.Value / 100m : (decimal?)null,
-                paymentStatus = ip.PaymentStatus,
-                periodValue = ip.PeriodValue
-            }).ToList(),
-            transactions = transactions.Select(t => new
-            {
-                id = t.Id,
-                transactionDate = t.TransactionDate,
-                summ = t.Summ,
-                transactionSumm = t.TransactionSumm,
-                transactionType = t.TransactionType,
-                transactionStatus = t.TransactionStatus
-            }).ToList()
-        });
-    }
-
-    [RequirePermission("children.create")]
-    [HttpPost]
-    [IgnoreAntiforgeryToken]
-    public async Task<IActionResult> CreateInvoices([FromBody] CreateInvoicesRequest request)
-    {
-        var organizationId = GetOrganizationIdOrNull();
-        var userId = GetUserIdOrNull();
-        if (organizationId == null || userId == null)
-            return Unauthorized();
-
-        var featureGuard = EnsureClientsFeature();
-        if (featureGuard != null)
-            return featureGuard;
-
-        if (request?.ClientIds == null || request.ClientIds.Count == 0)
-            return BadRequest(new { success = false, message = "Выберите хотя бы одного получателя (группу или клиентов)." });
-
-        var useManualService = request.ManualServicePriceSom.HasValue;
-        if (!useManualService && (request.ServiceItems == null || request.ServiceItems.Count == 0))
-            return BadRequest(new { success = false, message = "Выберите хотя бы одну услугу или укажите цену (режим «услуга по счёту»)." });
-
-        if (useManualService && request.ManualServicePriceSom.GetValueOrDefault() < 0)
-            return BadRequest(new { success = false, message = "Цена не может быть отрицательной." });
-
-        if (!request.AutoProlongation && !request.DateEndInvoice.HasValue)
-            return BadRequest(new { success = false, message = "Укажите дату конца счёта или включите автопролонгацию." });
-
-        var clientIds = request.ClientIds.Distinct().ToList();
-        var clients = await _db.OrganizationClients
-            .Where(c => c.Organization == organizationId && clientIds.Contains(c.Id))
-            .ToListAsync();
-        if (clients.Count == 0)
-            return BadRequest(new { success = false, message = "Выбранные клиенты не найдены." });
-
-        Dictionary<string, OrganizationService>? orgServices = null;
-        if (!useManualService)
-        {
-            var serviceIds = request.ServiceItems!.Select(x => x.ServiceId).Distinct().ToList();
-            orgServices = await _db.OrganizationServices
-                .Where(s => s.Organization == organizationId && serviceIds.Contains(s.Id))
-                .ToDictionaryAsync(s => s.Id, s => s);
-            if (orgServices.Count == 0)
-                return BadRequest(new { success = false, message = "Выбранные услуги не найдены." });
-        }
-
-        var input = new CreateInvoicesInput
-        {
-            OrganizationId = organizationId,
-            UserId = userId,
-            Clients = clients,
-            NameInvoice = request.NameInvoice,
-            DateStartInvoice = request.DateStartInvoice,
-            DateEndInvoice = request.DateEndInvoice,
-            Periodicity = request.Periodicity,
-            AutoProlongation = request.AutoProlongation,
-            UseCurrentDateTime = request.UseCurrentDateTime,
-            UseManualService = useManualService,
-            ManualServicePriceSom = request.ManualServicePriceSom,
-            ServiceItems = request.ServiceItems?.Select(x => new CreateInvoiceServiceItemInput
-            {
-                ServiceId = x.ServiceId,
-                Qty = x.Qty
-            }).ToList(),
-            OrgServices = orgServices,
-            PayCode = request.PayCode,
-            Hassameaccount = request.Hassameaccount
-        };
-
-        try
-        {
-            var createdIds = await _operationsByInvoices.CreateInvoicesAsync(input);
-            return Json(new { success = true, message = "Счета созданы.", createdIds });
-        }
-        catch (DbUpdateException ex)
-        {
-            var message = ex.InnerException?.Message ?? ex.Message;
-            return new JsonResult(new { success = false, message = "Ошибка БД: " + message }) { StatusCode = 500 };
-        }
-        catch (Exception ex)
-        {
-            var message = ex.InnerException?.Message ?? ex.Message;
-            return new JsonResult(new { success = false, message = "Ошибка: " + message }) { StatusCode = 500 };
-        }
-    }
 
     private IActionResult? EnsureClientsFeature()
     {
@@ -785,22 +590,6 @@ public class ClientsController : Controller
     private string? GetOrganizationIdOrNull() => HttpContext.Session.GetString("OrganizationId");
 
     private string? GetUserIdOrNull() => HttpContext.Session.GetString("UserId");
-
-    private static string GetPeriodicityText(string? periodicity)
-    {
-        return periodicity switch
-        {
-            "daily" => "Ежедневно",
-            "weekly" => "Еженедельно",
-            "monthly" => "Ежемесячно",
-            "yearly" => "Ежегодно",
-            "oneTime" => "Одноразовый",
-            "any" => "Прием в любой момент",
-            _ => periodicity != null && int.TryParse(periodicity, out var days)
-                ? $"Каждые {days} дней"
-                : periodicity ?? "Не указано"
-        };
-    }
 
     private static string NormalizeImportHeader(string? value)
     {

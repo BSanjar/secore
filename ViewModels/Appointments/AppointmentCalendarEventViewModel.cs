@@ -16,6 +16,9 @@ public class AppointmentCalendarEventViewModel
     public string Notes { get; set; } = string.Empty;
     public string? ReferralSource { get; set; }
     public string? PaymentType { get; set; }
+    public bool HasPaidInvoice { get; set; }
     public bool IsActive { get; set; } = true;
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
     public IReadOnlyList<AppointmentServiceLineViewModel> Services { get; set; } = Array.Empty<AppointmentServiceLineViewModel>();
 }

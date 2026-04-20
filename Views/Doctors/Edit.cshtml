@@ -1,22 +1,9 @@
-@model WebApplication1.ViewModels.Doctors.DoctorAssignmentsEditViewModel
-@using System.Text.Json
+﻿@model WebApplication1.ViewModels.Doctors.DoctorAssignmentsEditViewModel
 @{
-    ViewData["Title"] = "Доктор";
-    var eventsJson = JsonSerializer.Serialize(Model.Events.Select(x => new
-    {
-        id = x.Id,
-        title = x.Title,
-        patientName = x.PatientName,
-        start = x.Start,
-        end = x.End,
-        status = x.Status
-    }));
-    var schedulesJson = JsonSerializer.Serialize(Model.DoctorSchedules);
-    var overridesJson = JsonSerializer.Serialize(Model.DoctorScheduleOverrides);
+    ViewData["Title"] = "Назначения врача";
 }
 
 @section Styles {
-    <link rel="stylesheet" href="~/css/medclinic-schedule.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/doctor-schedule.css" asp-append-version="true" />
 }
 
@@ -34,17 +21,18 @@
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div>
                 <h1 class="h3 mb-1">@Model.DoctorName</h1>
-                <p class="text-muted mb-0">Календарь выходов и приемов врача, а также его отделения и специализации.</p>
+                <p class="text-muted mb-0">Управление отделениями, специализациями и сменами врача.</p>
             </div>
             <div class="d-flex flex-wrap gap-2">
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#doctorScheduleModal">Настроить смену</button>
+                <a class="btn btn-primary" asp-action="Appointments" asp-route-id="@Model.DoctorId">Приемы</a>
                 <a class="btn btn-outline-secondary" asp-action="Index">К списку докторов</a>
                 <a class="btn btn-outline-primary" asp-controller="Users" asp-action="Edit" asp-route-id="@Model.DoctorId">Карточка пользователя</a>
             </div>
         </div>
 
         <div class="row g-3 mt-1">
-            <div class="col-md-4">
+            <div class="col-md-6 col-xl-3">
                 <div class="border rounded-3 p-3 h-100">
                     <div class="text-muted small mb-1">Контакты</div>
                     <div class="fw-semibold">@Model.DoctorName</div>
@@ -52,7 +40,23 @@
                     <div>@(Model.Phone ?? "—")</div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6 col-xl-3">
+                <div class="border rounded-3 p-3 h-100">
+                    <div class="text-muted small mb-1">Роли</div>
+                    @if (Model.Roles.Count == 0)
+                    {
+                        <span class="text-muted">Без ролей</span>
+                    }
+                    else
+                    {
+                        foreach (var role in Model.Roles)
+                        {
+                            <span class="badge bg-info-subtle text-dark me-1 mb-1">@role</span>
+                        }
+                    }
+                </div>
+            </div>
+            <div class="col-md-6 col-xl-3">
                 <div class="border rounded-3 p-3 h-100">
                     <div class="text-muted small mb-1">Базовая смена</div>
                     @if (!Model.DoctorSchedulesReady)
@@ -80,11 +84,40 @@
                                 };
                                 <div><strong>@dayLabel</strong>: @schedule.StartTime - @schedule.EndTime</div>
                             }
+                            <div class="mt-2"><strong>Длительность приема:</strong> @Model.AppointmentDurationMinutes мин</div>
                         </div>
+
+                    }
+
+                    @if (Model.DoctorSchedulesReady)
+                    {
+                        <form method="post" asp-action="SaveAppointmentDuration" asp-route-id="@Model.DoctorId" class="mt-3">
+                            @Html.AntiForgeryToken()
+                            <label class="form-label small mb-1">Изменить длительность</label>
+                            <div class="d-flex gap-2">
+                                <select class="form-select form-select-sm" name="appointmentDurationMinutes">
+                                    @{
+                                        var durationOptions = new[] { 10, 15, 20, 25, 30, 40, 45, 50, 60, 90, 120 };
+                                    }
+                                    @foreach (var duration in durationOptions)
+                                    {
+                                        if (Model.AppointmentDurationMinutes == duration)
+                                        {
+                                            <option value="@duration" selected>@duration минут</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@duration">@duration минут</option>
+                                        }
+                                    }
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-outline-primary">Сохранить</button>
+                            </div>
+                        </form>
                     }
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6 col-xl-3">
                 <div class="border rounded-3 p-3 h-100">
                     <div class="text-muted small mb-1">Ближайшие особые дни</div>
                     @if (!Model.DoctorScheduleOverridesReady)
@@ -109,38 +142,6 @@
                     }
                 </div>
             </div>
-        </div>
-    </div>
-
-    <div class="medclinic-surface schedule-board mb-4">
-        <div class="p-4 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-3">
-            <div>
-                <h2 class="h5 mb-1">Календарь врача</h2>
-                <p class="text-muted mb-0">Фон показывает рабочее время, поверх него отображаются назначенные приемы.</p>
-            </div>
-            <div class="d-flex flex-wrap gap-2 align-items-center">
-                <div class="btn-group" role="group">
-                    <button class="btn btn-outline-secondary doctor-calendar-nav" data-direction="prev" type="button">Назад</button>
-                    <button class="btn btn-outline-secondary doctor-calendar-nav" data-direction="today" type="button">Сегодня</button>
-                    <button class="btn btn-outline-secondary doctor-calendar-nav" data-direction="next" type="button">Вперед</button>
-                </div>
-                <div class="btn-group doctor-calendar-switcher" role="group">
-                    <button class="btn btn-primary active" data-view="week" type="button">Неделя</button>
-                    <button class="btn btn-outline-primary" data-view="month" type="button">Месяц</button>
-                </div>
-            </div>
-        </div>
-        <div class="px-4 pt-3">
-            <div class="d-flex flex-wrap gap-2 text-muted small mb-3">
-                <span class="medclinic-badge medclinic-badge--available">Рабочий день</span>
-                <span class="medclinic-badge medclinic-badge--busy">Прием</span>
-            </div>
-        </div>
-        <div class="schedule-calendar px-4 pb-4">
-            <div class="schedule-calendar__header">
-                <div id="doctorCalendarPeriodLabel" class="schedule-calendar__period"></div>
-            </div>
-            <div id="doctorCalendarGrid" class="schedule-calendar__grid"></div>
         </div>
     </div>
 
@@ -251,11 +252,9 @@
                 <div class="row g-4">
                     <div class="col-12">
                         <div class="border rounded-3 p-3">
-                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                                <div>
-                                    <h3 class="h6 mb-1">Базовая смена</h3>
-                                    <p class="text-muted small mb-0">Один раз настройте типовой график врача по дням недели.</p>
-                                </div>
+                            <div class="mb-3">
+                                <h3 class="h6 mb-1">Базовая смена</h3>
+                                <p class="text-muted small mb-0">Один раз настройте типовой график врача по дням недели.</p>
                             </div>
 
                             @if (!Model.DoctorSchedulesReady)
@@ -296,6 +295,25 @@
                                     <div class="col-md-6">
                                         <label class="form-label">Конец смены</label>
                                         <input class="form-control" type="time" name="EndTime" value="@Model.ScheduleForm.EndTime" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Длительность приема (мин)</label>
+                                        <select class="form-select" name="AppointmentDurationMinutes">
+                                            @{
+                                                var durations = new[] { 10, 15, 20, 25, 30, 40, 45, 50, 60, 90, 120 };
+                                            }
+                                            @foreach (var duration in durations)
+                                            {
+                                                if (Model.ScheduleForm.AppointmentDurationMinutes == duration)
+                                                {
+                                                    <option value="@duration" selected>@duration минут</option>
+                                                }
+                                                else
+                                                {
+                                                    <option value="@duration">@duration минут</option>
+                                                }
+                                            }
+                                        </select>
                                     </div>
                                     <div class="col-12">
                                         <button type="submit" class="btn btn-primary">Сохранить базовую смену</button>
@@ -357,43 +375,6 @@
                                         <button type="submit" class="btn btn-outline-primary">Сохранить особый день</button>
                                     </div>
                                 </form>
-
-                                <div class="mt-4">
-                                    <div class="text-muted small mb-2">Уже настроенные особые дни</div>
-                                    @if (Model.DoctorScheduleOverrides.Count == 0)
-                                    {
-                                        <div class="small text-muted">Пока нет индивидуальных дат.</div>
-                                    }
-                                    else
-                                    {
-                                        <div class="vstack gap-2">
-                                            @foreach (var item in Model.DoctorScheduleOverrides)
-                                            {
-                                                <div class="border rounded-3 p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                                    <div>
-                                                        <div class="fw-semibold">@item.WorkDate</div>
-                                                        <div class="small text-muted">
-                                                            @(item.IsWorking ? $"{item.StartTime} - {item.EndTime}" : "Выходной")
-                                                            @if (!string.IsNullOrWhiteSpace(item.Comment))
-                                                            {
-                                                                <span>• @item.Comment</span>
-                                                            }
-                                                        </div>
-                                                    </div>
-                                                    <button type="button"
-                                                            class="btn btn-sm btn-outline-secondary doctor-override-prefill"
-                                                            data-date="@item.WorkDate"
-                                                            data-mode="@(item.IsWorking ? "custom" : "off")"
-                                                            data-start="@item.StartTime"
-                                                            data-end="@item.EndTime"
-                                                            data-comment="@item.Comment">
-                                                        Изменить
-                                                    </button>
-                                                </div>
-                                            }
-                                        </div>
-                                    }
-                                </div>
                             }
                         </div>
                     </div>
@@ -406,11 +387,23 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
-        window.doctorScheduleCalendar = {
-            events: @Html.Raw(eventsJson),
-            schedules: @Html.Raw(schedulesJson),
-            overrides: @Html.Raw(overridesJson)
-        };
+        (function () {
+            const overrideForm = document.getElementById("doctorScheduleOverrideForm");
+            if (!overrideForm) return;
+
+            const modeInputs = overrideForm.querySelectorAll('input[name="Mode"]');
+            const startInput = overrideForm.querySelector('input[name="StartTime"]');
+            const endInput = overrideForm.querySelector('input[name="EndTime"]');
+
+            function syncOverrideMode() {
+                const mode = overrideForm.querySelector('input[name="Mode"]:checked')?.value || "default";
+                const disabled = mode !== "custom";
+                if (startInput) startInput.disabled = disabled;
+                if (endInput) endInput.disabled = disabled;
+            }
+
+            modeInputs.forEach((input) => input.addEventListener("change", syncOverrideMode));
+            syncOverrideMode();
+        })();
     </script>
-    <script src="~/js/doctor-schedule.js" asp-append-version="true"></script>
 }

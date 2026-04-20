@@ -1,0 +1,177 @@
+@model WebApplication1.ViewModels.Appointments.AppointmentTemplatesIndexViewModel
+@{
+    ViewData["Title"] = "Шаблоны приемов";
+}
+
+<div class="dashboard-page">
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm mb-4">@TempData["Message"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger border-0 shadow-sm mb-4">@TempData["Error"]</div>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.StorageMessage))
+    {
+        <div class="alert alert-warning border-0 shadow-sm mb-4">@Model.StorageMessage</div>
+    }
+
+    <div class="medclinic-surface p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h1 class="h3 mb-1">Шаблоны текста приемов</h1>
+                <p class="text-muted mb-0">Отдельная таблица шаблонов для быстрого заполнения карты приема.</p>
+            </div>
+            <a class="btn btn-outline-secondary" asp-action="Registry">К расписанию</a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="medclinic-surface p-4 h-100">
+                <h2 class="h5 mb-3">Текущие шаблоны</h2>
+                @if (!Model.StorageReady)
+                {
+                    <div class="text-muted">Таблица шаблонов пока недоступна.</div>
+                }
+                else if (Model.Templates.Count == 0)
+                {
+                    <div class="text-muted">Шаблонов пока нет.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                            <tr>
+                                <th>Тип</th>
+                                <th>Название</th>
+                                <th>Порядок</th>
+                                <th>Статус</th>
+                                <th class="text-end">Действия</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (var item in Model.Templates)
+                            {
+                                <tr>
+                                    <td>@item.Type</td>
+                                    <td class="fw-semibold">@item.Title</td>
+                                    <td>@item.SortOrder</td>
+                                    <td>
+                                        @if (item.IsActive)
+                                        {
+                                            <span class="badge text-bg-success">Активен</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge text-bg-secondary">Выключен</span>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-primary template-edit-btn"
+                                                data-id="@item.Id"
+                                                data-type="@item.Type"
+                                                data-title="@item.Title"
+                                                data-content="@item.Content"
+                                                data-sort="@item.SortOrder"
+                                                data-active="@item.IsActive">
+                                            Редактировать
+                                        </button>
+                                        <form method="post" asp-action="DeleteTemplate" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="Id" value="@item.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Удалить шаблон?')">Удалить</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="medclinic-surface p-4 h-100">
+                <h2 class="h5 mb-3">Форма шаблона</h2>
+                <form method="post" asp-action="SaveTemplate" class="vstack gap-3">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="Id" id="templateId" />
+
+                    <div>
+                        <label class="form-label">Тип</label>
+                        <select class="form-select" name="Type" id="templateType" required>
+                            <option value="complaints">Жалобы</option>
+                            <option value="diagnosis">Диагноз</option>
+                            <option value="recommendations">Рекомендации</option>
+                            <option value="research">Направления</option>
+                            <option value="comment">Комментарий</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Название</label>
+                        <input class="form-control" type="text" name="Title" id="templateTitle" maxlength="160" required />
+                    </div>
+                    <div>
+                        <label class="form-label">Текст</label>
+                        <textarea class="form-control" rows="6" name="Content" id="templateContent" required></textarea>
+                    </div>
+                    <div>
+                        <label class="form-label">Порядок</label>
+                        <input class="form-control" type="number" min="0" max="10000" name="SortOrder" id="templateSortOrder" value="0" />
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="IsActive" id="templateIsActive" value="true" checked />
+                        <label class="form-check-label" for="templateIsActive">Активный шаблон</label>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Сохранить</button>
+                        <button type="button" class="btn btn-outline-secondary" id="templateResetBtn">Очистить форму</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const id = document.getElementById("templateId");
+            const type = document.getElementById("templateType");
+            const title = document.getElementById("templateTitle");
+            const content = document.getElementById("templateContent");
+            const sort = document.getElementById("templateSortOrder");
+            const active = document.getElementById("templateIsActive");
+            const resetBtn = document.getElementById("templateResetBtn");
+            const buttons = document.querySelectorAll(".template-edit-btn");
+
+            function resetForm() {
+                id.value = "";
+                type.value = "complaints";
+                title.value = "";
+                content.value = "";
+                sort.value = "0";
+                active.checked = true;
+            }
+
+            buttons.forEach((btn) => {
+                btn.addEventListener("click", function () {
+                    id.value = this.dataset.id || "";
+                    type.value = this.dataset.type || "complaints";
+                    title.value = this.dataset.title || "";
+                    content.value = this.dataset.content || "";
+                    sort.value = this.dataset.sort || "0";
+                    active.checked = (this.dataset.active || "").toLowerCase() === "true";
+                });
+            });
+
+            resetBtn?.addEventListener("click", resetForm);
+        })();
+    </script>
+}

@@ -1,0 +1,15 @@
+C:\Users\AzatAdmin\Documents\SECORE\secore\artifacts\tmpobj\Debug\net7.0\WebApplication1.csproj.AssemblyReference.cache
+C:\Users\AzatAdmin\Documents\SECORE\secore\artifacts\tmpobj\Debug\net7.0\rpswa.dswa.cache.json
+C:\Users\AzatAdmin\Documents\SECORE\secore\artifacts\tmpobj\Debug\net7.0\WebApplication1.Resources.SharedResources.resources
+C:\Users\AzatAdmin\Documents\SECORE\secore\artifacts\tmpobj\Debug\net7.0\WebApplication1.Resources.SharedResources.en.resources
+C:\Users\AzatAdmin\Documents\SECORE\secore\artifacts\tmpobj\Debug\net7.0\WebApplication1.Resources.SharedResources.ky.resources
+C:\Users\AzatAdmin\Documents\SECORE\secore\artifacts\tmpobj\Debug\net7.0\WebApplication1.csproj.GenerateResource.cache
+C:\Users\AzatAdmin\Documents\SECORE\secore\artifacts\tmpobj\Debug\net7.0\WebApplication1.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\AzatAdmin\Documents\SECORE\secore\artifacts\tmpobj\Debug\net7.0\WebApplication1.AssemblyInfoInputs.cache
+C:\Users\AzatAdmin\Documents\SECORE\secore\artifacts\tmpobj\Debug\net7.0\WebApplication1.AssemblyInfo.cs
+C:\Users\AzatAdmin\Documents\SECORE\secore\artifacts\tmpobj\Debug\net7.0\WebApplication1.csproj.CoreCompileInputs.cache
+C:\Users\AzatAdmin\Documents\SECORE\secore\artifacts\tmpobj\Debug\net7.0\WebApplication1.MvcApplicationPartsAssemblyInfo.cs
+C:\Users\AzatAdmin\Documents\SECORE\secore\artifacts\tmpobj\Debug\net7.0\WebApplication1.MvcApplicationPartsAssemblyInfo.cache
+C:\Users\AzatAdmin\Documents\SECORE\secore\artifacts\tmpobj\Debug\net7.0\WebApplication1.RazorAssemblyInfo.cache
+C:\Users\AzatAdmin\Documents\SECORE\secore\artifacts\tmpobj\Debug\net7.0\WebApplication1.RazorAssemblyInfo.cs
+C:\Users\AzatAdmin\Documents\SECORE\secore\artifacts\tmpobj\Debug\net7.0\WebApplication1.sourcelink.json

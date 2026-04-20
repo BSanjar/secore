@@ -126,6 +126,11 @@ namespace WebApplication1.Models.WebApiModels
         IpNotAllowed = 41,
 
         /// <summary>
+        /// Одноразовый платеж уже оплачен
+        /// </summary>
+        InvoiceAlreadyPaid = 42,
+
+        /// <summary>
         /// Системная ошибка
         /// </summary>
         SystemError = 100,
@@ -136,4 +141,3 @@ namespace WebApplication1.Models.WebApiModels
         AuthenticationFailed = 200
     }
 }
-

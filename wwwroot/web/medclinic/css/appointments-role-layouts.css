@@ -1,0 +1,703 @@
+.appointments-page {
+    --appt-primary: #4f46e5;
+    --appt-secondary: #0ea5e9;
+    --appt-accent: #f97316;
+    --appt-bg: #f8fafc;
+    --appt-surface: #ffffff;
+    --appt-text: #111827;
+    --appt-border: #e5e7eb;
+    --med-border: var(--appt-border);
+    --med-text: var(--appt-text);
+    --med-muted: #64748b;
+    --med-accent: var(--appt-primary);
+    --med-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+}
+
+body.org-detsad .appointments-page {
+    --appt-primary: #4fc3f7;
+    --appt-secondary: #ffd54f;
+    --appt-accent: #ff8a65;
+    --appt-bg: #fffdf7;
+    --appt-surface: #ffffff;
+    --appt-text: #1f2937;
+    --appt-border: #e5e7eb;
+}
+
+body.org-medclinic .appointments-page {
+    --appt-primary: #0f766e;
+    --appt-secondary: #14b8a6;
+    --appt-accent: #38bdf8;
+    --appt-bg: #f0fdfa;
+    --appt-surface: #ffffff;
+    --appt-text: #0f172a;
+    --appt-border: #d1fae5;
+}
+
+.appointments-page .medclinic-surface {
+    background: var(--appt-surface);
+    border: 1px solid var(--appt-border);
+}
+
+.registry-appointments-page .hidden {
+    display: none !important;
+}
+
+.registry-appointments-page .registry-demo-header-row,
+.registry-appointments-page .nav-row,
+.registry-appointments-page .period-current,
+.registry-appointments-page .registry-date-tools,
+.registry-appointments-page .selected-doctors,
+.registry-appointments-page .legend,
+.registry-appointments-page .availability-tools {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.registry-appointments-page .registry-demo-top-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.registry-appointments-page .registry-demo-stat-card,
+.registry-appointments-page .filters-card,
+.registry-appointments-page .view-card {
+    padding: 20px;
+}
+
+.registry-appointments-page .registry-demo-stat-label {
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+    margin-bottom: 6px;
+    font-weight: 700;
+}
+
+.registry-appointments-page .registry-demo-stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--appt-text);
+}
+
+.registry-appointments-page .registry-demo-note,
+.registry-appointments-page .filter-section-note,
+.registry-appointments-page .nav-block-subtitle {
+    color: #64748b;
+    line-height: 1.5;
+}
+
+.registry-appointments-page .filter-shell {
+    display: grid;
+    gap: 18px;
+}
+
+.registry-appointments-page .section-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--appt-text);
+}
+
+.registry-appointments-page .nav-panel {
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    gap: 14px;
+}
+
+.registry-appointments-page .nav-block,
+.registry-appointments-page .filter-section {
+    background: #f8fafc;
+    border: 1px solid var(--appt-border);
+    border-radius: 22px;
+    padding: 16px;
+}
+
+.registry-appointments-page .nav-block.primary {
+    background: linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%);
+}
+
+.registry-appointments-page .nav-block-title,
+.registry-appointments-page .field-label,
+.registry-appointments-page .filter-section-title {
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #334155;
+    margin-bottom: 10px;
+}
+
+.registry-appointments-page .period-switch,
+.registry-appointments-page .tabs {
+    display: inline-flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding: 6px;
+    border-radius: 18px;
+}
+
+.registry-appointments-page .period-switch {
+    background: #dbeafe;
+    border: 1px solid #bfdbfe;
+}
+
+.registry-appointments-page .tabs {
+    background: #f1f5f9;
+    border: 1px solid var(--appt-border);
+    margin-bottom: 16px;
+}
+
+.registry-appointments-page .period-btn,
+.registry-appointments-page .tab-btn,
+.registry-appointments-page .nav-btn {
+    border-radius: 16px;
+    font-weight: 700;
+}
+
+.registry-appointments-page .period-btn,
+.registry-appointments-page .nav-btn {
+    padding: 12px 16px;
+}
+
+.registry-appointments-page .period-btn.active {
+    box-shadow: 0 8px 18px rgba(29, 78, 216, 0.18);
+}
+
+.registry-appointments-page .tab-btn {
+    padding: 11px 18px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: #64748b;
+}
+
+.registry-appointments-page .tab-btn.active {
+    background: #fff;
+    color: #0f172a;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+}
+
+.registry-appointments-page .period-current {
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.registry-appointments-page .period-current-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #64748b;
+    margin-bottom: 8px;
+}
+
+.registry-appointments-page .period-label {
+    padding: 14px 18px;
+    border-radius: 18px;
+    background: #fff;
+    border: 1px solid #bfdbfe;
+    font-size: 15px;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.registry-appointments-page .registry-date-tools {
+    justify-content: flex-end;
+}
+
+.registry-appointments-page .registry-date-picker {
+    min-width: 180px;
+    border-radius: 16px;
+}
+
+.registry-appointments-page .filter-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.registry-appointments-page .filter-grid--compact {
+    align-items: start;
+}
+
+.registry-appointments-page .field input,
+.registry-appointments-page .field select {
+    width: 100%;
+    border-radius: 18px;
+    padding: 13px 14px;
+    border: 1px solid var(--appt-border);
+    background: #fff;
+}
+
+.registry-appointments-page .doctor-pill,
+.registry-appointments-page .legend-item {
+    padding: 10px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--appt-border);
+    background: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    color: #334155;
+}
+
+.registry-appointments-page .availability-wrap {
+    display: grid;
+    gap: 12px;
+}
+
+.registry-appointments-page .availability-tools .field {
+    min-width: 220px;
+    flex: 1;
+}
+
+.registry-appointments-page .availability-list,
+.registry-appointments-page .load-grid,
+.registry-appointments-page .month-doctor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 10px;
+}
+
+.registry-appointments-page .availability-card,
+.registry-appointments-page .doctor-month-card,
+.registry-appointments-page .load-card,
+.registry-appointments-page .slot-card,
+.registry-appointments-page .week-appointment {
+    width: 100%;
+    text-align: left;
+    border-radius: 18px;
+    padding: 12px;
+    border: 1px solid var(--appt-border);
+    background: #fff;
+    transition: 0.2s ease;
+}
+
+.registry-appointments-page .availability-card:hover,
+.registry-appointments-page .doctor-month-card:hover,
+.registry-appointments-page .load-card:hover,
+.registry-appointments-page .slot-card:hover,
+.registry-appointments-page .week-appointment:hover,
+.registry-appointments-page .list-row:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+}
+
+.registry-appointments-page .availability-rank,
+.registry-appointments-page .month-date-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    font-weight: 800;
+}
+
+.registry-appointments-page .availability-rank {
+    width: 26px;
+    height: 26px;
+    background: #e0f2fe;
+    color: #0369a1;
+    font-size: 12px;
+    margin-bottom: 8px;
+}
+
+.registry-appointments-page .availability-date,
+.registry-appointments-page .month-date-badge {
+    padding: 6px 10px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1d4ed8;
+    font-size: 12px;
+    margin-bottom: 8px;
+}
+
+.registry-appointments-page .availability-time,
+.registry-appointments-page .doctor-month-title,
+.registry-appointments-page .load-name {
+    font-size: 14px;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.registry-appointments-page .availability-meta,
+.registry-appointments-page .doctor-month-sub,
+.registry-appointments-page .load-sub,
+.registry-appointments-page .slot-service,
+.registry-appointments-page .slot-meta,
+.registry-appointments-page .week-appointment small,
+.registry-appointments-page .month-empty,
+.registry-appointments-page .empty {
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.45;
+}
+
+.registry-appointments-page .grid-wrap,
+.registry-appointments-page .list-table {
+    overflow: auto;
+    border: 1px solid var(--appt-border);
+    border-radius: 22px;
+    background: #fff;
+}
+
+.registry-appointments-page .doctor-grid,
+.registry-appointments-page .doctor-grid-head {
+    min-width: 1200px;
+    display: grid;
+    grid-template-columns: 90px repeat(var(--registry-doctor-columns, 1), minmax(240px, 1fr));
+}
+
+.registry-appointments-page .doctor-grid-head {
+    background: #f8fafc;
+    border-bottom: 1px solid var(--appt-border);
+}
+
+.registry-appointments-page .doctor-grid-head > div,
+.registry-appointments-page .doctor-grid > div,
+.registry-appointments-page .list-head div,
+.registry-appointments-page .list-row div {
+    border-right: 1px solid #eef2f7;
+}
+
+.registry-appointments-page .doctor-grid-head > div:last-child,
+.registry-appointments-page .doctor-grid > div:last-child,
+.registry-appointments-page .list-head div:last-child,
+.registry-appointments-page .list-row div:last-child {
+    border-right: 0;
+}
+
+.registry-appointments-page .time-head,
+.registry-appointments-page .doctor-head,
+.registry-appointments-page .time-col,
+.registry-appointments-page .slot-col {
+    padding: 14px;
+}
+
+.registry-appointments-page .doctor-name,
+.registry-appointments-page .week-day-name {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.registry-appointments-page .doctor-sub,
+.registry-appointments-page .week-day-date {
+    font-size: 12px;
+    color: #64748b;
+}
+
+.registry-appointments-page .time-col {
+    color: #64748b;
+    font-weight: 700;
+    border-top: 1px solid #eef2f7;
+}
+
+.registry-appointments-page .slot-col {
+    min-height: 100px;
+    border-top: 1px solid #eef2f7;
+}
+
+.registry-appointments-page .slot-list,
+.registry-appointments-page .doctor-month-list,
+.registry-appointments-page .week-day-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.registry-appointments-page .slot-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.registry-appointments-page .slot-patient {
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.4;
+    margin-bottom: 4px;
+}
+
+.registry-appointments-page .status-tag {
+    padding: 6px 8px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    border: 1px solid transparent;
+    white-space: nowrap;
+}
+
+.registry-appointments-page .paid,
+.registry-appointments-page .status-paid {
+    background: #ecfdf5 !important;
+    border-color: #a7f3d0 !important;
+    color: #047857 !important;
+}
+
+.registry-appointments-page .unpaid,
+.registry-appointments-page .status-unpaid {
+    background: #fffbeb !important;
+    border-color: #fde68a !important;
+    color: #b45309 !important;
+}
+
+.registry-appointments-page .week-board {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(180px, 1fr));
+    gap: 12px;
+}
+
+.registry-appointments-page .week-day-card {
+    border: 1px solid var(--appt-border);
+    border-radius: 22px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.registry-appointments-page .week-day-head {
+    padding: 14px;
+    background: #f8fafc;
+    border-bottom: 1px solid #eef2f7;
+}
+
+.registry-appointments-page .week-day-body {
+    min-height: 240px;
+    padding: 12px;
+}
+
+.registry-appointments-page .list-head,
+.registry-appointments-page .list-row {
+    display: grid;
+    grid-template-columns: 120px 100px 1fr 220px 220px 120px;
+    min-width: 980px;
+}
+
+.registry-appointments-page .list-head {
+    background: #f8fafc;
+    border-bottom: 1px solid var(--appt-border);
+    font-size: 13px;
+    font-weight: 700;
+    color: #334155;
+}
+
+.registry-appointments-page .list-row {
+    border-top: 1px solid #eef2f7;
+    background: #fff;
+    cursor: pointer;
+}
+
+.registry-appointments-page .list-head div,
+.registry-appointments-page .list-row div {
+    padding: 14px 12px;
+}
+
+.registry-appointments-page .load-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 7px 0;
+    font-size: 13px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.registry-appointments-page .load-row:first-of-type {
+    border-top: 0;
+    padding-top: 0;
+}
+
+.registry-appointments-page .progress {
+    height: 10px;
+    background: #e2e8f0;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 14px;
+}
+
+.registry-appointments-page .progress-bar {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #38bdf8, #0284c7);
+}
+
+.registry-appointments-page .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.registry-appointments-page .dot-green {
+    background: #10b981;
+}
+
+.registry-appointments-page .dot-amber {
+    background: #f59e0b;
+}
+
+@media (max-width: 1280px) {
+    .registry-appointments-page .filter-grid,
+    .registry-appointments-page .registry-demo-top-grid,
+    .registry-appointments-page .week-board {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 992px) {
+    .registry-appointments-page .nav-panel {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 860px) {
+    .registry-appointments-page .page,
+    .registry-appointments-page .dashboard-page {
+        padding: 14px;
+    }
+
+    .registry-appointments-page .filter-grid,
+    .registry-appointments-page .registry-demo-top-grid,
+    .registry-appointments-page .week-board {
+        grid-template-columns: 1fr;
+    }
+}
+
+.doctor-demo-shell {
+    margin-bottom: 18px;
+}
+
+.doctor-demo-top-grid {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: 16px;
+}
+
+.doctor-demo-card {
+    background: var(--appt-surface);
+    border: 1px solid var(--appt-border);
+    border-radius: 24px;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+}
+
+.doctor-demo-header-card {
+    padding: 20px;
+}
+
+.doctor-demo-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.doctor-demo-title {
+    margin: 0 0 8px;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--appt-text);
+}
+
+.doctor-demo-subtitle {
+    margin: 0;
+    color: #64748b;
+}
+
+.doctor-demo-mode-switch {
+    display: inline-flex;
+    gap: 8px;
+}
+
+.doctor-demo-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+
+.doctor-demo-stat-card {
+    padding: 18px 20px;
+}
+
+.doctor-demo-stat-label {
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+    margin-bottom: 6px;
+    font-weight: 700;
+}
+
+.doctor-demo-stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--appt-text);
+}
+
+.registry-demo-shell {
+    margin-bottom: 18px;
+}
+
+.registry-demo-card {
+    background: var(--appt-surface);
+    border: 1px solid var(--appt-border);
+    border-radius: 24px;
+    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
+}
+
+.registry-demo-header-card {
+    padding: 20px;
+}
+
+.registry-demo-title {
+    margin: 0 0 8px;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--appt-text);
+}
+
+.registry-demo-subtitle {
+    margin: 0 0 12px;
+    color: #64748b;
+}
+
+.registry-demo-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.registry-demo-badge {
+    background: #fff;
+    border: 1px solid var(--appt-border);
+    border-radius: 999px;
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #334155;
+}
+
+.registry-demo-legend {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.appointments-shared-board .appointments-calendar-toolbar {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--appt-primary) 6%, white), #fff);
+}
+
+.appointments-shared-board .btn-primary,
+.appointments-shared-board .schedule-view-switcher .btn.active {
+    background: var(--appt-primary);
+    border-color: var(--appt-primary);
+}
+
+.appointments-shared-board .btn-outline-primary {
+    color: var(--appt-primary);
+    border-color: color-mix(in srgb, var(--appt-primary) 45%, white);
+}
+
+@media (max-width: 1100px) {
+    .doctor-demo-top-grid {
+        grid-template-columns: 1fr;
+    }
+}

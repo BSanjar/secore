@@ -1,89 +1,125 @@
 /* Dashboard soft UI theme based on Example/index.html */
 
 :root {
-  --bg-page: #EEF3F7;
-  --bg-page-secondary: #E7EDF3;
+  --bg-page: #F8FAFC;
+  --bg-page-secondary: #F1F5F9;
 
-  --bg-sidebar: #F8FBFD;
-  --sidebar-border: #DCE5EC;
-  --sidebar-icon: #6E7F91;
-  --sidebar-icon-hover: #4F6B86;
-  --sidebar-item-hover: #E6F0F8;
-  --sidebar-item-active: #6E93B7;
+  --bg-sidebar: #FFFFFF;
+  --sidebar-border: #E2E8F0;
+  --sidebar-icon: #64748B;
+  --sidebar-icon-hover: #475569;
+  --sidebar-item-hover: #EEF2FF;
+  --sidebar-item-active: #4F46E5;
   --sidebar-icon-active: #FFFFFF;
 
-  --card-bg: #FDFEFF;
-  --card-bg-soft: #F6FAFD;
-  --card-border: #E2EAF0;
-  --card-shadow: 0 14px 30px rgba(120, 144, 166, 0.10);
+  --card-bg: #FFFFFF;
+  --card-bg-soft: #F8FAFC;
+  --card-border: #E2E8F0;
+  --card-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
 
-  --text-primary: #273444;
-  --text-secondary: #607284;
-  --text-muted: #8C9AAA;
+  --text-primary: #111827;
+  --text-secondary: #475569;
+  --text-muted: #94A3B8;
   --text-white: #FFFFFF;
 
-  --accent-primary: #6E93B7;
-  --accent-primary-hover: #5F84A8;
-  --accent-primary-active: #52779B;
-  --accent-primary-soft: #E4EEF7;
+  --accent-primary: #4F46E5;
+  --accent-primary-hover: #4338CA;
+  --accent-primary-active: #3730A3;
+  --accent-primary-soft: #E0E7FF;
 
-  --accent-info-soft: #DCEAF5;
-  --accent-info: #84A9C7;
-  --accent-mint: #9DBFC4;
-  --accent-mint-soft: #E5F1F2;
+  --accent-info-soft: #E0F2FE;
+  --accent-info: #0EA5E9;
+  --accent-mint: #A7F3D0;
+  --accent-mint-soft: #ECFDF5;
 
-  --btn-primary-bg: #6E93B7;
-  --btn-primary-hover: #5F84A8;
-  --btn-primary-active: #52779B;
+  --btn-primary-bg: #4F46E5;
+  --btn-primary-hover: #4338CA;
+  --btn-primary-active: #3730A3;
   --btn-primary-text: #FFFFFF;
-  --btn-primary-disabled: #B7C7D8;
+  --btn-primary-disabled: #BAE6FD;
 
-  --btn-secondary-bg: #EDF4FA;
-  --btn-secondary-hover: #E1ECF6;
-  --btn-secondary-active: #D6E6F2;
-  --btn-secondary-text: #4F6B86;
-  --btn-secondary-border: #D5E2EC;
+  --btn-secondary-bg: #F8FAFC;
+  --btn-secondary-hover: #F1F5F9;
+  --btn-secondary-active: #E2E8F0;
+  --btn-secondary-text: #475569;
+  --btn-secondary-border: #E2E8F0;
 
-  --btn-outline-border: #C7D6E3;
-  --btn-outline-text: #5A748E;
-  --btn-outline-hover: #EEF5FB;
+  --btn-outline-border: #CBD5E1;
+  --btn-outline-text: #475569;
+  --btn-outline-hover: #F1F5F9;
 
-  --input-bg: #FDFEFF;
-  --input-border: #D9E4EC;
-  --input-border-focus: #8EAFCC;
-  --input-placeholder: #98A7B5;
-  --input-text: #2E3B4A;
-  --input-disabled-bg: #F1F5F8;
+  --input-bg: #FFFFFF;
+  --input-border: #E2E8F0;
+  --input-border-focus: #4F46E5;
+  --input-placeholder: #94A3B8;
+  --input-text: #0F172A;
+  --input-disabled-bg: #F1F5F9;
 
-  --success: #7FAF98;
-  --success-soft: #E8F4ED;
-  --success-text: #4F7C67;
+  --success: #047857;
+  --success-soft: #ECFDF5;
+  --success-text: #047857;
 
-  --warning: #D6B97A;
-  --warning-soft: #F8F1E2;
-  --warning-text: #8B7340;
+  --warning: #F97316;
+  --warning-soft: #FFFBEB;
+  --warning-text: #B45309;
 
-  --error: #D38C8C;
-  --error-soft: #F9EAEA;
-  --error-text: #9C5C5C;
+  --error: #DC2626;
+  --error-soft: #FEE2E2;
+  --error-text: #991B1B;
 
-  --info: #84A9C7;
-  --info-soft: #EAF3FA;
-  --info-text: #537391;
+  --info: #0EA5E9;
+  --info-soft: #E0F2FE;
+  --info-text: #0369A1;
 
-  --chart-1: #A9C2D9;
-  --chart-2: #6E93B7;
-  --chart-3: #C9DCEA;
-  --chart-4: #9DBFC4;
-  --chart-5: #D9C8AA;
-  --chart-6: #B7BED8;
-  --chart-grid: #E4EBF1;
-  --chart-axis: #7E8E9E;
+  --chart-1: #6366F1;
+  --chart-2: #4F46E5;
+  --chart-3: #A5F3FC;
+  --chart-4: #A7F3D0;
+  --chart-5: #FDE68A;
+  --chart-6: #FDBA74;
+  --chart-grid: #E2E8F0;
+  --chart-axis: #64748B;
 
-  --radius-xl: 28px;
-  --radius-lg: 22px;
-  --radius-md: 18px;
-  --radius-sm: 14px;
+  --radius-xl: 24px;
+  --radius-lg: 20px;
+  --radius-md: 16px;
+  --radius-sm: 12px;
+}
+
+body.dashboard-body.org-detsad {
+  --bg-page: #FFFDF7;
+  --bg-page-secondary: #FFF7E6;
+  --sidebar-item-hover: #FFF7E6;
+  --sidebar-item-active: #4FC3F7;
+  --text-primary: #1F2937;
+  --text-secondary: #475569;
+  --accent-primary: #4FC3F7;
+  --accent-primary-hover: #38BDF8;
+  --accent-primary-active: #0EA5E9;
+  --accent-primary-soft: #E0F2FE;
+  --accent-info: #FF8A65;
+  --accent-info-soft: #FFE6DD;
+  --btn-primary-bg: #4FC3F7;
+  --btn-primary-hover: #38BDF8;
+  --btn-primary-active: #0EA5E9;
+  --btn-secondary-bg: #FFF7D6;
+  --btn-secondary-hover: #FFEFB5;
+  --btn-secondary-active: #FFE69A;
+  --btn-secondary-text: #7C5E00;
+  --btn-secondary-border: #FFD54F;
+  --input-border-focus: #4FC3F7;
+  --warning: #F59E0B;
+  --warning-soft: #FEF3C7;
+  --warning-text: #B45309;
+  --info: #FF8A65;
+  --info-soft: #FFE6DD;
+  --info-text: #C2410C;
+  --chart-1: #4FC3F7;
+  --chart-2: #FF8A65;
+  --chart-3: #FFD54F;
+  --chart-4: #34D399;
+  --chart-5: #A78BFA;
+  --chart-6: #FCA5A5;
 }
 
 body.dashboard-body {
@@ -1515,4 +1551,3 @@ body.dashboard-body .cabinet-footer .container-fluid {
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
 }
-

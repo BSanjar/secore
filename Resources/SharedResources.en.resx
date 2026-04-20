@@ -357,4 +357,538 @@
   <data name="No" xml:space="preserve">
     <value>No</value>
   </data>
+  <data name="PaymentAnulated" xml:space="preserve">
+    <value>Canceled</value>
+  </data>
+  <data name="Client" xml:space="preserve">
+    <value>Client</value>
+  </data>
+  <data name="AddService" xml:space="preserve">
+    <value>Add service</value>
+  </data>
+  <data name="SummaryTotalBalance" xml:space="preserve">
+    <value>Total balance</value>
+  </data>
+  <data name="SharedAccount" xml:space="preserve">
+    <value>Shared account</value>
+  </data>
+  <data name="SearchByNameOrPhone" xml:space="preserve">
+    <value>Search by full name or phone</value>
+  </data>
+  <data name="SaveError" xml:space="preserve">
+    <value>Save error</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="SummaryActiveInvoices" xml:space="preserve">
+    <value>Active invoices</value>
+  </data>
+  <data name="QrAlt" xml:space="preserve">
+    <value>Invoice QR code</value>
+  </data>
+  <data name="PeriodMonthly" xml:space="preserve">
+    <value>Monthly</value>
+  </data>
+  <data name="MaxAmountSom" xml:space="preserve">
+    <value>Max amount (som)</value>
+  </data>
+  <data name="DebtorsOnly" xml:space="preserve">
+    <value>Debtors only</value>
+  </data>
+  <data name="Type" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="PeriodsMissing" xml:space="preserve">
+    <value>No periods</value>
+  </data>
+  <data name="QuickAccess" xml:space="preserve">
+    <value>Quick Access</value>
+  </data>
+  <data name="Service" xml:space="preserve">
+    <value>Service</value>
+  </data>
+  <data name="PeriodYearly" xml:space="preserve">
+    <value>Yearly</value>
+  </data>
+  <data name="TotalBalance" xml:space="preserve">
+    <value>Total balance</value>
+  </data>
+  <data name="System" xml:space="preserve">
+    <value>System</value>
+  </data>
+  <data name="ClientNotFound" xml:space="preserve">
+    <value>Client not found.</value>
+  </data>
+  <data name="NoServices" xml:space="preserve">
+    <value>No services</value>
+  </data>
+  <data name="DateCreated" xml:space="preserve">
+    <value>Date created</value>
+  </data>
+  <data name="PeriodScheduleNote" xml:space="preserve">
+    <value>For monthly and other periodicity types, full periods block is shown.</value>
+  </data>
+  <data name="Notifications" xml:space="preserve">
+    <value>Notifications</value>
+  </data>
+  <data name="Compact" xml:space="preserve">
+    <value>Compact</value>
+  </data>
+  <data name="RangeMinMax" xml:space="preserve">
+    <value>Range (min - max)</value>
+  </data>
+  <data name="AmountOrRange" xml:space="preserve">
+    <value>Amount / range</value>
+  </data>
+  <data name="ClientDefaultName" xml:space="preserve">
+    <value>Client</value>
+  </data>
+  <data name="Amount" xml:space="preserve">
+    <value>Amount</value>
+  </data>
+  <data name="TransactionsNone" xml:space="preserve">
+    <value>No transactions</value>
+  </data>
+  <data name="SummaryNearestPaymentNote" xml:space="preserve">
+    <value>Next expected period</value>
+  </data>
+  <data name="DateEnd" xml:space="preserve">
+    <value>Date end</value>
+  </data>
+  <data name="ClientInvoices" xml:space="preserve">
+    <value>Client invoices</value>
+  </data>
+  <data name="Period" xml:space="preserve">
+    <value>Periodicity</value>
+  </data>
+  <data name="SearchPlaceholder" xml:space="preserve">
+    <value>Search...</value>
+  </data>
+  <data name="NextPeriod" xml:space="preserve">
+    <value>Next period</value>
+  </data>
+  <data name="ClientInvoicesWithDetails" xml:space="preserve">
+    <value>Client invoices list. Each invoice can be expanded for details.</value>
+  </data>
+  <data name="DeleteError" xml:space="preserve">
+    <value>Delete error</value>
+  </data>
+  <data name="To" xml:space="preserve">
+    <value>To</value>
+  </data>
+  <data name="RangeAmountType" xml:space="preserve">
+    <value>Range</value>
+  </data>
+  <data name="ThisMonth" xml:space="preserve">
+    <value>This Month</value>
+  </data>
+  <data name="PeriodOneTime" xml:space="preserve">
+    <value>One-time</value>
+  </data>
+  <data name="FixedAmount" xml:space="preserve">
+    <value>Fixed amount</value>
+  </data>
+  <data name="NetworkError" xml:space="preserve">
+    <value>Network error</value>
+  </data>
+  <data name="PaymentType" xml:space="preserve">
+    <value>Payment type</value>
+  </data>
+  <data name="Deleted" xml:space="preserve">
+    <value>Deleted</value>
+  </data>
+  <data name="SummaryNearestPayment" xml:space="preserve">
+    <value>Nearest payment</value>
+  </data>
+  <data name="LoadClientDataError" xml:space="preserve">
+    <value>Failed to load client data.</value>
+  </data>
+  <data name="DeleteServiceConfirmation" xml:space="preserve">
+    <value>Are you sure you want to delete service</value>
+  </data>
+  <data name="PeriodSchedule" xml:space="preserve">
+    <value>Payment schedule / periods</value>
+  </data>
+  <data name="FixedAmountType" xml:space="preserve">
+    <value>Fixed</value>
+  </data>
+  <data name="Transactions" xml:space="preserve">
+    <value>Transactions</value>
+  </data>
+  <data name="ErrorWithStatus" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Services" xml:space="preserve">
+    <value>Services</value>
+  </data>
+  <data name="TotalIncome" xml:space="preserve">
+    <value>Total Income</value>
+  </data>
+  <data name="ClientHasNoInvoices" xml:space="preserve">
+    <value>Client has no invoices.</value>
+  </data>
+  <data name="PaymentPaid" xml:space="preserve">
+    <value>Paid</value>
+  </data>
+  <data name="Invoice" xml:space="preserve">
+    <value>Invoice</value>
+  </data>
+  <data name="From" xml:space="preserve">
+    <value>From</value>
+  </data>
+  <data name="OrganizationManagementOverview" xml:space="preserve">
+    <value>Organization management overview</value>
+  </data>
+  <data name="ClientsNotFound" xml:space="preserve">
+    <value>Clients not found.</value>
+  </data>
+  <data name="ServicesForInvoicesAndPayments" xml:space="preserve">
+    <value>Organization services for invoices and payments</value>
+  </data>
+  <data name="FixedAmountSom" xml:space="preserve">
+    <value>Fixed amount (som)</value>
+  </data>
+  <data name="SummaryDebtInvoices" xml:space="preserve">
+    <value>Invoices with debt</value>
+  </data>
+  <data name="PeriodEveryNDays" xml:space="preserve">
+    <value>Every {0} days</value>
+  </data>
+  <data name="Dashboard" xml:space="preserve">
+    <value>Dashboard</value>
+  </data>
+  <data name="MinAmountSom" xml:space="preserve">
+    <value>Min amount (som)</value>
+  </data>
+  <data name="PayCode" xml:space="preserve">
+    <value>PayCode</value>
+  </data>
+  <data name="AmountWithFee" xml:space="preserve">
+    <value>Amount with fee</value>
+  </data>
+  <data name="Dash" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="SummaryTotalInvoices" xml:space="preserve">
+    <value>Total invoices</value>
+  </data>
+  <data name="QrByInvoice" xml:space="preserve">
+    <value>QR by invoice</value>
+  </data>
+  <data name="AmountType" xml:space="preserve">
+    <value>Amount type</value>
+  </data>
+  <data name="ServiceName" xml:space="preserve">
+    <value>Service name</value>
+  </data>
+  <data name="ClientsList" xml:space="preserve">
+    <value>Clients list</value>
+  </data>
+  <data name="SummaryDebtInvoicesNote" xml:space="preserve">
+    <value>Negative balance</value>
+  </data>
+  <data name="SummaryTotalBalanceNote" xml:space="preserve">
+    <value>Across all invoices</value>
+  </data>
+  <data name="DebtInvoices" xml:space="preserve">
+    <value>Invoices with debt</value>
+  </data>
+  <data name="Active" xml:space="preserve">
+    <value>Active</value>
+  </data>
+  <data name="QrStatus" xml:space="preserve">
+    <value>QR status</value>
+  </data>
+  <data name="ReviewOrganizationTransactions" xml:space="preserve">
+    <value>Review organization transactions</value>
+  </data>
+  <data name="Cost" xml:space="preserve">
+    <value>Cost</value>
+  </data>
+  <data name="NothingFoundBySearch" xml:space="preserve">
+    <value>Nothing found for your search.</value>
+  </data>
+  <data name="Inactive" xml:space="preserve">
+    <value>Inactive</value>
+  </data>
+  <data name="Action" xml:space="preserve">
+    <value>Action</value>
+  </data>
+  <data name="AutoProlongation" xml:space="preserve">
+    <value>Auto prolongation</value>
+  </data>
+  <data name="PeriodAny" xml:space="preserve">
+    <value>Any time</value>
+  </data>
+  <data name="ServicesInInvoice" xml:space="preserve">
+    <value>Services in invoice</value>
+  </data>
+  <data name="Created" xml:space="preserve">
+    <value>Created</value>
+  </data>
+  <data name="Som" xml:space="preserve">
+    <value>som</value>
+  </data>
+  <data name="DateStart" xml:space="preserve">
+    <value>Date start</value>
+  </data>
+  <data name="InvoicePassport" xml:space="preserve">
+    <value>Invoice passport</value>
+  </data>
+  <data name="SearchByServiceName" xml:space="preserve">
+    <value>Search by service name...</value>
+  </data>
+  <data name="ActiveInvoices" xml:space="preserve">
+    <value>Active invoices</value>
+  </data>
+  <data name="StandartClientsChooseClient" xml:space="preserve">
+    <value>Select a client to open their invoices page.</value>
+  </data>
+  <data name="SummaryTotalInvoicesNote" xml:space="preserve">
+    <value>All client invoices</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>Disabled</value>
+  </data>
+  <data name="CloseNavigationMenu" xml:space="preserve">
+    <value>Close navigation menu</value>
+  </data>
+  <data name="SummaryActiveInvoicesNote" xml:space="preserve">
+    <value>With status actual</value>
+  </data>
+  <data name="CreateServicesHint" xml:space="preserve">
+    <value>Create services to add them to invoices (for example: meals, training)</value>
+  </data>
+  <data name="ServiceNameExample" xml:space="preserve">
+    <value>For example: Meals, Training</value>
+  </data>
+  <data name="Full" xml:space="preserve">
+    <value>Full</value>
+  </data>
+  <data name="Date" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="LoadClientInvoicesError" xml:space="preserve">
+    <value>Failed to load client invoices.</value>
+  </data>
+  <data name="NearestPayment" xml:space="preserve">
+    <value>Nearest payment</value>
+  </data>
+  <data name="ManageInvoicesAndDetails" xml:space="preserve">
+    <value>Manage invoice list and details</value>
+  </data>
+  <data name="OneTimeStateTitle" xml:space="preserve">
+    <value>One-time invoice payment state</value>
+  </data>
+  <data name="NoNewNotifications" xml:space="preserve">
+    <value>No new notifications</value>
+  </data>
+  <data name="EditService" xml:space="preserve">
+    <value>Edit service</value>
+  </data>
+  <data name="OpenNavigationMenu" xml:space="preserve">
+    <value>Open navigation menu</value>
+  </data>
+  <data name="BackToClients" xml:space="preserve">
+    <value>Back to clients</value>
+  </data>
+  <data name="PeriodDaily" xml:space="preserve">
+    <value>Daily</value>
+  </data>
+  <data name="Today" xml:space="preserve">
+    <value>Today</value>
+  </data>
+  <data name="DeleteServiceQuestion" xml:space="preserve">
+    <value>Delete service?</value>
+  </data>
+  <data name="TotalServices" xml:space="preserve">
+    <value>Total services</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="ExpandType" xml:space="preserve">
+    <value>Expand type</value>
+  </data>
+  <data name="Statistics" xml:space="preserve">
+    <value>Statistics</value>
+  </data>
+  <data name="OneTimeStateNote" xml:space="preserve">
+    <value>For one-time invoices, simplified payment state is used.</value>
+  </data>
+  <data name="PaymentNonPaid" xml:space="preserve">
+    <value>Not paid</value>
+  </data>
+  <data name="OpenInvoices" xml:space="preserve">
+    <value>Open invoices</value>
+  </data>
+  <data name="NoServicesYet" xml:space="preserve">
+    <value>No services yet</value>
+  </data>
+  <data name="Balance" xml:space="preserve">
+    <value>Balance</value>
+  </data>
+  <data name="Search" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="OneTime" xml:space="preserve">
+    <value>One-time</value>
+  </data>
+  <data name="PeriodWeekly" xml:space="preserve">
+    <value>Weekly</value>
+  </data>
+  <data name="ParseServerResponseError" xml:space="preserve">
+    <value>Failed to parse server response.</value>
+  </data>
+  <data name="LoadingInvoices" xml:space="preserve">
+    <value>Loading invoices...</value>
+  </data>
+  <data name="MedicalCabinet" xml:space="preserve">
+    <value>Medical office</value>
+  </data>
+  <data name="OrganizationProfileMedclinic" xml:space="preserve">
+    <value>Organization profile: Medclinic</value>
+  </data>
+  <data name="OrganizationProfileDetsad" xml:space="preserve">
+    <value>Organization profile: Kindergarten</value>
+  </data>
+  <data name="LoginBrandTagline" xml:space="preserve">
+    <value>Service Ecosystem for Commerce, Organizations and Reporting Engine</value>
+  </data>
+  <data name="LoginHeroEyebrow" xml:space="preserve">
+    <value>Secure access portal</value>
+  </data>
+  <data name="LoginHeroTitle" xml:space="preserve">
+    <value>Manage payments in one workspace</value>
+  </data>
+  <data name="LoginHeroParagraph" xml:space="preserve">
+    <value>Sign in to access your client base, services, payments, transactions, and reports. Secure authentication and a convenient interface for daily work with clients.</value>
+  </data>
+  <data name="LoginMiniAccessLabel" xml:space="preserve">
+    <value>System access</value>
+  </data>
+  <data name="LoginMiniAccessMeta" xml:space="preserve">
+    <value>stable access</value>
+  </data>
+  <data name="LoginMiniAccessBadge" xml:space="preserve">
+    <value>Active</value>
+  </data>
+  <data name="LoginMiniSecurityLabel" xml:space="preserve">
+    <value>Security</value>
+  </data>
+  <data name="LoginMiniSecurityMeta" xml:space="preserve">
+    <value>protected sign-in</value>
+  </data>
+  <data name="LoginMiniSecurityBadge" xml:space="preserve">
+    <value>Safe</value>
+  </data>
+  <data name="LoginPanelHeading" xml:space="preserve">
+    <value>Sign in to SECORE</value>
+  </data>
+  <data name="LoginPanelIntro" xml:space="preserve">
+    <value>Enter your email and password to access the system.</value>
+  </data>
+  <data name="LanguageRussian" xml:space="preserve">
+    <value>Russian</value>
+  </data>
+  <data name="LanguageEnglish" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="LanguageKyrgyz" xml:space="preserve">
+    <value>Kyrgyz</value>
+  </data>
+  <data name="StandartInvoicesPageTitle" xml:space="preserve">
+    <value>Invoices</value>
+  </data>
+  <data name="StandartInvoicesPageSubtitle" xml:space="preserve">
+    <value>All issued invoices</value>
+  </data>
+  <data name="StandartCreateInvoiceButton" xml:space="preserve">
+    <value>Create invoice</value>
+  </data>
+  <data name="StandartCreateOneTimePaymentButton" xml:space="preserve">
+    <value>Create one-time payment</value>
+  </data>
+  <data name="ColForServices" xml:space="preserve">
+    <value>Services</value>
+  </data>
+  <data name="ColAmount" xml:space="preserve">
+    <value>Amount</value>
+  </data>
+  <data name="ColTotal" xml:space="preserve">
+    <value>Total</value>
+  </data>
+  <data name="InvoiceStatusActive" xml:space="preserve">
+    <value>Active</value>
+  </data>
+  <data name="InvoiceStatusClosed" xml:space="preserve">
+    <value>Closed</value>
+  </data>
+  <data name="EmptyInvoicesTitle" xml:space="preserve">
+    <value>No invoices found</value>
+  </data>
+  <data name="EmptyInvoicesDescription" xml:space="preserve">
+    <value>You have no invoices yet</value>
+  </data>
+  <data name="CreateInvoiceModalTitle" xml:space="preserve">
+    <value>Create invoice</value>
+  </data>
+  <data name="OneTimePaymentModalTitle" xml:space="preserve">
+    <value>Create payment</value>
+  </data>
+  <data name="PaymentHistoryPageSubtitle" xml:space="preserve">
+    <value>All organization transactions</value>
+  </data>
+  <data name="TransactionStatusSuccess" xml:space="preserve">
+    <value>Success</value>
+  </data>
+  <data name="TransactionStatusError" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="EmptyTransactionsTitle" xml:space="preserve">
+    <value>No transactions found</value>
+  </data>
+  <data name="EmptyTransactionsDescription" xml:space="preserve">
+    <value>You have no transactions yet</value>
+  </data>
+  <data name="ProfilePageTitle" xml:space="preserve">
+    <value>Profile</value>
+  </data>
+  <data name="ProfilePageSubtitle" xml:space="preserve">
+    <value>Name, phone, and default start page</value>
+  </data>
+  <data name="ProfileNameLabel" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="ProfileNamePlaceholder" xml:space="preserve">
+    <value>Your name</value>
+  </data>
+  <data name="ProfilePhoneLabel" xml:space="preserve">
+    <value>Phone</value>
+  </data>
+  <data name="ProfileStartPageLabel" xml:space="preserve">
+    <value>Start page after sign-in</value>
+  </data>
+  <data name="ProfileStartPageOptionCabinet" xml:space="preserve">
+    <value>Dashboard (Cabinet)</value>
+  </data>
+  <data name="ProfileStartPageOptionAppointments" xml:space="preserve">
+    <value>Appointments</value>
+  </data>
+  <data name="SubscriptionExpiredTitle" xml:space="preserve">
+    <value>Subscription expired</value>
+  </data>
+  <data name="SubscriptionExpiredHeading" xml:space="preserve">
+    <value>Your subscription period has ended</value>
+  </data>
+  <data name="SubscriptionExpiredBody" xml:space="preserve">
+    <value>Access for your organization has been suspended. Contact your administrator to renew the subscription.</value>
+  </data>
+  <data name="SubscriptionExpiredBackToLogin" xml:space="preserve">
+    <value>Back to sign in</value>
+  </data>
 </root>

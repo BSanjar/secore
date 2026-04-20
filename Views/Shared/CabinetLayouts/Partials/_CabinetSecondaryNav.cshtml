@@ -1,0 +1,21 @@
+@using Microsoft.AspNetCore.Mvc.Localization
+@model IReadOnlyList<WebApplication1.Services.Cabinets.Navigation.CabinetNavItem>
+@inject IHtmlLocalizer<WebApplication1.SharedResources> Localizer
+@{
+    var activeController = ViewData["ActiveController"]?.ToString();
+    var itemClass = ViewData["ItemClass"]?.ToString() ?? "dashboard-sidebar-bottom-item";
+    var iconClass = ViewData["IconClass"]?.ToString() ?? "dashboard-nav-item-icon";
+    var labelClass = ViewData["LabelClass"]?.ToString() ?? "dashboard-nav-item-label";
+    var activeClass = ViewData["ActiveClass"]?.ToString() ?? "active";
+}
+
+@foreach (var item in Model)
+{
+    <a class="@itemClass @(string.Equals(item.Controller, activeController, StringComparison.OrdinalIgnoreCase) ? activeClass : "")"
+       asp-controller="@item.Controller"
+       asp-action="@item.Action"
+       title="@Localizer[item.Title]">
+        <span class="@iconClass">@Html.Raw(item.IconHtml)</span>
+        <span class="@labelClass">@Localizer[item.Label]</span>
+    </a>
+}

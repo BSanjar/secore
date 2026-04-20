@@ -1,0 +1,1335 @@
+﻿/* ============================================
+   Standart Clients/Services Page Styles
+   Универсальные стили для разделов клиентов и услуг
+   ============================================ */
+
+:root {
+    --surface: #ffffff;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --background: #f8fafc;
+    --border-color: #e2e8f0;
+}
+
+.children-page {
+    padding: 0.75rem 0;
+}
+
+.page-header {
+    margin-bottom: 1rem;
+}
+
+.page-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.page-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* Хлебные крошки */
+.app-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+}
+
+.app-breadcrumb a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.app-breadcrumb a:hover {
+    color: #047857;
+}
+
+.app-breadcrumb span {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.app-breadcrumb .breadcrumb-sep {
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
+
+/* Кнопки действий: используйте глобальные классы из site.css — .action-btn .action-btn--add | .action-btn--view | .action-btn--edit */
+
+/* Кнопки страниц Standart (счета и др.) — основной стиль */
+.app-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: all 0.2s;
+    border: none;
+    background: #047857;
+    color: #fff;
+}
+
+.app-btn-primary:hover {
+    background: #047857;
+    color: #fff;
+}
+
+.app-btn-primary,
+.app-btn-secondary {
+    cursor: pointer;
+}
+
+.app-btn-primary svg {
+    flex-shrink: 0;
+}
+
+.app-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.9375rem;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: all 0.2s;
+    border: 2px solid var(--border-color);
+    background: var(--surface);
+    color: var(--text-primary);
+}
+
+.app-btn-secondary:hover {
+    border-color: #047857;
+    color: #047857;
+    background: rgba(16, 185, 129, 0.06);
+}
+
+/* Секция фильтров */
+.filters-section {
+    background: var(--surface);
+    padding: 1rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    margin-bottom: 1rem;
+}
+
+.search-box {
+    position: relative;
+}
+
+.search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    pointer-events: none;
+    z-index: 10;
+}
+
+.search-input {
+    padding-left: 3rem;
+    border-radius: 10px;
+    border: 2px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.search-input:focus {
+    border-color: #047857;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.filter-select {
+    border-radius: 10px;
+    border: 2px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.filter-select:focus {
+    border-color: #047857;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.form-check-input:checked {
+    background-color: #047857;
+    border-color: #047857;
+}
+
+/* Контейнер карточек - компактный */
+.children-cards-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+/* Карточка клиента - компактная версия */
+.child-card {
+    background: var(--surface);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    animation: cardSlideIn 0.5s ease forwards;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.child-card--clickable {
+    cursor: pointer;
+}
+
+.child-card--clickable:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.06);
+    border-color: rgba(16, 185, 129, 0.4);
+}
+
+@keyframes cardSlideIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.child-card:nth-child(1) { animation-delay: 0.05s; }
+.child-card:nth-child(2) { animation-delay: 0.1s; }
+.child-card:nth-child(3) { animation-delay: 0.15s; }
+.child-card:nth-child(4) { animation-delay: 0.2s; }
+.child-card:nth-child(5) { animation-delay: 0.25s; }
+.child-card:nth-child(6) { animation-delay: 0.3s; }
+.child-card:nth-child(7) { animation-delay: 0.35s; }
+.child-card:nth-child(8) { animation-delay: 0.4s; }
+
+.child-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.06);
+    border-color: #047857;
+}
+
+/* Заголовок карточки - компактный */
+.child-card-header {
+    position: relative;
+    padding: 1rem;
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.child-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    flex-shrink: 0;
+    background: white;
+}
+
+.avatar-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+    color: white;
+}
+
+.child-status-badge {
+    padding: 0.375rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
+.status-active {
+    background: #047857;
+    color: white;
+}
+
+.status-suspended {
+    background: #f59e0b;
+    color: white;
+}
+
+.status-deleted {
+    background: #ef4444;
+    color: white;
+}
+
+.status-unknown {
+    background: var(--text-secondary);
+    color: white;
+}
+
+.debtor-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: #ef4444;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+/* Тело карточки - компактное */
+.child-card-body {
+    padding: 1rem;
+    flex: 1;
+}
+
+.child-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+    line-height: 1.3;
+}
+
+.child-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+}
+
+.info-icon {
+    color: #047857;
+    flex-shrink: 0;
+}
+
+.info-label {
+    font-weight: 500;
+    color: var(--text-secondary);
+    min-width: 100px;
+}
+
+.info-value {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+/* Футер карточки - компактный с 3 кнопками */
+.child-card-footer {
+    padding: 0.5rem;
+    border-top: 1px solid var(--border-color);
+    background: var(--background);
+    display: flex;
+    flex-direction: row;
+    gap: 0.375rem;
+    flex-wrap: wrap;
+}
+
+.btn-action {
+    flex: 1;
+    min-width: 0;
+    padding: 0.4375rem 0.5rem;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.625rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.btn-action svg {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+}
+
+.btn-text {
+    display: inline-block;
+    font-size: 0.625rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+@media (max-width: 575px) {
+    .child-card-footer {
+        flex-direction: column;
+        gap: 0.375rem;
+    }
+    
+    .btn-action {
+        width: 100%;
+        padding: 0.5rem 0.625rem;
+    }
+    
+    .btn-text {
+        font-size: 0.6875rem;
+    }
+    
+    .btn-action svg {
+        width: 14px;
+        height: 14px;
+    }
+}
+
+.btn-child-info {
+    background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+    color: white;
+}
+
+.btn-child-info:hover {
+    background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-invoices-info {
+    background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+    color: white;
+}
+
+.btn-invoices-info:hover {
+    background: linear-gradient(135deg, #0284c7 0%, #075985 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-transactions-info {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    color: white;
+}
+
+.btn-transactions-info:hover {
+    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.btn-action:active {
+    transform: translateY(0);
+}
+
+/* Модальное окно */
+.modal-content {
+    border-radius: 16px;
+    border: none;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+    border-bottom: 2px solid var(--border-color);
+    padding: 1.5rem;
+}
+
+.modal-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.loading-spinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 3rem;
+}
+
+.details-section {
+    margin-bottom: 1.5rem;
+}
+
+.details-section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.details-section-title::before {
+    content: '';
+    width: 4px;
+    height: 16px;
+    background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+    border-radius: 2px;
+}
+
+.details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.75rem;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.75rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+}
+
+.detail-item:hover {
+    background: #f1f5f9;
+    border-color: #047857;
+    transform: translateY(-1px);
+}
+
+.detail-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+}
+
+.detail-value {
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* Таблицы в модальных окнах - современный стиль */
+.table-responsive {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.table {
+    margin-bottom: 0;
+    background: white;
+}
+
+.table thead th {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    border-bottom: 2px solid var(--border-color);
+    padding: 0.75rem 1rem;
+    white-space: nowrap;
+}
+
+.table tbody td {
+    padding: 0.75rem 1rem;
+    font-size: 0.8125rem;
+    vertical-align: middle;
+    border-top: 1px solid #f1f5f9;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: #fafbfc;
+}
+
+.table-hover tbody tr {
+    transition: all 0.2s ease;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f0fdf4;
+    transform: scale(1.01);
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.1);
+}
+
+.text-danger {
+    color: #ef4444 !important;
+    font-weight: 600;
+}
+
+.text-success {
+    color: #047857 !important;
+    font-weight: 600;
+}
+
+.text-muted {
+    color: var(--text-secondary) !important;
+}
+
+/* Badge стили */
+.badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.bg-success {
+    background-color: #047857 !important;
+    color: white !important;
+}
+
+.bg-danger {
+    background-color: #ef4444 !important;
+    color: white !important;
+}
+
+.bg-warning {
+    background-color: #f59e0b !important;
+    color: white !important;
+}
+
+.bg-secondary {
+    background-color: var(--text-secondary) !important;
+    color: white !important;
+}
+
+/* Пустое состояние */
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.empty-state-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1.5rem;
+    color: var(--text-secondary);
+    opacity: 0.5;
+}
+
+.empty-state-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.empty-state-description {
+    font-size: 1rem;
+    color: var(--text-secondary);
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .children-cards-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .child-card-header {
+        flex-wrap: wrap;
+    }
+    
+    .debtor-badge {
+        position: static;
+        margin-top: 0.5rem;
+    }
+    
+    .details-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .children-cards-container {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Индикатор шагов для модального окна добавления клиента */
+.step-indicator {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 0;
+}
+
+.step-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    position: relative;
+    flex: 1;
+    max-width: 200px;
+}
+
+.step-item::after {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    width: 100%;
+    height: 2px;
+    background: var(--border-color);
+    z-index: 0;
+}
+
+.step-item:last-child::after {
+    display: none;
+}
+
+.step-item.active::after {
+    background: #047857;
+}
+
+.step-number {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--border-color);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1rem;
+    position: relative;
+    z-index: 1;
+    transition: all 0.3s ease;
+}
+
+.step-item.active .step-number {
+    background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.step-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.step-item.active .step-label {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.step-content {
+    padding: 1rem 0;
+}
+
+.step-content .form-label {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.step-content .form-control,
+.step-content .form-select {
+    border-radius: 8px;
+    border: 2px solid var(--border-color);
+    padding: 0.625rem 0.875rem;
+    transition: all 0.3s ease;
+}
+
+.step-content .form-control:focus,
+.step-content .form-select:focus {
+    border-color: #047857;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    outline: none;
+}
+
+/* Компактные поля */
+.form-control-compact {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+/* Разделитель секций */
+.form-section-divider {
+    position: relative;
+    text-align: center;
+    margin: 1.5rem 0;
+}
+
+.form-section-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--border-color);
+    z-index: 0;
+}
+
+.divider-text {
+    position: relative;
+    background: white;
+    padding: 0 1rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    z-index: 1;
+}
+
+/* Валидация Bootstrap */
+.was-validated .form-control:valid,
+.was-validated .form-select:valid {
+    border-color: #047857;
+    padding-right: calc(1.5em + 0.75rem);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%2310b981' d='m2.3 6.73.98-.98-.98-.98-.98.98.98.98zm-.98-3.46l.98-.98-.98-.98-.98.98.98.98zm3.46 0l.98-.98-.98-.98-.98.98.98.98zm-.98-3.46l.98-.98-.98-.98-.98.98.98.98z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.was-validated .form-control:invalid,
+.was-validated .form-select:invalid {
+    border-color: #ef4444;
+    padding-right: calc(1.5em + 0.75rem);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23ef4444'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath d='m5.8 3.6.4.4.4-.4m0 4.8-.4-.4-.4.4'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.invalid-feedback {
+    display: none;
+    width: 100%;
+    margin-top: 0.25rem;
+    font-size: 0.875em;
+    color: #ef4444;
+}
+
+.was-validated .form-control:invalid ~ .invalid-feedback,
+.was-validated .form-select:invalid ~ .invalid-feedback {
+    display: block;
+}
+
+.valid-feedback {
+    display: none;
+    width: 100%;
+    margin-top: 0.25rem;
+    font-size: 0.875em;
+    color: #047857;
+}
+
+.was-validated .form-control:valid ~ .valid-feedback,
+.was-validated .form-select:valid ~ .valid-feedback {
+    display: block;
+}
+
+/* Адаптивность для компактных полей */
+@media (max-width: 768px) {
+    .form-control-compact {
+        font-size: 0.8125rem;
+        padding: 0.4375rem 0.625rem;
+    }
+}
+
+/* Фильтр по группам — мультиселект с поиском */
+.groups-filter-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.groups-filter-btn {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 10px;
+    border: 2px solid var(--border-color);
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    background: var(--surface);
+}
+
+.groups-filter-btn:hover {
+    border-color: #047857;
+    background: rgba(16, 185, 129, 0.04);
+}
+
+.groups-filter-btn[aria-expanded="true"] {
+    border-color: #047857;
+    background: rgba(16, 185, 129, 0.08);
+}
+
+.groups-filter-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 0.25rem;
+    min-width: 220px;
+    max-width: 320px;
+    max-height: 280px;
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    z-index: 1050;
+    overflow: hidden;
+    flex-direction: column;
+}
+
+.groups-filter-menu.is-open {
+    display: flex;
+}
+
+.groups-filter-search-wrap {
+    flex-shrink: 0;
+    background: var(--surface);
+}
+
+.groups-filter-search {
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    font-size: 0.875rem;
+}
+
+.groups-filter-search:focus {
+    border-color: #047857;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+}
+
+.groups-filter-list {
+    overflow-y: auto;
+    padding: 0.25rem 0;
+    max-height: 220px;
+}
+
+.groups-filter-item {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    transition: background 0.1s ease;
+}
+
+.groups-filter-item:hover {
+    background: rgba(16, 185, 129, 0.06);
+}
+
+.groups-filter-item.is-hidden {
+    display: none;
+}
+
+.groups-filter-item .form-check-input {
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+}
+
+.groups-filter-item-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Фильтр клиента на странице счетов — выпадающий список с поиском */
+.invoices-client-dropdown {
+    position: relative;
+}
+
+.invoices-client-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 10px;
+    border: 2px solid var(--border-color);
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    background: var(--surface);
+}
+
+.invoices-client-btn:hover {
+    border-color: #047857;
+    background: rgba(16, 185, 129, 0.04);
+}
+
+.invoices-client-btn[aria-expanded="true"] {
+    border-color: #047857;
+    background: rgba(16, 185, 129, 0.08);
+}
+
+.invoices-client-btn-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.invoices-client-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 0.25rem;
+    max-height: 280px;
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    z-index: 1050;
+    overflow: hidden;
+    flex-direction: column;
+}
+
+.invoices-client-menu.is-open {
+    display: flex;
+}
+
+.invoices-client-search {
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    font-size: 0.875rem;
+}
+
+.invoices-client-search:focus {
+    border-color: #047857;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+}
+
+.invoices-client-list {
+    overflow-y: auto;
+    padding: 0.25rem 0;
+    max-height: 220px;
+}
+
+.invoices-client-item {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    transition: background 0.1s ease;
+}
+
+.invoices-client-item:hover {
+    background: rgba(16, 185, 129, 0.06);
+}
+
+.invoices-client-item.is-hidden {
+    display: none;
+}
+
+/* Фильтры счетов — поле поиска крупнее, элементы на всю ширину */
+.invoices-filters .invoices-search-box {
+    min-width: 0;
+}
+
+.invoices-filters .invoices-search-box .search-input {
+    min-height: 2.75rem;
+    padding: 0.5rem 1rem 0.5rem 3rem;
+    font-size: 1rem;
+}
+
+.invoices-filters .invoices-search-type {
+    min-width: 180px;
+}
+
+.invoices-filters .invoices-filters-row-2 {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.invoices-filters .invoices-filters-row-2 .invoices-filter-col {
+    flex: 1 1 0;
+    min-width: 140px;
+}
+
+.invoices-filters .invoices-filters-row-2 .invoices-filter-col.flex-grow-1 {
+    min-width: 180px;
+}
+
+/* Модальное окно с вкладками (О клиенте, Счета, Платежи) */
+#childDetailModal .nav-tabs {
+    border-bottom: 2px solid var(--border-color);
+}
+
+#childDetailModal .nav-tabs .nav-link {
+    border: none;
+    color: var(--text-secondary);
+    font-weight: 500;
+    padding: 0.75rem 1rem;
+}
+
+#childDetailModal .nav-tabs .nav-link:hover {
+    color: #047857;
+}
+
+#childDetailModal .nav-tabs .nav-link.active {
+    color: #047857;
+    border-bottom: 2px solid #047857;
+    background: transparent;
+    margin-bottom: -2px;
+}
+
+/* ============================================
+   Settings page (единый стиль с проектом)
+   ============================================ */
+.settings-page .settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.settings-page .settings-card {
+    background: var(--surface);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.settings-page .settings-card__header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border-color);
+    background: #f8fafc;
+}
+
+.settings-page .settings-card__title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.settings-page .settings-card__title svg {
+    flex-shrink: 0;
+    color: var(--text-secondary);
+}
+
+.settings-page .settings-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.settings-page .settings-list__item {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.settings-page .settings-list__item:last-child {
+    border-bottom: none;
+}
+
+.settings-page .settings-list__link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.25rem;
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 0.9375rem;
+    transition: background 0.2s, color 0.2s;
+}
+
+.settings-page .settings-list__link:hover {
+    background: rgba(16, 185, 129, 0.06);
+    color: #047857;
+}
+
+.settings-page .settings-list__link svg {
+    flex-shrink: 0;
+    color: var(--text-secondary);
+}
+
+.settings-page .settings-list__link:hover svg {
+    color: #047857;
+}
+
+.settings-page .settings-list__link-arrow {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.settings-page .settings-list__link:hover .settings-list__link-arrow {
+    color: #047857;
+}
+
+/* Подстраницы настроек: История, Уведомления (в едином стиле с dashboard-soft) */
+.settings-page.settings-subpage .page-header {
+    margin-bottom: 1.25rem;
+}
+
+.settings-page.settings-subpage .dashboard-filters {
+    margin-bottom: 1.25rem;
+}
+
+.settings-page.settings-subpage .dashboard-filters .settings-filters-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px;
+    width: 100%;
+}
+
+.settings-page.settings-subpage .dashboard-filters .filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.settings-page.settings-subpage .dashboard-filters .filter-field label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary, #607284);
+    margin: 0;
+}
+
+.settings-page.settings-subpage .dashboard-filters input[type="date"] {
+    padding: 10px 12px;
+    font-size: 14px;
+    border-radius: var(--radius-sm, 14px);
+    border: 1px solid var(--input-border, #D9E4EC);
+    background: var(--input-bg, #FDFEFF);
+    color: var(--input-text, #2E3B4A);
+    min-width: 140px;
+}
+
+.settings-page.settings-subpage .dashboard-filters input[type="date"]:focus {
+    outline: none;
+    border-color: var(--input-border-focus, #8EAFCC);
+    box-shadow: 0 0 0 3px rgba(142, 175, 204, 0.15);
+}
+
+.settings-page.settings-subpage .settings-meta {
+    font-size: 13px;
+    color: var(--text-secondary, #607284);
+    margin-top: 0.75rem;
+}
+
+.settings-page.settings-subpage .settings-pagination {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-top: 1rem;
+}
+
+.settings-page.settings-subpage .settings-pagination .settings-page-info {
+    font-size: 14px;
+    color: var(--text-secondary, #607284);
+    padding: 8px 4px;
+}
+
+.settings-page.settings-subpage .empty-state-settings {
+    background: var(--surface, #fff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    padding: 2rem 1.5rem;
+    text-align: center;
+}
+
+.settings-page.settings-subpage .empty-state-settings p {
+    color: var(--text-secondary, #607284);
+    margin-bottom: 1rem;
+}
+
+/* Бейджи статусов уведомлений в стиле dashboard-table-card */
+.settings-page.settings-subpage .notify-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.settings-page.settings-subpage .notify-status--sent {
+    background: var(--success-soft, #E8F4ED);
+    color: var(--success-text, #4F7C67);
+}
+
+.settings-page.settings-subpage .notify-status--failed {
+    background: var(--error-soft, #F9EAEA);
+    color: var(--error-text, #9C5C5C);
+}
+
+.settings-page.settings-subpage .notify-status--processing {
+    background: var(--warning-soft, #F8F1E2);
+    color: var(--warning-text, #8B7340);
+}
+
+.settings-page.settings-subpage .notify-status--new {
+    background: var(--accent-primary-soft, #E4EEF7);
+    color: var(--text-secondary, #607284);
+}
+
+/* Блоки со списком прав/ролей (настройки) */
+.settings-page.settings-subpage .settings-scroll-panel {
+    max-height: 500px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    background: var(--surface, #fff);
+}
+
+.settings-page.settings-subpage .settings-scroll-panel--sm {
+    max-height: 400px;
+}
+
+.settings-page.settings-subpage .settings-perm-category {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--accent-primary, #0284C7);
+    margin-bottom: 0.75rem;
+}
+
+
+
+
+

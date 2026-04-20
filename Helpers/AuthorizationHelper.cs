@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -42,18 +42,19 @@ namespace WebApplication1.Helpers
 
                 if (!string.IsNullOrWhiteSpace(controller) && !allowedWithoutPermission.Contains(controller))
                 {
-                    var requiredPermission = controller.Equals("Appointments", StringComparison.OrdinalIgnoreCase)
-                        ? "appointments.view"
+                    var hasControllerPermission = controller.Equals("Appointments", StringComparison.OrdinalIgnoreCase)
+                        ? PermissionHelper.HasPermission(context.HttpContext, "appointments.doctor.view")
+                          || PermissionHelper.HasPermission(context.HttpContext, "appointments.registry.view")
+                          || PermissionHelper.HasPermission(context.HttpContext, "appointments.view")
                         : controller.Equals("Invoices", StringComparison.OrdinalIgnoreCase)
-                            ? "invoices.view"
+                            ? PermissionHelper.HasPermission(context.HttpContext, "invoices.view")
                             : controller.Equals("Payments", StringComparison.OrdinalIgnoreCase)
-                                ? "transactions.view"
-                                : null;
+                                ? PermissionHelper.HasPermission(context.HttpContext, "transactions.view")
+                                : false;
 
-                    if (string.IsNullOrWhiteSpace(requiredPermission) ||
-                        !PermissionHelper.HasPermission(context.HttpContext, requiredPermission))
+                    if (!hasControllerPermission)
                     {
-                        context.Result = new RedirectToActionResult("AccessDenied", "Home", new { permissionCode = requiredPermission ?? "restricted.controller" });
+                        context.Result = new RedirectToActionResult("AccessDenied", "Home", new { permissionCode = "restricted.controller" });
                         return;
                     }
                 }
@@ -120,7 +121,17 @@ namespace WebApplication1.Helpers
 
         public static string? GetOrganizationType(HttpContext httpContext)
         {
-            return httpContext.Session.GetString("OrganizationType");
+            var rawType = httpContext.Session.GetString("OrganizationType");
+            if (string.IsNullOrWhiteSpace(rawType))
+                return rawType;
+
+            var normalized = rawType.Trim().ToLowerInvariant();
+
+            // Defensive alias: some legacy data can store "standard" instead of "standart".
+            if (normalized == "standard")
+                return "standart";
+
+            return normalized;
         }
 
         public static string? GetOrganizationId(HttpContext httpContext)

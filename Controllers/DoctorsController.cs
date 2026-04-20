@@ -55,6 +55,21 @@ public class DoctorsController : Controller
         return View(model);
     }
 
+    [HttpGet]
+    public async Task<IActionResult> Appointments(string id)
+    {
+        var gate = await EnsureAccessAsync();
+        if (gate != null)
+            return gate;
+
+        var organizationId = _currentTenantService.GetCurrent().OrganizationId!;
+        var model = await _doctorDirectoryService.GetDoctorAssignmentsAsync(organizationId, id);
+        if (model == null)
+            return NotFound();
+
+        return View(model);
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(string id, DoctorAssignmentsUpsertDto dto)
@@ -95,6 +110,27 @@ public class DoctorsController : Controller
 
         var organizationId = _currentTenantService.GetCurrent().OrganizationId!;
         var result = await _doctorDirectoryService.UpdateDoctorScheduleAsync(organizationId, dto);
+
+        if (!result.Success)
+        {
+            TempData["Error"] = result.Message;
+            return RedirectToAction(nameof(Edit), new { id });
+        }
+
+        TempData["Message"] = result.Message;
+        return RedirectToAction(nameof(Edit), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SaveAppointmentDuration(string id, int appointmentDurationMinutes)
+    {
+        var gate = await EnsureAccessAsync();
+        if (gate != null)
+            return gate;
+
+        var organizationId = _currentTenantService.GetCurrent().OrganizationId!;
+        var result = await _doctorDirectoryService.UpdateAppointmentDurationAsync(organizationId, id, appointmentDurationMinutes);
 
         if (!result.Success)
         {

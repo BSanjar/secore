@@ -7,24 +7,24 @@ namespace WebApplication1.Models.DBModels;
 public class OrganizationSettings
 {
     /// <summary>
-    /// PK и FK на organization.id
+    /// PK и FK на organization.id.
     /// </summary>
     public string OrganizationId { get; set; } = null!;
 
     /// <summary>
-    /// Если true — при создании счёта отключён выбор услуги:
-    /// в таблицу подставляется название счёта, доступен только ввод цены.
+    /// Если true, при создании счета отключен выбор услуги:
+    /// в таблицу подставляется название счета, доступен только ввод цены.
     /// </summary>
     public bool DisableInvoiceServiceSelection { get; set; }
 
     /// <summary>
-    /// Если true — организации могут создавать счета с одинаковыми л/с.
+    /// Если true, организации могут создавать счета с одинаковыми л/с.
     /// </summary>
     public bool AllowedHassameaccount { get; set; }
 
     /// <summary>
-    /// Режим выбора лицевого счёта при создании счёта: new_only (только новый), duplicate_only (только существующий), both (новый и существующий).
-    /// Если null — используется AllowedHassameaccount (true → both, false → new_only).
+    /// Режим выбора лицевого счета при создании счета: new_only, duplicate_only, both.
+    /// Если null, используется AllowedHassameaccount (true -> both, false -> new_only).
     /// </summary>
     public string? InvoicePayCodeMode { get; set; }
 
@@ -68,16 +68,29 @@ public class OrganizationSettings
     /// </summary>
     public string? BillingType { get; set; }
 
-    /// <summary>Учитывать нижнюю комиссию от организации (от оборота).</summary>
+    /// <summary>
+    /// Режим QR по умолчанию для организации.
+    /// </summary>
+    public string? DefaultQrMode { get; set; }
+
+    /// <summary>
+    /// Учитывать нижнюю комиссию от организации (от оборота).
+    /// </summary>
     public bool UseLowerCommissionFromOrg { get; set; }
 
-    /// <summary>Справочник комиссии для нижней от организации (расчёт от оборота за период).</summary>
+    /// <summary>
+    /// Справочник комиссии для нижней от организации (расчет от оборота за период).
+    /// </summary>
     public string? CommissionId { get; set; }
 
-    /// <summary>Учитывать верхнюю комиссию от агента (сверху суммы, из agent_commission).</summary>
+    /// <summary>
+    /// Учитывать верхнюю комиссию от агента (сверху суммы, из agent_commission).
+    /// </summary>
     public bool UseUpperCommissionFromAgent { get; set; }
 
-    /// <summary>Учитывать нижнюю комиссию к агенту (из суммы, из agent_commission).</summary>
+    /// <summary>
+    /// Учитывать нижнюю комиссию к агенту (из суммы, из agent_commission).
+    /// </summary>
     public bool UseLowerCommissionToAgent { get; set; }
 
     public virtual Organization Organization { get; set; } = null!;

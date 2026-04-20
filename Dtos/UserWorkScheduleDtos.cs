@@ -6,6 +6,7 @@ public class SaveUserWorkScheduleRequest
     public List<int> DaysOfWeek { get; set; } = new();
     public string? StartTime { get; set; }
     public string? EndTime { get; set; }
+    public int AppointmentDurationMinutes { get; set; } = 30;
 }
 
 public class SaveUserWorkScheduleOverrideRequest

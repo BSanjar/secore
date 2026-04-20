@@ -1,0 +1,14 @@
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IHtmlLocalizer<WebApplication1.SharedResources> Localizer
+@{
+    var containerClass = ViewData["ContainerClass"]?.ToString() ?? "container";
+}
+<footer class="cabinet-footer">
+    <div class="@containerClass">
+        <div class="row">
+            <div class="col-md-12 text-center">
+                <p class="mb-0">&copy; @DateTime.Now.Year - @Localizer["OrganizationCabinet"]. @Localizer["AllRightsReserved"].</p>
+            </div>
+        </div>
+    </div>
+</footer>

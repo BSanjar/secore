@@ -13,7 +13,7 @@
     {
         var manualRow = Model.InvoiceServices.FirstOrDefault(s => string.IsNullOrEmpty(s.Service));
         if (manualRow != null && manualRow.ServiceSumm.HasValue)
-            manualPriceSom = (decimal)manualRow.ServiceSumm.Value / 100m;
+            manualPriceSom = manualRow.ServiceSumm.Value / 100m;
     }
     var invoiceServicesList = Model.InvoiceServices?.ToList() ?? new List<WebApplication1.Models.DBModels.InvoiceService>();
 }
@@ -186,7 +186,7 @@
                                     <tbody id="editInvServicesBody">
                                         @foreach (var s in orgServices)
                                         {
-                                            var priceSom = (decimal)(s.ServiceSumm ?? 0) / 100m;
+                                            var priceSom = s.ServiceSumm ?? 0;
                                             var minSom = (decimal)(s.MinSumm ?? 0) / 100m;
                                             var maxSom = (decimal)(s.MaxSumm ?? 0) / 100m;
                                             var existing = invoiceServicesList.FirstOrDefault(isv => isv.Service == (string)s.Id);

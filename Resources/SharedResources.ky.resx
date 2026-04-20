@@ -357,4 +357,538 @@
   <data name="No" xml:space="preserve">
     <value>Жок</value>
   </data>
+  <data name="PaymentAnulated" xml:space="preserve">
+    <value>Жокко чыгарылган</value>
+  </data>
+  <data name="Client" xml:space="preserve">
+    <value>Кардар</value>
+  </data>
+  <data name="AddService" xml:space="preserve">
+    <value>Кызмат кошуу</value>
+  </data>
+  <data name="SummaryTotalBalance" xml:space="preserve">
+    <value>Жалпы баланс</value>
+  </data>
+  <data name="SharedAccount" xml:space="preserve">
+    <value>Жалпы лицевой эсеп</value>
+  </data>
+  <data name="SearchByNameOrPhone" xml:space="preserve">
+    <value>Аты же телефону боюнча издөө</value>
+  </data>
+  <data name="SaveError" xml:space="preserve">
+    <value>Сактоо катасы</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Статус</value>
+  </data>
+  <data name="SummaryActiveInvoices" xml:space="preserve">
+    <value>Активдүү эсептер</value>
+  </data>
+  <data name="QrAlt" xml:space="preserve">
+    <value>Эсептин QR-коду</value>
+  </data>
+  <data name="PeriodMonthly" xml:space="preserve">
+    <value>Ай сайын</value>
+  </data>
+  <data name="MaxAmountSom" xml:space="preserve">
+    <value>Максималдуу сумма (сом)</value>
+  </data>
+  <data name="DebtorsOnly" xml:space="preserve">
+    <value>Карыздар гана</value>
+  </data>
+  <data name="Type" xml:space="preserve">
+    <value>Түрү</value>
+  </data>
+  <data name="PeriodsMissing" xml:space="preserve">
+    <value>Мезгилдер жок</value>
+  </data>
+  <data name="QuickAccess" xml:space="preserve">
+    <value>Тез жетүү</value>
+  </data>
+  <data name="Service" xml:space="preserve">
+    <value>Кызмат</value>
+  </data>
+  <data name="PeriodYearly" xml:space="preserve">
+    <value>Жыл сайын</value>
+  </data>
+  <data name="TotalBalance" xml:space="preserve">
+    <value>Жалпы баланс</value>
+  </data>
+  <data name="System" xml:space="preserve">
+    <value>Система</value>
+  </data>
+  <data name="ClientNotFound" xml:space="preserve">
+    <value>Кардар табылган жок.</value>
+  </data>
+  <data name="NoServices" xml:space="preserve">
+    <value>Кызматтар жок</value>
+  </data>
+  <data name="DateCreated" xml:space="preserve">
+    <value>Түзүлгөн күнү</value>
+  </data>
+  <data name="PeriodScheduleNote" xml:space="preserve">
+    <value>Айлык жана башка мезгилдүүлүк үчүн мезгилдердин толук блогу көрсөтүлөт.</value>
+  </data>
+  <data name="Notifications" xml:space="preserve">
+    <value>Билдирмелер</value>
+  </data>
+  <data name="Compact" xml:space="preserve">
+    <value>Кыска</value>
+  </data>
+  <data name="RangeMinMax" xml:space="preserve">
+    <value>Диапазон (мин - макс)</value>
+  </data>
+  <data name="AmountOrRange" xml:space="preserve">
+    <value>Сумма / диапазон</value>
+  </data>
+  <data name="ClientDefaultName" xml:space="preserve">
+    <value>Кардар</value>
+  </data>
+  <data name="Amount" xml:space="preserve">
+    <value>Сумма</value>
+  </data>
+  <data name="TransactionsNone" xml:space="preserve">
+    <value>Транзакциялар жок</value>
+  </data>
+  <data name="SummaryNearestPaymentNote" xml:space="preserve">
+    <value>Күтүлгөн кийинки мезгил</value>
+  </data>
+  <data name="DateEnd" xml:space="preserve">
+    <value>Аяктоо күнү</value>
+  </data>
+  <data name="ClientInvoices" xml:space="preserve">
+    <value>Кардардын эсептери</value>
+  </data>
+  <data name="Period" xml:space="preserve">
+    <value>Мезгилдүүлүк</value>
+  </data>
+  <data name="SearchPlaceholder" xml:space="preserve">
+    <value>Издөө...</value>
+  </data>
+  <data name="NextPeriod" xml:space="preserve">
+    <value>Кийинки мезгил</value>
+  </data>
+  <data name="ClientInvoicesWithDetails" xml:space="preserve">
+    <value>Кардардын эсептер тизмеси, деталдары менен.</value>
+  </data>
+  <data name="DeleteError" xml:space="preserve">
+    <value>Өчүрүү катасы</value>
+  </data>
+  <data name="To" xml:space="preserve">
+    <value>Чейин</value>
+  </data>
+  <data name="RangeAmountType" xml:space="preserve">
+    <value>Диапазон</value>
+  </data>
+  <data name="ThisMonth" xml:space="preserve">
+    <value>Бул ай</value>
+  </data>
+  <data name="PeriodOneTime" xml:space="preserve">
+    <value>Бир жолку</value>
+  </data>
+  <data name="FixedAmount" xml:space="preserve">
+    <value>Фикстелген сумма</value>
+  </data>
+  <data name="NetworkError" xml:space="preserve">
+    <value>Тармак катасы</value>
+  </data>
+  <data name="PaymentType" xml:space="preserve">
+    <value>Төлөм түрү</value>
+  </data>
+  <data name="Deleted" xml:space="preserve">
+    <value>Өчүрүлгөн</value>
+  </data>
+  <data name="SummaryNearestPayment" xml:space="preserve">
+    <value>Жакынкы төлөм</value>
+  </data>
+  <data name="LoadClientDataError" xml:space="preserve">
+    <value>Кардардын маалыматтарын жүктөө ишке ашкан жок.</value>
+  </data>
+  <data name="DeleteServiceConfirmation" xml:space="preserve">
+    <value>Кызматты өчүргүңүз келгенине ишенесизби</value>
+  </data>
+  <data name="PeriodSchedule" xml:space="preserve">
+    <value>Төлөм графиги / мезгилдер</value>
+  </data>
+  <data name="FixedAmountType" xml:space="preserve">
+    <value>Фикстелген</value>
+  </data>
+  <data name="Transactions" xml:space="preserve">
+    <value>Транзакциялар</value>
+  </data>
+  <data name="ErrorWithStatus" xml:space="preserve">
+    <value>Ката</value>
+  </data>
+  <data name="Services" xml:space="preserve">
+    <value>Кызматтар</value>
+  </data>
+  <data name="TotalIncome" xml:space="preserve">
+    <value>Жалпы киреше</value>
+  </data>
+  <data name="ClientHasNoInvoices" xml:space="preserve">
+    <value>Кардардын эсептери жок.</value>
+  </data>
+  <data name="PaymentPaid" xml:space="preserve">
+    <value>Төлөнгөн</value>
+  </data>
+  <data name="Invoice" xml:space="preserve">
+    <value>Эсеп</value>
+  </data>
+  <data name="From" xml:space="preserve">
+    <value>Башы</value>
+  </data>
+  <data name="OrganizationManagementOverview" xml:space="preserve">
+    <value>Уюмду башкаруунун жалпы көрүнүшү</value>
+  </data>
+  <data name="ClientsNotFound" xml:space="preserve">
+    <value>Кардарлар табылган жок.</value>
+  </data>
+  <data name="ServicesForInvoicesAndPayments" xml:space="preserve">
+    <value>Эсептер жана төлөмдөр үчүн уюмдун кызматтары</value>
+  </data>
+  <data name="FixedAmountSom" xml:space="preserve">
+    <value>Фикстелген сумма (сом)</value>
+  </data>
+  <data name="SummaryDebtInvoices" xml:space="preserve">
+    <value>Карызы бар эсептер</value>
+  </data>
+  <data name="PeriodEveryNDays" xml:space="preserve">
+    <value>Ар {0} күндө</value>
+  </data>
+  <data name="Dashboard" xml:space="preserve">
+    <value>Дашборд</value>
+  </data>
+  <data name="MinAmountSom" xml:space="preserve">
+    <value>Минималдуу сумма (сом)</value>
+  </data>
+  <data name="PayCode" xml:space="preserve">
+    <value>Лицевой эсеп</value>
+  </data>
+  <data name="AmountWithFee" xml:space="preserve">
+    <value>Комиссия менен сумма</value>
+  </data>
+  <data name="Dash" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="SummaryTotalInvoices" xml:space="preserve">
+    <value>Жалпы эсептер</value>
+  </data>
+  <data name="QrByInvoice" xml:space="preserve">
+    <value>Эсеп боюнча QR</value>
+  </data>
+  <data name="AmountType" xml:space="preserve">
+    <value>Суманын түрү</value>
+  </data>
+  <data name="ServiceName" xml:space="preserve">
+    <value>Кызмат аталышы</value>
+  </data>
+  <data name="ClientsList" xml:space="preserve">
+    <value>Кардарлар тизмеси</value>
+  </data>
+  <data name="SummaryDebtInvoicesNote" xml:space="preserve">
+    <value>Терс баланс</value>
+  </data>
+  <data name="SummaryTotalBalanceNote" xml:space="preserve">
+    <value>Бардык эсептер боюнча</value>
+  </data>
+  <data name="DebtInvoices" xml:space="preserve">
+    <value>Карызы бар эсептер</value>
+  </data>
+  <data name="Active" xml:space="preserve">
+    <value>Активдүү</value>
+  </data>
+  <data name="QrStatus" xml:space="preserve">
+    <value>QR абалы</value>
+  </data>
+  <data name="ReviewOrganizationTransactions" xml:space="preserve">
+    <value>Уюм транзакцияларын көрүү</value>
+  </data>
+  <data name="Cost" xml:space="preserve">
+    <value>Баасы</value>
+  </data>
+  <data name="NothingFoundBySearch" xml:space="preserve">
+    <value>Издөөңүз боюнча эч нерсе табылган жок.</value>
+  </data>
+  <data name="Inactive" xml:space="preserve">
+    <value>Активсиз</value>
+  </data>
+  <data name="Action" xml:space="preserve">
+    <value>Аракет</value>
+  </data>
+  <data name="AutoProlongation" xml:space="preserve">
+    <value>Авто узартуу</value>
+  </data>
+  <data name="PeriodAny" xml:space="preserve">
+    <value>Каалаган</value>
+  </data>
+  <data name="ServicesInInvoice" xml:space="preserve">
+    <value>Эсептеги кызматтар</value>
+  </data>
+  <data name="Created" xml:space="preserve">
+    <value>Түзүлгөн</value>
+  </data>
+  <data name="Som" xml:space="preserve">
+    <value>сом</value>
+  </data>
+  <data name="DateStart" xml:space="preserve">
+    <value>Баштоо күнү</value>
+  </data>
+  <data name="InvoicePassport" xml:space="preserve">
+    <value>Эсеп паспорту</value>
+  </data>
+  <data name="SearchByServiceName" xml:space="preserve">
+    <value>Кызмат аталышы боюнча издөө...</value>
+  </data>
+  <data name="ActiveInvoices" xml:space="preserve">
+    <value>Активдүү эсептер</value>
+  </data>
+  <data name="StandartClientsChooseClient" xml:space="preserve">
+    <value>Кардардын эсептер барагын ачуу үчүн кардарды тандаңыз.</value>
+  </data>
+  <data name="SummaryTotalInvoicesNote" xml:space="preserve">
+    <value>Кардардын бардык эсептери</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>Өчүрүлгөн</value>
+  </data>
+  <data name="CloseNavigationMenu" xml:space="preserve">
+    <value>Close navigation menu</value>
+  </data>
+  <data name="SummaryActiveInvoicesNote" xml:space="preserve">
+    <value>active статусунда</value>
+  </data>
+  <data name="CreateServicesHint" xml:space="preserve">
+    <value>Кызматтарды эсепке кошуу үчүн аларды түзүңүз (мисалы: тамактануу, окутуу)</value>
+  </data>
+  <data name="ServiceNameExample" xml:space="preserve">
+    <value>Мисалы: Тамактануу, Окутуу</value>
+  </data>
+  <data name="Full" xml:space="preserve">
+    <value>Толук</value>
+  </data>
+  <data name="Date" xml:space="preserve">
+    <value>Дата</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Жабуу</value>
+  </data>
+  <data name="LoadClientInvoicesError" xml:space="preserve">
+    <value>Кардардын эсептерин жүктөө ишке ашкан жок.</value>
+  </data>
+  <data name="NearestPayment" xml:space="preserve">
+    <value>Жакынкы төлөм</value>
+  </data>
+  <data name="ManageInvoicesAndDetails" xml:space="preserve">
+    <value>Эсептер тизмесин жана деталдарын башкаруу</value>
+  </data>
+  <data name="OneTimeStateTitle" xml:space="preserve">
+    <value>Бир жолку төлөмдүн абалы</value>
+  </data>
+  <data name="NoNewNotifications" xml:space="preserve">
+    <value>Жаңы билдирмелер жок</value>
+  </data>
+  <data name="EditService" xml:space="preserve">
+    <value>Кызматты түзөтүү</value>
+  </data>
+  <data name="OpenNavigationMenu" xml:space="preserve">
+    <value>Навигация менюсун ачуу</value>
+  </data>
+  <data name="BackToClients" xml:space="preserve">
+    <value>Кардарларга кайтуу</value>
+  </data>
+  <data name="PeriodDaily" xml:space="preserve">
+    <value>Күн сайын</value>
+  </data>
+  <data name="Today" xml:space="preserve">
+    <value>Бүгүн</value>
+  </data>
+  <data name="DeleteServiceQuestion" xml:space="preserve">
+    <value>Кызматты өчүрөбүзбү?</value>
+  </data>
+  <data name="TotalServices" xml:space="preserve">
+    <value>Жалпы кызматтар</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>Колдонуу</value>
+  </data>
+  <data name="ExpandType" xml:space="preserve">
+    <value>Көрсөтүү режими</value>
+  </data>
+  <data name="Statistics" xml:space="preserve">
+    <value>Статистика</value>
+  </data>
+  <data name="OneTimeStateNote" xml:space="preserve">
+    <value>Бир жолку эсептер үчүн жөнөкөйлөтүлгөн төлөм абалы колдонулат.</value>
+  </data>
+  <data name="PaymentNonPaid" xml:space="preserve">
+    <value>Төлөнгөн эмес</value>
+  </data>
+  <data name="OpenInvoices" xml:space="preserve">
+    <value>Эсептерди ачуу</value>
+  </data>
+  <data name="NoServicesYet" xml:space="preserve">
+    <value>Азырынча кызматтар жок</value>
+  </data>
+  <data name="Balance" xml:space="preserve">
+    <value>Баланс</value>
+  </data>
+  <data name="Search" xml:space="preserve">
+    <value>Издөө</value>
+  </data>
+  <data name="OneTime" xml:space="preserve">
+    <value>Бир жолку</value>
+  </data>
+  <data name="PeriodWeekly" xml:space="preserve">
+    <value>Жума сайын</value>
+  </data>
+  <data name="ParseServerResponseError" xml:space="preserve">
+    <value>Сервердин жообун талдоо ишке ашкан жок.</value>
+  </data>
+  <data name="LoadingInvoices" xml:space="preserve">
+    <value>Эсептер жүктөлүүдө...</value>
+  </data>
+  <data name="MedicalCabinet" xml:space="preserve">
+    <value>Медициналык кабинет</value>
+  </data>
+  <data name="OrganizationProfileMedclinic" xml:space="preserve">
+    <value>Уюмдун профили: Medclinic</value>
+  </data>
+  <data name="OrganizationProfileDetsad" xml:space="preserve">
+    <value>Уюмдун профили: Бала бакча</value>
+  </data>
+  <data name="LoginBrandTagline" xml:space="preserve">
+    <value>Коммерция, уюмдар жана отчеттуулук үчүн сервис экосистемасы</value>
+  </data>
+  <data name="LoginHeroEyebrow" xml:space="preserve">
+    <value>Коопсуз кирүү порталы</value>
+  </data>
+  <data name="LoginHeroTitle" xml:space="preserve">
+    <value>Төлөмдөрдү бир жумуш мейкиндигинен башкарыңыз</value>
+  </data>
+  <data name="LoginHeroParagraph" xml:space="preserve">
+    <value>Кардар базасына, кызматтарга, төлөмдөргө, транзакцияларга жана отчетторго кирүү үчүн системага кириңиз. Коопсуз аутентификация жана кардарлар менен бир күнүмдүк иш үчүн ыңгайлуу интерфейс.</value>
+  </data>
+  <data name="LoginMiniAccessLabel" xml:space="preserve">
+    <value>Системага кирүү</value>
+  </data>
+  <data name="LoginMiniAccessMeta" xml:space="preserve">
+    <value>туруктуу кирүү</value>
+  </data>
+  <data name="LoginMiniAccessBadge" xml:space="preserve">
+    <value>Активдүү</value>
+  </data>
+  <data name="LoginMiniSecurityLabel" xml:space="preserve">
+    <value>Коопсуздук</value>
+  </data>
+  <data name="LoginMiniSecurityMeta" xml:space="preserve">
+    <value>корголгон аутентификация</value>
+  </data>
+  <data name="LoginMiniSecurityBadge" xml:space="preserve">
+    <value>Ишенимдүү</value>
+  </data>
+  <data name="LoginPanelHeading" xml:space="preserve">
+    <value>SECORE'го кирүү</value>
+  </data>
+  <data name="LoginPanelIntro" xml:space="preserve">
+    <value>Системага кирүү үчүн email жана сырсөздү киргизиңиз.</value>
+  </data>
+  <data name="LanguageRussian" xml:space="preserve">
+    <value>Орусча</value>
+  </data>
+  <data name="LanguageEnglish" xml:space="preserve">
+    <value>Англисче</value>
+  </data>
+  <data name="LanguageKyrgyz" xml:space="preserve">
+    <value>Кыргызча</value>
+  </data>
+  <data name="StandartInvoicesPageTitle" xml:space="preserve">
+    <value>Төлөмдөр үчүн эсептер</value>
+  </data>
+  <data name="StandartInvoicesPageSubtitle" xml:space="preserve">
+    <value>Бардык берилген эсептер</value>
+  </data>
+  <data name="StandartCreateInvoiceButton" xml:space="preserve">
+    <value>Эсеп түзүү</value>
+  </data>
+  <data name="StandartCreateOneTimePaymentButton" xml:space="preserve">
+    <value>Бир жолку төлөм түзүү</value>
+  </data>
+  <data name="ColForServices" xml:space="preserve">
+    <value>Кайсы кызматтар үчүн</value>
+  </data>
+  <data name="ColAmount" xml:space="preserve">
+    <value>Сумма</value>
+  </data>
+  <data name="ColTotal" xml:space="preserve">
+    <value>Жыйынтык</value>
+  </data>
+  <data name="InvoiceStatusActive" xml:space="preserve">
+    <value>Активдүү</value>
+  </data>
+  <data name="InvoiceStatusClosed" xml:space="preserve">
+    <value>Жабылган</value>
+  </data>
+  <data name="EmptyInvoicesTitle" xml:space="preserve">
+    <value>Эсептер табылган жок</value>
+  </data>
+  <data name="EmptyInvoicesDescription" xml:space="preserve">
+    <value>Азырынча эсептерди берген жоксуз</value>
+  </data>
+  <data name="CreateInvoiceModalTitle" xml:space="preserve">
+    <value>Төлөм үчүн эсеп түзүү</value>
+  </data>
+  <data name="OneTimePaymentModalTitle" xml:space="preserve">
+    <value>Төлөм түзүү</value>
+  </data>
+  <data name="PaymentHistoryPageSubtitle" xml:space="preserve">
+    <value>Уюмдун бардык транзакциялары</value>
+  </data>
+  <data name="TransactionStatusSuccess" xml:space="preserve">
+    <value>Ийгиликтүү</value>
+  </data>
+  <data name="TransactionStatusError" xml:space="preserve">
+    <value>Ката</value>
+  </data>
+  <data name="EmptyTransactionsTitle" xml:space="preserve">
+    <value>Транзакциялар табылган жок</value>
+  </data>
+  <data name="EmptyTransactionsDescription" xml:space="preserve">
+    <value>Азырынча транзакцияларыңыз жок</value>
+  </data>
+  <data name="ProfilePageTitle" xml:space="preserve">
+    <value>Профиль</value>
+  </data>
+  <data name="ProfilePageSubtitle" xml:space="preserve">
+    <value>Аты, телефон жана башталгыч бет</value>
+  </data>
+  <data name="ProfileNameLabel" xml:space="preserve">
+    <value>Аты</value>
+  </data>
+  <data name="ProfileNamePlaceholder" xml:space="preserve">
+    <value>Сиздин атыңыз</value>
+  </data>
+  <data name="ProfilePhoneLabel" xml:space="preserve">
+    <value>Телефон</value>
+  </data>
+  <data name="ProfileStartPageLabel" xml:space="preserve">
+    <value>Киргиче башталгыч бет</value>
+  </data>
+  <data name="ProfileStartPageOptionCabinet" xml:space="preserve">
+    <value>Дашборд</value>
+  </data>
+  <data name="ProfileStartPageOptionAppointments" xml:space="preserve">
+    <value>Кабыл алуулар</value>
+  </data>
+  <data name="SubscriptionExpiredTitle" xml:space="preserve">
+    <value>Жазылуу мөөнөтү бүттү</value>
+  </data>
+  <data name="SubscriptionExpiredHeading" xml:space="preserve">
+    <value>Жазылуу мөөнөтү бүткөн</value>
+  </data>
+  <data name="SubscriptionExpiredBody" xml:space="preserve">
+    <value>Уюмуңуз үчүн системага кирүү токтотулду. Жазылууну узартуу үчүн администраторго кайрылыңыз.</value>
+  </data>
+  <data name="SubscriptionExpiredBackToLogin" xml:space="preserve">
+    <value>Кирүү бетине кайтуу</value>
+  </data>
 </root>

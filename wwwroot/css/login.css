@@ -1,34 +1,34 @@
 /* Login page — стиль из Example/login.html */
 .login-page-root {
-    --bg-page: #EEF3F7;
-    --bg-page-secondary: #E7EDF3;
-    --bg-panel: #FDFEFF;
-    --bg-panel-soft: #F6FAFD;
-    --panel-border: #E2EAF0;
-    --panel-shadow: 0 18px 38px rgba(120, 144, 166, 0.10);
-    --text-primary: #273444;
-    --text-secondary: #607284;
-    --text-muted: #8C9AAA;
+    --bg-page: #F1F5F9;
+    --bg-page-secondary: #EAF1F7;
+    --bg-panel: #FFFFFF;
+    --bg-panel-soft: #F8FAFC;
+    --panel-border: #E2E8F0;
+    --panel-shadow: 0 12px 32px rgba(15, 23, 42, 0.10);
+    --text-primary: #0F172A;
+    --text-secondary: #64748B;
+    --text-muted: #94A3B8;
     --text-white: #FFFFFF;
-    --accent-primary: #6E93B7;
-    --accent-primary-hover: #5F84A8;
-    --accent-primary-soft: #E4EEF7;
-    --accent-mint: #9DBFC4;
-    --accent-mint-soft: #E5F1F2;
-    --input-bg: #FDFEFF;
-    --input-border: #D9E4EC;
-    --input-focus: #8EAFCC;
-    --input-placeholder: #98A7B5;
-    --input-text: #2E3B4A;
-    --btn-secondary-bg: #EDF4FA;
-    --btn-secondary-border: #D5E2EC;
-    --btn-secondary-text: #4F6B86;
-    --success-soft: #E8F4ED;
-    --success-text: #4F7C67;
-    --radius-xl: 32px;
-    --radius-lg: 24px;
-    --radius-md: 18px;
-    --radius-sm: 14px;
+    --accent-primary: #0284C7;
+    --accent-primary-hover: #0369A1;
+    --accent-primary-soft: #E0F2FE;
+    --accent-mint: #A7F3D0;
+    --accent-mint-soft: #ECFDF5;
+    --input-bg: #FFFFFF;
+    --input-border: #E2E8F0;
+    --input-focus: #0284C7;
+    --input-placeholder: #94A3B8;
+    --input-text: #0F172A;
+    --btn-secondary-bg: #F8FAFC;
+    --btn-secondary-border: #E2E8F0;
+    --btn-secondary-text: #475569;
+    --success-soft: #ECFDF5;
+    --success-text: #047857;
+    --radius-xl: 24px;
+    --radius-lg: 20px;
+    --radius-md: 16px;
+    --radius-sm: 12px;
 }
 
 .login-page-root * {

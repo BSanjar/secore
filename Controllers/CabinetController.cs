@@ -46,8 +46,7 @@ public class CabinetController : Controller
             return Unauthorized();
         }
 
-        if (!string.Equals(tenant.Profile.Key, "standart", StringComparison.OrdinalIgnoreCase) &&
-            !string.Equals(tenant.Profile.Key, "school", StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(tenant.Profile.Key, "standart", StringComparison.OrdinalIgnoreCase))
         {
             return NotFound();
         }
@@ -74,8 +73,7 @@ public class CabinetController : Controller
             return Unauthorized();
         }
 
-        if (!string.Equals(tenant.Profile.Key, "standart", StringComparison.OrdinalIgnoreCase) &&
-            !string.Equals(tenant.Profile.Key, "school", StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(tenant.Profile.Key, "standart", StringComparison.OrdinalIgnoreCase))
         {
             return NotFound();
         }
@@ -326,34 +324,44 @@ public class CabinetController : Controller
         var currentMonth = today.Month;
         var currentYear = today.Year;
 
-        var organizationClientIds = await _db.OrganizationClients
-            .AsNoTracking()
-            .Where(x => x.Organization == organizationId)
-            .Select(x => x.Id)
-            .ToListAsync();
-
         var todayAcceptedPatients = await _db.Transactions
             .AsNoTracking()
-            .Include(x => x.InvoiceNavigation)
             .Where(x =>
                 x.TransactionStatus == "success" &&
                 x.TransactionDate.HasValue &&
                 x.TransactionDate.Value.Date == today &&
                 x.InvoiceNavigation != null &&
-                x.InvoiceNavigation.Client != null &&
-                organizationClientIds.Contains(x.InvoiceNavigation.Client))
-            .Select(x => x.InvoiceNavigation!.Client!)
+                x.InvoiceNavigation.ClientNavigation != null &&
+                x.InvoiceNavigation.ClientNavigation.Organization == organizationId)
+            .Select(x => x.InvoiceNavigation!.ClientNavigation!.Id)
             .Distinct()
             .CountAsync();
 
+        var doctorUserIds = await _db.UserRoles
+            .AsNoTracking()
+            .Where(ur => (ur.Isdeleted == null || ur.Isdeleted == 0) && ur.User != null && ur.Role != null)
+            .Join(
+                _db.Roles.AsNoTracking()
+                    .Where(r => (r.Isdeleted == null || r.Isdeleted == 0) &&
+                                r.Organization == organizationId &&
+                                r.Name != null &&
+                                (EF.Functions.ILike(r.Name, "%doctor%") || EF.Functions.ILike(r.Name, "%врач%"))),
+                ur => ur.Role,
+                r => r.Id,
+                (ur, _) => ur.User!)
+            .Distinct()
+            .ToListAsync();
+
         var doctorsCount = await _db.Users
             .AsNoTracking()
-            .CountAsync(x => x.Organization == organizationId && (x.Isdeleted == null || x.Isdeleted == 0));
+            .Where(x =>
+                x.Organization == organizationId &&
+                (x.Isdeleted == null || x.Isdeleted == 0) &&
+                doctorUserIds.Contains(x.Id))
+            .CountAsync();
 
         var transactionsQuery = _db.Transactions
             .AsNoTracking()
-            .Include(x => x.InvoiceNavigation)
-                .ThenInclude(x => x!.ClientNavigation)
             .Where(x =>
                 x.InvoiceNavigation != null &&
                 x.InvoiceNavigation.ClientNavigation != null &&
@@ -377,35 +385,59 @@ public class CabinetController : Controller
             })
             .ToListAsync();
 
+        var weekStart = today.AddDays(-6);
+        var firstDay = new DateTime(currentYear, currentMonth, 1);
+        var lastDay = firstDay.AddMonths(1).AddDays(-1);
+
+        var dailyChartStart = weekStart < firstDay ? weekStart : firstDay;
+        var dailyChartEndExclusive = lastDay.AddDays(1);
+
+        var dailySums = await transactionsQuery
+            .Where(t =>
+                t.TransactionDate.HasValue &&
+                t.TransactionDate.Value.Date >= dailyChartStart &&
+                t.TransactionDate.Value.Date < dailyChartEndExclusive)
+            .GroupBy(t => t.TransactionDate!.Value.Date)
+            .Select(g => new
+            {
+                Date = g.Key,
+                Sum = g.Sum(t => ((decimal?)t.Summ) ?? 0m) / 100m
+            })
+            .ToListAsync();
+
+        var dailySumsByDate = dailySums.ToDictionary(x => x.Date, x => x.Sum);
+
+        var monthlySums = await transactionsQuery
+            .Where(t => t.TransactionDate.HasValue && t.TransactionDate.Value.Year == currentYear)
+            .GroupBy(t => t.TransactionDate!.Value.Month)
+            .Select(g => new
+            {
+                Month = g.Key,
+                Sum = g.Sum(t => ((decimal?)t.Summ) ?? 0m) / 100m
+            })
+            .ToListAsync();
+
+        var monthlySumsByMonth = monthlySums.ToDictionary(x => x.Month, x => x.Sum);
+
         var chartWeek = new List<object>();
         for (var dayShift = 6; dayShift >= 0; dayShift--)
         {
             var date = today.AddDays(-dayShift);
-            var sum = await transactionsQuery
-                .Where(t => t.TransactionDate.HasValue && t.TransactionDate.Value.Date == date)
-                .SumAsync(t => ((decimal?)t.Summ) ?? 0m) / 100m;
+            var sum = dailySumsByDate.GetValueOrDefault(date, 0m);
             chartWeek.Add(new { label = date.ToString("dd.MM"), value = sum });
         }
 
         var chartMonth = new List<object>();
-        var firstDay = new DateTime(currentYear, currentMonth, 1);
-        var lastDay = firstDay.AddMonths(1).AddDays(-1);
         for (var date = firstDay; date <= lastDay; date = date.AddDays(1))
         {
-            var sum = await transactionsQuery
-                .Where(t => t.TransactionDate.HasValue && t.TransactionDate.Value.Date == date)
-                .SumAsync(t => ((decimal?)t.Summ) ?? 0m) / 100m;
+            var sum = dailySumsByDate.GetValueOrDefault(date, 0m);
             chartMonth.Add(new { label = date.ToString("dd.MM"), value = sum });
         }
 
         var chartYear = new List<object>();
         for (var month = 1; month <= 12; month++)
         {
-            var sum = await transactionsQuery
-                .Where(t => t.TransactionDate.HasValue &&
-                            t.TransactionDate.Value.Month == month &&
-                            t.TransactionDate.Value.Year == currentYear)
-                .SumAsync(t => ((decimal?)t.Summ) ?? 0m) / 100m;
+            var sum = monthlySumsByMonth.GetValueOrDefault(month, 0m);
             chartYear.Add(new
             {
                 label = new DateTime(currentYear, month, 1).ToString("MMM", System.Globalization.CultureInfo.GetCultureInfo("ru-RU")),

@@ -226,7 +226,7 @@
     <value>Клиенты</value>
   </data>
   <data name="PaymentHistory" xml:space="preserve">
-    <value>Оплаты</value>
+    <value>История платежей</value>
   </data>
   <data name="CreateInvoice" xml:space="preserve">
     <value>Выставить счет</value>
@@ -356,5 +356,539 @@
   </data>
   <data name="No" xml:space="preserve">
     <value>Нет</value>
+  </data>
+  <data name="PaymentAnulated" xml:space="preserve">
+    <value>Аннулирован</value>
+  </data>
+  <data name="Client" xml:space="preserve">
+    <value>Клиент</value>
+  </data>
+  <data name="AddService" xml:space="preserve">
+    <value>Добавить услугу</value>
+  </data>
+  <data name="SummaryTotalBalance" xml:space="preserve">
+    <value>Общий баланс</value>
+  </data>
+  <data name="SharedAccount" xml:space="preserve">
+    <value>Общий лицевой счет</value>
+  </data>
+  <data name="SearchByNameOrPhone" xml:space="preserve">
+    <value>Поиск по ФИО или телефону</value>
+  </data>
+  <data name="SaveError" xml:space="preserve">
+    <value>Ошибка сохранения</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Статус</value>
+  </data>
+  <data name="SummaryActiveInvoices" xml:space="preserve">
+    <value>Активные счета</value>
+  </data>
+  <data name="QrAlt" xml:space="preserve">
+    <value>QR-код счета</value>
+  </data>
+  <data name="PeriodMonthly" xml:space="preserve">
+    <value>Ежемесячно</value>
+  </data>
+  <data name="MaxAmountSom" xml:space="preserve">
+    <value>Максимальная сумма (сом)</value>
+  </data>
+  <data name="DebtorsOnly" xml:space="preserve">
+    <value>Только должники</value>
+  </data>
+  <data name="Type" xml:space="preserve">
+    <value>Тип</value>
+  </data>
+  <data name="PeriodsMissing" xml:space="preserve">
+    <value>Периоды отсутствуют</value>
+  </data>
+  <data name="QuickAccess" xml:space="preserve">
+    <value>Быстрый доступ</value>
+  </data>
+  <data name="Service" xml:space="preserve">
+    <value>Услуга</value>
+  </data>
+  <data name="PeriodYearly" xml:space="preserve">
+    <value>Ежегодно</value>
+  </data>
+  <data name="TotalBalance" xml:space="preserve">
+    <value>Общий баланс</value>
+  </data>
+  <data name="System" xml:space="preserve">
+    <value>Система</value>
+  </data>
+  <data name="ClientNotFound" xml:space="preserve">
+    <value>Клиент не найден.</value>
+  </data>
+  <data name="NoServices" xml:space="preserve">
+    <value>Нет услуг</value>
+  </data>
+  <data name="DateCreated" xml:space="preserve">
+    <value>Дата создания</value>
+  </data>
+  <data name="PeriodScheduleNote" xml:space="preserve">
+    <value>Для ежемесячной и других периодичностей показывается полный блок периодов.</value>
+  </data>
+  <data name="Notifications" xml:space="preserve">
+    <value>Уведомления</value>
+  </data>
+  <data name="Compact" xml:space="preserve">
+    <value>Компактный</value>
+  </data>
+  <data name="RangeMinMax" xml:space="preserve">
+    <value>Диапазон (мин - макс)</value>
+  </data>
+  <data name="AmountOrRange" xml:space="preserve">
+    <value>Сумма / диапазон</value>
+  </data>
+  <data name="ClientDefaultName" xml:space="preserve">
+    <value>Клиент</value>
+  </data>
+  <data name="Amount" xml:space="preserve">
+    <value>Сумма</value>
+  </data>
+  <data name="TransactionsNone" xml:space="preserve">
+    <value>Транзакции отсутствуют</value>
+  </data>
+  <data name="SummaryNearestPaymentNote" xml:space="preserve">
+    <value>Следующий ожидаемый период</value>
+  </data>
+  <data name="DateEnd" xml:space="preserve">
+    <value>Дата окончания</value>
+  </data>
+  <data name="ClientInvoices" xml:space="preserve">
+    <value>Счета клиента</value>
+  </data>
+  <data name="Period" xml:space="preserve">
+    <value>Периодичность</value>
+  </data>
+  <data name="SearchPlaceholder" xml:space="preserve">
+    <value>Поиск...</value>
+  </data>
+  <data name="NextPeriod" xml:space="preserve">
+    <value>Следующий период</value>
+  </data>
+  <data name="ClientInvoicesWithDetails" xml:space="preserve">
+    <value>Список счетов клиента с деталями.</value>
+  </data>
+  <data name="DeleteError" xml:space="preserve">
+    <value>Ошибка удаления</value>
+  </data>
+  <data name="To" xml:space="preserve">
+    <value>По</value>
+  </data>
+  <data name="RangeAmountType" xml:space="preserve">
+    <value>Диапазон</value>
+  </data>
+  <data name="ThisMonth" xml:space="preserve">
+    <value>Этот месяц</value>
+  </data>
+  <data name="PeriodOneTime" xml:space="preserve">
+    <value>Одноразово</value>
+  </data>
+  <data name="FixedAmount" xml:space="preserve">
+    <value>Фиксированная сумма</value>
+  </data>
+  <data name="NetworkError" xml:space="preserve">
+    <value>Ошибка сети</value>
+  </data>
+  <data name="PaymentType" xml:space="preserve">
+    <value>Тип оплаты</value>
+  </data>
+  <data name="Deleted" xml:space="preserve">
+    <value>Удаленные</value>
+  </data>
+  <data name="SummaryNearestPayment" xml:space="preserve">
+    <value>Ближайший платеж</value>
+  </data>
+  <data name="LoadClientDataError" xml:space="preserve">
+    <value>Не удалось загрузить данные клиента.</value>
+  </data>
+  <data name="DeleteServiceConfirmation" xml:space="preserve">
+    <value>Вы уверены, что хотите удалить услугу</value>
+  </data>
+  <data name="PeriodSchedule" xml:space="preserve">
+    <value>График платежей / периоды</value>
+  </data>
+  <data name="FixedAmountType" xml:space="preserve">
+    <value>Фиксированная</value>
+  </data>
+  <data name="Transactions" xml:space="preserve">
+    <value>Транзакции</value>
+  </data>
+  <data name="ErrorWithStatus" xml:space="preserve">
+    <value>Ошибка</value>
+  </data>
+  <data name="Services" xml:space="preserve">
+    <value>Услуги</value>
+  </data>
+  <data name="TotalIncome" xml:space="preserve">
+    <value>Общий доход</value>
+  </data>
+  <data name="ClientHasNoInvoices" xml:space="preserve">
+    <value>У клиента нет счетов.</value>
+  </data>
+  <data name="PaymentPaid" xml:space="preserve">
+    <value>Оплачено</value>
+  </data>
+  <data name="Invoice" xml:space="preserve">
+    <value>Счет</value>
+  </data>
+  <data name="From" xml:space="preserve">
+    <value>С</value>
+  </data>
+  <data name="OrganizationManagementOverview" xml:space="preserve">
+    <value>Обзор управления организацией</value>
+  </data>
+  <data name="ClientsNotFound" xml:space="preserve">
+    <value>Клиенты не найдены.</value>
+  </data>
+  <data name="ServicesForInvoicesAndPayments" xml:space="preserve">
+    <value>Услуги организации для счетов и платежей</value>
+  </data>
+  <data name="FixedAmountSom" xml:space="preserve">
+    <value>Фиксированная сумма (сом)</value>
+  </data>
+  <data name="SummaryDebtInvoices" xml:space="preserve">
+    <value>Счета с долгом</value>
+  </data>
+  <data name="PeriodEveryNDays" xml:space="preserve">
+    <value>Каждые {0} дней</value>
+  </data>
+  <data name="Dashboard" xml:space="preserve">
+    <value>Дашборд</value>
+  </data>
+  <data name="MinAmountSom" xml:space="preserve">
+    <value>Минимальная сумма (сом)</value>
+  </data>
+  <data name="PayCode" xml:space="preserve">
+    <value>Лицевой счет</value>
+  </data>
+  <data name="AmountWithFee" xml:space="preserve">
+    <value>Сумма с комиссией</value>
+  </data>
+  <data name="Dash" xml:space="preserve">
+    <value>-</value>
+  </data>
+  <data name="SummaryTotalInvoices" xml:space="preserve">
+    <value>Всего счетов</value>
+  </data>
+  <data name="QrByInvoice" xml:space="preserve">
+    <value>QR по счету</value>
+  </data>
+  <data name="AmountType" xml:space="preserve">
+    <value>Тип суммы</value>
+  </data>
+  <data name="ServiceName" xml:space="preserve">
+    <value>Название услуги</value>
+  </data>
+  <data name="ClientsList" xml:space="preserve">
+    <value>Список клиентов</value>
+  </data>
+  <data name="SummaryDebtInvoicesNote" xml:space="preserve">
+    <value>Отрицательный баланс</value>
+  </data>
+  <data name="SummaryTotalBalanceNote" xml:space="preserve">
+    <value>По всем счетам</value>
+  </data>
+  <data name="DebtInvoices" xml:space="preserve">
+    <value>Счета с долгом</value>
+  </data>
+  <data name="Active" xml:space="preserve">
+    <value>Активные</value>
+  </data>
+  <data name="QrStatus" xml:space="preserve">
+    <value>Статус QR</value>
+  </data>
+  <data name="ReviewOrganizationTransactions" xml:space="preserve">
+    <value>Просмотр транзакций организации</value>
+  </data>
+  <data name="Cost" xml:space="preserve">
+    <value>Стоимость</value>
+  </data>
+  <data name="NothingFoundBySearch" xml:space="preserve">
+    <value>По вашему запросу ничего не найдено.</value>
+  </data>
+  <data name="Inactive" xml:space="preserve">
+    <value>Неактивные</value>
+  </data>
+  <data name="Action" xml:space="preserve">
+    <value>Действие</value>
+  </data>
+  <data name="AutoProlongation" xml:space="preserve">
+    <value>Автопродление</value>
+  </data>
+  <data name="PeriodAny" xml:space="preserve">
+    <value>Любая</value>
+  </data>
+  <data name="ServicesInInvoice" xml:space="preserve">
+    <value>Услуги в счете</value>
+  </data>
+  <data name="Created" xml:space="preserve">
+    <value>Создан</value>
+  </data>
+  <data name="Som" xml:space="preserve">
+    <value>сом</value>
+  </data>
+  <data name="DateStart" xml:space="preserve">
+    <value>Дата начала</value>
+  </data>
+  <data name="InvoicePassport" xml:space="preserve">
+    <value>Паспорт счета</value>
+  </data>
+  <data name="SearchByServiceName" xml:space="preserve">
+    <value>Поиск по названию услуги...</value>
+  </data>
+  <data name="ActiveInvoices" xml:space="preserve">
+    <value>Активные счета</value>
+  </data>
+  <data name="StandartClientsChooseClient" xml:space="preserve">
+    <value>Выберите клиента, чтобы открыть страницу его счетов.</value>
+  </data>
+  <data name="SummaryTotalInvoicesNote" xml:space="preserve">
+    <value>Все счета клиента</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>Отключен</value>
+  </data>
+  <data name="CloseNavigationMenu" xml:space="preserve">
+    <value>Close navigation menu</value>
+  </data>
+  <data name="SummaryActiveInvoicesNote" xml:space="preserve">
+    <value>Со статусом active</value>
+  </data>
+  <data name="CreateServicesHint" xml:space="preserve">
+    <value>Создайте услуги, чтобы добавлять их в счета (например: питание, обучение)</value>
+  </data>
+  <data name="ServiceNameExample" xml:space="preserve">
+    <value>Например: Питание, Обучение</value>
+  </data>
+  <data name="Full" xml:space="preserve">
+    <value>Полный</value>
+  </data>
+  <data name="Date" xml:space="preserve">
+    <value>Дата</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Закрыть</value>
+  </data>
+  <data name="LoadClientInvoicesError" xml:space="preserve">
+    <value>Не удалось загрузить счета клиента.</value>
+  </data>
+  <data name="NearestPayment" xml:space="preserve">
+    <value>Ближайший платеж</value>
+  </data>
+  <data name="ManageInvoicesAndDetails" xml:space="preserve">
+    <value>Управление списком счетов и деталями</value>
+  </data>
+  <data name="OneTimeStateTitle" xml:space="preserve">
+    <value>Состояние одноразового платежа</value>
+  </data>
+  <data name="NoNewNotifications" xml:space="preserve">
+    <value>Новых уведомлений нет</value>
+  </data>
+  <data name="EditService" xml:space="preserve">
+    <value>Редактировать услугу</value>
+  </data>
+  <data name="OpenNavigationMenu" xml:space="preserve">
+    <value>Открыть меню навигации</value>
+  </data>
+  <data name="BackToClients" xml:space="preserve">
+    <value>Назад к клиентам</value>
+  </data>
+  <data name="PeriodDaily" xml:space="preserve">
+    <value>Ежедневно</value>
+  </data>
+  <data name="Today" xml:space="preserve">
+    <value>Сегодня</value>
+  </data>
+  <data name="DeleteServiceQuestion" xml:space="preserve">
+    <value>Удалить услугу?</value>
+  </data>
+  <data name="TotalServices" xml:space="preserve">
+    <value>Всего услуг</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>Применить</value>
+  </data>
+  <data name="ExpandType" xml:space="preserve">
+    <value>Режим отображения</value>
+  </data>
+  <data name="Statistics" xml:space="preserve">
+    <value>Статистика</value>
+  </data>
+  <data name="OneTimeStateNote" xml:space="preserve">
+    <value>Для одноразовых счетов используется упрощенный статус оплаты.</value>
+  </data>
+  <data name="PaymentNonPaid" xml:space="preserve">
+    <value>Не оплачено</value>
+  </data>
+  <data name="OpenInvoices" xml:space="preserve">
+    <value>Открыть счета</value>
+  </data>
+  <data name="NoServicesYet" xml:space="preserve">
+    <value>Услуг пока нет</value>
+  </data>
+  <data name="Balance" xml:space="preserve">
+    <value>Баланс</value>
+  </data>
+  <data name="Search" xml:space="preserve">
+    <value>Поиск</value>
+  </data>
+  <data name="OneTime" xml:space="preserve">
+    <value>Разовый</value>
+  </data>
+  <data name="PeriodWeekly" xml:space="preserve">
+    <value>Еженедельно</value>
+  </data>
+  <data name="ParseServerResponseError" xml:space="preserve">
+    <value>Не удалось разобрать ответ сервера.</value>
+  </data>
+  <data name="LoadingInvoices" xml:space="preserve">
+    <value>Загрузка счетов...</value>
+  </data>
+  <data name="MedicalCabinet" xml:space="preserve">
+    <value>Медицинский кабинет</value>
+  </data>
+  <data name="OrganizationProfileMedclinic" xml:space="preserve">
+    <value>Профиль организации: Medclinic</value>
+  </data>
+  <data name="OrganizationProfileDetsad" xml:space="preserve">
+    <value>Профиль организации: Детсад</value>
+  </data>
+  <data name="LoginBrandTagline" xml:space="preserve">
+    <value>Экосистема сервисов для коммерции, организаций и отчетности</value>
+  </data>
+  <data name="LoginHeroEyebrow" xml:space="preserve">
+    <value>Защищённый портал доступа</value>
+  </data>
+  <data name="LoginHeroTitle" xml:space="preserve">
+    <value>Управляйте платежами в едином рабочем пространстве</value>
+  </data>
+  <data name="LoginHeroParagraph" xml:space="preserve">
+    <value>Войдите в систему для доступа к клиентской базе, услугам, платежам, транзакциям и отчётам. Безопасная авторизация и удобный интерфейс для ежедневной работы организации с клиентами.</value>
+  </data>
+  <data name="LoginMiniAccessLabel" xml:space="preserve">
+    <value>Доступ к системе</value>
+  </data>
+  <data name="LoginMiniAccessMeta" xml:space="preserve">
+    <value>стабильный доступ</value>
+  </data>
+  <data name="LoginMiniAccessBadge" xml:space="preserve">
+    <value>Активный</value>
+  </data>
+  <data name="LoginMiniSecurityLabel" xml:space="preserve">
+    <value>Безопасность</value>
+  </data>
+  <data name="LoginMiniSecurityMeta" xml:space="preserve">
+    <value>защищённая авторизация</value>
+  </data>
+  <data name="LoginMiniSecurityBadge" xml:space="preserve">
+    <value>Надёжно</value>
+  </data>
+  <data name="LoginPanelHeading" xml:space="preserve">
+    <value>Вход в SECORE</value>
+  </data>
+  <data name="LoginPanelIntro" xml:space="preserve">
+    <value>Введите email и пароль для доступа к системе.</value>
+  </data>
+  <data name="LanguageRussian" xml:space="preserve">
+    <value>Русский</value>
+  </data>
+  <data name="LanguageEnglish" xml:space="preserve">
+    <value>Английский</value>
+  </data>
+  <data name="LanguageKyrgyz" xml:space="preserve">
+    <value>Кыргызча</value>
+  </data>
+  <data name="StandartInvoicesPageTitle" xml:space="preserve">
+    <value>Счета на оплату</value>
+  </data>
+  <data name="StandartInvoicesPageSubtitle" xml:space="preserve">
+    <value>Все выставленные счета</value>
+  </data>
+  <data name="StandartCreateInvoiceButton" xml:space="preserve">
+    <value>Создать счёт</value>
+  </data>
+  <data name="StandartCreateOneTimePaymentButton" xml:space="preserve">
+    <value>Создать одноразовый платёж</value>
+  </data>
+  <data name="ColForServices" xml:space="preserve">
+    <value>За какие услуги</value>
+  </data>
+  <data name="ColAmount" xml:space="preserve">
+    <value>Сумма</value>
+  </data>
+  <data name="ColTotal" xml:space="preserve">
+    <value>Итого</value>
+  </data>
+  <data name="InvoiceStatusActive" xml:space="preserve">
+    <value>Активный</value>
+  </data>
+  <data name="InvoiceStatusClosed" xml:space="preserve">
+    <value>Закрыт</value>
+  </data>
+  <data name="EmptyInvoicesTitle" xml:space="preserve">
+    <value>Счетов не найдено</value>
+  </data>
+  <data name="EmptyInvoicesDescription" xml:space="preserve">
+    <value>У вас пока нет выставленных счетов</value>
+  </data>
+  <data name="CreateInvoiceModalTitle" xml:space="preserve">
+    <value>Создать счёт на оплату</value>
+  </data>
+  <data name="OneTimePaymentModalTitle" xml:space="preserve">
+    <value>Создание платежа</value>
+  </data>
+  <data name="PaymentHistoryPageSubtitle" xml:space="preserve">
+    <value>Все транзакции организации</value>
+  </data>
+  <data name="TransactionStatusSuccess" xml:space="preserve">
+    <value>Успешно</value>
+  </data>
+  <data name="TransactionStatusError" xml:space="preserve">
+    <value>Ошибка</value>
+  </data>
+  <data name="EmptyTransactionsTitle" xml:space="preserve">
+    <value>Транзакций не найдено</value>
+  </data>
+  <data name="EmptyTransactionsDescription" xml:space="preserve">
+    <value>У вас пока нет транзакций</value>
+  </data>
+  <data name="ProfilePageTitle" xml:space="preserve">
+    <value>Профиль</value>
+  </data>
+  <data name="ProfilePageSubtitle" xml:space="preserve">
+    <value>Имя, телефон и персональная стартовая страница</value>
+  </data>
+  <data name="ProfileNameLabel" xml:space="preserve">
+    <value>Имя</value>
+  </data>
+  <data name="ProfileNamePlaceholder" xml:space="preserve">
+    <value>Ваше имя</value>
+  </data>
+  <data name="ProfilePhoneLabel" xml:space="preserve">
+    <value>Телефон</value>
+  </data>
+  <data name="ProfileStartPageLabel" xml:space="preserve">
+    <value>Стартовая страница после входа</value>
+  </data>
+  <data name="ProfileStartPageOptionCabinet" xml:space="preserve">
+    <value>Дашборд</value>
+  </data>
+  <data name="ProfileStartPageOptionAppointments" xml:space="preserve">
+    <value>Приемы</value>
+  </data>
+  <data name="SubscriptionExpiredTitle" xml:space="preserve">
+    <value>Подписка истекла</value>
+  </data>
+  <data name="SubscriptionExpiredHeading" xml:space="preserve">
+    <value>Период подписки истёк</value>
+  </data>
+  <data name="SubscriptionExpiredBody" xml:space="preserve">
+    <value>Доступ в систему для вашей организации приостановлен. Обратитесь к администратору для продления подписки.</value>
+  </data>
+  <data name="SubscriptionExpiredBackToLogin" xml:space="preserve">
+    <value>На страницу входа</value>
   </data>
 </root>

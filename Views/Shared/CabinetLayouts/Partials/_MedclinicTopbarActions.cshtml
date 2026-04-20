@@ -1,0 +1,20 @@
+﻿<div class="medclinic-topbar__actions">
+    <button type="button"
+            class="app-shell-mobile-toggle"
+            data-shell-toggle
+            aria-label="Open navigation menu"
+            aria-expanded="false">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    @await Html.PartialAsync("_LanguageSwitcher")
+
+    <div class="dropdown">
+        <a class="btn medclinic-topbar-dropdown-toggle rounded-pill px-3" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Аккаунт
+        </a>
+        @await Html.PartialAsync("~/Views/Shared/_UserMenuPartial.cshtml")
+    </div>
+</div>

@@ -1,4 +1,4 @@
-namespace WebApplication1.Models.DBModels;
+﻿namespace WebApplication1.Models.DBModels;
 
 /// <summary>
 /// Справочник видов комиссии (верхняя комиссия с клиента).

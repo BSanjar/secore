@@ -10,6 +10,7 @@ using System.Linq;
 using WebApplication1.Services;
 using WebApplication1.Helpers;
 using WebApplication1.Services.Cabinets;
+using WebApplication1.Services.Cabinets.Navigation;
 using Microsoft.OpenApi.Models;
 using WebApplication1.Swagger;
 
@@ -96,6 +97,8 @@ builder.Services.AddScoped<ExcelExportService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICabinetProfileResolver, CabinetProfileResolver>();
 builder.Services.AddScoped<ICurrentTenantService, CurrentTenantService>();
+builder.Services.AddScoped<IShellViewModelBuilder, ShellViewModelBuilder>();
+builder.Services.AddScoped<ICabinetNavigationService, CabinetNavigationService>();
 // Регистрируем сервис авторизации API
 builder.Services.AddScoped<WebApplication1.Services.WebApiAuthService>();
 
@@ -113,6 +116,8 @@ builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options 
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<TransactionCommissionService>();
 builder.Services.AddScoped<ViewRenderService>();
+builder.Services.Configure<AbQrOptions>(builder.Configuration.GetSection(AbQrOptions.SectionName));
+builder.Services.AddHttpClient<InvoiceQrService>();
 builder.Services.AddSingleton<PuppeteerPdfBrowserService>();
 builder.Services.AddScoped<ClientService>();
 builder.Services.AddScoped<ClientPhotoService>();

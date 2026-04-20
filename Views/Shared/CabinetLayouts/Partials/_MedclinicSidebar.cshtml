@@ -1,0 +1,57 @@
+﻿@using WebApplication1.Helpers
+@using WebApplication1.Services.Cabinets.Navigation
+@inject WebApplication1.Models.DBModels.AppDbContext LayoutDb
+@inject ICabinetNavigationService NavigationService
+@{
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+    var userId = Context.Session.GetString("UserId");
+    var userPerms = string.IsNullOrEmpty(userId) ? new List<string>() : PermissionHelper.GetUserPermissions(LayoutDb, userId);
+    var isDoctorRole = AuthorizationHelper.IsDoctorRole(Context);
+    var navItems = NavigationService.BuildMain("medclinic", userPerms, isDoctorRole);
+    var footerItems = NavigationService.BuildSecondary("medclinic", userPerms, isDoctorRole);
+}
+<aside class="medclinic-sidebar" data-shell-sidebar>
+    <div class="medclinic-sidebar__top">
+        <a class="medclinic-brand" asp-controller="Cabinet" asp-action="Index">
+            <span class="medclinic-brand__logo">M</span>
+            <span class="medclinic-brand__text">
+                <strong>Medclinic</strong>
+                <small>Медицинский кабинет</small>
+            </span>
+        </a>
+        <button type="button" class="app-shell-sidebar-close" data-shell-close aria-label="Close navigation menu">×</button>
+        <button type="button" class="medclinic-sidebar__toggle" id="medclinicSidebarToggle" aria-label="Свернуть меню">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </div>
+
+    <nav class="medclinic-nav">
+        @await Html.PartialAsync(
+            "~/Views/Shared/CabinetLayouts/Partials/_CabinetSidebarNav.cshtml",
+            navItems,
+            new ViewDataDictionary(ViewData)
+            {
+                ["Variant"] = "medclinic",
+                ["ActiveController"] = controller
+            })
+    </nav>
+
+    @if (footerItems.Count > 0)
+    {
+        <div class="medclinic-sidebar__footer">
+            @await Html.PartialAsync(
+                "~/Views/Shared/CabinetLayouts/Partials/_CabinetSecondaryNav.cshtml",
+                footerItems,
+                new ViewDataDictionary(ViewData)
+                {
+                    ["ActiveController"] = controller,
+                    ["ItemClass"] = "medclinic-nav__link",
+                    ["IconClass"] = "medclinic-nav__icon",
+                    ["LabelClass"] = "medclinic-nav__label",
+                    ["ActiveClass"] = "active"
+                })
+        </div>
+    }
+</aside>

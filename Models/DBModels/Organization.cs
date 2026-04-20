@@ -12,7 +12,6 @@ public partial class Organization
     /// <summary>
     /// standart
     /// detsad
-    /// school
     /// medclinic
     /// simple
     /// </summary>
@@ -28,6 +27,7 @@ public partial class Organization
     public virtual ICollection<UserWorkSchedule> UserWorkSchedules { get; set; } = new List<UserWorkSchedule>();
 
     public virtual ICollection<UserWorkScheduleOverride> UserWorkScheduleOverrides { get; set; } = new List<UserWorkScheduleOverride>();
+    public virtual ICollection<AppointmentSetting> AppointmentSettings { get; set; } = new List<AppointmentSetting>();
 
     public virtual ICollection<Department> Departments { get; set; } = new List<Department>();
 

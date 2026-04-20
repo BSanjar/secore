@@ -1,184 +1,45 @@
-@using Microsoft.AspNetCore.Mvc.Localization
-@using WebApplication1.Helpers
+﻿@using Microsoft.AspNetCore.Mvc.Localization
+@using WebApplication1.Services.Cabinets
 @inject IHtmlLocalizer<WebApplication1.SharedResources> Localizer
-@inject WebApplication1.Models.DBModels.AppDbContext _layoutDb
+@inject IShellViewModelBuilder ShellViewModelBuilder
 @{
-    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
-    string NavClass(string target) => string.Equals(controller, target, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+    Layout = "~/Views/Shared/CabinetLayouts/_BaseCabinetLayout.cshtml";
 
-    var userId = Context.Session.GetString("UserId");
-    var userPerms = string.IsNullOrEmpty(userId) ? new List<string>() : PermissionHelper.GetUserPermissions(_layoutDb, userId);
-    bool HasAny(params string[] codes) => codes.Any(c => userPerms.Contains(c, StringComparer.OrdinalIgnoreCase));
+    var shell = ShellViewModelBuilder.Build();
+    ViewData["BodyClass"] = shell.BodyClass;
+    ViewData["CabinetTitleSuffixKey"] = shell.TitleSuffixResourceKey;
+    ViewData["IncludeAntiforgery"] = shell.IncludeAntiforgery;
 
-    var isDoctorRole = AuthorizationHelper.IsDoctorRole(Context);
-
-    var canViewCabinet = HasAny("dashboard.view", "nav.dashboard", "nav.home");
-    var canViewAppointments = HasAny("appointments.view", "nav.appointments");
-    var canViewDoctors = HasAny("doctors.view", "nav.doctors");
-    var canViewDepartments = HasAny("departments.view", "nav.departments");
-    var canViewSpecializations = HasAny("specializations.view", "nav.specializations");
-    var canViewPatients = HasAny("patients.view", "nav.patients");
-    var canViewServices = HasAny("services.view", "orgservices.view", "nav.services");
-    var canViewInvoices = HasAny("invoices.view", "nav.invoices", "transactions.view", "nav.transactions");
-    var canViewNotifications = HasAny("notifications.view", "nav.notifications");
-    var canViewProfile = HasAny("profile.view", "nav.profile");
-    var canViewSettings = HasAny("settings.view", "nav.settings");
-
-    var tablesSectionControllers = new[] { "Departments", "Specializations", "Patients", "Services" };
-    var tablesSectionOpen = controller != null
-                            && tablesSectionControllers.Contains(controller, StringComparer.OrdinalIgnoreCase)
-                            && (canViewDepartments || canViewSpecializations || canViewPatients || canViewServices);
 }
-<!DOCTYPE html>
-<html lang="@System.Globalization.CultureInfo.CurrentCulture.TwoLetterISOLanguageName">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Медицинский кабинет</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/medclinic-layout.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/WebApplication1.styles.css" asp-append-version="true" />
-    @await RenderSectionAsync("Styles", required: false)
-</head>
-<body class="medclinic-shell">
-    <div class="medclinic-shell__layout">
-        <aside class="medclinic-sidebar">
-            <div class="medclinic-sidebar__top">
-                <a class="medclinic-brand" asp-controller="Cabinet" asp-action="Index">
-                    <span class="medclinic-brand__logo">M</span>
-                    <span class="medclinic-brand__text">
-                        <strong>Medclinic</strong>
-                        <small>Медицинский кабинет</small>
-                    </span>
-                </a>
-                <button type="button" class="medclinic-sidebar__toggle" id="medclinicSidebarToggle" aria-label="Свернуть меню">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </button>
+
+@section LayoutStyles {
+    <link rel="stylesheet" href="@shell.CabinetCssPath" asp-append-version="true" />
+    @RenderSection("Styles", required: false)
+}
+
+@section LayoutScripts {
+    <script src="~/web/medclinic/js/medclinic-layout.js" asp-append-version="true"></script>
+    @RenderSection("Scripts", required: false)
+}
+
+<div class="medclinic-shell__layout">
+    @await Html.PartialAsync("~/Views/Shared/CabinetLayouts/Partials/_MedclinicSidebar.cshtml")
+    <button type="button" class="app-shell-overlay" data-shell-overlay aria-hidden="true" aria-label="@Localizer["CloseNavigationMenu"]"></button>
+
+    <div class="medclinic-content">
+        <header class="medclinic-topbar">
+            <div class="medclinic-topbar__meta">
+                <div class="medclinic-topbar__title">@ViewData["Title"]</div>
+                <div class="medclinic-topbar__subtitle">@(shell.OrganizationCaptionResourceKey is null ? string.Empty : Localizer[shell.OrganizationCaptionResourceKey].Value)</div>
             </div>
+            @await Html.PartialAsync("~/Views/Shared/CabinetLayouts/Partials/_MedclinicTopbarActions.cshtml")
+        </header>
 
-            <nav class="medclinic-nav">
-                @if (!isDoctorRole && canViewCabinet)
-                {
-                    <a class="medclinic-nav__link @NavClass("Cabinet")" asp-controller="Cabinet" asp-action="Index" title="Главная">
-                        <span class="medclinic-nav__icon">&#x2302;</span><span class="medclinic-nav__label">Главная</span>
-                    </a>
-                }
-
-                @if (canViewAppointments)
-                {
-                    <a class="medclinic-nav__link @NavClass("Appointments")" asp-controller="Appointments" asp-action="Index" title="Записи на прием">
-                        <span class="medclinic-nav__icon">&#x25F7;</span><span class="medclinic-nav__label">Записи на прием</span>
-                    </a>
-                }
-
-                @if (!isDoctorRole && canViewDoctors)
-                {
-                    <a class="medclinic-nav__link @NavClass("Doctors")" asp-controller="Doctors" asp-action="Index" title="Доктора">
-                        <span class="medclinic-nav__icon">&#x2695;</span><span class="medclinic-nav__label">Доктора</span>
-                    </a>
-                }
-
-                @if (!isDoctorRole && (canViewDepartments || canViewSpecializations || canViewPatients || canViewServices))
-                {
-                    <details class="medclinic-nav__group @(tablesSectionOpen ? "medclinic-nav__group--active-child" : "")" @(tablesSectionOpen ? "open" : null)>
-                        <summary class="medclinic-nav__group-summary" title="Таблицы">
-                            <span class="medclinic-nav__icon">&#x229E;</span>
-                            <span class="medclinic-nav__label">Таблицы</span>
-                            <span class="medclinic-nav__group-chevron" aria-hidden="true"></span>
-                        </summary>
-                        <div class="medclinic-nav__group-items">
-                            @if (canViewDepartments)
-                            {
-                                <a class="medclinic-nav__link medclinic-nav__link--nested @NavClass("Departments")" asp-controller="Departments" asp-action="Index" title="Отделения">
-                                    <span class="medclinic-nav__icon">&#x25A3;</span><span class="medclinic-nav__label">Отделения</span>
-                                </a>
-                            }
-                            @if (canViewSpecializations)
-                            {
-                                <a class="medclinic-nav__link medclinic-nav__link--nested @NavClass("Specializations")" asp-controller="Specializations" asp-action="Index" title="Специализации">
-                                    <span class="medclinic-nav__icon">&#x25CE;</span><span class="medclinic-nav__label">Специализации</span>
-                                </a>
-                            }
-                            @if (canViewPatients)
-                            {
-                                <a class="medclinic-nav__link medclinic-nav__link--nested @NavClass("Patients")" asp-controller="Patients" asp-action="Index" title="Пациенты">
-                                    <span class="medclinic-nav__icon">&#x25C9;</span><span class="medclinic-nav__label">Пациенты</span>
-                                </a>
-                            }
-                            @if (canViewServices)
-                            {
-                                <a class="medclinic-nav__link medclinic-nav__link--nested @NavClass("Services")" asp-controller="Services" asp-action="Index" title="Услуги">
-                                    <span class="medclinic-nav__icon">&#x271A;</span><span class="medclinic-nav__label">Услуги</span>
-                                </a>
-                            }
-                        </div>
-                    </details>
-                }
-
-                @if (canViewInvoices)
-                {
-                    <a class="medclinic-nav__link @NavClass("Invoices")" asp-controller="Invoices" asp-action="Index" title="Счета">
-                        <span class="medclinic-nav__icon">&#x21C4;</span><span class="medclinic-nav__label">Счета</span>
-                    </a>
-                }
-
-                @if (!isDoctorRole && canViewNotifications)
-                {
-                    <a class="medclinic-nav__link @NavClass("Notifications")" asp-controller="Notifications" asp-action="Index" title="Уведомления">
-                        <span class="medclinic-nav__icon">&#x25D4;</span><span class="medclinic-nav__label">Уведомления</span>
-                    </a>
-                }
-            </nav>
-
-            @if (!isDoctorRole && (canViewProfile || canViewSettings))
-            {
-                <div class="medclinic-sidebar__footer">
-                    @if (canViewProfile)
-                    {
-                        <a class="medclinic-nav__link @NavClass("Profile")" asp-controller="Profile" asp-action="Index" title="Профиль">
-                            <span class="medclinic-nav__icon">&#x25D0;</span><span class="medclinic-nav__label">Профиль</span>
-                        </a>
-                    }
-                    @if (canViewSettings)
-                    {
-                        <a class="medclinic-nav__link @NavClass("Settings")" asp-controller="Settings" asp-action="Index" title="Настройки">
-                            <span class="medclinic-nav__icon">&#x2699;</span><span class="medclinic-nav__label">Настройки</span>
-                        </a>
-                    }
-                </div>
-            }
-        </aside>
-
-        <div class="medclinic-content">
-            <header class="medclinic-topbar">
-                <div class="medclinic-topbar__meta">
-                    <div class="medclinic-topbar__title">@ViewData["Title"]</div>
-                    <div class="medclinic-topbar__subtitle">Профиль организации: Medclinic</div>
-                </div>
-                <div class="medclinic-topbar__actions">
-                    @await Html.PartialAsync("_LanguageSwitcher")
-                    <div class="dropdown">
-                        <a class="btn btn-light border rounded-pill px-3" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Аккаунт
-                        </a>
-                        @await Html.PartialAsync("~/Views/Shared/_UserMenuPartial.cshtml")
-                    </div>
-                </div>
-            </header>
-
-            <main class="medclinic-page">
-                @RenderBody()
-            </main>
-        </div>
+        <main class="medclinic-page">
+            @RenderBody()
+        </main>
     </div>
+</div>
 
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
-    <script src="~/js/medclinic-layout.js" asp-append-version="true"></script>
-    @await RenderSectionAsync("Scripts", required: false)
-</body>
-</html>
+
+

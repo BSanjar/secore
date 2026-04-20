@@ -44,7 +44,7 @@ namespace WebApplication1.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Index(string? Name, string? Phone)
+        public async Task<IActionResult> Index(string? Name, string? Phone, string? StartPage)
         {
             var userId = AuthorizationHelper.GetUserId(HttpContext);
             if (string.IsNullOrEmpty(userId))
@@ -60,6 +60,7 @@ namespace WebApplication1.Controllers
 
             user.Name = Name?.Trim();
             user.Phone = Phone?.Trim();
+            user.StartPage = LandingPageResolver.NormalizeStartPage(StartPage);
             await _db.SaveChangesAsync();
 
             HttpContext.Session.SetString("UserName", user.Name ?? "");

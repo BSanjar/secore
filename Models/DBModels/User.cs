@@ -26,6 +26,8 @@ public partial class User
     /// </summary>
     public string? Role { get; set; }
 
+    public string? StartPage { get; set; }
+
     public string? GoogleId { get; set; }
 
     public string? GoogleEmail { get; set; }
@@ -53,6 +55,8 @@ public partial class User
     public virtual ICollection<UserWorkSchedule> UserWorkSchedules { get; set; } = new List<UserWorkSchedule>();
 
     public virtual ICollection<UserWorkScheduleOverride> UserWorkScheduleOverrides { get; set; } = new List<UserWorkScheduleOverride>();
+
+    public virtual ICollection<AppointmentSetting> AppointmentSettings { get; set; } = new List<AppointmentSetting>();
 
     public virtual ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
 

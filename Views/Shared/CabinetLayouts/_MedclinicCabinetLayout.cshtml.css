@@ -1,20 +1,22 @@
 :root {
-    --med-bg: #f4f7fb;
+    --med-bg: #f0fdfa;
     --med-surface: #ffffff;
-    --med-surface-alt: #eef4ff;
-    --med-border: #dbe5f0;
-    --med-text: #142235;
-    --med-muted: #66768c;
-    --med-accent: #0f6cbd;
-    --med-accent-soft: #dfefff;
-    --med-success: #198754;
-    --med-danger: #dc3545;
-    --med-shadow: 0 20px 45px rgba(20, 34, 53, 0.08);
+    --med-surface-alt: #f8fafc;
+    --med-border: #d1fae5;
+    --med-text: #0f172a;
+    --med-muted: #0f766e;
+    --med-accent: #0f766e;
+    --med-accent-soft: #ccfbf1;
+    --med-success: #047857;
+    --med-danger: #dc2626;
+    --med-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+    --med-secondary: #14b8a6;
+    --med-highlight: #38bdf8;
 }
 
 body.medclinic-shell {
     margin: 0;
-    background: radial-gradient(circle at top, #eef7ff 0%, var(--med-bg) 45%, #edf2f7 100%);
+    background: radial-gradient(circle at top, #ecfeff 0%, var(--med-bg) 52%, #e6fffa 100%);
     color: var(--med-text);
 }
 
@@ -25,7 +27,7 @@ body.medclinic-shell {
 }
 
 .medclinic-sidebar {
-    background: linear-gradient(180deg, #0b2545 0%, #12345c 100%);
+    background: linear-gradient(180deg, #0f766e 0%, #14b8a6 100%);
     color: #fff;
     padding: 28px 22px;
     display: flex;
@@ -52,12 +54,12 @@ body.medclinic-shell {
     width: 48px;
     height: 48px;
     border-radius: 16px;
-    background: linear-gradient(135deg, #78c2ff 0%, #2a89ff 100%);
+    background: linear-gradient(135deg, #38bdf8 0%, #0f766e 100%);
     display: grid;
     place-items: center;
     font-weight: 700;
     font-size: 1.2rem;
-    box-shadow: 0 12px 24px rgba(42, 137, 255, 0.35);
+    box-shadow: 0 10px 22px rgba(15, 118, 110, 0.35);
 }
 
 .medclinic-brand strong,
@@ -203,18 +205,18 @@ body.medclinic-shell {
 }
 
 .medclinic-badge--success {
-    background: #d9f5e7;
-    color: #11663e;
+    background: #ecfdf5;
+    color: #047857;
 }
 
 .medclinic-badge--busy {
-    background: #ffe4e7;
-    color: #9f1d35;
+    background: #fffbeb;
+    color: #b45309;
 }
 
 .medclinic-badge--available {
-    background: #dff1ff;
-    color: #0f6cbd;
+    background: #e0f2fe;
+    color: #0369a1;
 }
 
 .dropdown-menu {

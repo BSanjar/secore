@@ -31,8 +31,47 @@ public class AppointmentsController : Controller
     }
 
     [HttpGet]
-    [RequirePermission("appointments.view")]
-    public async Task<IActionResult> Index()
+    public IActionResult Index()
+    {
+        if (PermissionHelper.HasPermission(HttpContext, "appointments.registry.view"))
+            return RedirectToAction(nameof(Registry));
+
+        if (PermissionHelper.HasPermission(HttpContext, "appointments.doctor.view"))
+            return RedirectToAction(nameof(Doctor));
+
+        if (PermissionHelper.HasPermission(HttpContext, "appointments.view"))
+            return RedirectToAction(nameof(Registry));
+
+        return RedirectToAction("AccessDenied", "Home", new { permissionCode = "appointments.registry.view | appointments.doctor.view" });
+    }
+
+    [HttpGet]
+    [RequirePermission("appointments.doctor.view")]
+    public async Task<IActionResult> Doctor()
+    {
+        var model = await BuildIndexViewModelAsync(limitToCurrentDoctor: true);
+        if (model == null)
+            return Unauthorized();
+
+        ViewBag.IsDoctorRole = true;
+        return View(model);
+    }
+
+    [HttpGet]
+    [RequirePermission("appointments.registry.view")]
+    public async Task<IActionResult> Registry()
+    {
+        var model = await BuildIndexViewModelAsync(limitToCurrentDoctor: false);
+        if (model == null)
+            return Unauthorized();
+
+        ViewBag.IsDoctorRole = false;
+        return View(model);
+    }
+
+    [HttpGet]
+    [RequirePermission("appointments.edit")]
+    public async Task<IActionResult> Templates()
     {
         var tenant = _currentTenantService.GetCurrent();
         if (!tenant.Profile.HasFeature(CabinetFeatures.Appointments))
@@ -42,14 +81,159 @@ public class AppointmentsController : Controller
         if (string.IsNullOrWhiteSpace(organizationId))
             return Unauthorized();
 
+        var storageReady = await MedicalTemplatesStorageReadyAsync();
+        var templates = storageReady
+            ? await _db.AppointmentMedicalTemplates
+                .AsNoTracking()
+                .Where(x => x.OrganizationId == organizationId)
+                .OrderBy(x => x.TemplateType)
+                .ThenBy(x => x.SortOrder)
+                .ThenBy(x => x.Title)
+                .Select(x => new AppointmentMedicalTemplateViewModel
+                {
+                    Id = x.Id,
+                    Type = x.TemplateType,
+                    Title = x.Title,
+                    Content = x.Content,
+                    SortOrder = x.SortOrder,
+                    IsActive = x.IsActive
+                })
+                .ToListAsync()
+            : new List<AppointmentMedicalTemplateViewModel>();
+
+        return View(new AppointmentTemplatesIndexViewModel
+        {
+            StorageReady = storageReady,
+            StorageMessage = storageReady
+                ? null
+                : "Таблица appointment_medical_templates еще не создана. Сначала примените SQL-скрипт шаблонов.",
+            Templates = templates
+        });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [RequirePermission("appointments.edit")]
+    public async Task<IActionResult> SaveTemplate(SaveAppointmentMedicalTemplateRequest request)
+    {
+        var tenant = _currentTenantService.GetCurrent();
+        if (!tenant.Profile.HasFeature(CabinetFeatures.Appointments))
+            return NotFound();
+
+        var organizationId = tenant.OrganizationId;
+        if (string.IsNullOrWhiteSpace(organizationId))
+            return Unauthorized();
+
+        if (!await MedicalTemplatesStorageReadyAsync())
+        {
+            TempData["Error"] = "Таблица шаблонов еще не создана.";
+            return RedirectToAction(nameof(Templates));
+        }
+
+        var type = NormalizeTemplateType(request.Type);
+        if (type == null)
+        {
+            TempData["Error"] = "Выберите корректный тип шаблона.";
+            return RedirectToAction(nameof(Templates));
+        }
+
+        var title = request.Title?.Trim();
+        var content = request.Content?.Trim();
+        if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(content))
+        {
+            TempData["Error"] = "Заполните название и текст шаблона.";
+            return RedirectToAction(nameof(Templates));
+        }
+
+        var sortOrder = request.SortOrder < 0 ? 0 : request.SortOrder;
+        if (sortOrder > 10000)
+            sortOrder = 10000;
+
+        var now = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Unspecified);
+        var template = string.IsNullOrWhiteSpace(request.Id)
+            ? null
+            : await _db.AppointmentMedicalTemplates
+                .FirstOrDefaultAsync(x => x.Id == request.Id && x.OrganizationId == organizationId);
+
+        if (template == null)
+        {
+            template = new AppointmentMedicalTemplate
+            {
+                Id = Guid.NewGuid().ToString(),
+                OrganizationId = organizationId,
+                CreatedAt = now
+            };
+            _db.AppointmentMedicalTemplates.Add(template);
+        }
+
+        template.TemplateType = type;
+        template.Title = title;
+        template.Content = content;
+        template.SortOrder = sortOrder;
+        template.IsActive = request.IsActive;
+        template.UpdatedAt = now;
+
+        await _db.SaveChangesAsync();
+        TempData["Message"] = "Шаблон сохранен.";
+        return RedirectToAction(nameof(Templates));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [RequirePermission("appointments.edit")]
+    public async Task<IActionResult> DeleteTemplate(DeleteAppointmentMedicalTemplateRequest request)
+    {
+        var tenant = _currentTenantService.GetCurrent();
+        if (!tenant.Profile.HasFeature(CabinetFeatures.Appointments))
+            return NotFound();
+
+        var organizationId = tenant.OrganizationId;
+        if (string.IsNullOrWhiteSpace(organizationId))
+            return Unauthorized();
+
+        if (string.IsNullOrWhiteSpace(request.Id))
+        {
+            TempData["Error"] = "Не выбран шаблон для удаления.";
+            return RedirectToAction(nameof(Templates));
+        }
+
+        var entity = await _db.AppointmentMedicalTemplates
+            .FirstOrDefaultAsync(x => x.Id == request.Id && x.OrganizationId == organizationId);
+
+        if (entity == null)
+        {
+            TempData["Error"] = "Шаблон не найден.";
+            return RedirectToAction(nameof(Templates));
+        }
+
+        _db.AppointmentMedicalTemplates.Remove(entity);
+        await _db.SaveChangesAsync();
+        TempData["Message"] = "Шаблон удален.";
+        return RedirectToAction(nameof(Templates));
+    }
+
+    private async Task<AppointmentsIndexViewModel?> BuildIndexViewModelAsync(bool limitToCurrentDoctor)
+    {
+        var tenant = _currentTenantService.GetCurrent();
+        if (!tenant.Profile.HasFeature(CabinetFeatures.Appointments))
+            return null;
+
+        var organizationId = tenant.OrganizationId;
+        if (string.IsNullOrWhiteSpace(organizationId))
+            return null;
+
         var currentUserId = AuthorizationHelper.GetUserId(HttpContext);
-        var isDoctorRole = AuthorizationHelper.IsDoctorRole(HttpContext);
         var canManageAppointments =
             PermissionHelper.HasPermission(HttpContext, "appointments.edit") ||
             PermissionHelper.HasPermission(HttpContext, "appointments.manage");
         var canGenerateInvoice =
             PermissionHelper.HasPermission(HttpContext, "appointments.invoice") ||
             PermissionHelper.HasPermission(HttpContext, "invoices.create");
+        var canMarkAsPaidManually =
+            PermissionHelper.HasPermission(HttpContext, "appointments.payment.status") ||
+            PermissionHelper.HasPermission(HttpContext, "appointments.invoice") ||
+            PermissionHelper.HasPermission(HttpContext, "invoices.create") ||
+            PermissionHelper.HasPermission(HttpContext, "appointments.manage");
 
         var patientsCount = await _db.OrganizationClients
             .AsNoTracking()
@@ -59,7 +243,7 @@ public class AppointmentsController : Controller
             .AsNoTracking()
             .Where(x => x.Organization == organizationId && (x.Isdeleted == null || x.Isdeleted == 0));
 
-        if (isDoctorRole && !string.IsNullOrWhiteSpace(currentUserId))
+        if (limitToCurrentDoctor && !string.IsNullOrWhiteSpace(currentUserId))
             doctorsQuery = doctorsQuery.Where(x => x.Id == currentUserId);
 
         var doctorsCount = await doctorsQuery.CountAsync();
@@ -122,25 +306,50 @@ public class AppointmentsController : Controller
             })
             .ToListAsync();
 
+        var medicalTemplatesReady = await MedicalTemplatesStorageReadyAsync();
+        var medicalTemplates = medicalTemplatesReady
+            ? await _db.AppointmentMedicalTemplates
+                .AsNoTracking()
+                .Where(x => x.OrganizationId == organizationId && x.IsActive)
+                .OrderBy(x => x.TemplateType)
+                .ThenBy(x => x.SortOrder)
+                .ThenBy(x => x.Title)
+                .Select(x => new AppointmentMedicalTemplateViewModel
+                {
+                    Id = x.Id,
+                    Type = x.TemplateType,
+                    Title = x.Title,
+                    Content = x.Content,
+                    SortOrder = x.SortOrder,
+                    IsActive = x.IsActive
+                })
+                .ToListAsync()
+            : BuildFallbackMedicalTemplates();
+
         var storageReady = await AppointmentsStorageReadyAsync();
         var doctorSchedulesReady = await DoctorSchedulesStorageReadyAsync();
         var doctorScheduleOverridesReady = await DoctorScheduleOverridesStorageReadyAsync();
+        var appointmentSettingsReady = await AppointmentSettingsStorageReadyAsync();
         IReadOnlyList<DoctorScheduleViewModel> doctorSchedules = doctorSchedulesReady
             ? await LoadDoctorSchedulesAsync(organizationId)
             : Array.Empty<DoctorScheduleViewModel>();
         IReadOnlyList<DoctorScheduleOverrideViewModel> doctorScheduleOverrides = doctorScheduleOverridesReady
             ? await LoadDoctorScheduleOverridesAsync(organizationId)
             : Array.Empty<DoctorScheduleOverrideViewModel>();
+        IReadOnlyList<AppointmentDurationSettingViewModel> appointmentDurations = appointmentSettingsReady
+            ? await LoadAppointmentDurationsAsync(organizationId)
+            : Array.Empty<AppointmentDurationSettingViewModel>();
 
+        var eventDoctorId = limitToCurrentDoctor ? currentUserId : null;
         var events = storageReady
-            ? await LoadEventsFromStorageAsync(organizationId, isDoctorRole ? currentUserId : null)
+            ? await LoadEventsFromStorageAsync(organizationId, eventDoctorId)
             : BuildFallbackEvents(doctors, patients);
 
-        ViewBag.IsDoctorRole = isDoctorRole;
         ViewBag.CanManageAppointments = canManageAppointments;
         ViewBag.CanGenerateInvoice = canGenerateInvoice;
+        ViewBag.CanMarkAsPaidManually = canMarkAsPaidManually;
 
-        return View(new AppointmentsIndexViewModel
+        return new AppointmentsIndexViewModel
         {
             PatientsCount = patientsCount,
             DoctorsCount = doctorsCount,
@@ -152,8 +361,10 @@ public class AppointmentsController : Controller
                 .Select(x => new SelectOptionViewModel { Value = x.Id, Label = x.Name })
                 .ToList(),
             ServiceCatalog = serviceCatalog,
+            MedicalTemplates = medicalTemplates,
             DoctorSchedules = doctorSchedules,
             DoctorScheduleOverrides = doctorScheduleOverrides,
+            AppointmentDurations = appointmentDurations,
             Events = events,
             StorageReady = storageReady,
             StorageMessage = storageReady
@@ -163,10 +374,11 @@ public class AppointmentsController : Controller
             DoctorSchedulesMessage = doctorSchedulesReady
                 ? null
                 : "Таблица рабочих смен пользователей ещё не создана. Ограничение записи по рабочему времени станет доступно после применения SQL-скрипта."
-        });
+        };
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     [RequirePermission("appointments.edit")]
     public async Task<IActionResult> Save([FromBody] SaveAppointmentRequest request)
     {
@@ -189,6 +401,9 @@ public class AppointmentsController : Controller
                 message = "Сначала примените SQL-скрипт appointments."
             });
         }
+
+        if (isDoctorRole && !string.IsNullOrWhiteSpace(currentUserId))
+            request.DoctorId = currentUserId;
 
         var validation = ValidateRequest(request);
         if (validation != null)
@@ -223,9 +438,6 @@ public class AppointmentsController : Controller
                 message = "Не удалось определить пациента для записи."
             });
         }
-
-        if (isDoctorRole && !string.IsNullOrWhiteSpace(currentUserId))
-            request.DoctorId = currentUserId;
 
         User? doctor = null;
         if (!string.IsNullOrWhiteSpace(request.DoctorId))
@@ -321,7 +533,22 @@ public class AppointmentsController : Controller
         appointment.Email = request.Email?.Trim();
         appointment.Notes = request.Comment?.Trim();
         appointment.ReferralSource = request.ReferralSource?.Trim();
-        appointment.PaymentType = request.PaymentType?.Trim();
+        var normalizedPaymentType = NormalizePaymentType(request.PaymentType);
+        var canMarkAsPaidManually =
+            PermissionHelper.HasPermission(HttpContext, "appointments.payment.status") ||
+            PermissionHelper.HasPermission(HttpContext, "appointments.invoice") ||
+            PermissionHelper.HasPermission(HttpContext, "invoices.create") ||
+            PermissionHelper.HasPermission(HttpContext, "appointments.manage");
+        if (IsPaidPaymentType(normalizedPaymentType) && !canMarkAsPaidManually)
+        {
+            return BadRequest(new
+            {
+                success = false,
+                message = "У вас нет прав вручную отмечать прием как оплаченный."
+            });
+        }
+
+        appointment.PaymentType = normalizedPaymentType;
         appointment.AppointmentStatus = request.AppointmentStatus?.Trim();
         appointment.IsActive = request.IsActive;
         appointment.StartsAt = startsAt;
@@ -369,7 +596,10 @@ public class AppointmentsController : Controller
                 Notes = appointment.Notes ?? string.Empty,
                 ReferralSource = appointment.ReferralSource,
                 PaymentType = appointment.PaymentType,
+                HasPaidInvoice = IsPaidPaymentType(appointment.PaymentType),
                 IsActive = appointment.IsActive,
+                CreatedAt = appointment.CreatedAt,
+                UpdatedAt = appointment.UpdatedAt,
                 Services = appointment.AppointmentServices
                     .OrderBy(x => x.ServiceName)
                     .Select(x => new AppointmentServiceLineViewModel
@@ -385,6 +615,7 @@ public class AppointmentsController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     [RequirePermission("appointments.invoice")]
     public async Task<IActionResult> GenerateInvoice([FromBody] GenerateAppointmentInvoiceRequest request)
     {
@@ -494,6 +725,45 @@ public class AppointmentsController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
+    [RequirePermission("appointments.edit")]
+    public async Task<IActionResult> Cancel([FromBody] GenerateAppointmentInvoiceRequest request)
+    {
+        var tenant = _currentTenantService.GetCurrent();
+        if (!tenant.Profile.HasFeature(CabinetFeatures.Appointments))
+            return NotFound();
+
+        var organizationId = tenant.OrganizationId;
+        if (string.IsNullOrWhiteSpace(organizationId))
+            return Unauthorized();
+
+        if (string.IsNullOrWhiteSpace(request.AppointmentId))
+            return BadRequest(new { success = false, message = "Не выбрана запись для отмены." });
+
+        var currentUserId = AuthorizationHelper.GetUserId(HttpContext);
+        var isDoctorRole = AuthorizationHelper.IsDoctorRole(HttpContext);
+
+        var appointmentQuery = _db.Appointments
+            .Where(x => x.OrganizationId == organizationId && x.Id == request.AppointmentId);
+
+        if (isDoctorRole && !string.IsNullOrWhiteSpace(currentUserId))
+            appointmentQuery = appointmentQuery.Where(x => x.DoctorId == currentUserId);
+
+        var appointment = await appointmentQuery.FirstOrDefaultAsync();
+        if (appointment == null)
+            return NotFound(new { success = false, message = "Запись не найдена." });
+
+        appointment.AppointmentStatus = "cancelled";
+        appointment.IsActive = false;
+        appointment.UpdatedAt = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Unspecified);
+        await _db.SaveChangesAsync();
+
+        return Json(new { success = true, message = "Запись отменена." });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [RequirePermission("appointments.edit")]
     public async Task<IActionResult> SaveDoctorSchedule([FromBody] SaveUserWorkScheduleRequest request)
     {
         var tenant = _currentTenantService.GetCurrent();
@@ -578,6 +848,9 @@ public class AppointmentsController : Controller
         if (string.IsNullOrWhiteSpace(request.PatientId) && string.IsNullOrWhiteSpace(request.PatientName))
             return "Укажите пациента.";
 
+        if (string.IsNullOrWhiteSpace(request.DoctorId))
+            return "Укажите врача.";
+
         if (request.AppointmentDate == null)
             return "Укажите дату приёма.";
 
@@ -586,6 +859,10 @@ public class AppointmentsController : Controller
 
         if (string.IsNullOrWhiteSpace(request.EndTime) || !TimeSpan.TryParse(request.EndTime, out _))
             return "Укажите корректное время окончания.";
+
+        var isDraft = string.Equals(request.AppointmentStatus, "draft", StringComparison.OrdinalIgnoreCase);
+        if (!isDraft && (request.Services == null || request.Services.Count == 0))
+            return "Добавьте хотя бы одну услугу.";
 
         return null;
     }
@@ -656,6 +933,16 @@ public class AppointmentsController : Controller
         return await CheckTablesExistAsync("user_work_schedule_overrides");
     }
 
+    private async Task<bool> AppointmentSettingsStorageReadyAsync()
+    {
+        return await CheckTablesExistAsync("appointment_settings");
+    }
+
+    private async Task<bool> MedicalTemplatesStorageReadyAsync()
+    {
+        return await CheckTablesExistAsync("appointment_medical_templates");
+    }
+
     private async Task<bool> CheckTablesExistAsync(params string[] tableNames)
     {
         var connection = _db.Database.GetDbConnection();
@@ -718,6 +1005,20 @@ public class AppointmentsController : Controller
                 StartTime = x.StartTime.HasValue ? x.StartTime.Value.ToString(@"hh\:mm") : null,
                 EndTime = x.EndTime.HasValue ? x.EndTime.Value.ToString(@"hh\:mm") : null,
                 Comment = x.Comment
+            })
+            .ToListAsync();
+    }
+
+    private async Task<List<AppointmentDurationSettingViewModel>> LoadAppointmentDurationsAsync(string organizationId)
+    {
+        return await _db.AppointmentSettings
+            .AsNoTracking()
+            .Where(x => x.OrganizationId == organizationId && !string.IsNullOrWhiteSpace(x.UserId))
+            .OrderBy(x => x.UserId)
+            .Select(x => new AppointmentDurationSettingViewModel
+            {
+                UserId = x.UserId,
+                DurationMinutes = x.AppointmentDurationMinutes <= 0 ? 30 : x.AppointmentDurationMinutes
             })
             .ToListAsync();
     }
@@ -802,7 +1103,7 @@ public class AppointmentsController : Controller
 
     private async Task<List<AppointmentCalendarEventViewModel>> LoadEventsFromStorageAsync(string organizationId, string? doctorId)
     {
-        var query = _db.Appointments
+        var appointments = await _db.Appointments
             .AsNoTracking()
             .Include(x => x.Patient)
             .Include(x => x.Doctor)
@@ -810,7 +1111,18 @@ public class AppointmentsController : Controller
             .Where(x => x.OrganizationId == organizationId)
             .Where(x => string.IsNullOrWhiteSpace(doctorId) || x.DoctorId == doctorId)
             .OrderBy(x => x.StartsAt)
-            .Select(x => new AppointmentCalendarEventViewModel
+            .ToListAsync();
+
+        var paidAppointmentRanges = await LoadPaidAppointmentRangesAsync(organizationId);
+
+        return appointments.Select(x =>
+        {
+            var hasPaidInvoice = !string.IsNullOrWhiteSpace(x.PatientId) &&
+                                 paidAppointmentRanges.Any(p =>
+                                     p.PatientId == x.PatientId &&
+                                     p.DateFrom <= x.StartsAt &&
+                                     x.EndsAt <= p.DateTo);
+            return new AppointmentCalendarEventViewModel
             {
                 Id = x.Id,
                 Title = x.Title ?? "Приём",
@@ -825,8 +1137,11 @@ public class AppointmentsController : Controller
                 Status = x.IsActive ? "busy" : "available",
                 Notes = x.Notes ?? string.Empty,
                 ReferralSource = x.ReferralSource,
-                PaymentType = x.PaymentType,
+                PaymentType = hasPaidInvoice && string.IsNullOrWhiteSpace(x.PaymentType) ? "invoice_paid" : x.PaymentType,
+                HasPaidInvoice = hasPaidInvoice || IsPaidPaymentType(x.PaymentType),
                 IsActive = x.IsActive,
+                CreatedAt = x.CreatedAt,
+                UpdatedAt = x.UpdatedAt,
                 Services = x.AppointmentServices
                     .OrderBy(s => s.ServiceName)
                     .Select(s => new AppointmentServiceLineViewModel
@@ -837,9 +1152,74 @@ public class AppointmentsController : Controller
                         Quantity = s.Quantity
                     })
                     .ToList()
-            });
+            };
+        }).ToList();
+    }
 
-        return await query.ToListAsync();
+    private async Task<List<PaidAppointmentRange>> LoadPaidAppointmentRangesAsync(string organizationId)
+    {
+        var paidByInvoicePayments = await _db.Invoices
+            .AsNoTracking()
+            .Where(x => x.InvoicePayments.Any(p => p.PaymentStatus == "paid"))
+            .Where(x => x.Client != null)
+            .Where(x => _db.OrganizationClients.Any(c => c.Id == x.Client && c.Organization == organizationId))
+            .SelectMany(
+                x => x.InvoicePayments
+                    .Where(p => p.PaymentStatus == "paid")
+                    .DefaultIfEmpty(),
+                (invoice, payment) => new
+                {
+                    PatientId = invoice.Client!,
+                    DateFrom = payment != null && payment.DateFrom.HasValue
+                        ? payment.DateFrom.Value
+                        : (invoice.DateStartInvoice ?? invoice.DateCreated ?? DateTime.MinValue),
+                    DateTo = payment != null && payment.DateTo.HasValue
+                        ? payment.DateTo.Value
+                        : (invoice.DateEndInvoice ?? invoice.DateStartInvoice ?? invoice.DateCreated ?? DateTime.MinValue)
+                })
+            .ToListAsync();
+
+        var paidByTransactions = await _db.Invoices
+            .AsNoTracking()
+            .Where(x => x.Client != null)
+            .Where(x => x.Transactions.Any(t => t.TransactionStatus == "success"))
+            .Where(x => _db.OrganizationClients.Any(c => c.Id == x.Client && c.Organization == organizationId))
+            .Select(x => new
+            {
+                PatientId = x.Client!,
+                DateFrom = x.DateStartInvoice ?? x.DateCreated ?? DateTime.MinValue,
+                DateTo = x.DateEndInvoice ?? x.DateStartInvoice ?? x.DateCreated ?? DateTime.MinValue
+            })
+            .ToListAsync();
+
+        return paidByInvoicePayments
+            .Concat(paidByTransactions)
+            .Where(x => x.DateTo >= x.DateFrom)
+            .Select(x => new PaidAppointmentRange(x.PatientId, x.DateFrom, x.DateTo))
+            .ToList();
+    }
+
+    private sealed record PaidAppointmentRange(string PatientId, DateTime DateFrom, DateTime DateTo);
+
+    private static bool IsPaidPaymentType(string? paymentType)
+    {
+        var normalized = (paymentType ?? string.Empty).Trim().ToLowerInvariant();
+        return normalized is "cash" or "card" or "online" or "insurance" or "invoice_paid" or "paid";
+    }
+
+    private static string NormalizePaymentType(string? paymentType)
+    {
+        var normalized = (paymentType ?? string.Empty).Trim().ToLowerInvariant();
+        return normalized switch
+        {
+            "cash" => "cash",
+            "card" => "card",
+            "online" => "online",
+            "insurance" => "insurance",
+            "invoice_paid" => "invoice_paid",
+            "paid" => "paid",
+            _ => "unpaid"
+        };
     }
 
     private static List<AppointmentCalendarEventViewModel> BuildFallbackEvents(
@@ -865,7 +1245,9 @@ public class AppointmentsController : Controller
                 Start = anchorDate.AddHours(9),
                 End = anchorDate.AddHours(9).AddMinutes(30),
                 Status = "busy",
-                Notes = "Первичный осмотр и сбор анамнеза."
+                Notes = "Первичный осмотр и сбор анамнеза.",
+                CreatedAt = anchorDate.AddHours(9),
+                UpdatedAt = anchorDate.AddHours(9)
             },
             new()
             {
@@ -878,7 +1260,9 @@ public class AppointmentsController : Controller
                 Start = anchorDate.AddHours(11),
                 End = anchorDate.AddHours(11).AddMinutes(45),
                 Status = "busy",
-                Notes = "Контроль после процедуры."
+                Notes = "Контроль после процедуры.",
+                CreatedAt = anchorDate.AddHours(11),
+                UpdatedAt = anchorDate.AddHours(11)
             },
             new()
             {
@@ -889,8 +1273,40 @@ public class AppointmentsController : Controller
                 Start = anchorDate.AddHours(14),
                 End = anchorDate.AddHours(14).AddMinutes(30),
                 Status = "available",
-                Notes = "Слот доступен для записи."
+                Notes = "Слот доступен для записи.",
+                CreatedAt = anchorDate.AddHours(14),
+                UpdatedAt = anchorDate.AddHours(14)
             }
+        };
+    }
+
+    private static List<AppointmentMedicalTemplateViewModel> BuildFallbackMedicalTemplates()
+    {
+        return new List<AppointmentMedicalTemplateViewModel>
+        {
+            new() { Id = "demo-diagnosis-1", Type = "diagnosis", Title = "ОРВИ", Content = "ОРВИ, острое течение, средней степени тяжести.", SortOrder = 1 },
+            new() { Id = "demo-diagnosis-2", Type = "diagnosis", Title = "Гастрит", Content = "Хронический гастрит в стадии обострения.", SortOrder = 2 },
+            new() { Id = "demo-recommendation-1", Type = "recommendation", Title = "Общий режим", Content = "Покой, обильное питье, контроль температуры 2 раза в день.", SortOrder = 1 },
+            new() { Id = "demo-recommendation-2", Type = "recommendation", Title = "Контроль", Content = "Повторный прием через 3 дня либо раньше при ухудшении состояния.", SortOrder = 2 },
+            new() { Id = "demo-research-1", Type = "research", Title = "ОАК", Content = "Направление на общий анализ крови.", SortOrder = 1 },
+            new() { Id = "demo-research-2", Type = "research", Title = "УЗИ", Content = "Направление на УЗИ по клиническим показаниям.", SortOrder = 2 }
+        };
+    }
+
+    private static string? NormalizeTemplateType(string? raw)
+    {
+        var value = (raw ?? string.Empty).Trim().ToLowerInvariant();
+        return value switch
+        {
+            "complaints" => "complaints",
+            "diagnosis" => "diagnosis",
+            "recommendation" => "recommendation",
+            "recommendations" => "recommendations",
+            "research" => "research",
+            "referral" => "referral",
+            "comment" => "comment",
+            "comments" => "comments",
+            _ => null
         };
     }
 }

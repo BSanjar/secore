@@ -1,0 +1,79 @@
+@using Microsoft.AspNetCore.Mvc.Localization
+@using WebApplication1.Helpers
+@inject IHtmlLocalizer<WebApplication1.SharedResources> Localizer
+@{
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+    var action = ViewContext.RouteData.Values["action"]?.ToString();
+
+    var canViewDashboard = PermissionHelper.HasPermission(Context, "dashboard.view");
+    var canViewClients = PermissionHelper.HasPermission(Context, "nav.children");
+    var canViewServices = PermissionHelper.HasPermission(Context, "children.view");
+    var canViewInvoices = PermissionHelper.HasPermission(Context, "invoices.view");
+    var canViewPaymentHistory = PermissionHelper.HasPermission(Context, "transactions.view");
+}
+<aside class="dashboard-sidebar" data-shell-sidebar>
+    <div class="dashboard-sidebar-top">
+        <a class="dashboard-sidebar-brand" asp-controller="Cabinet" asp-action="Index">
+            <span class="dashboard-sidebar-brand-mark">*</span>
+            <span class="dashboard-sidebar-brand-text">Secore</span>
+        </a>
+        <button type="button" class="app-shell-sidebar-close" data-shell-close aria-label="@Localizer["CloseNavigationMenu"]">&times;</button>
+
+        <nav class="dashboard-sidebar-nav">
+            @if (canViewDashboard)
+            {
+                <a class="dashboard-nav-item @(controller == "Cabinet" && action == "Index" ? "active" : "")"
+                   asp-controller="Cabinet"
+                   asp-action="Index">
+                    <span class="dashboard-nav-item-icon">&#x2302;</span>
+                    <span class="dashboard-nav-item-label">@Localizer["PersonalCabinet"]</span>
+                </a>
+            }
+            @if (canViewInvoices)
+            {
+                <a class="dashboard-nav-item @(controller == "Cabinet" && action == "Invoices" ? "active" : "")"
+                   asp-controller="Cabinet"
+                   asp-action="Invoices">
+                    <span class="dashboard-nav-item-icon">&#x21C4;</span>
+                    <span class="dashboard-nav-item-label">@Localizer["Invoices"]</span>
+                </a>
+            }
+            @if (canViewClients)
+            {
+                <a class="dashboard-nav-item @(controller == "Clients" ? "active" : "")"
+                   asp-controller="Clients"
+                   asp-action="Index">
+                    <span class="dashboard-nav-item-icon">&#x25C9;</span>
+                    <span class="dashboard-nav-item-label">@Localizer["Clients"]</span>
+                </a>
+            }
+            @if (canViewServices)
+            {
+                <a class="dashboard-nav-item @(controller == "OrganizationServices" ? "active" : "")"
+                   asp-controller="OrganizationServices"
+                   asp-action="Index">
+                    <span class="dashboard-nav-item-icon">&#x271A;</span>
+                    <span class="dashboard-nav-item-label">@Localizer["Services"]</span>
+                </a>
+            }
+            @if (canViewPaymentHistory)
+            {
+                <a class="dashboard-nav-item @(controller == "Cabinet" && action == "PaymentHistory" ? "active" : "")"
+                   asp-controller="Cabinet"
+                   asp-action="PaymentHistory">
+                    <span class="dashboard-nav-item-icon">&#x20BD;</span>
+                    <span class="dashboard-nav-item-label">@Localizer["PaymentHistory"]</span>
+                </a>
+            }
+        </nav>
+    </div>
+
+    <div class="dashboard-sidebar-bottom">
+        <form asp-controller="Account" asp-action="Logout" method="post" class="dashboard-sidebar-bottom-item dashboard-logout-form">
+            <button type="submit" class="dashboard-logout-btn" title="@Localizer["Logout"]">
+                <span class="dashboard-nav-item-icon">&#x2190;</span>
+                <span class="dashboard-nav-item-label">@Localizer["Logout"]</span>
+            </button>
+        </form>
+    </div>
+</aside>

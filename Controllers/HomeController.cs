@@ -1,24 +1,35 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 using WebApplication1.Dtos;
 using WebApplication1.Helpers;
+using WebApplication1.Models.DBModels;
 
 namespace WebApplication1.Controllers
 {
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
+        private readonly AppDbContext _db;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(ILogger<HomeController> logger, AppDbContext db)
         {
             _logger = logger;
+            _db = db;
         }
 
         public IActionResult Index()
         {
             if (AuthorizationHelper.IsAuthenticated(HttpContext))
             {
-                return RedirectToAction("Index", "Cabinet");
+                var userId = AuthorizationHelper.GetUserId(HttpContext);
+                var user = string.IsNullOrWhiteSpace(userId)
+                    ? null
+                    : _db.Users.AsNoTracking().FirstOrDefault(x => x.Id == userId);
+                var route = LandingPageResolver.ResolveRoute(HttpContext, user);
+                return route == LandingPageResolver.Appointments
+                    ? RedirectToAction("Index", "Appointments")
+                    : RedirectToAction("Index", "Cabinet");
             }
 
             return RedirectToAction("Login", "Account");

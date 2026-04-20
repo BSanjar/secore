@@ -1,14 +1,21 @@
-@model WebApplication1.Models.DBModels.OrganizationService
+﻿@model WebApplication1.Models.DBModels.OrganizationService
 @{
     ViewData["Title"] = "Редактировать услугу";
 }
 
 @section Styles {
-    <link rel="stylesheet" href="~/web/kindergarten/css/detsad-clients.css" asp-append-version="true" />
+    @if (string.Equals(WebApplication1.Helpers.AuthorizationHelper.GetOrganizationType(Context), "standart", StringComparison.OrdinalIgnoreCase))
+    {
+        <link rel="stylesheet" href="~/web/standart/css/services.css" asp-append-version="true" />
+    }
+    else
+    {
+        <link rel="stylesheet" href="~/web/kindergarten/css/detsad-clients.css" asp-append-version="true" />
+    }
 }
 
 <div class="children-page">
-    <nav class="detsad-breadcrumb" aria-label="Навигация">
+    <nav class="app-breadcrumb" aria-label="Навигация">
         <a asp-action="Index">Услуги</a>
         <span class="breadcrumb-sep">›</span>
         <span>Редактирование услуги</span>
@@ -90,4 +97,6 @@
         });
     </script>
 }
+
+
 

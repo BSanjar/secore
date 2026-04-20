@@ -14,7 +14,7 @@
     {
         var manualRow = Model.InvoiceServices.FirstOrDefault(s => string.IsNullOrEmpty(s.Service));
         if (manualRow != null && manualRow.ServiceSumm.HasValue)
-            manualPriceSom = (decimal)manualRow.ServiceSumm.Value / 100m;
+            manualPriceSom = manualRow.ServiceSumm.Value / 100m;
     }
 }
 
@@ -195,7 +195,7 @@
                                                 }
                                                 @foreach (var s in orgServices)
                                                 {
-                                                    var priceSom = (decimal)(s.ServiceSumm ?? 0) / 100m;
+                                                    var priceSom = s.ServiceSumm ?? 0;
                                                     var minSom = (decimal)(s.MinSumm ?? 0) / 100m;
                                                     var maxSom = (decimal)(s.MaxSumm ?? 0) / 100m;
                                                     var existing = invoiceServicesList.FirstOrDefault(isv => isv.Service == (string)s.Id);
@@ -366,7 +366,7 @@
         var payCodeSelect = document.getElementById('editInvoicePayCodeSelect');
         var payCodeInput = document.getElementById('editInvoicePayCode');
         var currentPayCode = payCodeInput && payCodeInput.value ? payCodeInput.value : '';
-        fetch('/Clients/GetInvoicePayCodeOptions?clientIds=' + encodeURIComponent('@Model.Client'))
+        fetch('/Invoices/GetInvoicePayCodeOptions?clientIds=' + encodeURIComponent('@Model.Client'))
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (!payCodeSelect) return;
@@ -386,7 +386,7 @@
                 payCodeSelect.addEventListener('change', function() {
                     var v = this.value;
                     if (v === '__new__' || v === '') {
-                        fetch('/Clients/GetNextInvoiceNumber')
+                        fetch('/Invoices/GetNextInvoiceNumber')
                             .then(function(r) { return r.json(); })
                             .then(function(d) { if (payCodeInput) payCodeInput.value = d.payCode || ''; })
                             .catch(function() { if (payCodeInput) payCodeInput.value = ''; });

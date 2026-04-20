@@ -13,8 +13,10 @@ public class AppointmentsIndexViewModel
     public IReadOnlyList<PatientLookupViewModel> Patients { get; set; } = Array.Empty<PatientLookupViewModel>();
     public IReadOnlyList<SelectOptionViewModel> Services { get; set; } = Array.Empty<SelectOptionViewModel>();
     public IReadOnlyList<AppointmentServiceCatalogItemViewModel> ServiceCatalog { get; set; } = Array.Empty<AppointmentServiceCatalogItemViewModel>();
+    public IReadOnlyList<AppointmentMedicalTemplateViewModel> MedicalTemplates { get; set; } = Array.Empty<AppointmentMedicalTemplateViewModel>();
     public IReadOnlyList<DoctorScheduleViewModel> DoctorSchedules { get; set; } = Array.Empty<DoctorScheduleViewModel>();
     public IReadOnlyList<DoctorScheduleOverrideViewModel> DoctorScheduleOverrides { get; set; } = Array.Empty<DoctorScheduleOverrideViewModel>();
+    public IReadOnlyList<AppointmentDurationSettingViewModel> AppointmentDurations { get; set; } = Array.Empty<AppointmentDurationSettingViewModel>();
     public bool StorageReady { get; set; }
     public string? StorageMessage { get; set; }
     public bool DoctorSchedulesReady { get; set; }

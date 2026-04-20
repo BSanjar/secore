@@ -1,0 +1,170 @@
+@using System.Linq
+@{
+    var clients = ViewBag.OrganizationClients as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var orgServices = ViewBag.OrganizationServices as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var disableInvoiceServiceSelection = ViewBag.DisableInvoiceServiceSelection as bool? ?? false;
+    var allowedHassameaccount = ViewBag.AllowedHassameaccount as bool? ?? false;
+    var invoicePayCodeMode = ViewBag.InvoicePayCodeMode as string ?? (allowedHassameaccount ? "both" : "new_only");
+}
+
+<div class="one-time-payment-wrap"
+     data-disable-invoice-service-selection="@(disableInvoiceServiceSelection ? "true" : "false")"
+     data-allowed-hassame-account="@(allowedHassameaccount ? "true" : "false")"
+     data-invoice-pay-code-mode="@invoicePayCodeMode">
+    <form method="post" action="@Url.Action("PreviewOneTimePayment", "Invoices")" id="oneTimePaymentForm">
+        @Html.AntiForgeryToken()
+        <div class="p-3">
+            <div class="row g-3">
+                <div class="col-lg-7">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white">
+                            <strong>Данные платежа</strong>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label">Клиент</label>
+                                <select class="form-select" name="ClientId" id="oneTimeClientId" required>
+                                    <option value="">Выберите клиента</option>
+                                    @foreach (var client in clients)
+                                    {
+                                        <option value="@client.Id">@client.ClientName</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Дата и время платежа</label>
+                                    <input type="datetime-local" class="form-control" name="PaymentAt" id="oneTimePaymentAt" required />
+                                </div>
+                                <div class="col-md-6">
+                                    @if (invoicePayCodeMode == "new_only")
+                                    {
+                                        <label class="form-label">Номер счёта</label>
+                                        <input type="text" class="form-control" name="PayCode" id="oneTimePayCode" readonly placeholder="Загрузка..." />
+                                    }
+                                    else if (invoicePayCodeMode == "duplicate_only")
+                                    {
+                                        <label class="form-label">Лицевой счёт</label>
+                                        <select id="oneTimePayCodeSelect" class="form-select mb-2" data-allow-new="false">
+                                            <option value="">Загрузка...</option>
+                                        </select>
+                                        <input type="text" class="form-control" name="PayCode" id="oneTimePayCode" readonly placeholder="—" />
+                                    }
+                                    else
+                                    {
+                                        <label class="form-label">Лицевой счёт</label>
+                                        <select id="oneTimePayCodeSelect" class="form-select mb-2" data-allow-new="true">
+                                            <option value="">Загрузка...</option>
+                                        </select>
+                                        <input type="text" class="form-control" name="PayCode" id="oneTimePayCode" readonly placeholder="—" />
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="mt-3">
+                                <label class="form-label">Название счёта</label>
+                                <input type="text" class="form-control" name="InvoiceName" id="oneTimeInvoiceName" placeholder="Например: Разовый платёж" />
+                            </div>
+
+                            @if (allowedHassameaccount)
+                            {
+                                <div class="form-check mt-3">
+                                    <input type="hidden" name="Hassameaccount" value="false" />
+                                    <input class="form-check-input" type="checkbox" value="true" name="Hassameaccount" id="oneTimeHassameaccount" />
+                                    <label class="form-check-label" for="oneTimeHassameaccount">Использовать общий лицевой счёт</label>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm mt-3" id="oneTimeManualAmountCard">
+                        <div class="card-header bg-white">
+                            <strong>Сумма по счёту</strong>
+                        </div>
+                        <div class="card-body">
+                            <label class="form-label">Сумма, сом</label>
+                            <input type="number" class="form-control" min="0" step="0.01" name="ManualAmountSom" id="oneTimeManualAmountSom" placeholder="0.00" />
+                            <div class="form-text">Если услуги не выбраны, будет использована эта сумма.</div>
+                        </div>
+                    </div>
+
+                    @if (!disableInvoiceServiceSelection)
+                    {
+                        <div class="card border-0 shadow-sm mt-3">
+                            <div class="card-header bg-white">
+                                <strong>Услуги</strong>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <input type="text" id="oneTimeServicesSearch" class="form-control" placeholder="Поиск по услугам..." />
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-sm align-middle mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 40px;"></th>
+                                                <th>Название</th>
+                                                <th style="width: 120px;">Цена, сом</th>
+                                                <th style="width: 120px;">Кол-во</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="oneTimeServicesBody">
+                                            @foreach (var service in orgServices)
+                                            {
+                                                var priceSom = service.ServiceSumm ?? 0;
+                                                <tr class="one-time-service-row" data-service-id="@service.Id" data-name="@(service.Name ?? "")" data-price="@priceSom.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)">
+                                                    <td>
+                                                        <input type="checkbox" class="form-check-input one-time-service-check" />
+                                                    </td>
+                                                    <td>@(service.Name ?? service.Id)</td>
+                                                    <td>@priceSom.ToString("N2")</td>
+                                                    <td>
+                                                        <input type="number" class="form-control form-control-sm one-time-service-qty" min="1" value="1" disabled />
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="col-lg-5">
+                    <div class="card border-0 shadow-sm sticky-top" style="top: 1rem;">
+                        <div class="card-header bg-white">
+                            <strong>Предпросмотр</strong>
+                        </div>
+                        <div class="card-body">
+                            <div class="small text-muted mb-2">Клиент</div>
+                            <div class="fw-semibold mb-3" id="oneTimePreviewClient">—</div>
+
+                            <div class="small text-muted mb-2">Счёт</div>
+                            <div class="fw-semibold mb-3" id="oneTimePreviewName">Разовый платёж</div>
+
+                            <div class="small text-muted mb-2">PayCode</div>
+                            <div class="fw-semibold mb-3" id="oneTimePreviewPayCode">—</div>
+
+                            <div class="small text-muted mb-2">Дата платежа</div>
+                            <div class="fw-semibold mb-3" id="oneTimePreviewDate">—</div>
+
+                            <div class="small text-muted mb-2">Позиции</div>
+                            <div id="oneTimePreviewLines" class="border rounded p-2 bg-light-subtle small">
+                                Нет позиций
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center border-top mt-3 pt-3">
+                                <span class="text-muted">Итого</span>
+                                <strong id="oneTimePreviewTotal">0.00 сом</strong>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100 mt-3">Перейти к подтверждению</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>

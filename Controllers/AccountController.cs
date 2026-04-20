@@ -19,10 +19,12 @@ namespace WebApplication1.Controllers
         {
             var organizationId = HttpContext.Session.GetString("OrganizationId");
             var organizationType = HttpContext.Session.GetString("OrganizationType");
+            var userId = HttpContext.Session.GetString("UserId");
 
-            if (!string.IsNullOrEmpty(organizationId) && !string.IsNullOrEmpty(organizationType))
+            if (!string.IsNullOrEmpty(organizationId) && !string.IsNullOrEmpty(organizationType) && !string.IsNullOrEmpty(userId))
             {
-                return RedirectToAction("Index", "Cabinet");
+                var user = _db.Users.AsNoTracking().FirstOrDefault(x => x.Id == userId);
+                return RedirectToLanding(user, returnUrl);
             }
 
             ViewData["ReturnUrl"] = returnUrl;
@@ -99,12 +101,7 @@ namespace WebApplication1.Controllers
             HttpContext.Session.SetString("OrganizationId", user.Organization);
             HttpContext.Session.SetString("OrganizationType", user.OrganizationNavigation.Organizationtype ?? "");
 
-            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
-            {
-                return Redirect(returnUrl);
-            }
-
-            return RedirectToAction("Index", "Cabinet");
+            return RedirectToLanding(user, returnUrl);
         }
 
         public IActionResult SubscriptionExpired()
@@ -125,6 +122,17 @@ namespace WebApplication1.Controllers
         {
             HttpContext.Session.Clear();
             return RedirectToAction("Login", "Account");
+        }
+
+        private IActionResult RedirectToLanding(User? user, string? returnUrl = null)
+        {
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
+
+            var route = LandingPageResolver.ResolveRoute(HttpContext, user);
+            return route == LandingPageResolver.Appointments
+                ? RedirectToAction("Index", "Appointments")
+                : RedirectToAction("Index", "Cabinet");
         }
     }
 }

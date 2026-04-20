@@ -1,8 +1,8 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Text;
 using System.Globalization;
 using System.Net.Http.Headers;
+using System.Text;
 using WebApplication1.Helpers;
 using WebApplication1.Models.DBModels;
 using WebApplication1.Models.JsonApiModels;
@@ -50,90 +50,7 @@ namespace WebApplication1.Controllers
             if (agent == null)
                 return CreateCheckErrorResponse(ErrorCode.AuthenticationFailed);
 
-            var organization = await _db.Organizations.FirstOrDefaultAsync(o => o.Id == request.ServiceId);
-            if (organization == null)
-                return CreateCheckErrorResponse(ErrorCode.ServiceIdNotFound, request.Account);
-
-            // Дублируем поведение XML-коннектора: account должен принадлежать organization
-            if (request.Account.Length < 5 || request.Account.Substring(0, 5) != organization.Id)
-                return CreateCheckErrorResponse(ErrorCode.AccountNotFound, request.Account);
-
-            var invoices = await _db.Invoices
-                .Include(i => i.InvoicePayments)
-                .Where(i => i.PayCode == request.Account
-                            && i.InvoiceStatus == "actual"
-                            && i.ClientNavigation.Organization == organization.Id)
-                .ToListAsync();
-
-            if (!invoices.Any())
-                return CreateCheckErrorResponse(ErrorCode.AccountNotFound, request.Account);
-
-            var firstInvoice = invoices.First();
-
-            var client = await _db.OrganizationClients
-                .FirstOrDefaultAsync(c => c.Id == firstInvoice.Client);
-
-            decimal recommendedSum = 0;
-            var items = new List<JsonInvoiceForPaymentItem>();
-
-            var duePayments = invoices.SelectMany(_oper.GetDuePayments).ToList();
-            if (duePayments.Any())
-            {
-                recommendedSum += duePayments.Sum(p => p.PaymentSumm ?? 0);
-                items.AddRange(duePayments.Select(p => new JsonInvoiceForPaymentItem
-                {
-                    InvoiceName = p.InvoiceNavigation?.NameInvoice ?? string.Empty,
-                    Period = p.PeriodValue ?? string.Empty,
-                    Amount = decimal.Parse(ParsersHelper.ToMoneyStringFromCents(p.PaymentSumm), CultureInfo.InvariantCulture)
-                }));
-            }
-
-            var planPayments = invoices.SelectMany(_oper.GetDuePaymentsbyPlan).ToList();
-            if (planPayments.Any())
-            {
-                recommendedSum += planPayments.Sum(p => p.PaymentSumm ?? 0);
-                items.AddRange(planPayments.Select(p => new JsonInvoiceForPaymentItem
-                {
-                    InvoiceName = p.InvoiceNavigation?.NameInvoice ?? string.Empty,
-                    Period = p.PeriodValue ?? string.Empty,
-                    Amount = decimal.Parse(ParsersHelper.ToMoneyStringFromCents(p.PaymentSumm), CultureInfo.InvariantCulture)
-                }));
-            }
-
-            if (!duePayments.Any() && !planPayments.Any())
-            {
-                var futurePayments = invoices.SelectMany(_oper.GetDuePaymentsFuture).ToList();
-                if (futurePayments.Any())
-                {
-                    recommendedSum += futurePayments.Sum(p => p.PaymentSumm ?? 0);
-                    items.AddRange(futurePayments.Select(p => new JsonInvoiceForPaymentItem
-                    {
-                        InvoiceName = p.InvoiceNavigation?.NameInvoice ?? string.Empty,
-                        Period = p.PeriodValue ?? string.Empty,
-                        Amount = decimal.Parse(ParsersHelper.ToMoneyStringFromCents(p.PaymentSumm), CultureInfo.InvariantCulture)
-                    }));
-                }
-            }
-
-            var currentBalance = invoices.FirstOrDefault()?.Balance ?? 0m;
-            if (currentBalance > 0)
-            {
-                recommendedSum -= currentBalance;
-                if (recommendedSum < 0)
-                    recommendedSum = 0;
-            }
-
-            return new JsonCheckResponse
-            {
-                Result = (int)ErrorCode.Success,
-                Description = WebApiResponseService.GetErrorDescription(ErrorCode.Success),
-                Account = long.TryParse(request.Account, out var accountLong) ? accountLong : 0L,
-                BalanceSum = decimal.Parse(ParsersHelper.ToMoneyStringFromCents(currentBalance), CultureInfo.InvariantCulture),
-                RecomendedPaySum = decimal.Parse(ParsersHelper.ToMoneyStringFromCents(recommendedSum), CultureInfo.InvariantCulture),
-                Organization = organization.Name ?? string.Empty,
-                Subscriber = client?.ClientName ?? string.Empty,
-                InvoicesForPayment = items
-            };
+            return await _oper.CreateJsonCheckResponseAsync(request.ServiceId, request.Account);
         }
 
         [HttpPost]
@@ -174,22 +91,14 @@ namespace WebApplication1.Controllers
             await using var dbTransaction = await _db.Database.BeginTransactionAsync();
             try
             {
-                var organization = await _db.Organizations.FirstOrDefaultAsync(o => o.Id == request.ServiceId);
-                if (organization == null)
+                var context = await _oper.GetApiInvoicesContextAsync(request.ServiceId, request.Account);
+                if (context.ErrorCode == ErrorCode.ServiceIdNotFound)
                     return CreatePayErrorResponse(ErrorCode.ServiceIdNotFound);
 
-                if (request.Account.Length < 5 || request.Account.Substring(0, 5) != organization.Id)
+                if (context.ErrorCode == ErrorCode.AccountNotFound)
                     return CreatePayErrorResponse(ErrorCode.AccountNotFound);
 
-                var invoices = await _db.Invoices
-                    .Include(i => i.InvoicePayments)
-                    .Where(i => i.PayCode == request.Account &&
-                                i.InvoiceStatus == "actual" &&
-                                i.ClientNavigation.Organization == organization.Id)
-                    .ToListAsync();
-
-                if (!invoices.Any())
-                    return CreatePayErrorResponse(ErrorCode.AccountNotFound);
+                var invoices = context.Invoices;
 
                 var duplicateTxn = await _db.Transactions
                     .AnyAsync(t => t.TxnId == request.TxnId && t.Agent == agent.Id);
@@ -197,104 +106,36 @@ namespace WebApplication1.Controllers
                 if (duplicateTxn)
                     return CreatePayErrorResponse(ErrorCode.DuplicateCancelledTxnId);
 
-                var paidPayments = new List<InvoicePayment>();
-                decimal paidSum = 0m;
-                decimal balanceAdded = 0m;
-
-                var oldBalance = invoices.First().Balance ?? 0m;
-                // Всегда учитываем накопленный баланс (включая положительный),
-                // чтобы следующий платеж мог погасить долг за счет balance + paySum.
-                // Если баланс отрицательный — это уменьшает доступную сумму (долг).
-                var rest = requestSum + oldBalance;
+                var oneTimeAlreadyPaid = await _oper.IsOneTimeInvoiceAlreadyPaidAsync(invoices);
+                if (oneTimeAlreadyPaid)
+                    return CreatePayErrorResponse(ErrorCode.InvoiceAlreadyPaid);
 
                 var secoreTrn = _oper.CreateTransaction(null, null, agent, requestSum, requestSum, request.TxnId, "payFromAPI");
                 // Заполняем, по какому инвойсу пришла оплата (для аналитики/поиска).
-                // По умолчанию (пополнение баланса) — первый актуальный инвойс аккаунта.
+                // По умолчанию (пополнение баланса) - первый актуальный инвойс аккаунта.
                 secoreTrn.Invoice = invoices.First().Id;
                 _db.Transactions.Add(secoreTrn);
 
-                async Task PayPaymentsListAsync(IEnumerable<InvoicePayment> paymentsToPay, bool requireFullAmount = false)
-                {
-                    foreach (var payment in paymentsToPay)
-                    {
-                        if (rest <= 0)
-                            break;
-
-                        var paymentAmount = payment.PaymentSumm ?? 0;
-                        if (paymentAmount <= 0)
-                            continue;
-
-                        if (requireFullAmount && rest < paymentAmount)
-                            break;
-
-                        var toPay = requireFullAmount ? paymentAmount : Math.Min(rest, paymentAmount);
-                        rest -= toPay;
-                        payment.PaymentStatus = "paid";
-
-                        paidPayments.Add(payment);
-                        paidSum += toPay;
-
-                        var trn = await _oper.CreateTransactionWithCommissionAsync(
-                            payment.Invoice,
-                            payment.Id,
-                            agent,
-                            toPay,
-                            toPay,
-                            request.TxnId,
-                            "payPaymentInvoice");
-                        _db.Transactions.Add(trn);
-                    }
-                }
-
-                var firstInvoice = invoices.First();
-
-                var duePayments = invoices.SelectMany(_oper.GetDuePayments).ToList();
-                if (duePayments.Any())
-                {
-                    await PayPaymentsListAsync(duePayments.OrderBy(p => p.DateFrom), requireFullAmount: true);
-                }
-
-                var planPayments = invoices.SelectMany(_oper.GetDuePaymentsbyPlan).ToList();
-                if (planPayments.Any() && rest > 0)
-                {
-                    await PayPaymentsListAsync(planPayments.OrderBy(p => p.DateFrom), requireFullAmount: true);
-                }
-
-                // Если что-то погасили — привяжем платеж к инвойсу первого погашенного платежа.
-                if (paidPayments.Any())
-                    secoreTrn.Invoice = paidPayments.First().Invoice;
-
-                // Всегда фиксируем новый баланс (может быть >0, =0 или <0)
-                invoices.ForEach(i => i.Balance = rest);
-                // balanceAdded: сколько "прибавилось" на положительный баланс (не может быть отрицательным)
-                var oldPositive = Math.Max(0m, oldBalance);
-                var newPositive = Math.Max(0m, rest);
-                balanceAdded = Math.Max(0m, newPositive - oldPositive);
+                var paymentResult = await _oper.ApplyApiPaymentAsync(invoices, agent, requestSum, request.TxnId, secoreTrn);
 
                 await _db.SaveChangesAsync();
                 await dbTransaction.CommitAsync();
 
-                var paidInvoicesText = paidPayments.Any()
-                    ? string.Join("\n",
-                        paidPayments.Select(p =>
-                            $"Инвойс: {p.InvoiceNavigation?.NameInvoice}, " +
-                            $"Период: {p.PeriodValue ?? "не указан"}, " +
-                            $"Сумма: {ParsersHelper.ToMoneyStringFromCents(p.PaymentSumm)} KGS (оплачено)"))
-                    : string.Empty;
+                var paidInvoicesText = _oper.BuildPaidInvoicesText(paymentResult.PaidPayments);
 
                 return new JsonPayResponse
                 {
                     Account = request.Account,
                     Result = (int)ErrorCode.Success,
-                    Description = BuildPaySuccessDescription(paidSum, rest),
+                    Description = _oper.BuildPaySuccessDescription(paymentResult.PaidSum, paymentResult.Rest),
                     SecoreTxnId = secoreTrn.Id,
                     TxnId = request.TxnId,
                     TxnDate = request.TxnDate,
                     TransactionDateTime = secoreTrn.TransactionDate?.ToString("yyyyMMddHHmmss") ?? string.Empty,
-                    BalanceSum = decimal.Parse(ParsersHelper.ToMoneyStringFromCents(firstInvoice.Balance), CultureInfo.InvariantCulture),
+                    BalanceSum = decimal.Parse(ParsersHelper.ToMoneyStringFromCents(paymentResult.FirstInvoice.Balance), CultureInfo.InvariantCulture),
                     PaidInvoices = paidInvoicesText,
-                    PaidSum = decimal.Parse(ParsersHelper.ToMoneyStringFromCents(paidSum), CultureInfo.InvariantCulture),
-                    BalanceAdded = decimal.Parse(ParsersHelper.ToMoneyStringFromCents(balanceAdded), CultureInfo.InvariantCulture)
+                    PaidSum = decimal.Parse(ParsersHelper.ToMoneyStringFromCents(paymentResult.PaidSum), CultureInfo.InvariantCulture),
+                    BalanceAdded = decimal.Parse(ParsersHelper.ToMoneyStringFromCents(paymentResult.BalanceAdded), CultureInfo.InvariantCulture)
                 };
             }
             catch
@@ -302,20 +143,6 @@ namespace WebApplication1.Controllers
                 await dbTransaction.RollbackAsync();
                 return CreatePayErrorResponse(ErrorCode.UnknownRequest);
             }
-        }
-
-        private static string BuildPaySuccessDescription(decimal paidSum, decimal restBalance)
-        {
-            // restBalance < 0: долг еще остался (не хватает денег)
-            if (restBalance < 0)
-                return $"Платеж успешно принят. Не хватает {ParsersHelper.ToMoneyStringFromCents(Math.Abs(restBalance))} для погашения долга.";
-
-            // paidSum > 0: что-то погасили по графику/долгам
-            if (paidSum > 0)
-                return "Платеж успешно принят. Долг погашен/списание выполнено.";
-
-            // иначе просто пополнили баланс
-            return "Платеж успешно принят. Баланс пополнен.";
         }
 
         [HttpPost]
@@ -339,8 +166,7 @@ namespace WebApplication1.Controllers
                     t.TxnId == request.TxnId &&
                     t.Agent == agent.Id &&
                     t.TransactionSystem == "secore");
-
-            // Если оплата не найдена — paymentStatus = 3
+            // Если оплата не найдена - paymentStatus = 3
             if (transaction == null)
             {
                 return new JsonPaymentInfoResponse
@@ -433,8 +259,5 @@ namespace WebApplication1.Controllers
             password = decoded.Substring(idx + 1);
             return !(string.IsNullOrWhiteSpace(login) || string.IsNullOrWhiteSpace(password));
         }
-
-        
     }
 }
-

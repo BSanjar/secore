@@ -4,31 +4,31 @@
 
 /* Палитра приведена к dashboard-soft: светлый холодный фон, приглушённые голубые акценты */
 :root {
-    --primary-color: #6E93B7;
-    --primary-dark: #52779B;
-    --primary-light: #5F84A8;
-    --secondary-color: #607284;
-    --success-color: #7FAF98;
-    --success-soft: #E8F4ED;
-    --success-text: #4F7C67;
-    --error-color: #D38C8C;
-    --error-soft: #F9EAEA;
-    --error-text: #9C5C5C;
-    --warning-color: #D6B97A;
-    --info-color: #84A9C7;
-    --background: #EEF3F7;
-    --surface: #FDFEFF;
-    --text-primary: #273444;
-    --text-secondary: #607284;
-    --border-color: #E2EAF0;
-    --shadow-sm: 0 1px 2px 0 rgba(120, 144, 166, 0.06);
-    --shadow-md: 0 4px 12px rgba(120, 144, 166, 0.08);
-    --shadow-lg: 0 10px 24px rgba(120, 144, 166, 0.10);
-    --shadow-xl: 0 14px 30px rgba(120, 144, 166, 0.10);
-    --radius-sm: 14px;
-    --radius-md: 18px;
-    --radius-lg: 22px;
-    --radius-xl: 28px;
+    --primary-color: #4FC3F7;
+    --primary-dark: #38BDF8;
+    --primary-light: #7DD3FC;
+    --secondary-color: #FFD54F;
+    --success-color: #16A34A;
+    --success-soft: #DCFCE7;
+    --success-text: #166534;
+    --error-color: #DC2626;
+    --error-soft: #FEE2E2;
+    --error-text: #991B1B;
+    --warning-color: #F59E0B;
+    --info-color: #FF8A65;
+    --background: #FFFDF7;
+    --surface: #FFFFFF;
+    --text-primary: #1F2937;
+    --text-secondary: #475569;
+    --border-color: #E5E7EB;
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+    --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+    --shadow-lg: 0 10px 24px rgba(15, 23, 42, 0.10);
+    --shadow-xl: 0 12px 32px rgba(15, 23, 42, 0.10);
+    --radius-sm: 12px;
+    --radius-md: 16px;
+    --radius-lg: 20px;
+    --radius-xl: 24px;
 }
 
 * {
@@ -524,7 +524,7 @@ body.cabinet-body {
 }
 
 .stat-card-today .stat-card-icon {
-    background: linear-gradient(135deg, var(--info-color), #6E93B7);
+    background: linear-gradient(135deg, var(--info-color), var(--primary-color));
     color: white;
 }
 
@@ -827,7 +827,7 @@ body.cabinet-body {
 }
 
 .service-label-3 {
-    background: linear-gradient(135deg, #84A9C7, #6E93B7);
+    background: linear-gradient(135deg, var(--info-color), var(--primary-color));
     color: white;
 }
 

@@ -26,7 +26,7 @@ public partial class Permission
     public string? Category { get; set; }
 
     /// <summary>
-    /// standart, detsad, school, medclinic или null для общих прав
+    /// standart, detsad, medclinic или null для общих прав
     /// </summary>
     [Column("area", TypeName = "character varying")]
     public string? Area { get; set; }
@@ -37,4 +37,3 @@ public partial class Permission
     [InverseProperty("PermissionNavigation")]
     public virtual ICollection<RolePermission> RolePermissions { get; set; } = new List<RolePermission>();
 }
-

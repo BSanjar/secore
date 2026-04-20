@@ -1,27 +1,39 @@
 @model List<WebApplication1.Models.DBModels.Invoice>
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IHtmlLocalizer<WebApplication1.SharedResources> Localizer
 @{
-    ViewData["Title"] = "Счета на оплату";
+    ViewData["Title"] = Localizer["StandartInvoicesPageTitle"].Value;
 }
 
 <div class="invoices-page">
     <div class="page-header">
-        <h1 class="page-title">Счета на оплату</h1>
-        <p class="page-subtitle">Все выставленные счета</p>
+        <div>
+            <h1 class="page-title">@Localizer["StandartInvoicesPageTitle"]</h1>
+            <p class="page-subtitle">@Localizer["StandartInvoicesPageSubtitle"]</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-outline-primary" onclick="openCreateInvoiceModal()">@Localizer["StandartCreateInvoiceButton"]</button>
+            <button type="button" class="btn btn-primary" onclick="openCreateOneTimePaymentModal()">@Localizer["StandartCreateOneTimePaymentButton"]</button>
+        </div>
     </div>
 
     <div class="invoices-container">
+        @if (TempData["StandartOneTimePaymentError"] is string paymentError && !string.IsNullOrWhiteSpace(paymentError))
+        {
+            <div class="alert alert-danger" role="alert">@paymentError</div>
+        }
         @if (Model != null && Model.Any())
         {
             <div class="table-responsive">
                 <table class="invoices-table">
                     <thead>
                         <tr>
-                            <th>Дата создания</th>
-                            <th>Клиент</th>
-                            <th>За какие услуги</th>
-                            <th>Сумма</th>
-                            <th>Статус</th>
-                            <th>Периодичность</th>
+                            <th>@Localizer["DateCreated"]</th>
+                            <th>@Localizer["Client"]</th>
+                            <th>@Localizer["ColForServices"]</th>
+                            <th>@Localizer["ColAmount"]</th>
+                            <th>@Localizer["Status"]</th>
+                            <th>@Localizer["Period"]</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -71,15 +83,15 @@
                                     }
                                     else
                                     {
-                                        <span class="text-muted">Нет услуг</span>
+                                        <span class="text-muted">@Localizer["NoServices"]</span>
                                     }
                                 </td>
                                 <td class="invoice-amount">
-                                    @if (invoice.Balance.HasValue)
+                                    @if (invoice.FixedSumm.HasValue)
                                     {
-                                        var amount = invoice.Balance.Value / 100;
+                                        var amount = invoice.FixedSumm.Value / 100;
                                         <span class="amount-value @(amount < 0 ? "amount-debt" : "")">
-                                            @amount.ToString("N2") <span>сом</span>
+                                            @amount.ToString("N2") <span>@Localizer["Som"]</span>
                                         </span>
                                     }
                                     else
@@ -90,11 +102,11 @@
                                 <td class="invoice-status">
                                     @if (invoice.InvoiceStatus == "actual")
                                     {
-                                        <span class="status-badge status-actual">Активный</span>
+                                        <span class="status-badge status-actual">@Localizer["InvoiceStatusActive"]</span>
                                     }
                                     else if (invoice.InvoiceStatus == "closed")
                                     {
-                                        <span class="status-badge status-closed">Закрыт</span>
+                                        <span class="status-badge status-closed">@Localizer["InvoiceStatusClosed"]</span>
                                     }
                                     else
                                     {
@@ -108,22 +120,22 @@
                                             @switch (invoice.Periodicity.ToLower())
                                             {
                                                 case "daily":
-                                                    <text>Ежедневно</text>
+                                                    <text>@Localizer["PeriodDaily"]</text>
                                                     break;
                                                 case "weekly":
-                                                    <text>Еженедельно</text>
+                                                    <text>@Localizer["PeriodWeekly"]</text>
                                                     break;
                                                 case "monthly":
-                                                    <text>Ежемесячно</text>
+                                                    <text>@Localizer["PeriodMonthly"]</text>
                                                     break;
                                                 case "yearly":
-                                                    <text>Ежегодно</text>
+                                                    <text>@Localizer["PeriodYearly"]</text>
                                                     break;
                                                 case "onetime":
-                                                    <text>Одноразовый</text>
+                                                    <text>@Localizer["PeriodOneTime"]</text>
                                                     break;
                                                 case "any":
-                                                    <text>Любая</text>
+                                                    <text>@Localizer["PeriodAny"]</text>
                                                     break;
                                                 default:
                                                     <text>@invoice.Periodicity</text>
@@ -150,13 +162,42 @@
                         <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" fill="currentColor"/>
                     </svg>
                 </div>
-                <h3 class="empty-state-title">Счетов не найдено</h3>
-                <p class="empty-state-description">У вас пока нет выставленных счетов</p>
+                <h3 class="empty-state-title">@Localizer["EmptyInvoicesTitle"]</h3>
+                <p class="empty-state-description">@Localizer["EmptyInvoicesDescription"]</p>
             </div>
         }
     </div>
 </div>
 
+<div class="modal fade" id="createInvoiceModal" tabindex="-1" aria-labelledby="createInvoiceModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createInvoiceModalLabel">@Localizer["CreateInvoiceModalTitle"]</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="@Localizer["Close"]"></button>
+            </div>
+            <div class="modal-body p-0" id="createInvoiceModalBody">
+                <div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="createOneTimePaymentModal" tabindex="-1" aria-labelledby="createOneTimePaymentModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createOneTimePaymentModalLabel">@Localizer["OneTimePaymentModalTitle"]</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="@Localizer["Close"]"></button>
+            </div>
+            <div class="modal-body p-0" id="createOneTimePaymentModalBody">
+                <div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>
+            </div>
+        </div>
+    </div>
+</div>
 @section Scripts {
-    <script src="~/web/kindergarten/js/invoices.js" asp-append-version="true"></script>
+    <script src="~/web/kindergarten/js/detsad-create-invoice.js" asp-append-version="true"></script>
+    <script src="~/web/standart/js/invoices.js" asp-append-version="true"></script>
 }
+

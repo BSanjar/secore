@@ -18,19 +18,164 @@ namespace WebApplication1.Controllers
         private readonly OperationsByInvoices _operationsByInvoices;
         private readonly ExcelExportService _excelExportService;
         private readonly PuppeteerPdfBrowserService _puppeteerPdf;
+        private readonly InvoiceQrService _invoiceQrService;
 
-        public InvoicesController(AppDbContext db, ViewRenderService viewRender, OperationsByInvoices operationsByInvoices, ExcelExportService excelExportService, PuppeteerPdfBrowserService puppeteerPdf)
+        public InvoicesController(AppDbContext db, ViewRenderService viewRender, OperationsByInvoices operationsByInvoices, ExcelExportService excelExportService, PuppeteerPdfBrowserService puppeteerPdf, InvoiceQrService invoiceQrService)
         {
             _db = db;
             _viewRender = viewRender;
             _operationsByInvoices = operationsByInvoices;
             _excelExportService = excelExportService;
             _puppeteerPdf = puppeteerPdf;
+            _invoiceQrService = invoiceQrService;
         }
 
         private string? GetOrganizationId()
         {
             return HttpContext.Session.GetString("OrganizationId");
+        }
+
+        private string? GetUserId()
+        {
+            return HttpContext.Session.GetString("UserId");
+        }
+
+        private async Task PopulateInvoiceCreateViewBagsAsync(string organizationId, bool includeGroups, CancellationToken cancellationToken = default)
+        {
+            if (includeGroups)
+            {
+                var groups = await _db.OrgClientGroups
+                    .Where(g => g.OrganizationId == organizationId && g.IsDeleted == 0)
+                    .OrderBy(g => g.Name)
+                    .Select(g => new { g.Id, g.Name })
+                    .ToListAsync(cancellationToken);
+
+                ViewBag.OrgClientGroups = groups;
+            }
+
+            var clients = await _db.OrganizationClients
+                .Where(c => c.Organization == organizationId && c.ClientStatus == 1)
+                .OrderBy(c => c.ClientName)
+                .Select(c => new { c.Id, c.ClientName, c.OrgClientGroupId })
+                .ToListAsync(cancellationToken);
+
+            var orgServices = await _db.OrganizationServices
+                .Where(s => s.Organization == organizationId && (s.Isdeleted == null || s.Isdeleted == 0))
+                .OrderBy(s => s.Name)
+                .Select(s => new { s.Id, s.Name, s.ServiceSumm, s.MinSumm, s.MaxSumm })
+                .ToListAsync(cancellationToken);
+
+            var settings = await _db.OrganizationSettings
+                .FirstOrDefaultAsync(s => s.OrganizationId == organizationId, cancellationToken);
+
+            ViewBag.OrganizationClients = clients;
+            ViewBag.OrganizationServices = orgServices;
+            ViewBag.DisableInvoiceServiceSelection = settings?.DisableInvoiceServiceSelection ?? false;
+            ViewBag.AllowedHassameaccount = settings?.AllowedHassameaccount ?? false;
+            ViewBag.InvoicePayCodeMode = !string.IsNullOrEmpty(settings?.InvoicePayCodeMode)
+                ? settings.InvoicePayCodeMode
+                : (settings?.AllowedHassameaccount == true ? "both" : "new_only");
+        }
+
+        private async Task<OneTimePaymentPreviewVm> BuildOneTimePaymentPreviewAsync(
+            CreateOneTimePaymentRequest request,
+            string organizationId,
+            CancellationToken cancellationToken = default)
+        {
+            if (request == null)
+                throw new InvalidOperationException("Данные платежа не переданы.");
+
+            if (string.IsNullOrWhiteSpace(request.ClientId))
+                throw new InvalidOperationException("Выберите клиента.");
+
+            var client = await _db.OrganizationClients
+                .Include(c => c.OrganizationNavigation)
+                .FirstOrDefaultAsync(c => c.Id == request.ClientId &&
+                                          c.Organization == organizationId &&
+                                          c.ClientStatus == 1,
+                    cancellationToken);
+
+            if (client == null)
+                throw new InvalidOperationException("Клиент не найден.");
+
+            var paymentAt = request.PaymentAt ?? ParsersHelper.NowForTimestamp();
+            var normalizedItems = (request.ServiceItems ?? new List<CreateInvoiceServiceItem>())
+                .Where(x => !string.IsNullOrWhiteSpace(x.ServiceId) && (x.Qty ?? 0) > 0)
+                .ToList();
+
+            var manualAmountSom = request.ManualAmountSom ?? 0m;
+            if (manualAmountSom < 0)
+                throw new InvalidOperationException("Сумма не может быть отрицательной.");
+
+            var lineVms = new List<OneTimePaymentPreviewLineVm>();
+            if (normalizedItems.Count > 0)
+            {
+                var serviceIds = normalizedItems
+                    .Select(x => x.ServiceId!)
+                    .Distinct()
+                    .ToList();
+
+                var services = await _db.OrganizationServices
+                    .Where(s => s.Organization == organizationId &&
+                                serviceIds.Contains(s.Id) &&
+                                (s.Isdeleted == null || s.Isdeleted == 0))
+                    .ToDictionaryAsync(s => s.Id, s => s, cancellationToken);
+
+                foreach (var item in normalizedItems)
+                {
+                    if (!services.TryGetValue(item.ServiceId!, out var service))
+                        throw new InvalidOperationException("Одна из выбранных услуг не найдена.");
+
+                    var qty = Math.Max(1, item.Qty ?? 1);
+                    var unitPriceSom = service.ServiceSumm ?? 0;
+                    var lineTotalSom = unitPriceSom * qty;
+                    lineVms.Add(new OneTimePaymentPreviewLineVm
+                    {
+                        OrganizationServiceId = service.Id,
+                        ServiceName = service.Name ?? "Услуга",
+                        Quantity = qty,
+                        UnitPriceSom = unitPriceSom,
+                        LineTotalSom = lineTotalSom
+                    });
+                }
+            }
+            else if (manualAmountSom > 0)
+            {
+                lineVms.Add(new OneTimePaymentPreviewLineVm
+                {
+                    ServiceName = string.IsNullOrWhiteSpace(request.InvoiceName) ? "Разовый платёж" : request.InvoiceName.Trim(),
+                    Quantity = 1,
+                    UnitPriceSom = manualAmountSom,
+                    LineTotalSom = manualAmountSom
+                });
+            }
+            else
+            {
+                throw new InvalidOperationException("Укажите сумму или выберите хотя бы одну услугу.");
+            }
+
+            var totalSom = lineVms.Sum(x => x.LineTotalSom);
+            if (totalSom <= 0)
+                throw new InvalidOperationException("Сумма платежа должна быть больше нуля.");
+
+            var payCode = string.IsNullOrWhiteSpace(request.PayCode)
+                ? await _operationsByInvoices.GenerateNextPayCodeAsync(organizationId, cancellationToken)
+                : request.PayCode.Trim();
+
+            request.PayCode = payCode;
+            request.PaymentAt = paymentAt;
+            request.ServiceItems = normalizedItems;
+
+            return new OneTimePaymentPreviewVm
+            {
+                Request = request,
+                ClientName = client.ClientName ?? "Клиент",
+                OrganizationName = client.OrganizationNavigation?.Name ?? "",
+                PayCode = payCode,
+                PaymentAt = paymentAt,
+                TotalSom = totalSom,
+                Lines = lineVms
+            };
         }
 
         [RequirePermission("invoices.view")]
@@ -339,8 +484,24 @@ namespace WebApplication1.Controllers
             ViewBag.Inn = "—";
             ViewBag.Bank = "—";
             ViewBag.Account = "—";
+            var activeQr = await _invoiceQrService.GetActiveQrAsync(invoice.Id, HttpContext.RequestAborted);
+            ViewBag.QrImageDataUrl = !string.IsNullOrWhiteSpace(activeQr?.QrCodeBase64)
+                ? $"data:image/png;base64,{activeQr!.QrCodeBase64}"
+                : null;
+            ViewBag.QrLink = activeQr?.QrLink;
 
-            var html = await _viewRender.RenderViewToStringAsync(ControllerContext, "InvoicePdf", invoice);
+            var pdfViewData = new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary<Invoice>(ViewData)
+            {
+                Model = invoice
+            };
+            pdfViewData["ReceiverName"] = ViewBag.ReceiverName;
+            pdfViewData["Inn"] = ViewBag.Inn;
+            pdfViewData["Bank"] = ViewBag.Bank;
+            pdfViewData["Account"] = ViewBag.Account;
+            pdfViewData["QrImageDataUrl"] = ViewBag.QrImageDataUrl;
+            pdfViewData["QrLink"] = ViewBag.QrLink;
+
+            var html = await _viewRender.RenderViewToStringAsync(ControllerContext, "InvoicePdf", invoice, pdfViewData);
             var pdfBytes = await _puppeteerPdf.RenderPdfFromHtmlAsync(html, HttpContext.RequestAborted);
 
             var fileName = $"invoice_{(invoice.PayCode ?? invoice.Id ?? "invoice").Replace(" ", "_")}.pdf";
@@ -480,7 +641,7 @@ namespace WebApplication1.Controllers
             }
         }
 
-        [RequirePermission("children.create")]
+        [RequirePermission("invoices.create")]
         [HttpGet]
         public async Task<IActionResult> Create(string? clientId = null)
         {
@@ -509,7 +670,7 @@ namespace WebApplication1.Controllers
             return View(model);
         }
 
-        [RequirePermission("children.create")]
+        [RequirePermission("invoices.create")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Invoice model)
@@ -549,7 +710,7 @@ namespace WebApplication1.Controllers
             return View(model);
         }
 
-        [RequirePermission("children.create")]
+        [RequirePermission("invoices.create")]
         [HttpGet]
         public async Task<IActionResult> Edit(string id, string? returnUrl = null)
         {
@@ -588,7 +749,7 @@ namespace WebApplication1.Controllers
             return View(invoice);
         }
 
-        [RequirePermission("children.create")]
+        [RequirePermission("invoices.create")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(string id, Invoice model, string? returnUrl = null, string? serviceItemsJson = null, decimal? manualServicePriceSom = null, bool? useExistingPayCode = null)
@@ -671,7 +832,7 @@ namespace WebApplication1.Controllers
         /// <summary>
         /// API для сохранения счёта из модального окна редактирования. Возвращает JSON.
         /// </summary>
-        [RequirePermission("children.create")]
+        [RequirePermission("invoices.create")]
         [HttpPost]
         [IgnoreAntiforgeryToken]
         public async Task<IActionResult> UpdateInvoice([FromBody] UpdateInvoiceRequest request)
@@ -697,6 +858,581 @@ namespace WebApplication1.Controllers
             await _operationsByInvoices.ApplyInvoiceUpdateAsync(invoice, request, organizationId);
             await _db.SaveChangesAsync();
             return Json(new { success = true, message = "Изменения сохранены." });
+        }
+
+        [RequirePermission("invoices.view")]
+        [HttpGet]
+        public async Task<IActionResult> CreateInvoicePartial()
+        {
+            var organizationId = GetOrganizationId();
+            if (string.IsNullOrEmpty(organizationId))
+                return Unauthorized();
+            await PopulateInvoiceCreateViewBagsAsync(organizationId, includeGroups: true, HttpContext.RequestAborted);
+
+            return PartialView("~/Views/Clients/_CreateInvoicePartial.cshtml");
+        }
+
+        [RequirePermission("invoices.view")]
+        [HttpGet]
+        public async Task<IActionResult> CreateOneTimePaymentPartial()
+        {
+            var organizationId = GetOrganizationId();
+            if (string.IsNullOrEmpty(organizationId))
+                return Unauthorized();
+
+            await PopulateInvoiceCreateViewBagsAsync(organizationId, includeGroups: false, HttpContext.RequestAborted);
+            return PartialView("~/Views/Invoices/_CreateOneTimePaymentPartial.cshtml");
+        }
+
+        [RequirePermission("invoices.view")]
+        [HttpGet]
+        public async Task<IActionResult> GetEditInvoicePartial([FromQuery] string invoiceId)
+        {
+            var organizationId = GetOrganizationId();
+            if (string.IsNullOrEmpty(organizationId))
+                return Unauthorized();
+
+            if (string.IsNullOrEmpty(invoiceId))
+                return BadRequest();
+
+            var invoice = await _db.Invoices
+                .Include(i => i.ClientNavigation)
+                .Include(i => i.InvoiceServices)
+                    .ThenInclude(s => s.ServiceNavigation)
+                .Include(i => i.InvoicePayments)
+                .FirstOrDefaultAsync(i => i.Id == invoiceId && i.ClientNavigation != null && i.ClientNavigation.Organization == organizationId);
+            if (invoice == null)
+                return NotFound();
+
+            var clients = await _db.OrganizationClients
+                .Where(c => c.Organization == organizationId && c.ClientStatus == 1)
+                .OrderBy(c => c.ClientName)
+                .Select(c => new { c.Id, c.ClientName })
+                .ToListAsync();
+
+            var orgServices = await _db.OrganizationServices
+                .Where(s => s.Organization == organizationId && (s.Isdeleted == null || s.Isdeleted == 0))
+                .OrderBy(s => s.Name)
+                .Select(s => new { s.Id, s.Name, s.ServiceSumm, s.MinSumm, s.MaxSumm })
+                .ToListAsync();
+
+            var settings = await _db.OrganizationSettings.FirstOrDefaultAsync(s => s.OrganizationId == organizationId);
+
+            ViewBag.Clients = new SelectList(clients, "Id", "ClientName", invoice.Client);
+            ViewBag.OrganizationServices = orgServices;
+            ViewBag.DisableInvoiceServiceSelection = settings?.DisableInvoiceServiceSelection ?? false;
+            ViewBag.AllowedHassameaccount = settings?.AllowedHassameaccount ?? false;
+            ViewBag.InvoicePayCodeMode = !string.IsNullOrEmpty(settings?.InvoicePayCodeMode)
+                ? settings.InvoicePayCodeMode
+                : (settings?.AllowedHassameaccount == true ? "both" : "new_only");
+
+            return PartialView("~/Views/Clients/_EditInvoicePartial.cshtml", invoice);
+        }
+
+        [RequirePermission("invoices.view")]
+        [HttpGet]
+        public async Task<IActionResult> GetInvoicePayCodeOptions([FromQuery] string clientIds)
+        {
+            var organizationId = GetOrganizationId();
+            if (string.IsNullOrEmpty(organizationId))
+                return Unauthorized();
+
+            var ids = (clientIds ?? "")
+                .Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(x => x.Trim())
+                .Where(x => x.Length > 0)
+                .Distinct()
+                .ToList();
+
+            if (ids.Count == 0)
+                return Json(new { payCodeOptions = Array.Empty<object>() });
+
+            var list = await _db.Invoices
+                .Where(i => i.ClientNavigation != null &&
+                            i.ClientNavigation.Organization == organizationId &&
+                            i.Client != null &&
+                            ids.Contains(i.Client) &&
+                            i.Hassameaccount &&
+                            i.PayCode != null &&
+                            i.PayCode.Length > 0)
+                .Select(i => new { i.PayCode, i.Id, i.NameInvoice })
+                .ToListAsync();
+
+            var distinctPayCodes = list
+                .GroupBy(x => x.PayCode)
+                .Select(g => new { payCode = g.Key, invoiceId = g.First().Id, nameInvoice = g.First().NameInvoice })
+                .ToList();
+
+            return Json(new { payCodeOptions = distinctPayCodes });
+        }
+
+        [RequirePermission("invoices.view")]
+        [HttpGet]
+        public async Task<IActionResult> GetOrganizationHassamePayCodeOptions()
+        {
+            var organizationId = GetOrganizationId();
+            if (string.IsNullOrEmpty(organizationId))
+                return Unauthorized();
+
+            var list = await _db.Invoices
+                .Where(i => i.ClientNavigation != null &&
+                            i.ClientNavigation.Organization == organizationId &&
+                            i.Hassameaccount &&
+                            i.PayCode != null &&
+                            i.PayCode.Length > 0)
+                .Select(i => new { i.PayCode, i.NameInvoice })
+                .ToListAsync();
+
+            var distinctPayCodes = list
+                .GroupBy(x => x.PayCode)
+                .Select(g => new { payCode = g.Key, nameInvoice = g.First().NameInvoice })
+                .ToList();
+
+            return Json(new { payCodeOptions = distinctPayCodes });
+        }
+
+        [RequirePermission("invoices.view")]
+        [HttpGet]
+        public async Task<IActionResult> GetNextInvoiceNumber()
+        {
+            var organizationId = GetOrganizationId();
+            if (string.IsNullOrEmpty(organizationId))
+                return Unauthorized();
+
+            return Json(new { payCode = await _operationsByInvoices.GenerateNextPayCodeAsync(organizationId, HttpContext.RequestAborted) });
+        }
+
+        [RequirePermission("invoices.view")]
+        [HttpGet]
+        public async Task<IActionResult> GetInvoicesInfo(string clientId, string? invoiceId = null)
+        {
+            var organizationId = GetOrganizationId();
+            if (string.IsNullOrEmpty(organizationId))
+                return Unauthorized();
+
+            var client = await _db.OrganizationClients
+                .FirstOrDefaultAsync(c => c.Id == clientId && c.Organization == organizationId);
+
+            if (client == null)
+                return NotFound();
+
+            var invoices = await _db.Invoices
+                .Include(i => i.UserCreaterNavigation)
+                .Where(i => i.Client == clientId)
+                .OrderByDescending(i => i.DateCreated)
+                .ToListAsync();
+
+            if (!invoices.Any())
+            {
+                return Json(new
+                {
+                    client = new { name = client.ClientName },
+                    invoices = new List<object>(),
+                    selectedInvoice = (object?)null,
+                    invoicePayments = new List<object>(),
+                    transactions = new List<object>()
+                });
+            }
+
+            var selectedInvoice = invoiceId != null
+                ? invoices.FirstOrDefault(i => i.Id == invoiceId) ?? invoices.First()
+                : invoices.First();
+
+            var invoicePayments = await _db.InvoicePayments
+                .Where(ip => ip.Invoice == selectedInvoice.Id)
+                .OrderByDescending(ip => ip.DateFrom)
+                .ToListAsync();
+
+            var transactions = await _db.Transactions
+                .Where(t => t.Invoice == selectedInvoice.Id)
+                .OrderByDescending(t => t.TransactionDate)
+                .ToListAsync();
+
+            return Json(new
+            {
+                client = new
+                {
+                    name = client.ClientName
+                },
+                invoices = invoices.Select(i => new
+                {
+                    id = i.Id,
+                    name = i.NameInvoice ?? "Счет без названия",
+                    payCode = i.PayCode
+                }).ToList(),
+                selectedInvoice = new
+                {
+                    id = selectedInvoice.Id,
+                    nameInvoice = selectedInvoice.NameInvoice,
+                    payCode = selectedInvoice.PayCode,
+                    dateCreated = selectedInvoice.DateCreated,
+                    userCreater = selectedInvoice.UserCreaterNavigation?.Name ?? selectedInvoice.UserCreater ?? "Неизвестно",
+                    periodicity = GetPeriodicityText(selectedInvoice.Periodicity),
+                    balance = selectedInvoice.Balance,
+                    autoProlongation = selectedInvoice.AutoProlongation ?? false
+                },
+                invoicePayments = invoicePayments.Select(ip => new
+                {
+                    id = ip.Id,
+                    dateFrom = ip.DateFrom,
+                    dateTo = ip.DateTo,
+                    paymentSumm = ip.PaymentSumm.HasValue ? ip.PaymentSumm.Value / 100m : (decimal?)null,
+                    paymentStatus = ip.PaymentStatus,
+                    periodValue = ip.PeriodValue
+                }).ToList(),
+                transactions = transactions.Select(t => new
+                {
+                    id = t.Id,
+                    transactionDate = t.TransactionDate,
+                    summ = t.Summ,
+                    transactionSumm = t.TransactionSumm,
+                    transactionType = t.TransactionType,
+                    transactionStatus = t.TransactionStatus
+                }).ToList()
+            });
+        }
+
+        [RequirePermission("invoices.create")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateInvoices([FromBody] CreateInvoicesRequest request)
+        {
+            var organizationId = GetOrganizationId();
+            var userId = GetUserId();
+            if (string.IsNullOrEmpty(organizationId) || string.IsNullOrEmpty(userId))
+                return Unauthorized();
+
+            if (request?.ClientIds == null || request.ClientIds.Count == 0)
+                return BadRequest(new { success = false, message = "Выберите хотя бы одного получателя (группу или клиентов)." });
+
+            var useManualService = request.ManualServicePriceSom.HasValue;
+            if (!useManualService && (request.ServiceItems == null || request.ServiceItems.Count == 0))
+                return BadRequest(new { success = false, message = "Выберите хотя бы одну услугу или укажите цену (режим «услуга по счёту»)." });
+
+            if (useManualService && request.ManualServicePriceSom.GetValueOrDefault() < 0)
+                return BadRequest(new { success = false, message = "Цена не может быть отрицательной." });
+
+            if (!request.AutoProlongation && !request.DateEndInvoice.HasValue)
+                return BadRequest(new { success = false, message = "Укажите дату конца счёта или включите автопролонгацию." });
+
+            var clientIds = request.ClientIds.Distinct().ToList();
+            var clients = await _db.OrganizationClients
+                .Where(c => c.Organization == organizationId && clientIds.Contains(c.Id))
+                .ToListAsync();
+            if (clients.Count == 0)
+                return BadRequest(new { success = false, message = "Выбранные клиенты не найдены." });
+
+            Dictionary<string, OrganizationService>? orgServices = null;
+            if (!useManualService)
+            {
+                var serviceIds = request.ServiceItems!.Select(x => x.ServiceId).Distinct().ToList();
+                orgServices = await _db.OrganizationServices
+                    .Where(s => s.Organization == organizationId && serviceIds.Contains(s.Id))
+                    .ToDictionaryAsync(s => s.Id, s => s);
+                if (orgServices.Count == 0)
+                    return BadRequest(new { success = false, message = "Выбранные услуги не найдены." });
+            }
+
+            var input = new CreateInvoicesInput
+            {
+                OrganizationId = organizationId,
+                UserId = userId,
+                Clients = clients,
+                NameInvoice = request.NameInvoice,
+                DateStartInvoice = request.DateStartInvoice,
+                DateEndInvoice = request.DateEndInvoice,
+                Periodicity = request.Periodicity,
+                AutoProlongation = request.AutoProlongation,
+                UseCurrentDateTime = request.UseCurrentDateTime,
+                UseManualService = useManualService,
+                ManualServicePriceSom = request.ManualServicePriceSom,
+                ServiceItems = request.ServiceItems?.Select(x => new CreateInvoiceServiceItemInput
+                {
+                    ServiceId = x.ServiceId,
+                    Qty = x.Qty
+                }).ToList(),
+                OrgServices = orgServices,
+                PayCode = request.PayCode,
+                Hassameaccount = request.Hassameaccount
+            };
+
+            try
+            {
+                var createdIds = await _operationsByInvoices.CreateInvoicesAsync(input);
+                return Json(new { success = true, message = "Счета созданы.", createdIds });
+            }
+            catch (DbUpdateException ex)
+            {
+                var message = ex.InnerException?.Message ?? ex.Message;
+                return new JsonResult(new { success = false, message = "Ошибка БД: " + message }) { StatusCode = 500 };
+            }
+            catch (Exception ex)
+            {
+                var message = ex.InnerException?.Message ?? ex.Message;
+                return new JsonResult(new { success = false, message = "Ошибка: " + message }) { StatusCode = 500 };
+            }
+        }
+
+        [RequirePermission("invoices.create")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> PreviewOneTimePayment(CreateOneTimePaymentRequest request)
+        {
+            var organizationId = GetOrganizationId();
+            if (string.IsNullOrEmpty(organizationId))
+                return Unauthorized();
+
+            try
+            {
+                var preview = await BuildOneTimePaymentPreviewAsync(request, organizationId, HttpContext.RequestAborted);
+                return PartialView("~/Views/Invoices/_OneTimePaymentStepPartial.cshtml", preview);
+            }
+            catch (Exception ex)
+            {
+                Response.StatusCode = 400;
+                return Content(ex.Message);
+            }
+        }
+
+        [RequirePermission("invoices.create")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ConfirmOneTimePayment(CreateOneTimePaymentRequest request)
+        {
+            var organizationId = GetOrganizationId();
+            var userId = GetUserId();
+            if (string.IsNullOrEmpty(organizationId) || string.IsNullOrEmpty(userId))
+                return Unauthorized();
+
+            OneTimePaymentPreviewVm preview;
+            try
+            {
+                preview = await BuildOneTimePaymentPreviewAsync(request, organizationId, HttpContext.RequestAborted);
+            }
+            catch (Exception ex)
+            {
+                Response.StatusCode = 400;
+                return Content(ex.Message);
+            }
+
+            try
+            {
+                var createResult = await _operationsByInvoices.CreateOneTimeInvoiceAsync(new CreateOneTimeInvoiceInput
+                {
+                    OrganizationId = organizationId,
+                    UserId = userId,
+                    ClientId = preview.Request.ClientId!,
+                    FixedSumm = decimal.Round(preview.TotalSom * 100m, 0),
+                    InvoiceName = preview.Request.InvoiceName,
+                    PayCode = preview.PayCode,
+                    DateStartInvoice = preview.PaymentAt,
+                    DateEndInvoice = preview.PaymentAt,
+                    // Для разового счёта сумма должна жить в графике платежа, а не в авансовом балансе.
+                    Balance = 0,
+                    Hassameaccount = preview.Request.Hassameaccount,
+                    PaymentDateFrom = preview.PaymentAt,
+                    PaymentDateTo = preview.PaymentAt,
+                    PaymentPeriodValue = preview.PaymentAt.ToString("dd.MM.yyyy HH:mm"),
+                    PaymentSumm = decimal.Round(preview.TotalSom * 100m, 0),
+                    ServiceLines = preview.Lines
+                        .Where(x => !string.IsNullOrWhiteSpace(x.OrganizationServiceId))
+                        .Select(x => new CreateOneTimePaymentServiceLineInput
+                        {
+                            OrganizationServiceId = x.OrganizationServiceId,
+                            ServiceSumm = decimal.Round(x.LineTotalSom * 100m, 0)
+                        })
+                        .ToList()
+                }, HttpContext.RequestAborted);
+
+                var invoice = await _db.Invoices
+                    .Include(i => i.ClientNavigation)
+                    .FirstOrDefaultAsync(i => i.Id == createResult.InvoiceId, HttpContext.RequestAborted);
+
+                if (invoice == null)
+                    throw new InvalidOperationException("Созданный счёт не найден.");
+
+                var qr = await _invoiceQrService.GetActiveQrAsync(invoice.Id, HttpContext.RequestAborted);
+
+                preview.IsCreated = true;
+                preview.InvoiceId = invoice.Id;
+                preview.DownloadPdfUrl = Url.Action(nameof(DownloadPdf), new { id = invoice.Id });
+                preview.Qr = qr != null ? InvoiceQrService.ToDto(qr) : null;
+
+                return PartialView("~/Views/Invoices/_OneTimePaymentStepPartial.cshtml", preview);
+            }
+            catch (Exception ex)
+            {
+                Response.StatusCode = 400;
+                return Content(ex.Message);
+            }
+        }
+
+        [RequirePermission("invoices.view")]
+        [HttpGet]
+        public async Task<IActionResult> OneTimePaymentResult(string id)
+        {
+            var organizationId = GetOrganizationId();
+            if (string.IsNullOrEmpty(organizationId))
+                return RedirectToAction("Login", "Account");
+
+            var invoice = await _db.Invoices
+                .Include(i => i.ClientNavigation)
+                .ThenInclude(c => c!.OrganizationNavigation)
+                .Include(i => i.InvoiceServices)
+                .ThenInclude(s => s.ServiceNavigation)
+                .FirstOrDefaultAsync(i => i.Id == id &&
+                                          i.ClientNavigation != null &&
+                                          i.ClientNavigation.Organization == organizationId,
+                    HttpContext.RequestAborted);
+
+            if (invoice == null)
+                return NotFound();
+
+            var qr = await _invoiceQrService.GetActiveQrAsync(invoice.Id, HttpContext.RequestAborted);
+            var lines = new List<OneTimePaymentPreviewLineVm>();
+            if (invoice.InvoiceServices.Any())
+            {
+                foreach (var line in invoice.InvoiceServices)
+                {
+                    var lineSom = (line.ServiceSumm ?? 0) / 100m;
+                    lines.Add(new OneTimePaymentPreviewLineVm
+                    {
+                        ServiceName = line.ServiceNavigation?.Name ?? invoice.NameInvoice ?? "Услуга",
+                        Quantity = 1,
+                        UnitPriceSom = lineSom,
+                        LineTotalSom = lineSom,
+                        OrganizationServiceId = line.Service
+                    });
+                }
+            }
+            else
+            {
+                var totalSom = (invoice.FixedSumm ?? 0) / 100m;
+                lines.Add(new OneTimePaymentPreviewLineVm
+                {
+                    ServiceName = invoice.NameInvoice ?? "Разовый платёж",
+                    Quantity = 1,
+                    UnitPriceSom = totalSom,
+                    LineTotalSom = totalSom
+                });
+            }
+
+            var viewModel = new OneTimePaymentPreviewVm
+            {
+                ClientName = invoice.ClientNavigation?.ClientName ?? "Клиент",
+                OrganizationName = invoice.ClientNavigation?.OrganizationNavigation?.Name ?? "",
+                PayCode = invoice.PayCode ?? "",
+                PaymentAt = invoice.DateStartInvoice ?? invoice.DateCreated ?? ParsersHelper.NowForTimestamp(),
+                TotalSom = (invoice.FixedSumm ?? 0) / 100m,
+                Lines = lines,
+                IsCreated = true,
+                InvoiceId = invoice.Id,
+                DownloadPdfUrl = Url.Action(nameof(DownloadPdf), new { id = invoice.Id }),
+                Qr = qr != null ? InvoiceQrService.ToDto(qr) : null
+            };
+
+            return View("~/Views/Invoices/ConfirmOneTimePayment.cshtml", viewModel);
+        }
+
+        [RequirePermission("invoices.view")]
+        [HttpGet]
+        public async Task<IActionResult> GetActiveQr(string id)
+        {
+            var organizationId = GetOrganizationId();
+            if (string.IsNullOrEmpty(organizationId))
+                return Json(new { success = false, message = "Не авторизован." });
+
+            var invoiceExists = await _db.Invoices
+                .AnyAsync(i => i.Id == id && i.ClientNavigation != null && i.ClientNavigation.Organization == organizationId);
+            if (!invoiceExists)
+                return Json(new { success = false, message = "Счёт не найден." });
+
+            var activeQr = await _invoiceQrService.GetActiveQrAsync(id, HttpContext.RequestAborted);
+            if (activeQr == null)
+                return Json(new { success = true, qr = (InvoiceQrDto?)null });
+
+            return Json(new { success = true, qr = InvoiceQrService.ToDto(activeQr) });
+        }
+
+        [RequirePermission("invoices.view")]
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> GenerateQr([FromBody] GenerateInvoiceQrRequest? request, string id)
+        {
+            var organizationId = GetOrganizationId();
+            if (string.IsNullOrEmpty(organizationId))
+                return Json(new { success = false, message = "Не авторизован." });
+
+            var invoice = await _db.Invoices
+                .Include(i => i.ClientNavigation)
+                .Include(i => i.InvoicePayments)
+                .FirstOrDefaultAsync(i => i.Id == id && i.ClientNavigation != null && i.ClientNavigation.Organization == organizationId);
+            if (invoice == null)
+                return Json(new { success = false, message = "Счёт не найден." });
+
+            if (string.IsNullOrWhiteSpace(invoice.PayCode))
+                return Json(new { success = false, message = "У счёта отсутствует PayCode для генерации QR." });
+
+            try
+            {
+                var qr = await _invoiceQrService.GenerateForInvoiceAsync(
+                    invoice,
+                    request?.PurchaseSumSom,
+                    HttpContext.RequestAborted);
+
+                return Json(new
+                {
+                    success = true,
+                    message = "QR-код успешно сгенерирован.",
+                    qr = InvoiceQrService.ToDto(qr)
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [RequirePermission("invoices.view")]
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> DisableQr(string id)
+        {
+            var organizationId = GetOrganizationId();
+            if (string.IsNullOrEmpty(organizationId))
+                return Json(new { success = false, message = "Не авторизован." });
+
+            var invoiceExists = await _db.Invoices
+                .AnyAsync(i => i.Id == id && i.ClientNavigation != null && i.ClientNavigation.Organization == organizationId);
+            if (!invoiceExists)
+                return Json(new { success = false, message = "Счёт не найден." });
+
+            var qr = await _invoiceQrService.DisableActiveQrAsync(id, HttpContext.RequestAborted);
+            if (qr == null)
+                return Json(new { success = false, message = "Активный QR-код не найден." });
+
+            return Json(new
+            {
+                success = true,
+                message = "QR-код выключен.",
+                qr = InvoiceQrService.ToDto(qr)
+            });
+        }
+
+        private static string GetPeriodicityText(string? periodicity)
+        {
+            return periodicity switch
+            {
+                "daily" => "Ежедневно",
+                "weekly" => "Еженедельно",
+                "monthly" => "Ежемесячно",
+                "yearly" => "Ежегодно",
+                "oneTime" => "Одноразовый",
+                "any" => "Прием в любой момент",
+                _ => periodicity != null && int.TryParse(periodicity, out var days)
+                    ? $"Каждые {days} дней"
+                    : periodicity ?? "Не указано"
+            };
         }
     }
 }

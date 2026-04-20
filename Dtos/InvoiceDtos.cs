@@ -87,3 +87,38 @@ public class CreateOneTimeInvoiceResult
     public string InvoiceId { get; set; } = "";
     public string PayCode { get; set; } = "";
 }
+
+public class CreateOneTimePaymentRequest
+{
+    public string? ClientId { get; set; }
+    public string? InvoiceName { get; set; }
+    public string? PayCode { get; set; }
+    public DateTime? PaymentAt { get; set; }
+    public decimal? ManualAmountSom { get; set; }
+    public bool Hassameaccount { get; set; }
+    public List<CreateInvoiceServiceItem> ServiceItems { get; set; } = new();
+}
+
+public class OneTimePaymentPreviewLineVm
+{
+    public string ServiceName { get; set; } = "";
+    public int Quantity { get; set; }
+    public decimal UnitPriceSom { get; set; }
+    public decimal LineTotalSom { get; set; }
+    public string? OrganizationServiceId { get; set; }
+}
+
+public class OneTimePaymentPreviewVm
+{
+    public CreateOneTimePaymentRequest Request { get; set; } = new();
+    public string ClientName { get; set; } = "";
+    public string OrganizationName { get; set; } = "";
+    public string PayCode { get; set; } = "";
+    public DateTime PaymentAt { get; set; }
+    public decimal TotalSom { get; set; }
+    public List<OneTimePaymentPreviewLineVm> Lines { get; set; } = new();
+    public bool IsCreated { get; set; }
+    public string? InvoiceId { get; set; }
+    public string? DownloadPdfUrl { get; set; }
+    public InvoiceQrDto? Qr { get; set; }
+}

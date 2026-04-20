@@ -7,6 +7,10 @@
     <UserSecretsId>78f81cbb-5bd3-470d-a823-ad72e64d0cf2</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerfileContext>.</DockerfileContext>
+    <DefaultItemExcludes>$(DefaultItemExcludes);artifacts\**</DefaultItemExcludes>
+    <!-- .NET SDK 9 + net7.0: avoid duplicate assembly attributes (generated obj + implicit compiler metadata). -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
   </PropertyGroup>
 
 
@@ -41,6 +45,10 @@
     <Folder Include="wwwroot\mobile\css\" />
     <Folder Include="wwwroot\mobile\js\" />
     <Folder Include="wwwroot\img\" />
+    <Folder Include="wwwroot\web\medclinic\css\" />
+    <Folder Include="wwwroot\web\medclinic\js\" />
+    <Folder Include="wwwroot\web\standart\js\" />
+    <Folder Include="wwwroot\web\standart\css\" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,210 @@
+﻿@using System.Linq
+@using System.Globalization
+@using System.Text.Json
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IHtmlLocalizer<WebApplication1.SharedResources> Localizer
+@{
+    ViewData["Title"] = Localizer["Clients"];
+    var clientsData = ViewBag.ClientsData as List<WebApplication1.Models.DBModels.OrganizationClient> ?? new List<WebApplication1.Models.DBModels.OrganizationClient>();
+    var search = ViewBag.Search as string ?? "";
+    var statusFilter = ViewBag.StatusFilter as string ?? "active";
+    var debtorsOnly = ViewBag.DebtorsOnly as bool? ?? false;
+    var totalBalanceByClient = ViewBag.ClientTotalBalanceByClientId as Dictionary<string, decimal> ?? new Dictionary<string, decimal>();
+    var activeInvoiceCountByClientId = ViewBag.ActiveInvoiceCountByClientId as Dictionary<string, int> ?? new Dictionary<string, int>();
+    var debtInvoiceCountByClientId = ViewBag.DebtInvoiceCountByClientId as Dictionary<string, int> ?? new Dictionary<string, int>();
+    var nearestDueByClientId = ViewBag.NearestDueByClientId as Dictionary<string, DateTime?> ?? new Dictionary<string, DateTime?>();
+
+    var twoLetterCulture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var jsLocale = twoLetterCulture == "en" ? "en-US" : twoLetterCulture == "ky" ? "ky-KG" : "ru-RU";
+    var jsI18n = new Dictionary<string, string>
+    {
+        ["currency"] = Localizer["Som"].Value,
+        ["dash"] = Localizer["Dash"].Value,
+        ["periodDaily"] = Localizer["PeriodDaily"].Value,
+        ["periodWeekly"] = Localizer["PeriodWeekly"].Value,
+        ["periodMonthly"] = Localizer["PeriodMonthly"].Value,
+        ["periodYearly"] = Localizer["PeriodYearly"].Value,
+        ["periodOneTime"] = Localizer["PeriodOneTime"].Value,
+        ["periodAny"] = Localizer["PeriodAny"].Value,
+        ["periodEveryNDays"] = Localizer["PeriodEveryNDays"].Value,
+        ["paymentPaid"] = Localizer["PaymentPaid"].Value,
+        ["paymentNonPaid"] = Localizer["PaymentNonPaid"].Value,
+        ["paymentAnulated"] = Localizer["PaymentAnulated"].Value,
+        ["summaryTotalInvoices"] = Localizer["SummaryTotalInvoices"].Value,
+        ["summaryTotalInvoicesNote"] = Localizer["SummaryTotalInvoicesNote"].Value,
+        ["summaryActiveInvoices"] = Localizer["SummaryActiveInvoices"].Value,
+        ["summaryActiveInvoicesNote"] = Localizer["SummaryActiveInvoicesNote"].Value,
+        ["summaryDebtInvoices"] = Localizer["SummaryDebtInvoices"].Value,
+        ["summaryDebtInvoicesNote"] = Localizer["SummaryDebtInvoicesNote"].Value,
+        ["summaryNearestPayment"] = Localizer["SummaryNearestPayment"].Value,
+        ["summaryNearestPaymentNote"] = Localizer["SummaryNearestPaymentNote"].Value,
+        ["summaryTotalBalance"] = Localizer["SummaryTotalBalance"].Value,
+        ["summaryTotalBalanceNote"] = Localizer["SummaryTotalBalanceNote"].Value,
+        ["service"] = Localizer["Service"].Value,
+        ["noServices"] = Localizer["NoServices"].Value,
+        ["servicesInInvoice"] = Localizer["ServicesInInvoice"].Value,
+        ["cost"] = Localizer["Cost"].Value,
+        ["oneTimeStateTitle"] = Localizer["OneTimeStateTitle"].Value,
+        ["oneTimeStateNote"] = Localizer["OneTimeStateNote"].Value,
+        ["paymentType"] = Localizer["PaymentType"].Value,
+        ["oneTime"] = Localizer["OneTime"].Value,
+        ["amount"] = Localizer["Amount"].Value,
+        ["status"] = Localizer["Status"].Value,
+        ["balance"] = Localizer["Balance"].Value,
+        ["period"] = Localizer["Period"].Value,
+        ["periodsMissing"] = Localizer["PeriodsMissing"].Value,
+        ["periodSchedule"] = Localizer["PeriodSchedule"].Value,
+        ["periodScheduleNote"] = Localizer["PeriodScheduleNote"].Value,
+        ["from"] = Localizer["From"].Value,
+        ["to"] = Localizer["To"].Value,
+        ["transactions"] = Localizer["Transactions"] .Value,
+        ["transactionsNone"] = Localizer["TransactionsNone"].Value,
+        ["date"] = Localizer["Date"].Value,
+        ["amountWithFee"] = Localizer["AmountWithFee"].Value,
+        ["type"] = Localizer["Type"].Value,
+        ["system"] = Localizer["System"].Value,
+        ["agent"] = Localizer["Agent"].Value,
+        ["invoice"] = Localizer["Invoice"].Value,
+        ["payCode"] = Localizer["PayCode"].Value,
+        ["services"] = Localizer["Services"].Value,
+        ["expandType"] = Localizer["ExpandType"].Value,
+        ["compact"] = Localizer["Compact"].Value,
+        ["full"] = Localizer["Full"].Value,
+        ["invoicePassport"] = Localizer["InvoicePassport"].Value,
+        ["dateCreated"] = Localizer["DateCreated"].Value,
+        ["dateStart"] = Localizer["DateStart"].Value,
+        ["dateEnd"] = Localizer["DateEnd"].Value,
+        ["nextPeriod"] = Localizer["NextPeriod"].Value,
+        ["fixedAmount"] = Localizer["FixedAmount"].Value,
+        ["autoProlongation"] = Localizer["AutoProlongation"].Value,
+        ["sharedAccount"] = Localizer["SharedAccount"].Value,
+        ["yes"] = Localizer["Yes"].Value,
+        ["no"] = Localizer["No"].Value,
+        ["qrByInvoice"] = Localizer["QrByInvoice"].Value,
+        ["qrStatus"] = Localizer["QrStatus"].Value,
+        ["created"] = Localizer["Created"].Value,
+        ["disabled"] = Localizer["Disabled"].Value,
+        ["qrAlt"] = Localizer["QrAlt"].Value,
+        ["loadClientInvoicesError"] = Localizer["LoadClientInvoicesError"].Value,
+        ["loadingInvoices"] = Localizer["LoadingInvoices"].Value,
+        ["loadClientDataError"] = Localizer["LoadClientDataError"].Value,
+        ["clientNotFound"] = Localizer["ClientNotFound"].Value,
+        ["clientHasNoInvoices"] = Localizer["ClientHasNoInvoices"].Value,
+        ["clientDefaultName"] = Localizer["ClientDefaultName"].Value,
+    };
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/web/standart/css/clients-invoices.css" asp-append-version="true" />
+}
+
+<div class="standart-clients-page" id="standartClientsPage"
+     data-client-invoices-url="@Url.Action("GetClientInvoicesDashboard", "Clients")">
+    <div id="clientsScreen">
+        <div class="sc-header">
+            <div>
+                <h1 class="sc-title">@Localizer["Clients"]</h1>
+                <p class="sc-subtitle">@Localizer["StandartClientsChooseClient"]</p>
+            </div>
+        </div>
+
+        <div class="sc-card">
+            <div class="sc-card-head">
+                <div class="sc-card-title">@Localizer["ClientsList"]</div>
+                <form method="get" asp-action="Index" class="sc-toolbar">
+                    <input type="text" name="search" value="@search" placeholder="@Localizer["SearchByNameOrPhone"]" />
+                    <select name="statusFilter">
+                        <option value="active" selected="@(statusFilter == "active")">@Localizer["Active"]</option>
+                        <option value="inactive" selected="@(statusFilter == "inactive")">@Localizer["Inactive"]</option>
+                        <option value="deleted" selected="@(statusFilter == "deleted")">@Localizer["Deleted"]</option>
+                    </select>
+                    <label class="sc-checkbox">
+                        <input type="checkbox" name="debtorsOnly" value="true" checked="@(debtorsOnly ? "checked" : null)" />
+                        @Localizer["DebtorsOnly"]
+                    </label>
+                    <button type="submit" class="sc-btn sc-btn--primary">@Localizer["Apply"]</button>
+                </form>
+            </div>
+
+            <div class="sc-table-wrap">
+                <table class="sc-table">
+                    <thead>
+                        <tr>
+                            <th>@Localizer["Client"]</th>
+                            <th>@Localizer["ActiveInvoices"]</th>
+                            <th>@Localizer["NearestPayment"]</th>
+                            <th>@Localizer["TotalBalance"]</th>
+                            <th>@Localizer["DebtInvoices"]</th>
+                            <th>@Localizer["Action"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (clientsData.Any())
+                        {
+                            foreach (var client in clientsData)
+                            {
+                                var activeCount = activeInvoiceCountByClientId.GetValueOrDefault(client.Id, 0);
+                                var debtCount = debtInvoiceCountByClientId.GetValueOrDefault(client.Id, 0);
+                                var nearestDue = nearestDueByClientId.GetValueOrDefault(client.Id);
+                                var totalBalanceSom = totalBalanceByClient.GetValueOrDefault(client.Id, 0m) / 100m;
+                                <tr>
+                                    <td>
+                                        <div class="sc-name">@(client.ClientName ?? Localizer["ClientDefaultName"].Value)</div>
+                                        <div class="sc-muted">@client.Id · @(string.IsNullOrWhiteSpace(client.ClientPhone) ? Localizer["Dash"].Value : client.ClientPhone)</div>
+                                    </td>
+                                    <td>@activeCount</td>
+                                    <td>@(nearestDue.HasValue ? nearestDue.Value.ToString("dd.MM.yyyy") : Localizer["Dash"].Value)</td>
+                                    <td class="@(totalBalanceSom < 0 ? "sc-balance--negative" : "sc-balance--positive")">@totalBalanceSom.ToString("N2", CultureInfo.CurrentUICulture) @Localizer["Som"]</td>
+                                    <td>@debtCount</td>
+                                    <td><button type="button" class="sc-btn sc-btn--ghost js-open-client" data-client-id="@client.Id">@Localizer["OpenInvoices"]</button></td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="sc-empty">@Localizer["ClientsNotFound"]</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="detailScreen" class="sc-detail-screen">
+        <div class="sc-back-row">
+            <button type="button" class="sc-btn sc-btn--ghost" id="backToClientsBtn">@Localizer["BackToClients"]</button>
+        </div>
+
+        <div class="sc-card">
+            <div class="sc-client-head">
+                <div>
+                    <h2 class="sc-client-title" id="scClientName">@Localizer["Client"]</h2>
+                    <p class="sc-subtitle">@Localizer["ClientInvoicesWithDetails"]</p>
+                    <div class="sc-client-meta">
+                        <span class="sc-meta-pill" id="scClientPhone">@Localizer["Dash"]</span>                        
+                        <span class="sc-meta-pill" id="scClientBalance">@Localizer["TotalBalance"]: @Localizer["Dash"]</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sc-summary-grid" id="scSummaryGrid"></div>
+
+        <div class="sc-card sc-invoices-card">
+            <div class="sc-card-head">
+                <div class="sc-card-title">@Localizer["ClientInvoices"]</div>
+            </div>
+            <div id="scInvoiceList" class="sc-invoice-list"></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        window.standartClientsI18n = @Html.Raw(JsonSerializer.Serialize(jsI18n));
+        window.standartClientsLocale = "@jsLocale";
+    </script>
+    <script src="~/web/standart/js/clients-invoices.js" asp-append-version="true"></script>
+}

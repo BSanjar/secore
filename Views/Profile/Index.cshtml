@@ -1,6 +1,14 @@
 @model WebApplication1.Models.DBModels.User
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IHtmlLocalizer<WebApplication1.SharedResources> Localizer
 @{
-    ViewData["Title"] = "Профиль";
+    ViewData["Title"] = Localizer["ProfilePageTitle"].Value;
+    var selectedStartPage = WebApplication1.Helpers.LandingPageResolver.NormalizeStartPage(Model?.StartPage);
+    var organizationType = WebApplication1.Helpers.AuthorizationHelper.GetOrganizationType(Context);
+    var canSelectAppointments = string.Equals(organizationType, "medclinic", StringComparison.OrdinalIgnoreCase)
+                                && (WebApplication1.Helpers.PermissionHelper.HasPermission(Context, "appointments.registry.view")
+                                    || WebApplication1.Helpers.PermissionHelper.HasPermission(Context, "appointments.doctor.view")
+                                    || WebApplication1.Helpers.PermissionHelper.HasPermission(Context, "appointments.view"));
 }
 
 @section Styles {
@@ -12,13 +20,13 @@
     {
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             @TempData["Message"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="@Localizer["Close"]"></button>
         </div>
     }
 
     <div class="page-header">
-        <h1 class="page-title">Профиль</h1>
-        <p class="page-subtitle mb-0">Имя и контактный телефон</p>
+        <h1 class="page-title">@Localizer["ProfilePageTitle"]</h1>
+        <p class="page-subtitle mb-0">@Localizer["ProfilePageSubtitle"]</p>
     </div>
 
     <div class="filters-section">
@@ -27,18 +35,29 @@
             <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
             <div class="mb-3">
-                <label class="form-label text-muted small">Имя <span class="text-danger">*</span></label>
-                <input type="text" name="Name" class="form-control" value="@Model?.Name" placeholder="Ваше имя" required />
+                <label class="form-label text-muted small">@Localizer["ProfileNameLabel"] <span class="text-danger">*</span></label>
+                <input type="text" name="Name" class="form-control" value="@Model?.Name" placeholder="@Localizer["ProfileNamePlaceholder"]" required />
             </div>
 
             <div class="mb-3">
-                <label class="form-label text-muted small">Телефон</label>
+                <label class="form-label text-muted small">@Localizer["ProfilePhoneLabel"]</label>
                 <input type="text" name="Phone" class="form-control" value="@Model?.Phone" placeholder="+996 XXX XXX XXX" />
             </div>
 
+            <div class="mb-3">
+                <label class="form-label text-muted small">@Localizer["ProfileStartPageLabel"]</label>
+                <select name="StartPage" class="form-select">
+                    <option value="cabinet" selected="@(selectedStartPage == "cabinet")">@Localizer["ProfileStartPageOptionCabinet"]</option>
+                    @if (canSelectAppointments)
+                    {
+                        <option value="appointments" selected="@(selectedStartPage == "appointments")">@Localizer["ProfileStartPageOptionAppointments"]</option>
+                    }
+                </select>
+            </div>
+
             <div class="d-flex gap-2">
-                <button type="submit" class="action-btn action-btn--edit">Сохранить</button>
-                <a asp-controller="Cabinet" asp-action="Index" class="action-btn">Отмена</a>
+                <button type="submit" class="action-btn action-btn--edit">@Localizer["Save"]</button>
+                <a asp-controller="Cabinet" asp-action="Index" class="action-btn">@Localizer["Cancel"]</a>
             </div>
         </form>
     </div>

@@ -17,7 +17,7 @@
     font-weight: 700;
     color: var(--text-primary);
     margin-bottom: 0.5rem;
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: linear-gradient(135deg, #047857 0%, #065f46 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -106,22 +106,22 @@
 
 /* Цветовые варианты карточек */
 .stat-card-primary {
-    border-left: 4px solid #2563eb;
-    color: #2563eb;
+    border-left: 4px solid #0284c7;
+    color: #0284c7;
 }
 
 .stat-card-primary .stat-card-icon {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
     color: white;
 }
 
 .stat-card-success {
-    border-left: 4px solid #10b981;
-    color: #10b981;
+    border-left: 4px solid #047857;
+    color: #047857;
 }
 
 .stat-card-success .stat-card-icon {
-    background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+    background: linear-gradient(135deg, #34d399 0%, #047857 100%);
     color: white;
 }
 
@@ -262,7 +262,7 @@
 .quick-action-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
-    border-color: #10b981;
+    border-color: #047857;
     text-decoration: none;
     color: inherit;
 }
@@ -271,7 +271,7 @@
     width: 48px;
     height: 48px;
     border-radius: 10px;
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: linear-gradient(135deg, #047857 0%, #065f46 100%);
     color: white;
     display: flex;
     align-items: center;

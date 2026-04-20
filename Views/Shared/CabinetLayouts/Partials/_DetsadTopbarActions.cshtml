@@ -1,0 +1,56 @@
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IHtmlLocalizer<WebApplication1.SharedResources> Localizer
+@{
+    var currentCultureName = ViewData["CurrentCultureName"]?.ToString() ?? "ru";
+    var returnUrl = ViewData["ReturnUrl"]?.ToString() ?? "/";
+}
+<div class="dashboard-topbar-actions">
+    <button type="button"
+            class="app-shell-mobile-toggle"
+            data-shell-toggle
+            aria-label="@Localizer["OpenNavigationMenu"]"
+            aria-expanded="false">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+    <div class="dashboard-search" id="dashboardSearch">
+        <input type="text" placeholder="@Localizer["SearchPlaceholder"]" id="dashboardSearchInput" autocomplete="off" />
+        <button type="button" class="dashboard-search-btn" aria-label="@Localizer["Search"]">
+            <img src="~/img/search-icon.png" alt="" class="dashboard-search-icon" />
+        </button>
+        <div class="dashboard-search-suggestions" id="dashboardSearchSuggestions" style="display: none;"></div>
+    </div>
+    <div class="dashboard-notifications-wrap">
+        <button type="button" class="dashboard-notifications-btn" id="dashboardNotificationsBtn" aria-label="@Localizer["Notifications"]">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" fill="currentColor"/></svg>
+            <span class="dashboard-notifications-badge count" id="dashboardNotificationsBadge" style="display: none;">3</span>
+        </button>
+        <div class="dashboard-notifications-dropdown" id="dashboardNotificationsDropdown">
+            <div class="dashboard-notifications-dropdown-header">@Localizer["Notifications"]</div>
+            <div class="dashboard-notifications-dropdown-list">
+                <div class="dashboard-notifications-dropdown-empty">@Localizer["NoNewNotifications"]</div>
+            </div>
+        </div>
+    </div>
+    <div class="dashboard-lang-wrap">
+        <button type="button" class="dashboard-lang-btn" id="dashboardLangBtn" aria-label="@Localizer["Language"]" title="@Localizer["Language"]">
+            <span class="dashboard-lang-flag">@(currentCultureName == "ru" ? "🇷🇺" : currentCultureName == "en" ? "🇬🇧" : "🇰🇬")</span>
+        </button>
+        <div class="dashboard-lang-dropdown" id="dashboardLangDropdown">
+            <div class="dashboard-lang-dropdown-header">@Localizer["Language"]</div>
+            <form asp-controller="Language" asp-action="SetLanguage" method="post" asp-route-returnUrl="@returnUrl" class="dashboard-lang-form">
+                <input type="hidden" name="culture" value="ru" />
+                <button type="submit" class="dashboard-lang-option @(currentCultureName == "ru" ? "active" : "")">🇷🇺 @Localizer["LanguageRussian"]</button>
+            </form>
+            <form asp-controller="Language" asp-action="SetLanguage" method="post" asp-route-returnUrl="@returnUrl" class="dashboard-lang-form">
+                <input type="hidden" name="culture" value="en" />
+                <button type="submit" class="dashboard-lang-option @(currentCultureName == "en" ? "active" : "")">🇬🇧 @Localizer["LanguageEnglish"]</button>
+            </form>
+            <form asp-controller="Language" asp-action="SetLanguage" method="post" asp-route-returnUrl="@returnUrl" class="dashboard-lang-form">
+                <input type="hidden" name="culture" value="ky" />
+                <button type="submit" class="dashboard-lang-option @(currentCultureName == "ky" ? "active" : "")">🇰🇬 @Localizer["LanguageKyrgyz"]</button>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,4 +1,4 @@
-@model WebApplication1.Models.DBModels.Invoice
+﻿@model WebApplication1.Models.DBModels.Invoice
 @using System.Globalization
 @{
     Layout = null;
@@ -13,6 +13,8 @@
     var bank = ViewBag.Bank as string ?? "—";
     var account = ViewBag.Account as string ?? "—";
     var invoiceNumber = Model.PayCode ?? Model.Id ?? "—";
+    var qrImageDataUrl = ViewBag.QrImageDataUrl as string;
+    var qrLink = ViewBag.QrLink as string;
 }
 <!DOCTYPE html>
 <html lang="ru">
@@ -63,6 +65,7 @@
     .requisites p { margin: 0 0 6px; font-size: 11px; line-height: 1.4; color: #374151; }
     .requisites strong { color: #111827; }
     .qr-placeholder { margin-top: 10px; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 14px; text-align: center; color: #6b7280; background: #f9fafb; font-size: 11px; }
+    .qr-image { display: block; width: 148px; height: 148px; object-fit: contain; margin: 0 auto 10px; background: #ffffff; border-radius: 8px; padding: 6px; border: 1px solid #e5e7eb; }
     .summary-line { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; font-size: 11px; }
     .summary-line:last-child { margin-bottom: 0; }
     .summary-line .title { color: #6b7280; }
@@ -139,12 +142,11 @@
                 foreach (var line in Model.InvoiceServices)
                 {
                     var name = line.ServiceNavigation?.Name ?? Model.NameInvoice ?? "Услуга по счёту";
-                    var priceTyiyn = line.ServiceSumm ?? 0;
-                    var priceSom = priceTyiyn / 100m;
+                    var priceSom = (line.ServiceSumm ?? 0) / 100m;
                     var qty = 1;
                     if (line.ServiceNavigation != null && (line.ServiceNavigation.ServiceSumm ?? 0) > 0)
                     {
-                        qty = (int)Math.Max(1, Math.Round(priceTyiyn / (decimal)line.ServiceNavigation.ServiceSumm!.Value));
+                        qty = (int)Math.Max(1, Math.Round(priceSom / (decimal)line.ServiceNavigation.ServiceSumm!.Value));
                     }
                     var periodVal = Model.DateStartInvoice?.ToString("MMMM yyyy", ru) ?? "—";
                     <tr>
@@ -174,6 +176,16 @@
           <p><strong>Р/с:</strong> @account</p>
           <p><strong>Назначение платежа:</strong> Оплата по счету @invoiceNumber</p>
           <div class="qr-placeholder">Оплата по коду <strong>@(Model.PayCode ?? "—")</strong></div>
+          @if (!string.IsNullOrWhiteSpace(qrImageDataUrl))
+          {
+              <div class="qr-placeholder">
+                <img src="@qrImageDataUrl" alt="QR" class="qr-image" />
+                @if (!string.IsNullOrWhiteSpace(qrLink))
+                {
+                    <div style="font-size:10px; word-break:break-all; margin-bottom:6px;">@qrLink</div>
+                }
+              </div>
+          }
         </div>
         <div class="card total-block">
           <h2>Итого к оплате</h2>

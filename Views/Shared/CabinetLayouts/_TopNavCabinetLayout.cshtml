@@ -1,0 +1,53 @@
+@using Microsoft.AspNetCore.Mvc.Localization
+@using WebApplication1.Services.Cabinets
+@inject IHtmlLocalizer<WebApplication1.SharedResources> Localizer
+@inject IShellViewModelBuilder ShellViewModelBuilder
+@{
+    Layout = "~/Views/Shared/CabinetLayouts/_BaseCabinetLayout.cshtml";
+
+    var shell = ShellViewModelBuilder.Build();
+    ViewData["BodyClass"] = shell.BodyClass;
+    ViewData["CabinetTitleSuffixKey"] = shell.TitleSuffixResourceKey;
+    ViewData["IncludeAntiforgery"] = shell.IncludeAntiforgery;
+}
+
+@section LayoutStyles {
+    <link rel="stylesheet" href="@shell.CabinetCssPath" asp-append-version="true" />
+    @RenderSection("Styles", required: false)
+}
+
+@section LayoutScripts {
+    @RenderSection("Scripts", required: false)
+}
+
+<header class="@shell.HeaderClass">
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="@shell.MainContainerClass">
+            <a class="navbar-brand" asp-controller="Cabinet" asp-action="Index">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="me-2">
+                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="currentColor"/>
+                </svg>
+                @Localizer["PersonalCabinet"]
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                @await Html.PartialAsync("~/Views/Shared/CabinetLayouts/Partials/_TopNavPrimaryMenu.cshtml")
+                @await Html.PartialAsync("~/Views/Shared/CabinetLayouts/Partials/_TopNavUserActions.cshtml")
+            </div>
+        </div>
+    </nav>
+</header>
+
+<main class="cabinet-main">
+    <div class="@shell.MainContainerClass">
+        @RenderBody()
+    </div>
+</main>
+
+@await Html.PartialAsync(
+    "~/Views/Shared/CabinetLayouts/Partials/_CabinetFooter.cshtml",
+    viewData: new ViewDataDictionary(ViewData) { ["ContainerClass"] = shell.MainContainerClass })
+

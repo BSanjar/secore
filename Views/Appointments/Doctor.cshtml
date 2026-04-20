@@ -1,0 +1,544 @@
+﻿@model WebApplication1.ViewModels.Appointments.AppointmentsIndexViewModel
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Мое расписание";
+    var canManageAppointments = (bool?)ViewBag.CanManageAppointments == true;
+    var canGenerateInvoice = (bool?)ViewBag.CanGenerateInvoice == true;
+    var canMarkAsPaidManually = (bool?)ViewBag.CanMarkAsPaidManually == true;
+    var totalAppointments = Model.Events.Count;
+    var todayDate = DateTime.Today;
+    var todayAppointments = Model.Events.Count(x => x.Start.Date == todayDate);
+    var todayDayOfWeek = (int)todayDate.DayOfWeek;
+    var mondayOffset = (todayDayOfWeek + 6) % 7;
+    var weekStart = todayDate.AddDays(-mondayOffset);
+    var weekEnd = weekStart.AddDays(7);
+    var weekAppointments = Model.Events.Count(x => x.Start >= weekStart && x.Start < weekEnd);
+
+    var eventsJson = JsonSerializer.Serialize(Model.Events.Select(x => new
+    {
+        id = x.Id,
+        title = x.Title,
+        doctorId = x.DoctorId,
+        doctor = x.Doctor,
+        patientId = x.PatientId,
+        patientName = x.PatientName,
+        phone = x.Phone,
+        email = x.Email,
+        start = x.Start,
+        end = x.End,
+        status = x.Status,
+        notes = x.Notes,
+        referralSource = x.ReferralSource,
+        paymentType = x.PaymentType,
+        hasPaidInvoice = x.HasPaidInvoice,
+        isActive = x.IsActive,
+        createdAt = x.CreatedAt,
+        updatedAt = x.UpdatedAt,
+        services = x.Services
+    }));
+
+    var patientsJson = JsonSerializer.Serialize(Model.Patients.Select(x => new
+    {
+        id = x.Id,
+        name = x.Name,
+        phone = x.Phone,
+        email = x.Email,
+        whatsApp = x.WhatsApp
+    }));
+
+    var serviceCatalogJson = JsonSerializer.Serialize(Model.ServiceCatalog.Select(x => new
+    {
+        id = x.Id,
+        name = x.Name,
+        priceTyiyn = x.PriceTyiyn
+    }));
+
+    var doctorSchedulesJson = JsonSerializer.Serialize(Model.DoctorSchedules);
+    var doctorScheduleOverridesJson = JsonSerializer.Serialize(Model.DoctorScheduleOverrides.Select(x => new
+    {
+        userId = x.UserId,
+        workDate = x.WorkDate,
+        isWorking = x.IsWorking,
+        startTime = x.StartTime,
+        endTime = x.EndTime
+    }));
+    var appointmentDurationsJson = JsonSerializer.Serialize(Model.AppointmentDurations.Select(x => new
+    {
+        doctorId = x.UserId,
+        durationMinutes = x.DurationMinutes
+    }));
+
+    var medicalTemplatesJson = JsonSerializer.Serialize(Model.MedicalTemplates.Select(x => new
+    {
+        id = x.Id,
+        type = x.Type,
+        title = x.Title,
+        content = x.Content,
+        sortOrder = x.SortOrder
+    }));
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/web/medclinic/css/medclinic-schedule.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/web/medclinic/css/appointments-role-layouts.css" asp-append-version="true" />
+}
+
+<div class="dashboard-page appointments-page doctor-appointments-page">
+    @if (!string.IsNullOrWhiteSpace(Model.StorageMessage))
+    {
+        <div class="alert alert-warning border-0 shadow-sm mb-4" role="alert">
+            @Model.StorageMessage
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.DoctorSchedulesMessage))
+    {
+        <div class="alert alert-warning border-0 shadow-sm mb-4" role="alert">
+            @Model.DoctorSchedulesMessage
+        </div>
+    }
+
+    <div class="doctor-demo-shell">
+        <div class="doctor-demo-top-grid doctor-demo-top-grid--single">
+            <section class="doctor-demo-card doctor-demo-header-card">
+                <div class="doctor-demo-header-row">
+                    <div>
+                        <h1 class="doctor-demo-title">Мое расписание</h1>
+                        <p class="doctor-demo-subtitle">Здесь отображаются только ваши приемы. Оплаченные записи выделяются отдельным цветом.</p>
+                    </div>
+                    <div class="doctor-demo-mode-switch schedule-view-switcher" id="doctorModeSwitcher">
+                        <button class="doctor-demo-mode-btn mode-btn active btn btn-primary" data-view="day" type="button">День</button>
+                        <button class="doctor-demo-mode-btn mode-btn btn btn-outline-primary" data-view="week" type="button">Неделя</button>
+                        <button class="doctor-demo-mode-btn mode-btn btn btn-outline-primary" data-view="month" type="button">Месяц</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="doctor-demo-card doctor-period-nav-card">
+                <div class="doctor-period-nav">
+                    <div class="doctor-period-nav__left">
+                        <div class="btn-group" role="group">
+                            <button class="btn ghost-btn schedule-nav" data-direction="prev" type="button">← Назад</button>
+                            <button class="btn ghost-btn schedule-nav" data-direction="today" type="button">Сегодня</button>
+                            <button class="btn ghost-btn schedule-nav" data-direction="next" type="button">Вперед →</button>
+                        </div>
+                    </div>
+                    <div class="doctor-period-nav__right">
+                        <div id="schedulePeriodLabel" class="doctor-period-label"></div>
+                        <div class="doctor-date-input-wrap">
+                            <span class="doctor-date-input-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+                                    <line x1="8" y1="2.5" x2="8" y2="6"></line>
+                                    <line x1="16" y1="2.5" x2="16" y2="6"></line>
+                                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                                </svg>
+                            </span>
+                            <input type="date" id="scheduleDatePicker" class="form-control doctor-period-picker" />
+                        </div>
+                        @if (canManageAppointments)
+                        {
+                            <button type="button" class="btn primary-btn" id="appointmentCreateButton">Создать запись</button>
+                        }
+                    </div>
+                </div>
+            </section>
+
+            <section class="doctor-demo-stats-grid doctor-demo-stats-grid--horizontal">
+                <article class="doctor-demo-stat-card">
+                    <div class="doctor-stat-icon doctor-stat-icon--blue" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+                            <line x1="8" y1="2.5" x2="8" y2="6"></line>
+                            <line x1="16" y1="2.5" x2="16" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="doctor-demo-stat-label">Всего приемов</div>
+                        <div class="doctor-demo-stat-value">@totalAppointments</div>
+                    </div>
+                </article>
+                <article class="doctor-demo-stat-card">
+                    <div class="doctor-stat-icon doctor-stat-icon--green" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M8 11.5l2.4 2.4L16.5 8"></path>
+                            <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="doctor-demo-stat-label">Сегодня</div>
+                        <div class="doctor-demo-stat-value">@todayAppointments</div>
+                    </div>
+                </article>
+                <article class="doctor-demo-stat-card">
+                    <div class="doctor-stat-icon doctor-stat-icon--amber" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="9"></circle>
+                            <path d="M12 7v5l3 2"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="doctor-demo-stat-label">На неделе</div>
+                        <div class="doctor-demo-stat-value">@weekAppointments</div>
+                    </div>
+                </article>
+            </section>
+
+            <section class="doctor-demo-card doctor-status-legend-card">
+                <div class="doctor-status-legend">
+                    <span class="doctor-status-pill doctor-status-pill--paid">Оплаченный прием</span>
+                    <span class="doctor-status-pill doctor-status-pill--unpaid">Неоплаченный прием</span>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div class="medclinic-surface schedule-board appointments-shared-board">
+        <div class="schedule-calendar px-4 pb-4 pt-3">
+            <div id="scheduleCalendarGrid" class="schedule-calendar__grid"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="appointmentPeriodModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg doctor-modal-content">
+            <div class="modal-header">
+                <div>
+                    <h2 class="modal-title mb-1" id="appointmentPeriodModalTitle">Все записи за день</h2>
+                    <p class="text-muted mb-0" id="appointmentPeriodModalSubtitle">Список приемов по выбранной дате.</p>
+                </div>
+                <div class="doctor-modal-header-actions">
+                    @if (canManageAppointments)
+                    {
+                        <button type="button" class="btn ghost-btn" id="appointmentPeriodAddButton">Добавить запись</button>
+                    }
+                    <button type="button" class="btn doctor-modal-close" data-bs-dismiss="modal" aria-label="Close">×</button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div id="appointmentPeriodList" class="vstack gap-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="appointmentDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg doctor-modal-content">
+            <div class="modal-header">
+                <div>
+                    <h2 class="modal-title mb-1" id="appointmentDetailsTitle">Карточка приема</h2>
+                    <p class="text-muted mb-0" id="appointmentDetailsSubtitle">Детали записи пациента.</p>
+                </div>
+                <button type="button" class="btn doctor-modal-close" data-bs-dismiss="modal" aria-label="Close">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="editor-block h-100">
+                            <h3 class="editor-block__title">Пациент</h3>
+                            <dl class="details-list mb-0">
+                                <dt>ФИО</dt>
+                                <dd id="appointmentDetailsPatient">—</dd>
+                                <dt>Телефон</dt>
+                                <dd id="appointmentDetailsPhone">—</dd>
+                                <dt>Email</dt>
+                                <dd id="appointmentDetailsEmail">—</dd>
+                            </dl>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="editor-block h-100">
+                            <h3 class="editor-block__title">Прием</h3>
+                            <dl class="details-list mb-0">
+                                <dt>Дата и время</dt>
+                                <dd id="appointmentDetailsDateTime">—</dd>
+                                <dt>Врач</dt>
+                                <dd id="appointmentDetailsDoctor">—</dd>
+                                <dt>Статус оплаты</dt>
+                                <dd id="appointmentDetailsPaymentType">—</dd>
+                                <dt>Статус</dt>
+                                        <dd id="appointmentDetailsStatus">—</dd>
+                                        <dt>История приемов</dt>
+                                        <dd id="appointmentDetailsHistory">—</dd>
+                                        <dt>Кабинет / реферал</dt>
+                                        <dd id="appointmentDetailsReferral">—</dd>
+                            </dl>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="editor-block">
+                            <h3 class="editor-block__title">Услуги</h3>
+                            <div class="table-responsive">
+                                <table class="table align-middle mb-0">
+                                    <thead>
+                                    <tr>
+                                        <th>Услуга</th>
+                                        <th>Стоимость</th>
+                                        <th>Кол-во</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="appointmentDetailsServices"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="editor-block">
+                            <h3 class="editor-block__title">Комментарий</h3>
+                            <div id="appointmentDetailsNotes" class="text-muted">—</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <span class="text-muted small">Выберите следующее действие по записи.</span>
+                <div class="d-flex gap-2 flex-wrap">
+                    <button type="button" class="btn primary-btn" id="appointmentDetailsOpenVisitButton">Открыть прием</button>
+                    @if (canManageAppointments)
+                    {
+                        <button type="button" class="btn ghost-btn" id="appointmentDetailsEditButton">Редактировать</button>
+                        <button type="button" class="btn ghost-btn" id="appointmentDetailsCancelButton">Отменить запись</button>
+                    }
+                    @if (canGenerateInvoice)
+                    {
+                        <button type="button" class="btn primary-btn" id="appointmentGenerateInvoiceButton">Счет на оплату</button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="appointmentEditorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg appointment-editor-modal-content doctor-modal-content doctor-modal-content--editor appointment-modal-demo">
+            <div class="modal-header appointment-modal-demo__header">
+                <div class="header-left">
+                    <h2 class="modal-title mb-1" id="appointmentEditorTitle">Создание записи / проведение приема</h2>
+                    <p class="text-muted mb-0" id="appointmentEditorSubtitle">Быстрая запись пациента на свободный слот.</p>
+                    <div class="header-meta">
+                        <span class="meta-pill" id="appointmentEditorMetaPatient">Пациент: —</span>
+                        <span class="meta-pill" id="appointmentEditorMetaDate">Дата: —</span>
+                        <span class="meta-pill status-paid" id="appointmentEditorMetaPayment">Не оплачено</span>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button type="button" class="btn ghost-btn amd-btn amd-btn--ghost" data-bs-dismiss="modal">Закрыть</button>
+                    <button type="button" class="btn ghost-btn amd-btn amd-btn--ghost" id="appointmentSaveDraftButton">Сохранить черновик</button>
+                    <button type="button" class="btn primary-btn amd-btn amd-btn--primary" id="appointmentSaveButton" @(Model.StorageReady ? null : "disabled")>Сохранить прием</button>
+                    <button type="button" class="btn doctor-modal-close amd-btn amd-btn--close" data-bs-dismiss="modal" aria-label="Close">×</button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning small" id="appointmentScheduleHint" style="display:none;"></div>
+                <form id="appointmentForm" class="appointment-editor-body" autocomplete="off">
+                    <input type="hidden" id="appointmentId" />
+                    <input type="hidden" id="appointmentPatientId" />
+                    <input type="hidden" id="appointmentStatus" value="active" />
+                    <input type="checkbox" id="appointmentIsActive" class="d-none" checked />
+                    <select id="appointmentPatient" class="d-none" tabindex="-1" aria-hidden="true">
+                        <option value=""></option>
+                        @foreach (var patient in Model.Patients)
+                        {
+                            <option value="@patient.Id">@patient.Name</option>
+                        }
+                    </select>
+
+                    <div class="appointment-editor-main main-column">
+                        <div class="section-card editor-block mb-4">
+                            <h3 class="editor-block__title">Данные записи</h3>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">ФИО пациента</label>
+                                    <div class="patient-lookup">
+                                        <input id="appointmentPatientName" class="form-control" placeholder="Начните вводить ФИО пациента" />
+                                        <div id="appointmentPatientLookupState" class="form-text">Если пациент уже есть в базе, выберите его из подсказок.</div>
+                                        <div id="appointmentPatientSuggestions" class="patient-lookup__suggestions list-group" style="display:none;"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Телефон</label>
+                                    <input id="appointmentPhone" class="form-control" placeholder="+996..." />
+                                    <div class="form-check mt-2">
+                                        <input class="form-check-input" type="checkbox" id="appointmentUsePhoneAsWhatsApp" checked />
+                                        <label class="form-check-label" for="appointmentUsePhoneAsWhatsApp">Дублировать этот номер как WhatsApp</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Врач</label>
+                                    <select id="appointmentDoctor" class="form-select">
+                                        @foreach (var doctor in Model.Doctors)
+                                        {
+                                            if (doctor.Value == Model.Doctors.FirstOrDefault()?.Value)
+                                            {
+                                                <option value="@doctor.Value" selected>@doctor.Label</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@doctor.Value">@doctor.Label</option>
+                                            }
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Дата</label>
+                                    <input id="appointmentDate" type="date" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Услуга</label>
+                                    <select id="appointmentServiceSelector" class="form-select">
+                                        <option value="">Добавить услугу</option>
+                                        @foreach (var service in Model.ServiceCatalog)
+                                        {
+                                            <option value="@service.Id">@service.Name</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Время начала</label>
+                                    <input id="appointmentStart" type="time" class="form-control" value="09:00" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Время окончания</label>
+                                    <input id="appointmentEnd" type="time" class="form-control" value="09:30" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Кабинет / направление</label>
+                                    <input id="appointmentReferral" class="form-control" placeholder="Кабинет / источник / врач" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Статус оплаты</label>
+                                    <select id="appointmentPaymentType" class="form-select">
+                                        <option value="unpaid">Не оплачено</option>
+                                        <option value="invoice_paid">Оплачено (по счету)</option>
+                                        <option value="cash">Оплачено (наличные)</option>
+                                        <option value="card">Оплачено (карта)</option>
+                                        <option value="online">Оплачено (онлайн)</option>
+                                        <option value="insurance">Оплачено (страховка)</option>
+                                    </select>
+                                    <div class="form-text" id="appointmentPaymentTypeHint"></div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Комментарий к записи</label>
+                                    <textarea id="appointmentComment" class="form-control" rows="3" placeholder="Комментарий для регистратора и врача"></textarea>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label d-block">Быстрый выбор слота</label>
+                                    <div class="slot-buttons" id="appointmentSlotButtons"></div>
+                                </div>
+                            </div>
+
+                            <div class="table-responsive mt-4">
+                                <table class="table align-middle mb-0">
+                                    <thead>
+                                    <tr>
+                                        <th>Услуга</th>
+                                        <th>Стоимость</th>
+                                        <th style="width: 110px;">Кол-во</th>
+                                        <th class="text-end">Действие</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="appointmentServicesTable">
+                                    <tr class="appointment-services-empty">
+                                        <td colspan="4" class="text-center text-muted py-4">Пока услуги не выбраны.</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="text-end small text-muted mt-2" id="appointmentServicesTotal">Итого: 0.00 c</div>
+                        </div>
+
+                        <div class="section-card editor-block" id="appointmentMedicalSection" data-editor-section="visit">
+                            <h3 class="editor-block__title">Медицинская часть приема</h3>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label">Жалобы пациента</label>
+                                    <textarea id="appointmentComplaints" class="form-control appointment-medical-textarea" rows="4" placeholder="Основные жалобы пациента"></textarea>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Диагноз</label>
+                                    <textarea id="appointmentDiagnosis" class="form-control appointment-medical-textarea" rows="4" placeholder="Опишите диагноз"></textarea>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Рекомендации по лечению</label>
+                                    <textarea id="appointmentRecommendations" class="form-control appointment-medical-textarea" rows="4" placeholder="Рекомендации по лечению"></textarea>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Направление на дополнительные исследования</label>
+                                    <textarea id="appointmentResearchReferral" class="form-control appointment-medical-textarea" rows="4" placeholder="Назначенные исследования"></textarea>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Комментарий врача</label>
+                                    <textarea id="appointmentMedicalComment" class="form-control appointment-medical-textarea" rows="4" placeholder="Комментарий врача"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="appointment-editor-side side-column">
+                        <div class="section-card editor-block appointment-templates-block template-panel" id="appointmentTemplatesSection" data-editor-section="visit">
+                            <div class="appointment-templates-header">
+                                <h3 class="editor-block__title mb-0">Шаблоны</h3>
+                                <button type="button" class="btn btn-sm ghost-btn" id="appointmentTemplateClearField">Очистить поле</button>
+                            </div>
+                            <div class="template-help">
+                                Компактные шаблоны: название, короткий превью и быстрая вставка в активное поле.
+                            </div>
+
+                            <div class="appointment-template-search">
+                                <input id="appointmentTemplateSearch" class="form-control" type="search" placeholder="Поиск по шаблонам..." />
+                            </div>
+
+                            <div class="appointment-template-tabs" role="tablist" aria-label="Категории шаблонов">
+                                <button type="button" class="appointment-template-tab active" data-template-tab="diagnosis">Диагноз</button>
+                                <button type="button" class="appointment-template-tab" data-template-tab="recommendation">Рекомендации</button>
+                                <button type="button" class="appointment-template-tab" data-template-tab="research">Направления</button>
+                                <button type="button" class="appointment-template-tab" data-template-tab="comment">Комментарии</button>
+                            </div>
+
+                            <div class="template-actions">
+                                <span class="template-actions-title" id="appointmentTemplateActiveField">Активное поле: Диагноз</span>
+                            </div>
+
+                            <div id="appointmentTemplateItems" class="appointment-template-items template-list" aria-live="polite"></div>
+                            <div id="appointmentTemplateEmpty" class="appointment-template-empty d-none">
+                                Шаблоны в этой категории не найдены.
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        window.medclinicSchedule = {
+            pageType: 'doctor',
+            events: @Html.Raw(eventsJson),
+            patients: @Html.Raw(patientsJson),
+            serviceCatalog: @Html.Raw(serviceCatalogJson),
+            doctorSchedules: @Html.Raw(doctorSchedulesJson),
+            doctorScheduleOverrides: @Html.Raw(doctorScheduleOverridesJson),
+            appointmentDurations: @Html.Raw(appointmentDurationsJson),
+            medicalTemplates: @Html.Raw(medicalTemplatesJson),
+            departments: [],
+            doctorFilters: @Html.Raw(JsonSerializer.Serialize(Model.Doctors.Select(x => new { value = x.Value, label = x.Label, departmentIds = Array.Empty<string>() }))),
+            currentDoctorId: '@Model.Doctors.FirstOrDefault()?.Value',
+            saveUrl: '@Url.Action("Save", "Appointments")',
+            cancelUrl: '@Url.Action("Cancel", "Appointments")',
+            generateInvoiceUrl: '@Url.Action("GenerateInvoice", "Appointments")',
+            storageReady: @Json.Serialize(Model.StorageReady),
+            doctorSchedulesReady: @Json.Serialize(Model.DoctorSchedulesReady),
+            canManageAppointments: @Json.Serialize(canManageAppointments),
+            canGenerateInvoice: @Json.Serialize(canGenerateInvoice),
+            canMarkAsPaidManually: @Json.Serialize(canMarkAsPaidManually)
+        };
+    </script>
+    <script src="~/web/medclinic/js/medclinic-schedule.js" asp-append-version="true"></script>
+    <script src="~/web/medclinic/js/medclinic-appointments-enhancements.js" asp-append-version="true"></script>
+}

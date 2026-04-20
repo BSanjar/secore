@@ -1,0 +1,39 @@
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IHtmlLocalizer<WebApplication1.SharedResources> Localizer
+@{
+    var bodyClass = ViewData["BodyClass"]?.ToString() ?? "cabinet-body";
+    var titleSuffixKey = ViewData["CabinetTitleSuffixKey"]?.ToString() ?? "PersonalCabinet";
+    var titleSuffix = Localizer[titleSuffixKey].Value;
+    var includeAntiforgery = ViewData["IncludeAntiforgery"] as bool? ?? true;
+}
+<!DOCTYPE html>
+<html lang="@System.Globalization.CultureInfo.CurrentCulture.TwoLetterISOLanguageName">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - @titleSuffix</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/app-shell.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/WebApplication1.styles.css" asp-append-version="true" />
+    @await RenderSectionAsync("LayoutStyles", required: false)
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="@bodyClass">
+    @if (includeAntiforgery)
+    {
+        <form id="ajaxAntiforgeryForm" method="post" class="d-none" aria-hidden="true">
+            @Html.AntiForgeryToken()
+        </form>
+    }
+
+    @RenderBody()
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/app-shell.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("LayoutScripts", required: false)
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
