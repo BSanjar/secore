@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using WebApplication1.Helpers;
 
@@ -8,7 +8,7 @@ namespace WebApplication1.Controllers
     {
         public override void OnActionExecuting(ActionExecutingContext context)
         {
-            // Проверяем авторизацию для всех действий, кроме Login и Logout 
+            // Проверяем авторизацию для всех действий, кроме Login и Logout в
             var controllerName = context.RouteData.Values["controller"]?.ToString();
             var actionName = context.RouteData.Values["action"]?.ToString();
 
