@@ -1,0 +1,22 @@
+Пароль всех пользователей веб-кабинета: Demo123!
+
+Email	Роль
+admin@zdorovie.kg
+Админ клиники
+doctor@zdorovie.kg
+Врач
+doctor2@zdorovie.kg
+Педиатр
+registry@zdorovie.kg
+Регистратура
+admin@balazhan.kg
+Админ садика
+teacher@balazhan.kg
+Воспитатель
+admin@school42.kg
+Админ школы
+accountant@school42.kg
+Бухгалтер
+admin@kasymov.kg
+Админ simple
+API агент (не веб-логин): demo_agent / AgentApi2026!

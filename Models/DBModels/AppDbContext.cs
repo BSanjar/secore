@@ -80,9 +80,13 @@ public partial class AppDbContext : DbContext
     public virtual DbSet<OrganizationSubscriptionPayment> OrganizationSubscriptionPayments { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseNpgsql("Host=localhost;Port=5433;Database=appdb;Username=appuser;Password=883448");
-        //=> optionsBuilder.UseNpgsql("Host=localhost;Port=5433;Database=secore;Username=postgres;Password=new_password");
+    {
+        // Only for design-time / scaffolding. Runtime uses DI + ConnectionStrings from config/env.
+        if (!optionsBuilder.IsConfigured)
+        {
+            optionsBuilder.UseNpgsql("Host=localhost;Port=5433;Database=appdb;Username=appuser;Password=883448");
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
