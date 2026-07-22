@@ -150,7 +150,18 @@ public class NotificationsController : Controller
         if (string.IsNullOrEmpty(organizationId))
             return Unauthorized();
 
+        // По умолчанию — только за сегодня (если даты явно не переданы в query).
+        var hasCreatedFrom = Request.Query.ContainsKey("createdFrom");
+        var hasCreatedTo = Request.Query.ContainsKey("createdTo");
+        if (!hasCreatedFrom && !hasCreatedTo)
+        {
+            var today = DateTime.Today;
+            createdFrom = today.ToString("yyyy-MM-dd");
+            createdTo = today.ToString("yyyy-MM-dd");
+        }
+
         var query = _db.Notifications
+            .AsNoTracking()
             .Include(n => n.ClientNavigation)
             .Where(n => n.ClientNavigation != null && n.ClientNavigation.Organization == organizationId);
 
@@ -161,13 +172,17 @@ public class NotificationsController : Controller
         if (DateTime.TryParse(createdFrom, out var cf))
             query = query.Where(n => n.CreatedAt != null && n.CreatedAt.Value.Date >= cf.Date);
         if (DateTime.TryParse(createdTo, out var ct))
-            query = query.Where(n => n.CreatedAt != null && n.CreatedAt.Value.Date <= ct.Date.AddDays(1));
+            query = query.Where(n => n.CreatedAt != null && n.CreatedAt.Value.Date <= ct.Date);
         if (DateTime.TryParse(sentFrom, out var sf))
             query = query.Where(n => n.SentAt != null && n.SentAt.Value.Date >= sf.Date);
         if (DateTime.TryParse(sentTo, out var st))
-            query = query.Where(n => n.SentAt != null && n.SentAt.Value.Date <= st.Date.AddDays(1));
+            query = query.Where(n => n.SentAt != null && n.SentAt.Value.Date <= st.Date);
 
         query = query.OrderByDescending(n => n.CreatedAt);
+
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 20;
+        if (pageSize > 100) pageSize = 100;
 
         var totalCount = await query.CountAsync();
         var list = await query
@@ -179,12 +194,13 @@ public class NotificationsController : Controller
         ViewBag.PageSize = pageSize;
         ViewBag.TotalCount = totalCount;
         ViewBag.TotalPages = totalCount > 0 ? (int)Math.Ceiling(totalCount / (double)pageSize) : 1;
-        ViewBag.Status = status;
-        ViewBag.Channel = channel;
-        ViewBag.CreatedFrom = createdFrom;
-        ViewBag.CreatedTo = createdTo;
-        ViewBag.SentFrom = sentFrom;
-        ViewBag.SentTo = sentTo;
+        ViewBag.Status = status ?? "";
+        ViewBag.Channel = channel ?? "";
+        ViewBag.CreatedFrom = createdFrom ?? "";
+        ViewBag.CreatedTo = createdTo ?? "";
+        ViewBag.SentFrom = sentFrom ?? "";
+        ViewBag.SentTo = sentTo ?? "";
+        ViewBag.IsAdmin = AuthorizationHelper.IsAdminRole(HttpContext);
 
         return View(list);
     }

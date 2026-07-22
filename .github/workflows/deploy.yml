@@ -86,16 +86,24 @@ jobs:
             echo "⬇️ Pulling image: $IMAGE_TAG"
             docker pull "$IMAGE_TAG"
 
+            echo "📁 Ensuring persistent log directories on host..."
+            mkdir -p /secore/mainSystem /secore/notificator /secore/sheduler
+
             echo "🧩 Starting $CONTAINER on network $NETWORK..."
             docker run -d \
               --name "$CONTAINER" \
               --restart always \
               --network "$NETWORK" \
               -p "$PORT:80" \
+              -v /secore/mainSystem:/secore/mainSystem \
               -e ASPNETCORE_ENVIRONMENT="$ENVIRONMENT" \
               -e ASPNETCORE_URLS=http://+:80 \
               -e "ConnectionStrings__DefaultConnection=$DB_CONNECTION_STRING" \
+              -e SecoreLogging__RootPath=/secore/mainSystem \
+              -e SecoreLogging__FilePrefix=mainSystem \
               "$IMAGE_TAG"
 
             echo "✅ Deployment finished."
             docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}\t{{.Networks}}"
+            echo "📝 Logs volume: /secore/mainSystem (inside container: /secore/mainSystem)"
+            ls -la /secore/mainSystem || true

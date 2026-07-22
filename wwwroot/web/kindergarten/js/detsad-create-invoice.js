@@ -33,11 +33,19 @@
         return y + '-' + m + '-' + day + 'T' + h + ':' + min;
     }
 
-    window.openCreateInvoiceModal = function() {
+    window.openCreateInvoiceModal = function(preselectedClientId) {
         var modal = document.getElementById('createInvoiceModal');
         var body = document.getElementById('createInvoiceModalBody');
+        var titleEl = document.getElementById('createInvoiceModalLabel');
         if (!modal || !body) return;
-        body.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>';
+        body.innerHTML = window.DetsadUI
+            ? DetsadUI.loaderHtml('Загрузка формы')
+            : '<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>';
+        if (titleEl) {
+            titleEl.textContent = preselectedClientId
+                ? 'Выставить счёт клиенту'
+                : 'Создать счёт на оплату';
+        }
         var modalBs = new bootstrap.Modal(modal);
         modalBs.show();
 
@@ -45,7 +53,7 @@
             .then(function(r) { return r.text(); })
             .then(function(html) {
                 body.innerHTML = html;
-                initStep1(body);
+                initStep1(body, preselectedClientId || null);
             })
             .catch(function() {
                 body.innerHTML = '<div class="alert alert-danger">Ошибка загрузки формы.</div>';
@@ -128,11 +136,12 @@
         });
     }
 
-    function initStep1(container) {
+    function initStep1(container, preselectedClientId) {
         var step1Next = container.querySelector('#invoiceStep1Next');
         var step1 = container.querySelector('#createInvoiceStep1');
         var step2 = container.querySelector('#createInvoiceStep2');
         var treeWrap = container.querySelector('#invoiceTreeWrap');
+        var lockedToClient = !!preselectedClientId;
 
         if (treeWrap) {
             treeWrap.querySelectorAll('.tree-group-header').forEach(function(h) {
@@ -147,6 +156,7 @@
                 }
                 if (groupCheck) {
                     groupCheck.addEventListener('change', function() {
+                        if (lockedToClient) return;
                         gr.querySelectorAll('.tree-client-check').forEach(function(cb) {
                             cb.checked = groupCheck.checked;
                         });
@@ -156,6 +166,10 @@
             });
             treeWrap.querySelectorAll('.tree-client-check').forEach(function(cb) {
                 cb.addEventListener('change', function() {
+                    if (lockedToClient) {
+                        cb.checked = cb.closest('.tree-client').getAttribute('data-client-id') === preselectedClientId;
+                        return;
+                    }
                     updateSelectedClientsList(container);
                     updateGroupCheckboxes(container);
                 });
@@ -167,23 +181,51 @@
         if (searchInput) searchInput.addEventListener('input', function() { applyTreeSearch(container); });
         if (searchType) searchType.addEventListener('change', function() { applyTreeSearch(container); });
 
-        if (step1Next && step1 && step2) {
-            step1Next.addEventListener('click', function() {
-                selectedClientIds = collectClientIdsFromStep1(container);
-                if (selectedClientIds.length === 0) {
-                    alert('Выберите хотя бы одного клиента в дереве.');
-                    return;
-                }
-                step1.classList.add('d-none');
-                step2.classList.remove('d-none');
-                initStep2(container);
-            });
+        function goToStep2() {
+            selectedClientIds = collectClientIdsFromStep1(container);
+            if (selectedClientIds.length === 0) {
+                alert('Выберите хотя бы одного клиента в дереве.');
+                return;
+            }
+            step1.classList.add('d-none');
+            step2.classList.remove('d-none');
+            initStep2(container, lockedToClient);
         }
 
-        updateSelectedClientsList(container);
+        if (step1Next && step1 && step2) {
+            step1Next.addEventListener('click', goToStep2);
+        }
+
+        if (preselectedClientId && treeWrap) {
+            var matched = false;
+            treeWrap.querySelectorAll('.tree-client').forEach(function(li) {
+                var id = li.getAttribute('data-client-id');
+                var check = li.querySelector('.tree-client-check');
+                if (!check) return;
+                if (id === preselectedClientId) {
+                    check.checked = true;
+                    matched = true;
+                    var group = li.closest('.tree-group');
+                    if (group) {
+                        group.classList.add('tree-group-expanded');
+                        var toggle = group.querySelector('.tree-toggle');
+                        if (toggle) toggle.textContent = '▼';
+                    }
+                } else {
+                    check.checked = false;
+                }
+            });
+            updateSelectedClientsList(container);
+            updateGroupCheckboxes(container);
+            if (matched && step1 && step2) {
+                goToStep2();
+            }
+        } else {
+            updateSelectedClientsList(container);
+        }
     }
 
-    function initStep2(container) {
+    function initStep2(container, lockedToClient) {
         var step2Back = container.querySelector('#invoiceStep2Back');
         var step1 = container.querySelector('#createInvoiceStep1');
         var step2 = container.querySelector('#createInvoiceStep2');
@@ -198,6 +240,9 @@
 
         if (dateStartEl) dateStartEl.value = toDateTimeLocalString(new Date());
 
+        if (lockedToClient && step2Back) {
+            step2Back.classList.add('d-none');
+        }
         var wrap = container.querySelector('.create-invoice-wrap') || container;
         var disableServiceSelection = wrap.getAttribute('data-disable-invoice-service-selection') === 'true';
         var allowedHassame = wrap.getAttribute('data-allowed-hassame-account') === 'true';
@@ -512,8 +557,13 @@
                         payload.hassameaccount = true;
                     }
                 }
-                createBtn.disabled = true;
-                createBtn.textContent = 'Создание...';
+                if (window.DetsadUI) {
+                    DetsadUI.setButtonLoading(createBtn, true, { label: 'Создание...' });
+                    DetsadUI.showOverlay('Создание счёта...');
+                } else {
+                    createBtn.disabled = true;
+                    createBtn.textContent = 'Создание...';
+                }
                 var url = baseUrl + '/CreateInvoices';
                 fetch(url, {
                     method: 'POST',
@@ -532,20 +582,28 @@
                     })
                     .then(function(result) {
                         if (result.ok && result.data.success) {
-                            alert(result.data.message || 'Счета созданы.');
                             bootstrap.Modal.getInstance(container.closest('.modal')).hide();
-                            if (typeof window.location.reload === 'function') window.location.reload();
+                            if (window.DetsadUI) DetsadUI.reloadWithOverlay(result.data.message || 'Счета созданы...');
+                            else {
+                                alert(result.data.message || 'Счета созданы.');
+                                if (typeof window.location.reload === 'function') window.location.reload();
+                            }
                         } else {
+                            if (window.DetsadUI) DetsadUI.hideOverlay();
                             alert(result.data.message || 'Ошибка ' + result.status + '.');
                         }
                     })
                     .catch(function(err) {
                         console.error('CreateInvoices error', err);
+                        if (window.DetsadUI) DetsadUI.hideOverlay();
                         alert('Ошибка сети или сервера. Проверьте консоль браузера (F12).');
                     })
                     .finally(function() {
-                        createBtn.disabled = false;
-                        createBtn.textContent = 'Создать счёт на оплату';
+                        if (window.DetsadUI) DetsadUI.setButtonLoading(createBtn, false);
+                        else {
+                            createBtn.disabled = false;
+                            createBtn.textContent = 'Создать счёт на оплату';
+                        }
                     });
             });
         }

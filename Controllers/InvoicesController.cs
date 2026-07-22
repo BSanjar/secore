@@ -19,8 +19,16 @@ namespace WebApplication1.Controllers
         private readonly ExcelExportService _excelExportService;
         private readonly PuppeteerPdfBrowserService _puppeteerPdf;
         private readonly InvoiceQrService _invoiceQrService;
+        private readonly ILogger<InvoicesController> _logger;
 
-        public InvoicesController(AppDbContext db, ViewRenderService viewRender, OperationsByInvoices operationsByInvoices, ExcelExportService excelExportService, PuppeteerPdfBrowserService puppeteerPdf, InvoiceQrService invoiceQrService)
+        public InvoicesController(
+            AppDbContext db,
+            ViewRenderService viewRender,
+            OperationsByInvoices operationsByInvoices,
+            ExcelExportService excelExportService,
+            PuppeteerPdfBrowserService puppeteerPdf,
+            InvoiceQrService invoiceQrService,
+            ILogger<InvoicesController> logger)
         {
             _db = db;
             _viewRender = viewRender;
@@ -28,6 +36,7 @@ namespace WebApplication1.Controllers
             _excelExportService = excelExportService;
             _puppeteerPdf = puppeteerPdf;
             _invoiceQrService = invoiceQrService;
+            _logger = logger;
         }
 
         private string? GetOrganizationId()
@@ -1159,16 +1168,25 @@ namespace WebApplication1.Controllers
             try
             {
                 var createdIds = await _operationsByInvoices.CreateInvoicesAsync(input);
+                _logger.LogInformation(
+                    "Invoices created. Count={Count} Clients={ClientCount} Org={OrgId} User={UserId} Ids={Ids}",
+                    createdIds?.Count ?? 0,
+                    clients.Count,
+                    organizationId,
+                    userId,
+                    createdIds == null ? "" : string.Join(",", createdIds));
                 return Json(new { success = true, message = "Счета созданы.", createdIds });
             }
             catch (DbUpdateException ex)
             {
                 var message = ex.InnerException?.Message ?? ex.Message;
+                _logger.LogError(ex, "CreateInvoices DB error. Org={OrgId} User={UserId}", organizationId, userId);
                 return new JsonResult(new { success = false, message = "Ошибка БД: " + message }) { StatusCode = 500 };
             }
             catch (Exception ex)
             {
                 var message = ex.InnerException?.Message ?? ex.Message;
+                _logger.LogError(ex, "CreateInvoices failed. Org={OrgId} User={UserId}", organizationId, userId);
                 return new JsonResult(new { success = false, message = "Ошибка: " + message }) { StatusCode = 500 };
             }
         }

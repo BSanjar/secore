@@ -207,6 +207,17 @@
         width: min(64vw, 320px);
     }
 
+    body.dashboard-body .dashboard-user-name {
+        display: none;
+    }
+
+    body.dashboard-body .dashboard-user-chip {
+        padding: 6px;
+        min-height: 40px;
+        width: 40px;
+        justify-content: center;
+    }
+
     body.medclinic-shell .medclinic-topbar__actions {
         width: 100%;
         justify-content: flex-end;

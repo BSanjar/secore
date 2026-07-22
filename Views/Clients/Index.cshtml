@@ -1,8 +1,10 @@
 ﻿@using System.Linq
+@using WebApplication1.Helpers
 @{
     ViewData["Title"] = "Клиенты";
-    var organizationType = WebApplication1.Helpers.AuthorizationHelper.GetOrganizationType(Context);
+    var organizationType = AuthorizationHelper.GetOrganizationType(Context);
     var isStandart = string.Equals(organizationType, "standart", StringComparison.OrdinalIgnoreCase);
+    var isAdmin = AuthorizationHelper.IsAdminRole(Context);
     var organizationFields = ViewBag.OrganizationFields as List<WebApplication1.Models.DBModels.OrganizationField> ?? new List<WebApplication1.Models.DBModels.OrganizationField>();
     var orgClientGroups = ViewBag.OrgClientGroups as List<WebApplication1.Models.DBModels.OrgClientGroup> ?? new List<WebApplication1.Models.DBModels.OrgClientGroup>();
     var search = ViewBag.Search as string ?? "";
@@ -90,13 +92,115 @@
             border: 1px dashed var(--card-border, #e2eaf0);
         }
 
+        .btn-issue-invoice {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.35rem;
+            min-height: 34px;
+            padding: 0.35rem 0.85rem;
+            border: none;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #4fc3f7 0%, #39a0db 100%);
+            color: #fff;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            white-space: nowrap;
+            box-shadow: 0 6px 14px rgba(57, 160, 219, 0.28);
+            transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+        }
+
+        .btn-issue-invoice:hover {
+            color: #fff;
+            filter: brightness(1.05);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 18px rgba(57, 160, 219, 0.34);
+        }
+
+        .btn-issue-invoice:active {
+            transform: translateY(0);
+        }
+
+        .btn-issue-invoice-bulk {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            min-height: 42px;
+            padding: 0.55rem 1.2rem;
+            border: none;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #ff8a65 0%, #ff7043 55%, #f4511e 100%);
+            color: #fff;
+            font-size: 0.9rem;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            white-space: nowrap;
+            box-shadow: 0 10px 22px rgba(244, 81, 30, 0.28);
+            transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+        }
+
+        .btn-issue-invoice-bulk:hover {
+            color: #fff;
+            filter: brightness(1.04);
+            transform: translateY(-1px);
+            box-shadow: 0 12px 26px rgba(244, 81, 30, 0.34);
+        }
+
+        .btn-issue-invoice-bulk:active {
+            transform: translateY(0);
+        }
+
+        .btn-issue-invoice-bulk__icon {
+            display: inline-grid;
+            place-items: center;
+            width: 26px;
+            height: 26px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            flex-shrink: 0;
+        }
+
+        .btn-clients-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+            min-height: 42px;
+            padding: 0.55rem 1.05rem;
+            border-radius: 14px;
+            border: 1px solid rgba(57, 160, 219, 0.22);
+            background: #fff;
+            color: #1f4e63;
+            font-size: 0.875rem;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(120, 144, 166, 0.08);
+            transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+        }
+
+        .btn-clients-action:hover {
+            color: #163847;
+            background: #f7fbfe;
+            border-color: rgba(57, 160, 219, 0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 18px rgba(120, 144, 166, 0.12);
+        }
+
+        .cell-issue-invoice {
+            width: 1%;
+            white-space: nowrap;
+        }
+
         @@media (max-width: 992px) {
             .children-actions-row {
                 flex-direction: column;
                 align-items: stretch;
             }
             .children-actions-row .btn-soft-primary,
-            .children-actions-row .btn-soft-secondary {
+            .children-actions-row .btn-soft-secondary,
+            .children-actions-row .btn-issue-invoice-bulk,
+            .children-actions-row .btn-clients-action {
                 width: 100%;
                 justify-content: center;
             }
@@ -157,7 +261,7 @@
                             @foreach (var g in orgClientGroups)
                             {
                                 <label class="groups-filter-item">
-                                    <input type="checkbox" class="form-check-input group-filter-checkbox" value="@g.Id" data-group-name="@(g.Name ?? "")">
+                                    <input type="checkbox" class="form-check-input group-filter-checkbox" value="@g.Id" data-group-name="@(g.Name ?? "")" checked>
                                     <span class="groups-filter-item-text">@(g.Name ?? g.Id)</span>
                     </label>
                             }
@@ -167,17 +271,31 @@
             }
         </div>
 
-        <div class="children-actions-row">
-            <button type="button" class="btn-soft-primary" onclick="openCreateInvoiceModal()">
-                Счёт на оплату
-            </button>
-            <button type="button" class="btn-soft-secondary" onclick="openAddChildModal()">
-                Добавить клиента
-            </button>
-            <button type="button" class="btn-soft-secondary" onclick="openImportChildrenModal()">
-                Загрузить из Excel
-            </button>
-        </div>
+        @if (isAdmin)
+        {
+            <div class="children-actions-row">
+                <button type="button" class="btn-issue-invoice-bulk" onclick="openCreateInvoiceModal()">
+                    <span class="btn-issue-invoice-bulk__icon" aria-hidden="true">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 14V6c0-1.1-.9-2-2-2H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zm-9-1c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm13-6v11c0 1.1-.9 2-2 2H4v-2h17V7h2z"/>
+                        </svg>
+                    </span>
+                    Выставить массово
+                </button>
+                <button type="button" class="btn-clients-action" onclick="openAddChildModal()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                    </svg>
+                    Добавить клиента
+                </button>
+                <button type="button" class="btn-clients-action" onclick="openImportChildrenModal()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                    </svg>
+                    Загрузить из Excel
+                </button>
+            </div>
+        }
     </div>
 
     <!-- Таблица клиентов -->
@@ -195,6 +313,10 @@
                             <th>Баланс</th>
                             <th>Статус</th>
                             <th class="text-end">Действия</th>
+                            @if (isAdmin)
+                            {
+                                <th class="text-end">Счёт</th>
+                            }
                         </tr>
                     </thead>
                     <tbody id="childrenCards">
@@ -251,6 +373,21 @@
                                 </div>
                         </div>
                                 </td>
+                                @if (isAdmin)
+                                {
+                                    <td class="cell-issue-invoice text-end">
+                                        <button type="button"
+                                                class="btn-issue-invoice"
+                                                data-action="issue-invoice"
+                                                data-client-id="@client.Id"
+                                                title="Выставить счёт для @(client.ClientName ?? "клиента")">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                                <path d="M19 14V6c0-1.1-.9-2-2-2H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zm-9-1c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm13-6v11c0 1.1-.9 2-2 2H4v-2h17V7h2z"/>
+                                            </svg>
+                                            Выставить счёт
+                                        </button>
+                                    </td>
+                                }
                             </tr>
                         }
                     </tbody>
@@ -589,7 +726,7 @@
             </div>
             <div class="modal-body">
                 <div id="editChildLoading" class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div>
+                    <div data-ds-loader-host></div>
                 </div>
                 <form id="editChildForm" novalidate style="display: none;">
                     <input type="hidden" id="editClientId" name="clientId" />
@@ -814,6 +951,16 @@
             }
 
             document.addEventListener('click', function(e) {
+                var issueBtn = e.target.closest('.btn-issue-invoice');
+                if (issueBtn) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var clientId = issueBtn.getAttribute('data-client-id');
+                    if (clientId && typeof openCreateInvoiceModal === 'function') {
+                        openCreateInvoiceModal(clientId);
+                    }
+                    return;
+                }
                 var menu = e.target.closest('.child-actions-menu');
                 if (menu) {
                     e.stopPropagation();
@@ -896,6 +1043,9 @@
             form.style.display = 'none';
             footer.style.display = 'none';
             loading.style.display = 'block';
+            var loaderHost = loading.querySelector('[data-ds-loader-host]') || loading;
+            if (window.DetsadUI) loaderHost.innerHTML = DetsadUI.loaderHtml('Загрузка данных');
+            else loaderHost.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div>';
             var bsModal = new bootstrap.Modal(modal);
             bsModal.show();
             fetch('/Clients/GetInfo?clientId=' + encodeURIComponent(clientId))
@@ -948,6 +1098,7 @@
         document.getElementById('editChildSaveBtn') && document.getElementById('editChildSaveBtn').addEventListener('click', function() {
             var form = document.getElementById('editChildForm');
             var errEl = document.getElementById('editChildError');
+            var saveBtn = document.getElementById('editChildSaveBtn');
             var clientId = document.getElementById('editClientId').value;
             if (!clientId) return;
             if (!form.checkValidity()) { form.reportValidity(); return; }
@@ -970,6 +1121,12 @@
                 clientStatus: parseInt(document.getElementById('editClientStatus').value, 10),
                 additionalFields: additionalFields
             };
+            if (window.DetsadUI) {
+                DetsadUI.setButtonLoading(saveBtn, true, { label: 'Сохранение...' });
+                DetsadUI.showOverlay('Сохранение...');
+            } else if (saveBtn) {
+                saveBtn.disabled = true;
+            }
             fetch('/Clients/Update', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -977,6 +1134,7 @@
             }).then(function(r) { return r.json(); })
             .then(async function(res) {
                 if (!res.success) {
+                    if (window.DetsadUI) DetsadUI.hideOverlay();
                     errEl.textContent = res.message || 'Ошибка сохранения';
                     errEl.style.display = 'block';
                     return;
@@ -985,8 +1143,10 @@
                 var removePhotoCb = document.getElementById('editChildPhotoRemove');
                 var needPhoto = (removePhotoCb && removePhotoCb.checked) || (photoFileEl && photoFileEl.files && photoFileEl.files.length);
                 if (needPhoto && typeof uploadChildPhoto === 'function') {
+                    if (window.DetsadUI) DetsadUI.setButtonLoading(saveBtn, true, { label: 'Загрузка фото...' });
                     var pr = await uploadChildPhoto(clientId, photoFileEl && photoFileEl.files && photoFileEl.files.length ? photoFileEl.files[0] : null, removePhotoCb && removePhotoCb.checked);
                     if (!pr.success) {
+                        if (window.DetsadUI) DetsadUI.hideOverlay();
                         errEl.textContent = 'Данные сохранены, но фото: ' + (pr.message || 'ошибка');
                         errEl.style.display = 'block';
                         return;
@@ -997,10 +1157,15 @@
                     var infoContent = document.getElementById('childDetailInfoContent');
                     if (infoContent) loadChildInfoInto(clientId, infoContent);
                 }
-                location.reload();
+                if (window.DetsadUI) DetsadUI.reloadWithOverlay('Обновление...');
+                else location.reload();
             }).catch(function() {
+                if (window.DetsadUI) DetsadUI.hideOverlay();
                 errEl.textContent = 'Ошибка сети';
                 errEl.style.display = 'block';
+            }).finally(function() {
+                if (window.DetsadUI) DetsadUI.setButtonLoading(saveBtn, false);
+                else if (saveBtn) saveBtn.disabled = false;
             });
         });
         (function() {
@@ -1015,6 +1180,7 @@
         document.getElementById('editChildDeleteBtn') && document.getElementById('editChildDeleteBtn').addEventListener('click', function() {
             if (!confirm('Удалить клиента из списка? Статус будет установлен как «Удалён».')) return;
             var clientId = document.getElementById('editClientId').value;
+            var deleteBtn = document.getElementById('editChildDeleteBtn');
             if (!clientId) return;
             var payload = {
                 clientId: clientId,
@@ -1033,6 +1199,10 @@
                 var id = el.getAttribute('data-field-id');
                 if (id) payload.additionalFields[id] = el.value || '';
             });
+            if (window.DetsadUI) {
+                DetsadUI.setButtonLoading(deleteBtn, true, { label: 'Удаление...' });
+                DetsadUI.showOverlay('Удаление...');
+            }
             fetch('/Clients/Update', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1041,10 +1211,18 @@
             .then(function(res) {
                 if (res.success) {
                     bootstrap.Modal.getInstance(document.getElementById('editChildModal')).hide();
-                    location.reload();
+                    if (window.DetsadUI) DetsadUI.reloadWithOverlay('Обновление...');
+                    else location.reload();
                 } else {
+                    if (window.DetsadUI) DetsadUI.hideOverlay();
                     document.getElementById('editChildError').textContent = res.message || 'Ошибка';
                     document.getElementById('editChildError').style.display = 'block';
+                    if (window.DetsadUI) DetsadUI.setButtonLoading(deleteBtn, false);
+                }
+            }).catch(function() {
+                if (window.DetsadUI) {
+                    DetsadUI.hideOverlay();
+                    DetsadUI.setButtonLoading(deleteBtn, false);
                 }
             });
         });
@@ -1053,7 +1231,9 @@
             var modal = document.getElementById('editInvoiceModal');
             var body = document.getElementById('editInvoiceModalBody');
             if (!modal || !body) return;
-            body.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>';
+            body.innerHTML = window.DetsadUI
+                ? DetsadUI.loaderHtml('Загрузка счёта')
+                : '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>';
             var bsModal = new bootstrap.Modal(modal);
             bsModal.show();
             fetch('/Clients/GetEditInvoicePartial?invoiceId=' + encodeURIComponent(invoiceId))
@@ -1200,7 +1380,12 @@
                         });
                     }
                     if (errEl) errEl.style.display = 'none';
-                    saveBtn.disabled = true;
+                    if (window.DetsadUI) {
+                        DetsadUI.setButtonLoading(saveBtn, true, { label: 'Сохранение...' });
+                        DetsadUI.showOverlay('Сохранение счёта...');
+                    } else {
+                        saveBtn.disabled = true;
+                    }
                     fetch('/Invoices/UpdateInvoice', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -1209,14 +1394,22 @@
                     .then(function(res) {
                         if (res.success) {
                             bootstrap.Modal.getInstance(document.getElementById('editInvoiceModal')).hide();
-                            location.reload();
+                            if (window.DetsadUI) DetsadUI.reloadWithOverlay('Обновление...');
+                            else location.reload();
                         } else {
+                            if (window.DetsadUI) DetsadUI.hideOverlay();
                             if (errEl) { errEl.textContent = res.message || 'Ошибка сохранения'; errEl.style.display = 'block'; }
-                            saveBtn.disabled = false;
+                            if (window.DetsadUI) DetsadUI.setButtonLoading(saveBtn, false);
+                            else saveBtn.disabled = false;
                         }
                     }).catch(function() {
+                        if (window.DetsadUI) {
+                            DetsadUI.hideOverlay();
+                            DetsadUI.setButtonLoading(saveBtn, false);
+                        } else {
+                            saveBtn.disabled = false;
+                        }
                         if (errEl) { errEl.textContent = 'Ошибка сети'; errEl.style.display = 'block'; }
-                        saveBtn.disabled = false;
                     });
                 });
             }

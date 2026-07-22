@@ -1,20 +1,36 @@
+@using Microsoft.AspNetCore.Mvc.Localization
 @using WebApplication1.Helpers
+@inject IHtmlLocalizer<WebApplication1.SharedResources> Localizer
 @{
-    var userName = AuthorizationHelper.GetUserName(Context);
+    var userName = AuthorizationHelper.GetUserName(Context) ?? "Пользователь";
+    var canViewProfile = PermissionHelper.HasPermission(Context, "profile.view")
+                         || PermissionHelper.HasPermission(Context, "nav.profile");
 }
 
 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
     <li>
-        <h6 class="dropdown-header">@(userName ?? "Пользователь")</h6>
+        <h6 class="dropdown-header">@userName</h6>
     </li>
     <li><hr class="dropdown-divider"></li>
+    @if (canViewProfile)
+    {
+        <li>
+            <a class="dropdown-item" asp-controller="Profile" asp-action="Index">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="me-2">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="currentColor"/>
+                </svg>
+                @Localizer["ProfilePageTitle"]
+            </a>
+        </li>
+        <li><hr class="dropdown-divider"></li>
+    }
     <li>
-        <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+        <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline w-100">
             <button type="submit" class="dropdown-item text-danger">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="me-2">
                     <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.59L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" fill="currentColor"/>
                 </svg>
-                Выйти
+                @Localizer["Logout"]
             </button>
         </form>
     </li>

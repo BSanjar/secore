@@ -1,6 +1,8 @@
 ﻿@model WebApplication1.ViewModels.Cabinet.MedclinicDashboardViewModel
+@using WebApplication1.Helpers
 @{
     ViewData["Title"] = "Главная";
+    var showServiceTerms = AuthorizationHelper.IsAdminRole(Context);
 }
 
 @section Styles {
@@ -20,6 +22,10 @@
             display: grid;
             grid-template-columns: minmax(0, 1.7fr) minmax(320px, 1fr);
             gap: 1rem;
+        }
+
+        .medclinic-dashboard__info--full {
+            grid-template-columns: 1fr;
         }
 
         .medclinic-dashboard__surface {
@@ -216,7 +222,7 @@
         }
     </section>
 
-    <section class="medclinic-dashboard__info">
+    <section class="medclinic-dashboard__info @(showServiceTerms ? "" : "medclinic-dashboard__info--full")">
         <div class="medclinic-dashboard__surface">
             <div class="medclinic-dashboard__header">
                 <div>
@@ -236,43 +242,46 @@
             </div>
         </div>
 
-        <aside class="medclinic-dashboard__surface">
-            <div class="medclinic-dashboard__header">
-                <div>
-                    <h2 class="medclinic-dashboard__title">Условия обслуживания</h2>
-                    <p class="medclinic-dashboard__subtitle">Текущая модель расчётов и параметры обслуживания организации.</p>
-                </div>
-            </div>
-            <div class="medclinic-dashboard__terms">
-                <div class="medclinic-dashboard__terms-name">@Model.OrganizationName</div>
-                <div class="medclinic-dashboard__terms-list">
-                    <div class="medclinic-dashboard__terms-row">
-                        <span class="medclinic-dashboard__terms-label">Тариф</span>
-                        <span class="medclinic-dashboard__terms-value">@(Model.HasSubscription ? "Подписка" : "Комиссия по операциям")</span>
-                    </div>
-                    <div class="medclinic-dashboard__terms-row">
-                        <span class="medclinic-dashboard__terms-label">Статус</span>
-                        <span class="medclinic-dashboard__terms-value">@Model.BillingStatus</span>
-                    </div>
-                    <div class="medclinic-dashboard__terms-row">
-                        <span class="medclinic-dashboard__terms-label">Тип комиссии</span>
-                        <span class="medclinic-dashboard__terms-value">@Model.CommissionKindText</span>
-                    </div>
-                    <div class="medclinic-dashboard__terms-row">
-                        <span class="medclinic-dashboard__terms-label">Значение комиссии</span>
-                        <span class="medclinic-dashboard__terms-value">@Model.CommissionValueText</span>
-                    </div>
-                    <div class="medclinic-dashboard__terms-row">
-                        <span class="medclinic-dashboard__terms-label">Модель расчёта</span>
-                        <span class="medclinic-dashboard__terms-value">@Model.CommissionModelName</span>
-                    </div>
-                    <div class="medclinic-dashboard__terms-row">
-                        <span class="medclinic-dashboard__terms-label">Валюта</span>
-                        <span class="medclinic-dashboard__terms-value">KGS (сом)</span>
+        @if (showServiceTerms)
+        {
+            <aside class="medclinic-dashboard__surface">
+                <div class="medclinic-dashboard__header">
+                    <div>
+                        <h2 class="medclinic-dashboard__title">Условия обслуживания</h2>
+                        <p class="medclinic-dashboard__subtitle">Текущая модель расчётов и параметры обслуживания организации.</p>
                     </div>
                 </div>
-            </div>
-        </aside>
+                <div class="medclinic-dashboard__terms">
+                    <div class="medclinic-dashboard__terms-name">@Model.OrganizationName</div>
+                    <div class="medclinic-dashboard__terms-list">
+                        <div class="medclinic-dashboard__terms-row">
+                            <span class="medclinic-dashboard__terms-label">Тариф</span>
+                            <span class="medclinic-dashboard__terms-value">@(Model.HasSubscription ? "Подписка" : "Комиссия по операциям")</span>
+                        </div>
+                        <div class="medclinic-dashboard__terms-row">
+                            <span class="medclinic-dashboard__terms-label">Статус</span>
+                            <span class="medclinic-dashboard__terms-value">@Model.BillingStatus</span>
+                        </div>
+                        <div class="medclinic-dashboard__terms-row">
+                            <span class="medclinic-dashboard__terms-label">Тип комиссии</span>
+                            <span class="medclinic-dashboard__terms-value">@Model.CommissionKindText</span>
+                        </div>
+                        <div class="medclinic-dashboard__terms-row">
+                            <span class="medclinic-dashboard__terms-label">Значение комиссии</span>
+                            <span class="medclinic-dashboard__terms-value">@Model.CommissionValueText</span>
+                        </div>
+                        <div class="medclinic-dashboard__terms-row">
+                            <span class="medclinic-dashboard__terms-label">Модель расчёта</span>
+                            <span class="medclinic-dashboard__terms-value">@Model.CommissionModelName</span>
+                        </div>
+                        <div class="medclinic-dashboard__terms-row">
+                            <span class="medclinic-dashboard__terms-label">Валюта</span>
+                            <span class="medclinic-dashboard__terms-value">KGS (сом)</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        }
     </section>
 
     <section class="medclinic-dashboard__surface">

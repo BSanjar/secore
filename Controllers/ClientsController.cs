@@ -23,19 +23,22 @@ public class ClientsController : Controller
     private readonly ClientService _clientService;
     private readonly ClientPhotoService _clientPhotoService;
     private readonly ICurrentTenantService _currentTenantService;
+    private readonly ILogger<ClientsController> _logger;
 
     public ClientsController(
         AppDbContext db,
         OperationsByInvoices operationsByInvoices,
         ClientService clientService,
         ClientPhotoService clientPhotoService,
-        ICurrentTenantService currentTenantService)
+        ICurrentTenantService currentTenantService,
+        ILogger<ClientsController> logger)
     {
         _db = db;
         _operationsByInvoices = operationsByInvoices;
         _clientService = clientService;
         _clientPhotoService = clientPhotoService;
         _currentTenantService = currentTenantService;
+        _logger = logger;
     }
 
     [RequirePermission("nav.children")]
@@ -458,10 +461,15 @@ public class ClientsController : Controller
                 AdditionalFields = request.AdditionalFields
             }, organizationId, userId);
 
+            _logger.LogInformation(
+                "Client created. ClientId={ClientId} Name={Name} Org={OrgId} User={UserId}",
+                clientId, request.ClientName, organizationId, userId);
+
             return Json(new { success = true, message = "Клиент успешно добавлен", clientId });
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Client create failed. Name={Name}", request?.ClientName);
             return Json(new { success = false, message = $"Ошибка при добавлении клиента: {ex.Message}" });
         }
     }
@@ -521,10 +529,15 @@ public class ClientsController : Controller
             if (!updated)
                 return NotFound(new { success = false, message = "Клиент не найден" });
 
+            _logger.LogInformation(
+                "Client updated. ClientId={ClientId} Name={Name} Status={Status} Org={OrgId}",
+                request.ClientId, request.ClientName, request.ClientStatus, organizationId);
+
             return Json(new { success = true, message = "Данные клиента обновлены" });
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Client update failed. ClientId={ClientId}", request?.ClientId);
             return Json(new { success = false, message = $"Ошибка при обновлении клиента: {ex.Message}" });
         }
     }

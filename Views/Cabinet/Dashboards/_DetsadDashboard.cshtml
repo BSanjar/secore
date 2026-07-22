@@ -1,4 +1,5 @@
 @using System.Globalization
+@using WebApplication1.Helpers
 @{
     ViewData["Title"] = "Главная";
     var monthIncome = ViewBag.MonthIncome as decimal? ?? 0m;
@@ -16,6 +17,7 @@
     var commissionFixed = ViewBag.CommissionFixed as decimal?;
     var debtorsList = ViewBag.DebtorsList as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
     var recentInvoices = ViewBag.RecentInvoices as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var showServiceTerms = AuthorizationHelper.IsAdminRole(Context);
 
     string CommissionKindText(string k)
     {
@@ -106,7 +108,7 @@
     </section>
 
     <!-- Центр: график + правая карточка организации -->
-    <section class="dashboard-v2__main">
+    <section class="dashboard-v2__main @(showServiceTerms ? "" : "dashboard-v2__main--full")">
         <div class="dashboard-v2__chart-wrap">
             <div class="chart-block">
                 <h2 class="chart-block__title">Динамика оплат</h2>
@@ -120,26 +122,29 @@
                 </div>
             </div>
         </div>
-        <aside class="dashboard-v2__org-card">
-            <div class="org-card">
-                <h3 class="org-card__title">Условия обслуживания</h3>
-                <div class="org-card__name">@(organization?.Name ?? "—")</div>
-                <dl class="org-card__list">
-                    <dt>Тариф</dt>
-                    <dd>@(hasSubscription ? "Подписка" : "Без подписки, комиссия по операциям")</dd>
-                    <dt>Статус</dt>
-                    <dd>@(hasSubscription ? "Активна" : "Комиссионный")</dd>
-                    <dt>Тип комиссии</dt>
-                    <dd>@CommissionKindText(commissionKind)</dd>
-                    <dt>Значение комиссии</dt>
-                    <dd>@CommissionValue()</dd>
-                    <dt>Модель расчёта</dt>
-                    <dd>@(commissionName ?? "—")</dd>
-                    <dt>Валюта</dt>
-                    <dd>KGS (сом)</dd>
-                </dl>
-            </div>
-        </aside>
+        @if (showServiceTerms)
+        {
+            <aside class="dashboard-v2__org-card">
+                <div class="org-card">
+                    <h3 class="org-card__title">Условия обслуживания</h3>
+                    <div class="org-card__name">@(organization?.Name ?? "—")</div>
+                    <dl class="org-card__list">
+                        <dt>Тариф</dt>
+                        <dd>@(hasSubscription ? "Подписка" : "Без подписки, комиссия по операциям")</dd>
+                        <dt>Статус</dt>
+                        <dd>@(hasSubscription ? "Активна" : "Комиссионный")</dd>
+                        <dt>Тип комиссии</dt>
+                        <dd>@CommissionKindText(commissionKind)</dd>
+                        <dt>Значение комиссии</dt>
+                        <dd>@CommissionValue()</dd>
+                        <dt>Модель расчёта</dt>
+                        <dd>@(commissionName ?? "—")</dd>
+                        <dt>Валюта</dt>
+                        <dd>KGS (сом)</dd>
+                    </dl>
+                </div>
+            </aside>
+        }
     </section>
 
     <!-- Нижний блок: Должники + Отчетность -->

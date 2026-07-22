@@ -22,6 +22,7 @@
 @section LayoutStyles {
     <link rel="stylesheet" href="~/css/dashboard-soft.css" asp-append-version="true" />
     <link rel="stylesheet" href="@shell.CabinetCssPath" asp-append-version="true" />
+    <link rel="stylesheet" href="~/web/kindergarten/css/detsad-ui.css" asp-append-version="true" />
     @RenderSection("Styles", required: false)
 }
     <div class="dashboard-app">
@@ -51,99 +52,9 @@
     </div>
 
 @section LayoutScripts {
+    <script src="~/web/kindergarten/js/detsad.js" asp-append-version="true"></script>
     <script>
         (function () {
-            var globalSearchUrl = '@Url.Action("Suggest", "GlobalSearch")';
-            var search = document.getElementById('dashboardSearch');
-            var searchInput = document.getElementById('dashboardSearchInput');
-            var suggestions = document.getElementById('dashboardSearchSuggestions');
-            var debounceTimer;
-
-            function clearSuggestions() {
-                if (!suggestions) return;
-                suggestions.innerHTML = '';
-                suggestions.style.display = 'none';
-            }
-
-            function renderSuggestions(data) {
-                if (!suggestions) return;
-                suggestions.innerHTML = '';
-                var groups = (data && data.groups) || [];
-                if (!groups.length) {
-                    clearSuggestions();
-                    return;
-                }
-                groups.forEach(function (g) {
-                    var groupEl = document.createElement('div');
-                    groupEl.className = 'dashboard-search-suggestion-group';
-
-                    var titleEl = document.createElement('div');
-                    titleEl.className = 'dashboard-search-suggestion-group-title';
-                    titleEl.textContent = g.title || '';
-                    groupEl.appendChild(titleEl);
-
-                    (g.items || []).forEach(function (item) {
-                        var itemEl = document.createElement('div');
-                        itemEl.className = 'dashboard-search-suggestion-item';
-                        itemEl.innerHTML =
-                            '<span class="dashboard-search-suggestion-main">' + (item.title || '') + '</span>' +
-                            '<span class="dashboard-search-suggestion-sub text-muted small">' + (item.subtitle || '') + '</span>';
-                        itemEl.addEventListener('click', function () {
-                            if (item.url) {
-                                window.location.href = item.url;
-                            }
-                        });
-                        groupEl.appendChild(itemEl);
-                    });
-
-                    suggestions.appendChild(groupEl);
-                });
-                suggestions.style.display = 'block';
-            }
-
-            if (search && searchInput) {
-                searchInput.addEventListener('focus', function () {
-                    search.classList.add('is-expanded');
-                });
-                searchInput.addEventListener('blur', function () {
-                    search.classList.remove('is-expanded');
-                });
-            }
-
-            if (search && searchInput && suggestions) {
-                searchInput.addEventListener('input', function () {
-                    var q = searchInput.value.trim();
-                    clearTimeout(debounceTimer);
-                    if (q.length < 2) {
-                        clearSuggestions();
-                        return;
-                    }
-                    debounceTimer = setTimeout(function () {
-                        var url = globalSearchUrl;
-                        url += (url.indexOf('?') === -1 ? '?q=' : '&q=') + encodeURIComponent(q);
-                        fetch(url, {
-                            headers: { 'Accept': 'application/json' }
-                        })
-                            .then(function (r) { return r.ok ? r.json() : null; })
-                            .then(function (data) { renderSuggestions(data || {}); })
-                            .catch(function () { clearSuggestions(); });
-                    }, 250);
-                });
-
-                document.addEventListener('click', function (e) {
-                    if (!search.contains(e.target)) {
-                        clearSuggestions();
-                    }
-                });
-
-                searchInput.addEventListener('keydown', function (e) {
-                    if (e.key === 'Escape') {
-                        clearSuggestions();
-                        searchInput.blur();
-                    }
-                });
-            }
-
             var notifBtn = document.getElementById('dashboardNotificationsBtn');
             var notifDropdown = document.getElementById('dashboardNotificationsDropdown');
             if (notifBtn && notifDropdown) {

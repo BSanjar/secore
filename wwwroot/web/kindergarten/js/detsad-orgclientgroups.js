@@ -101,7 +101,12 @@
         }
         if (nameInput) nameInput.classList.remove('is-invalid');
 
-        submitBtn.disabled = true;
+        if (window.DetsadUI) {
+            DetsadUI.setButtonLoading(submitBtn, true, { label: 'Сохранение...' });
+            DetsadUI.showOverlay('Сохранение группы...');
+        } else {
+            submitBtn.disabled = true;
+        }
         if (errEl) errEl.style.display = 'none';
 
         const id = document.getElementById('groupFormId').value;
@@ -121,8 +126,10 @@
                         const bsModal = bootstrap.Modal.getInstance(modal);
                         if (bsModal) bsModal.hide();
                     }
-                    window.location.reload();
+                    if (window.DetsadUI) DetsadUI.reloadWithOverlay('Обновление...');
+                    else window.location.reload();
                 } else {
+                    if (window.DetsadUI) DetsadUI.hideOverlay();
                     if (errEl) {
                         errEl.textContent = data.message || 'Ошибка сохранения';
                         errEl.style.display = 'block';
@@ -130,13 +137,15 @@
                 }
             })
             .catch(function () {
+                if (window.DetsadUI) DetsadUI.hideOverlay();
                 if (errEl) {
                     errEl.textContent = 'Ошибка связи с сервером';
                     errEl.style.display = 'block';
                 }
             })
             .finally(function () {
-                submitBtn.disabled = false;
+                if (window.DetsadUI) DetsadUI.setButtonLoading(submitBtn, false);
+                else submitBtn.disabled = false;
             });
     }
 
@@ -144,7 +153,12 @@
         if (!deleteGroupId) return;
         const btn = document.getElementById('deleteGroupConfirmBtn');
         const errEl = document.getElementById('deleteGroupError');
-        if (btn) btn.disabled = true;
+        if (window.DetsadUI) {
+            DetsadUI.setButtonLoading(btn, true, { label: 'Удаление...' });
+            DetsadUI.showOverlay('Удаление...');
+        } else if (btn) {
+            btn.disabled = true;
+        }
         if (errEl) errEl.style.display = 'none';
 
         const formData = new FormData();
@@ -163,8 +177,10 @@
                         if (bsModal) bsModal.hide();
                     }
                     deleteGroupId = null;
-                    window.location.reload();
+                    if (window.DetsadUI) DetsadUI.reloadWithOverlay('Обновление...');
+                    else window.location.reload();
                 } else {
+                    if (window.DetsadUI) DetsadUI.hideOverlay();
                     if (errEl) {
                         errEl.textContent = data.message || 'Ошибка удаления';
                         errEl.style.display = 'block';
@@ -172,13 +188,15 @@
                 }
             })
             .catch(function () {
+                if (window.DetsadUI) DetsadUI.hideOverlay();
                 if (errEl) {
                     errEl.textContent = 'Ошибка связи с сервером';
                     errEl.style.display = 'block';
                 }
             })
             .finally(function () {
-                if (btn) btn.disabled = false;
+                if (window.DetsadUI) DetsadUI.setButtonLoading(btn, false);
+                else if (btn) btn.disabled = false;
             });
     };
 

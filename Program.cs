@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.Options;
 using WebApplication1.Models.BaseModels;
@@ -11,13 +10,20 @@ using WebApplication1.Services;
 using WebApplication1.Helpers;
 using WebApplication1.Services.Cabinets;
 using WebApplication1.Services.Cabinets.Navigation;
+using WebApplication1.Logging;
 using Microsoft.OpenApi.Models;
 using WebApplication1.Swagger;
+using Serilog;
 
 // Npgsql: разрешить запись DateTime с Kind=UTC в колонки timestamp without time zone
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((context, services, loggerConfiguration) =>
+{
+    SecoreLoggingBootstrap.Configure(loggerConfiguration, context.Configuration, context.HostingEnvironment);
+});
 
 // Настройка локализации
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
@@ -125,6 +131,7 @@ builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<ISpecializationService, SpecializationService>();
 builder.Services.AddScoped<IDoctorDirectoryService, DoctorDirectoryService>();
 builder.Services.AddScoped<IServiceCatalogService, ServiceCatalogService>();
+builder.Services.Configure<SecoreLoggingOptions>(builder.Configuration.GetSection(SecoreLoggingOptions.SectionName));
 
 
 // Добавление поддержки сессий
@@ -149,6 +156,12 @@ builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSet
 
 
 var app = builder.Build();
+
+var logRoot = SecoreLoggingBootstrap.ResolveRootPath(app.Configuration, app.Environment);
+Log.Information(
+    "SECORE mainSystem starting. Env={Environment} LogRoot={LogRoot}",
+    app.Environment.EnvironmentName,
+    logRoot);
 
 // Configure the HTTP request pipeline.
 // Обработка ошибок должна быть первой в pipeline
@@ -175,6 +188,8 @@ var localizationOptions = app.Services.GetRequiredService<IOptions<RequestLocali
 app.UseRequestLocalization(localizationOptions);
 
 app.UseRouting();
+
+app.UseMiddleware<WebApplication1.Middleware.RequestLoggingMiddleware>();
 
 // IP allowlist for API agents (must run before controllers)
 app.UseMiddleware<WebApplication1.Middleware.AgentIpAllowlistMiddleware>();
@@ -223,4 +238,12 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-app.Run();
+try
+{
+    app.Run();
+}
+finally
+{
+    Log.Information("SECORE mainSystem stopping.");
+    Log.CloseAndFlush();
+}

@@ -105,6 +105,37 @@
     box-shadow: 0 10px 20px rgba(110, 147, 183, 0.22);
 }
 
+.login-brand-logo {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    object-fit: cover;
+    flex-shrink: 0;
+    box-shadow: 0 12px 24px rgba(14, 165, 233, 0.28);
+}
+
+.login-auth-form .btn-primary.is-loading {
+    pointer-events: none;
+    opacity: 0.92;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.login-btn-spinner {
+    width: 1.1em;
+    height: 1.1em;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: login-spin 0.7s linear infinite;
+}
+
+@keyframes login-spin {
+    to { transform: rotate(360deg); }
+}
+
 .login-brand-text {
     display: flex;
     flex-direction: column;

@@ -1,64 +1,211 @@
-@model WebApplication1.Models.DBModels.User
+@model WebApplication1.ViewModels.Profile.ProfileViewModel
 @using Microsoft.AspNetCore.Mvc.Localization
 @inject IHtmlLocalizer<WebApplication1.SharedResources> Localizer
 @{
     ViewData["Title"] = Localizer["ProfilePageTitle"].Value;
-    var selectedStartPage = WebApplication1.Helpers.LandingPageResolver.NormalizeStartPage(Model?.StartPage);
-    var organizationType = WebApplication1.Helpers.AuthorizationHelper.GetOrganizationType(Context);
-    var canSelectAppointments = string.Equals(organizationType, "medclinic", StringComparison.OrdinalIgnoreCase)
-                                && (WebApplication1.Helpers.PermissionHelper.HasPermission(Context, "appointments.registry.view")
-                                    || WebApplication1.Helpers.PermissionHelper.HasPermission(Context, "appointments.doctor.view")
-                                    || WebApplication1.Helpers.PermissionHelper.HasPermission(Context, "appointments.view"));
+    var phone = string.IsNullOrWhiteSpace(Model.Phone) ? "—" : Model.Phone;
+    var email = string.IsNullOrWhiteSpace(Model.Email) ? "—" : Model.Email;
+    var organization = string.IsNullOrWhiteSpace(Model.OrganizationName) ? "—" : Model.OrganizationName;
+    var lastLogin = Model.LastLogin.HasValue
+        ? Model.LastLogin.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+        : "—";
+    var startPageLabel = string.Equals(Model.StartPageLabel, "appointments", StringComparison.OrdinalIgnoreCase)
+        ? Localizer["ProfileStartPageOptionAppointments"].Value
+        : Localizer["ProfileStartPageOptionCabinet"].Value;
 }
 
 @section Styles {
     <link rel="stylesheet" href="~/web/kindergarten/css/detsad-clients.css" asp-append-version="true" />
+    <style>
+        .profile-page {
+            max-width: 760px;
+            margin: 0 auto;
+        }
+
+        .profile-hero {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            padding: 1.5rem 1.75rem;
+            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(79, 195, 247, 0.16) 0%, rgba(255, 138, 101, 0.14) 100%);
+            border: 1px solid rgba(79, 195, 247, 0.18);
+            margin-bottom: 1.25rem;
+        }
+
+        .profile-avatar {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            flex-shrink: 0;
+            font-size: 1.35rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            color: #0f4c5c;
+            background: rgba(255, 255, 255, 0.85);
+            border: 2px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 8px 20px rgba(15, 76, 92, 0.08);
+        }
+
+        .profile-hero-text {
+            min-width: 0;
+        }
+
+        .profile-hero-name {
+            margin: 0 0 0.35rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #17333d;
+            line-height: 1.25;
+            word-break: break-word;
+        }
+
+        .profile-hero-meta {
+            margin: 0;
+            color: #5b6b73;
+            font-size: 0.95rem;
+        }
+
+        .profile-roles {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-top: 0.75rem;
+        }
+
+        .profile-role-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.2rem 0.65rem;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #0f4c5c;
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(15, 76, 92, 0.08);
+        }
+
+        .profile-card {
+            background: var(--surface, #fff);
+            border: 1px solid rgba(15, 76, 92, 0.08);
+            border-radius: 18px;
+            box-shadow: 0 10px 30px rgba(15, 76, 92, 0.05);
+            overflow: hidden;
+        }
+
+        .profile-card-header {
+            padding: 1rem 1.35rem;
+            border-bottom: 1px solid rgba(15, 76, 92, 0.06);
+            font-weight: 650;
+            color: #17333d;
+        }
+
+        .profile-fields {
+            display: grid;
+            grid-template-columns: 1fr;
+        }
+
+        .profile-field {
+            display: grid;
+            grid-template-columns: minmax(140px, 200px) 1fr;
+            gap: 0.75rem;
+            padding: 0.95rem 1.35rem;
+            border-bottom: 1px solid rgba(15, 76, 92, 0.05);
+        }
+
+        .profile-field:last-child {
+            border-bottom: none;
+        }
+
+        .profile-field-label {
+            color: #7a8a92;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            align-self: center;
+        }
+
+        .profile-field-value {
+            color: #17333d;
+            font-size: 0.98rem;
+            font-weight: 550;
+            word-break: break-word;
+        }
+
+        .profile-actions {
+            margin-top: 1.25rem;
+        }
+
+        @@media (max-width: 575.98px) {
+            .profile-hero {
+                align-items: flex-start;
+                padding: 1.25rem;
+            }
+
+            .profile-field {
+                grid-template-columns: 1fr;
+                gap: 0.25rem;
+            }
+        }
+    </style>
 }
 
-<div class="children-page">
-    @if (TempData["Message"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            @TempData["Message"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="@Localizer["Close"]"></button>
-        </div>
-    }
-
+<div class="children-page profile-page">
     <div class="page-header">
         <h1 class="page-title">@Localizer["ProfilePageTitle"]</h1>
-        <p class="page-subtitle mb-0">@Localizer["ProfilePageSubtitle"]</p>
+        <p class="page-subtitle mb-0">Информация о вашем аккаунте</p>
     </div>
 
-    <div class="filters-section">
-        <form asp-action="Index" method="post">
-            @Html.AntiForgeryToken()
-            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-
-            <div class="mb-3">
-                <label class="form-label text-muted small">@Localizer["ProfileNameLabel"] <span class="text-danger">*</span></label>
-                <input type="text" name="Name" class="form-control" value="@Model?.Name" placeholder="@Localizer["ProfileNamePlaceholder"]" required />
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label text-muted small">@Localizer["ProfilePhoneLabel"]</label>
-                <input type="text" name="Phone" class="form-control" value="@Model?.Phone" placeholder="+996 XXX XXX XXX" />
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label text-muted small">@Localizer["ProfileStartPageLabel"]</label>
-                <select name="StartPage" class="form-select">
-                    <option value="cabinet" selected="@(selectedStartPage == "cabinet")">@Localizer["ProfileStartPageOptionCabinet"]</option>
-                    @if (canSelectAppointments)
+    <section class="profile-hero" aria-label="@Localizer["ProfilePageTitle"]">
+        <div class="profile-avatar" aria-hidden="true">@Model.Initials</div>
+        <div class="profile-hero-text">
+            <h2 class="profile-hero-name">@Model.Name</h2>
+            <p class="profile-hero-meta">@organization</p>
+            @if (Model.Roles.Count > 0)
+            {
+                <div class="profile-roles">
+                    @foreach (var role in Model.Roles)
                     {
-                        <option value="appointments" selected="@(selectedStartPage == "appointments")">@Localizer["ProfileStartPageOptionAppointments"]</option>
+                        <span class="profile-role-chip">@role</span>
                     }
-                </select>
-            </div>
+                </div>
+            }
+        </div>
+    </section>
 
-            <div class="d-flex gap-2">
-                <button type="submit" class="action-btn action-btn--edit">@Localizer["Save"]</button>
-                <a asp-controller="Cabinet" asp-action="Index" class="action-btn">@Localizer["Cancel"]</a>
+    <section class="profile-card" aria-label="Контактные данные">
+        <div class="profile-card-header">Контактные данные</div>
+        <div class="profile-fields">
+            <div class="profile-field">
+                <div class="profile-field-label">@Localizer["ProfileNameLabel"]</div>
+                <div class="profile-field-value">@Model.Name</div>
             </div>
-        </form>
+            <div class="profile-field">
+                <div class="profile-field-label">Email</div>
+                <div class="profile-field-value">@email</div>
+            </div>
+            <div class="profile-field">
+                <div class="profile-field-label">@Localizer["ProfilePhoneLabel"]</div>
+                <div class="profile-field-value">@phone</div>
+            </div>
+            <div class="profile-field">
+                <div class="profile-field-label">Организация</div>
+                <div class="profile-field-value">@organization</div>
+            </div>
+            <div class="profile-field">
+                <div class="profile-field-label">@Localizer["ProfileStartPageLabel"]</div>
+                <div class="profile-field-value">@startPageLabel</div>
+            </div>
+            <div class="profile-field">
+                <div class="profile-field-label">Последний вход</div>
+                <div class="profile-field-value">@lastLogin</div>
+            </div>
+        </div>
+    </section>
+
+    <div class="profile-actions">
+        <a asp-controller="Cabinet" asp-action="Index" class="action-btn">← Назад в кабинет</a>
     </div>
 </div>

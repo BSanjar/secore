@@ -1,0 +1,267 @@
+/* SECORE detsad — liveliness: loaders, button states, micro-interactions */
+
+body.org-detsad {
+  --ds-brand: #2BB8F0;
+  --ds-brand-deep: #0EA5E9;
+  --ds-brand-soft: #E0F7FE;
+}
+
+/* Brand logo in sidebar */
+body.org-detsad .dashboard-sidebar-brand--logo {
+  gap: 0;
+  padding: 2px 0;
+}
+
+body.org-detsad .dashboard-sidebar-brand-logo {
+  display: block;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  object-fit: cover;
+  box-shadow: 0 6px 16px rgba(14, 165, 233, 0.28);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, width 0.25s ease, height 0.25s ease;
+}
+
+body.org-detsad .dashboard-sidebar:hover .dashboard-sidebar-brand-logo,
+body.org-detsad .dashboard-sidebar.is-expanded .dashboard-sidebar-brand-logo {
+  width: 58px;
+  height: 58px;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(14, 165, 233, 0.35);
+}
+
+/* Buttons — press / hover life */
+body.org-detsad .btn,
+body.org-detsad .action-btn,
+body.org-detsad .detsad-btn-primary,
+body.org-detsad .detsad-btn-secondary,
+body.org-detsad .btn-soft-primary,
+body.org-detsad .btn-soft-secondary,
+body.org-detsad .child-actions-menu-btn {
+  position: relative;
+  overflow: hidden;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.15s ease,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease;
+}
+
+body.org-detsad .btn:not(:disabled):hover,
+body.org-detsad .action-btn:not(:disabled):hover,
+body.org-detsad .detsad-btn-primary:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(14, 165, 233, 0.22);
+}
+
+body.org-detsad .btn:not(:disabled):active,
+body.org-detsad .action-btn:not(:disabled):active,
+body.org-detsad .detsad-btn-primary:not(:disabled):active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+}
+
+body.org-detsad .btn.is-loading,
+body.org-detsad .action-btn.is-loading,
+body.org-detsad button.is-loading {
+  pointer-events: none;
+  cursor: wait;
+  opacity: 0.92;
+}
+
+body.org-detsad .btn.is-loading .ds-btn-label,
+body.org-detsad button.is-loading .ds-btn-label {
+  opacity: 0.95;
+}
+
+body.org-detsad .ds-btn-spinner {
+  width: 1em;
+  height: 1em;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: ds-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+body.org-detsad .btn-outline-primary.is-loading .ds-btn-spinner,
+body.org-detsad .btn-secondary.is-loading .ds-btn-spinner,
+body.org-detsad .btn-light.is-loading .ds-btn-spinner,
+body.org-detsad .btn-outline-secondary.is-loading .ds-btn-spinner {
+  border-color: rgba(14, 165, 233, 0.25);
+  border-top-color: var(--ds-brand-deep);
+}
+
+body.org-detsad .btn-danger.is-loading .ds-btn-spinner {
+  border-color: rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+}
+
+body.org-detsad .btn-success.is-loading .ds-btn-spinner {
+  border-color: rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+}
+
+/* Inline / modal content loader */
+.ds-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 2.5rem 1.25rem;
+  min-height: 120px;
+  animation: ds-fade-in 0.28s ease;
+}
+
+.ds-loader--compact {
+  padding: 1.25rem;
+  min-height: 72px;
+  gap: 10px;
+}
+
+.ds-loader__mark {
+  position: relative;
+  width: 56px;
+  height: 56px;
+}
+
+.ds-loader__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid var(--ds-brand-soft, #E0F7FE);
+  border-top-color: var(--ds-brand, #2BB8F0);
+  animation: ds-spin 0.85s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+.ds-loader__ring--delayed {
+  inset: 7px;
+  border-width: 2.5px;
+  border-top-color: #67E8F9;
+  border-right-color: transparent;
+  animation-duration: 1.15s;
+  animation-direction: reverse;
+}
+
+.ds-loader__cloud {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 0;
+}
+
+.ds-loader__cloud::before {
+  content: "";
+  width: 22px;
+  height: 14px;
+  background: linear-gradient(180deg, #fff 0%, #E0F7FE 100%);
+  border-radius: 10px;
+  box-shadow:
+    -8px 2px 0 -2px #fff,
+    8px 3px 0 -3px #fff,
+    0 6px 14px rgba(14, 165, 233, 0.25);
+  animation: ds-cloud-pulse 1.4s ease-in-out infinite;
+}
+
+.ds-loader__label {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary, #475569);
+  letter-spacing: 0.01em;
+}
+
+.ds-loader__dots::after {
+  content: "";
+  display: inline-block;
+  width: 1.2em;
+  text-align: left;
+  animation: ds-dots 1.2s steps(4, end) infinite;
+}
+
+/* Page / save overlay */
+.ds-page-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(248, 250, 252, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.22s ease, visibility 0.22s ease;
+}
+
+.ds-page-overlay.is-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.ds-page-overlay__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 28px 36px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(14, 165, 233, 0.18);
+  box-shadow: 0 18px 40px rgba(14, 165, 233, 0.16);
+  animation: ds-pop 0.28s ease;
+}
+
+.ds-page-overlay__card .ds-loader {
+  padding: 0;
+  min-height: 0;
+}
+
+/* Skeleton shimmer for cards */
+.ds-skeleton {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 37%, #f1f5f9 63%);
+  background-size: 400% 100%;
+  animation: ds-shimmer 1.25s ease infinite;
+  border-radius: 12px;
+}
+
+@keyframes ds-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes ds-cloud-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.95; }
+  50% { transform: scale(1.08); opacity: 1; }
+}
+
+@keyframes ds-dots {
+  0% { content: ""; }
+  25% { content: "."; }
+  50% { content: ".."; }
+  75% { content: "..."; }
+}
+
+@keyframes ds-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ds-pop {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes ds-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0 0; }
+}
+
+/* Replace bootstrap spinner blocks in detsad modals */
+body.org-detsad .loading-spinner {
+  min-height: 140px;
+}

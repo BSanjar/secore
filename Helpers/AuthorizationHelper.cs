@@ -172,6 +172,33 @@ namespace WebApplication1.Helpers
 
             return roles.Contains("doctor") || roles.Contains("врач");
         }
+
+        public static bool IsAdminRole(HttpContext httpContext)
+        {
+            var userId = GetUserId(httpContext);
+            if (string.IsNullOrEmpty(userId))
+                return false;
+
+            var cacheKey = RequestRoleCacheKeyPrefix + userId;
+            if (!httpContext.Items.TryGetValue(cacheKey, out var cached) || cached is not HashSet<string> roles)
+            {
+                var db = httpContext.RequestServices.GetRequiredService<AppDbContext>();
+                roles = db.UserRoles
+                    .Where(ur => ur.User == userId && (ur.Isdeleted == null || ur.Isdeleted == 0))
+                    .Include(ur => ur.RoleNavigation)
+                    .Select(ur => ur.RoleNavigation != null ? ur.RoleNavigation.Name : ur.Role)
+                    .Where(name => !string.IsNullOrWhiteSpace(name))
+                    .Select(name => name!.Trim().ToLower())
+                    .ToHashSet();
+
+                httpContext.Items[cacheKey] = roles;
+            }
+
+            return roles.Contains("admin")
+                   || roles.Contains("администратор")
+                   || roles.Contains("superadmin")
+                   || roles.Contains("суперадмин");
+        }
     }
 
     /// <summary>

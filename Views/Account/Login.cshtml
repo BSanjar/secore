@@ -24,7 +24,7 @@
         <section class="login-showcase">
             <div>
                 <div class="login-brand">
-                    <div class="login-brand-mark">S</div>
+                    <img src="~/web/kindergarten/img/secore-logo.png" alt="SECORE Software Development" class="login-brand-logo" asp-append-version="true" />
                     <div class="login-brand-text">
                         <strong>SECORE</strong>
                         <span>@Localizer["LoginBrandTagline"]</span>
@@ -91,7 +91,7 @@
                         </label>
                     </div>
 
-                    <button type="submit" class="btn-primary">@Localizer["SignIn"]</button>
+                    <button type="submit" class="btn-primary" id="loginSubmitBtn" data-loading-text="@Localizer["SignIn"]...">@Localizer["SignIn"]</button>
                 </form>
             </div>
         </section>
@@ -101,5 +101,19 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
     <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        (function () {
+            var form = document.querySelector('.login-auth-form');
+            var btn = document.getElementById('loginSubmitBtn');
+            if (!form || !btn) return;
+            form.addEventListener('submit', function () {
+                if (btn.classList.contains('is-loading')) return;
+                btn.classList.add('is-loading');
+                btn.disabled = true;
+                var label = btn.getAttribute('data-loading-text') || 'Вход...';
+                btn.innerHTML = '<span class="login-btn-spinner" aria-hidden="true"></span><span>' + label + '</span>';
+            });
+        })();
+    </script>
 </body>
 </html>

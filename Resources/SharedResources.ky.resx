@@ -432,6 +432,9 @@
   <data name="Notifications" xml:space="preserve">
     <value>Билдирмелер</value>
   </data>
+  <data name="ClientNotifications" xml:space="preserve">
+    <value>Кардар билдирмелери</value>
+  </data>
   <data name="Compact" xml:space="preserve">
     <value>Кыска</value>
   </data>

@@ -1,38 +1,154 @@
 @model IEnumerable<WebApplication1.Models.DBModels.Notification>
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IHtmlLocalizer<WebApplication1.SharedResources> Localizer
 @{
-    ViewData["Title"] = "Уведомления";
-    var pageNum = (int)ViewBag.Page;
-    var totalPages = (int)ViewBag.TotalPages;
-    var totalCount = (int)ViewBag.TotalCount;
+    ViewData["Title"] = Localizer["ClientNotifications"].Value;
+    var pageNum = (int)(ViewBag.Page ?? 1);
+    var totalPages = (int)(ViewBag.TotalPages ?? 1);
+    var totalCount = (int)(ViewBag.TotalCount ?? 0);
     var status = ViewBag.Status as string ?? "";
     var channel = ViewBag.Channel as string ?? "";
     var createdFrom = ViewBag.CreatedFrom as string ?? "";
     var createdTo = ViewBag.CreatedTo as string ?? "";
     var sentFrom = ViewBag.SentFrom as string ?? "";
     var sentTo = ViewBag.SentTo as string ?? "";
+    var isAdmin = ViewBag.IsAdmin as bool? ?? false;
+    var today = DateTime.Today.ToString("yyyy-MM-dd");
+
+    string StatusLabel(string? s) => (s ?? "").Trim().ToLowerInvariant() switch
+    {
+        "new" => "Запланировано",
+        "processing" => "В обработке",
+        "sent" => "Отправлено",
+        "failed" => "Ошибка",
+        _ => string.IsNullOrWhiteSpace(s) ? "—" : s
+    };
+
+    string StatusClass(string? s) => (s ?? "").Trim().ToLowerInvariant() switch
+    {
+        "sent" => "notify-status--sent",
+        "failed" => "notify-status--failed",
+        "processing" => "notify-status--processing",
+        "new" => "notify-status--new",
+        _ => "notify-status--new"
+    };
+
+    string ChannelLabel(string? c) => (c ?? "").Trim().ToLowerInvariant() switch
+    {
+        "whatsapp" => "WhatsApp",
+        "telegram" => "Telegram",
+        "email" => "Email",
+        _ => string.IsNullOrWhiteSpace(c) ? "—" : c
+    };
 }
 
 @section Styles {
     <link rel="stylesheet" href="~/css/dashboard-soft.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/web/kindergarten/css/detsad-clients.css" asp-append-version="true" />
+    <style>
+        .notify-filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 0.85rem 1rem;
+            align-items: end;
+            margin-bottom: 1.25rem;
+            padding: 1rem 1.1rem;
+            background: var(--card-bg, #fff);
+            border: 1px solid var(--card-border, #e2eaf0);
+            border-radius: 16px;
+            box-shadow: 0 8px 20px rgba(120, 144, 166, 0.08);
+        }
+
+        .notify-filters .filter-field label {
+            display: block;
+            margin-bottom: 0.35rem;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-muted, #8c9aaa);
+        }
+
+        .notify-filters .filter-field input[type="date"],
+        .notify-filters .filter-field .form-select-soft {
+            width: 100%;
+            min-height: 40px;
+        }
+
+        .notify-filters__actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .notify-status {
+            display: inline-flex;
+            align-items: center;
+            min-height: 26px;
+            padding: 0.15rem 0.65rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            white-space: nowrap;
+        }
+
+        .notify-status--new {
+            background: rgba(59, 130, 246, 0.12);
+            color: #1d4ed8;
+        }
+
+        .notify-status--processing {
+            background: rgba(245, 158, 11, 0.14);
+            color: #b45309;
+        }
+
+        .notify-status--sent {
+            background: rgba(34, 197, 94, 0.14);
+            color: #15803d;
+        }
+
+        .notify-status--failed {
+            background: rgba(239, 68, 68, 0.12);
+            color: #b91c1c;
+        }
+
+        .notify-channel {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-weight: 600;
+            color: #1f4e63;
+        }
+
+        .notify-meta {
+            margin-top: 0.85rem;
+            color: var(--text-muted, #8c9aaa);
+            font-size: 0.875rem;
+        }
+
+        .notify-subject {
+            max-width: 280px;
+        }
+
+        .notify-error {
+            display: block;
+            margin-top: 0.2rem;
+            color: #b91c1c;
+            font-size: 0.75rem;
+        }
+    </style>
 }
 
-<div class="children-page settings-page settings-subpage">
-    <nav class="detsad-breadcrumb" aria-label="Навигация">
-        <a asp-controller="Settings" asp-action="Index">Настройки</a>
-        <span class="breadcrumb-sep">/</span>
-        <span>Уведомления</span>
-    </nav>
-
+<div class="dashboard-page children-page">
     <div class="page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
         <div>
-            <h1 class="page-title">Уведомления</h1>
-            <p class="page-subtitle mb-0">Журнал очереди уведомлений по каналам email, telegram и whatsapp.</p>
+            <h1 class="page-title">@Localizer["ClientNotifications"]</h1>
+            <p class="page-subtitle mb-0">Журнал уведомлений клиентам организации. По умолчанию — за сегодня.</p>
         </div>
-        <div class="d-flex gap-2 flex-wrap">
+        @if (isAdmin)
+        {
             <a asp-action="Create" class="detsad-btn-primary">Новая рассылка</a>
-            <a asp-controller="Settings" asp-action="Index" class="detsad-btn-secondary">← К настройкам</a>
-        </div>
+        }
     </div>
 
     @if (TempData["Message"] != null)
@@ -44,47 +160,52 @@
         <div class="alert alert-warning">@TempData["Warning"]</div>
     }
 
-    <form method="get" asp-action="Index" class="dashboard-filters">
-        <div class="settings-filters-inner">
-            <div class="filter-field">
-                <label for="filterStatus">Статус</label>
-                <select name="status" id="filterStatus" class="form-select-soft">
-                    <option value="">Все</option>
-                    @if (status == "new") { <option value="new" selected>new</option> } else { <option value="new">new</option> }
-                    @if (status == "processing") { <option value="processing" selected>processing</option> } else { <option value="processing">processing</option> }
-                    @if (status == "sent") { <option value="sent" selected>sent</option> } else { <option value="sent">sent</option> }
-                    @if (status == "failed") { <option value="failed" selected>failed</option> } else { <option value="failed">failed</option> }
-                </select>
-            </div>
-            <div class="filter-field">
-                <label for="filterChannel">Канал</label>
-                <select name="channel" id="filterChannel" class="form-select-soft">
-                    <option value="">Все</option>
-                    @if (channel == "email") { <option value="email" selected>email</option> } else { <option value="email">email</option> }
-                    @if (channel == "telegram") { <option value="telegram" selected>telegram</option> } else { <option value="telegram">telegram</option> }
-                    @if (channel == "whatsapp") { <option value="whatsapp" selected>whatsapp</option> } else { <option value="whatsapp">whatsapp</option> }
-                </select>
-            </div>
-            <div class="filter-field">
-                <label for="createdFrom">Создано с</label>
-                <input type="date" name="createdFrom" id="createdFrom" value="@createdFrom" />
-            </div>
-            <div class="filter-field">
-                <label for="createdTo">Создано по</label>
-                <input type="date" name="createdTo" id="createdTo" value="@createdTo" />
-            </div>
-            <div class="filter-field">
-                <label for="sentFrom">Отправлено с</label>
-                <input type="date" name="sentFrom" id="sentFrom" value="@sentFrom" />
-            </div>
-            <div class="filter-field">
-                <label for="sentTo">Отправлено по</label>
-                <input type="date" name="sentTo" id="sentTo" value="@sentTo" />
-            </div>
-            <div class="filter-field d-flex flex-row gap-2 align-items-end">
-                <button type="submit" class="btn-soft-primary">Применить</button>
-                <a asp-action="Index" class="btn-soft-secondary">Сбросить</a>
-            </div>
+    <form method="get" asp-action="Index" class="notify-filters">
+        <div class="filter-field">
+            <label for="createdFrom">Дата с</label>
+            <input type="date" name="createdFrom" id="createdFrom" class="form-control" value="@createdFrom" />
+        </div>
+        <div class="filter-field">
+            <label for="createdTo">Дата по</label>
+            <input type="date" name="createdTo" id="createdTo" class="form-control" value="@createdTo" />
+        </div>
+        <div class="filter-field">
+            <label for="filterChannel">Канал</label>
+            <select name="channel" id="filterChannel" class="form-select-soft">
+                <option value="">Все каналы</option>
+                @if (channel == "whatsapp") { <option value="whatsapp" selected>WhatsApp</option> } else { <option value="whatsapp">WhatsApp</option> }
+                @if (channel == "telegram") { <option value="telegram" selected>Telegram</option> } else { <option value="telegram">Telegram</option> }
+                @if (channel == "email") { <option value="email" selected>Email</option> } else { <option value="email">Email</option> }
+            </select>
+        </div>
+        <div class="filter-field">
+            <label for="filterStatus">Статус</label>
+            <select name="status" id="filterStatus" class="form-select-soft">
+                <option value="">Все статусы</option>
+                @if (status == "new") { <option value="new" selected>Запланировано</option> } else { <option value="new">Запланировано</option> }
+                @if (status == "processing") { <option value="processing" selected>В обработке</option> } else { <option value="processing">В обработке</option> }
+                @if (status == "sent") { <option value="sent" selected>Отправлено</option> } else { <option value="sent">Отправлено</option> }
+                @if (status == "failed") { <option value="failed" selected>Ошибка</option> } else { <option value="failed">Ошибка</option> }
+            </select>
+        </div>
+        <div class="filter-field">
+            <label for="sentFrom">Отправлено с</label>
+            <input type="date" name="sentFrom" id="sentFrom" class="form-control" value="@sentFrom" />
+        </div>
+        <div class="filter-field">
+            <label for="sentTo">Отправлено по</label>
+            <input type="date" name="sentTo" id="sentTo" class="form-control" value="@sentTo" />
+        </div>
+        <div class="filter-field notify-filters__actions">
+            <button type="submit" class="btn-soft-primary">Применить</button>
+            <a asp-action="Index"
+               asp-route-createdFrom="@today"
+               asp-route-createdTo="@today"
+               class="btn-soft-secondary">Сегодня</a>
+            <a asp-action="Index"
+               asp-route-createdFrom=""
+               asp-route-createdTo=""
+               class="btn-soft-secondary">Все даты</a>
         </div>
     </form>
 
@@ -95,29 +216,32 @@
                 <table class="table-soft">
                     <thead>
                         <tr>
-                            <th>Дата</th>
-                            <th>Канал</th>
-                            <th>Статус</th>
-                            <th>Тема</th>
+                            <th>Дата создания</th>
                             <th>Клиент</th>
+                            <th>Канал</th>
                             <th>Контакт</th>
+                            <th>Тема</th>
+                            <th>Статус</th>
+                            <th>Отправлено</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var n in Model)
                         {
-                            var st = n.Status ?? "";
-                            var statusClass = st == "sent" ? "notify-status--sent"
-                                : st == "failed" ? "notify-status--failed"
-                                : st == "processing" ? "notify-status--processing"
-                                : "notify-status--new";
                             <tr>
                                 <td class="cell-muted">@(n.CreatedAt?.ToString("dd.MM.yyyy HH:mm") ?? "—")</td>
-                                <td>@(n.Channel ?? "—")</td>
-                                <td><span class="notify-status @statusClass">@(n.Status ?? "—")</span></td>
-                                <td class="text-break cell-name">@(n.Subject != null && n.Subject.Length > 50 ? n.Subject.Substring(0, 50) + "…" : n.Subject ?? "—")</td>
-                                <td>@(n.ClientNavigation?.ClientName ?? n.ClientId ?? "—")</td>
+                                <td><span class="cell-name">@(n.ClientNavigation?.ClientName ?? n.ClientId ?? "—")</span></td>
+                                <td><span class="notify-channel">@ChannelLabel(n.Channel)</span></td>
                                 <td class="cell-muted small">@(n.ContactInfo ?? "—")</td>
+                                <td class="text-break notify-subject">
+                                    @(n.Subject != null && n.Subject.Length > 60 ? n.Subject.Substring(0, 60) + "…" : n.Subject ?? "—")
+                                    @if (!string.IsNullOrWhiteSpace(n.ErrorMessage) && string.Equals(n.Status, "failed", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <span class="notify-error">@n.ErrorMessage</span>
+                                    }
+                                </td>
+                                <td><span class="notify-status @StatusClass(n.Status)">@StatusLabel(n.Status)</span></td>
+                                <td class="cell-muted">@(n.SentAt?.ToString("dd.MM.yyyy HH:mm") ?? "—")</td>
                             </tr>
                         }
                     </tbody>
@@ -157,16 +281,19 @@
             </nav>
         }
 
-        <p class="settings-meta mb-0">Всего записей: @totalCount</p>
+        <p class="notify-meta mb-0">Всего записей: @totalCount</p>
     }
     else
     {
-        <div class="empty-state-settings">
-            <p class="mb-0">Уведомлений пока нет.</p>
-            <div class="d-flex gap-2 flex-wrap mt-3">
-                <a asp-action="Create" class="detsad-btn-primary">Создать рассылку</a>
-                <a asp-controller="Settings" asp-action="Index" class="detsad-btn-secondary">← К настройкам</a>
-            </div>
+        <div class="empty-state-inline">
+            <p class="empty-state-title mb-1">Уведомлений не найдено</p>
+            <p class="empty-state-desc mb-0">За выбранный период и фильтры записей нет. Попробуйте изменить даты или канал.</p>
+            @if (isAdmin)
+            {
+                <div class="mt-3">
+                    <a asp-action="Create" class="detsad-btn-primary">Создать рассылку</a>
+                </div>
+            }
         </div>
     }
 </div>

@@ -23,12 +23,18 @@ namespace WebApplication1.Controllers
         private readonly AppDbContext _db;
         private readonly WebApiAuthService _authService;
         private readonly OperationsByInvoices _oper;
+        private readonly ILogger<WebApiController> _logger;
 
-        public WebApiController(AppDbContext db, WebApiAuthService authService, OperationsByInvoices oper)
+        public WebApiController(
+            AppDbContext db,
+            WebApiAuthService authService,
+            OperationsByInvoices oper,
+            ILogger<WebApiController> logger)
         {
             _db = db;
             _authService = authService;
             _oper = oper;
+            _logger = logger;
         }
 
 
@@ -243,6 +249,10 @@ namespace WebApplication1.Controllers
         [Produces("application/xml")]
         public async Task<CheckResponse> check([FromBody] CheckRequest request)
         {
+            _logger.LogInformation(
+                "Connector check start. Account={Account} Operator={Operator}",
+                request?.Account, request?.Operator);
+
             // 1. Базовая валидация
             if (request == null)
                 return WebApiResponseService.CreateCheckErrorResponse(ErrorCode.UnknownRequest);
@@ -985,6 +995,9 @@ namespace WebApplication1.Controllers
 
             try
             {
+                _logger.LogInformation(
+                    "Connector pay start. Account={Account} TxnId={TxnId} Operator={Operator} Sum={Sum}",
+                    request?.Account, request?.TxnId, request?.Operator, request?.Sum);
 
                 #region VALIDATION
 
@@ -1217,6 +1230,10 @@ namespace WebApplication1.Controllers
                     }
                 };
 
+                _logger.LogInformation(
+                    "Connector pay success. Account={Account} TxnId={TxnId} PaidSum={PaidSum} BalanceAdded={BalanceAdded}",
+                    request.Account, request.TxnId, paidSum, balanceAdded);
+
                 return WebApiResponseService.CreatePaySuccessResponse(
                     account: request.Account,
                     walletAccount: "1256982",
@@ -1230,9 +1247,12 @@ namespace WebApplication1.Controllers
 
                 #endregion
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 await dbTransaction.RollbackAsync();
+                _logger.LogError(ex,
+                    "Connector pay failed. Account={Account} TxnId={TxnId}",
+                    request?.Account, request?.TxnId);
                 return WebApiResponseService.CreatePayErrorResponse(ErrorCode.UnknownRequest);
             }
         }

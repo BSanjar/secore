@@ -19,11 +19,23 @@ document.addEventListener('DOMContentLoaded', function() {
             .map(cb => cb.value);
     }
 
+    function areAllGroupsSelected() {
+        if (!groupFilterCheckboxes.length) return true;
+        return Array.from(groupFilterCheckboxes).every(cb => cb.checked);
+    }
+
     function updateGroupsFilterButtonText() {
         const btnText = groupsFilterBtn?.querySelector('.groups-filter-btn-text');
         if (!btnText) return;
         const ids = getSelectedGroupIds();
-        btnText.textContent = ids.length > 0 ? 'По группам (' + ids.length + ')' : 'По группам';
+        const total = groupFilterCheckboxes.length;
+        if (total === 0 || ids.length === 0) {
+            btnText.textContent = 'По группам';
+        } else if (ids.length === total) {
+            btnText.textContent = 'Все группы';
+        } else {
+            btnText.textContent = 'По группам (' + ids.length + ')';
+        }
     }
 
     // Функция для применения фильтров (поддержка и карточек .child-card, и строк таблицы .child-row)
@@ -31,7 +43,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!childrenCards) return;
         const search = (searchInput?.value ?? '').toLowerCase().trim();
         const selectedGroupIds = getSelectedGroupIds();
-        const filterByGroups = selectedGroupIds.length > 0;
+        // Фильтруем только если выбрана часть групп.
+        // Если выбраны все (или ни одна) — показываем всех клиентов, включая без группы.
+        const filterByGroups = selectedGroupIds.length > 0 && !areAllGroupsSelected();
         
         const cards = childrenCards.querySelectorAll('.child-card');
         const rows = childrenCards.querySelectorAll('.child-row');
@@ -163,12 +177,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // При изменении чекбокса группы — применяем фильтр и обновляем подпись кнопки
     groupFilterCheckboxes.forEach(cb => {
+        cb.checked = true;
         cb.addEventListener('change', function() {
             applyFilters();
             updateGroupsFilterButtonText();
         });
     });
     updateGroupsFilterButtonText();
+    applyFilters();
 
     // Анимация карточек при загрузке (только для карточного вида)
     const cards = childrenCards.querySelectorAll('.child-card');
@@ -189,7 +205,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (childrenCards) {
         childrenCards.querySelectorAll('.child-row').forEach(function (row) {
             row.addEventListener('click', function (e) {
-                if (e.target.closest('.btn-row-action')) return;
+                if (e.target.closest('.btn-row-action, .btn-issue-invoice, .child-actions-menu')) return;
                 const clientId = row.getAttribute('data-client-id');
                 const clientName = row.getAttribute('data-client-name') || 'Ребенок';
                 if (clientId) openChildDetailModal(clientId, clientName);
@@ -230,7 +246,7 @@ function openChildDetailModal(clientId, clientName, onShown) {
     currentDetailClientId = clientId;
     modalTitle.textContent = clientName || 'Ребенок';
 
-    if (infoContent) infoContent.innerHTML = '<div class="loading-spinner"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div></div>';
+    if (infoContent) infoContent.innerHTML = (window.DetsadUI ? DetsadUI.loaderHtml('Загрузка профиля') : '<div class="loading-spinner"><div class="spinner-border text-primary"></div></div>');
     if (paymentsContent) paymentsContent.innerHTML = '<p class="text-muted mb-0">Выберите вкладку «Платежи» для загрузки данных.</p>';
 
     const modal = new bootstrap.Modal(modalEl);
@@ -256,7 +272,7 @@ function openChildDetailModal(clientId, clientName, onShown) {
 // Загрузить контент "О ребенке" в указанный элемент
 async function loadChildInfoInto(clientId, contentEl) {
     if (!contentEl) return;
-    contentEl.innerHTML = '<div class="loading-spinner"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div></div>';
+    contentEl.innerHTML = (window.DetsadUI ? DetsadUI.loaderHtml('Загрузка профиля') : '<div class="loading-spinner"><div class="spinner-border text-primary"></div></div>');
     try {
         const response = await fetch(`/Clients/GetInfo?clientId=${clientId}`);
         if (!response.ok) throw new Error('Ошибка загрузки данных');
@@ -345,7 +361,7 @@ window.refreshInvoicesInDetailModal = function(invoiceId) {
 // Загрузить вкладку «Платежи»: выбор счёта + платёжные периоды
 async function loadPaymentsTab(clientId, contentEl, invoiceId) {
     if (!contentEl) return;
-    contentEl.innerHTML = '<div class="loading-spinner"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div></div>';
+    contentEl.innerHTML = (window.DetsadUI ? DetsadUI.loaderHtml('Загрузка платежей') : '<div class="loading-spinner"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div></div>');
     try {
         const url = invoiceId 
             ? `/Invoices/GetInvoicesInfo?clientId=${clientId}&invoiceId=${encodeURIComponent(invoiceId)}`
@@ -648,12 +664,18 @@ async function submitChildOnly() {
     form.classList.add('was-validated');
 
     const childData = getChildFormData();
+    const submitBtn = document.getElementById('submitBtn');
+    const btnSkip = document.getElementById('addChildBtnSkip');
     try {
-        const submitBtn = document.getElementById('submitBtn');
-        const btnSkip = document.getElementById('addChildBtnSkip');
-        submitBtn.disabled = true;
-        if (btnSkip) btnSkip.disabled = true;
-        submitBtn.textContent = 'Регистрация...';
+        if (window.DetsadUI) {
+            DetsadUI.setButtonLoading(submitBtn, true, { label: 'Регистрация...' });
+            if (btnSkip) btnSkip.disabled = true;
+            DetsadUI.showOverlay('Сохранение...');
+        } else {
+            submitBtn.disabled = true;
+            if (btnSkip) btnSkip.disabled = true;
+            submitBtn.textContent = 'Регистрация...';
+        }
 
         const csrfToken = getRequestVerificationToken();
         const response = await fetch('/Clients/Create', {
@@ -671,30 +693,43 @@ async function submitChildOnly() {
             const clientId = result.clientId;
             const photoInput = document.getElementById('addChildPhoto');
             if (clientId && photoInput && photoInput.files && photoInput.files.length) {
+                if (window.DetsadUI) DetsadUI.setButtonLoading(submitBtn, true, { label: 'Загрузка фото...' });
                 const up = await uploadChildPhoto(clientId, photoInput.files[0], false);
                 if (!up.success) {
+                    if (window.DetsadUI) DetsadUI.hideOverlay();
                     showError((result.message || 'Ребёнок создан.') + ' ' + (up.message || 'Не удалось загрузить фото.'));
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Зарегистрировать и создать счёт';
+                    if (window.DetsadUI) {
+                        DetsadUI.setButtonLoading(submitBtn, false);
+                    } else {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Зарегистрировать и создать счёт';
+                    }
                     if (btnSkip) btnSkip.disabled = false;
-        return;
+                    return;
                 }
             }
             bootstrap.Modal.getInstance(document.getElementById('addChildModal')).hide();
-            window.location.reload();
+            if (window.DetsadUI) DetsadUI.reloadWithOverlay('Обновление списка...');
+            else window.location.reload();
         } else {
+            if (window.DetsadUI) DetsadUI.hideOverlay();
             showError(result.message || 'Ошибка при добавлении ребенка');
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Зарегистрировать и создать счёт';
+            if (window.DetsadUI) DetsadUI.setButtonLoading(submitBtn, false);
+            else {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Зарегистрировать и создать счёт';
+            }
             if (btnSkip) btnSkip.disabled = false;
         }
     } catch (error) {
         console.error('Error submitting child:', error);
+        if (window.DetsadUI) DetsadUI.hideOverlay();
         showError('Ошибка при отправке данных. Попробуйте позже.');
-        const submitBtn = document.getElementById('submitBtn');
-        const btnSkip = document.getElementById('addChildBtnSkip');
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Зарегистрировать и создать счёт';
+        if (window.DetsadUI) DetsadUI.setButtonLoading(submitBtn, false);
+        else {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Зарегистрировать и создать счёт';
+        }
         if (btnSkip) btnSkip.disabled = false;
     }
 }
@@ -732,11 +767,28 @@ async function submitChildAndInvoice() {
     }
 
     const childData = getChildFormData();
-        const submitBtn = document.getElementById('submitBtn');
+    const submitBtn = document.getElementById('submitBtn');
     const btnSkip = document.getElementById('addChildBtnSkip');
+    function resetSubmitUi() {
+        if (window.DetsadUI) {
+            DetsadUI.hideOverlay();
+            DetsadUI.setButtonLoading(submitBtn, false);
+        } else {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Зарегистрировать и создать счёт';
+        }
+        if (btnSkip) btnSkip.disabled = false;
+    }
+
+    if (window.DetsadUI) {
+        DetsadUI.setButtonLoading(submitBtn, true, { label: 'Регистрация...' });
+        if (btnSkip) btnSkip.disabled = true;
+        DetsadUI.showOverlay('Сохранение...');
+    } else {
         submitBtn.disabled = true;
-    if (btnSkip) btnSkip.disabled = true;
+        if (btnSkip) btnSkip.disabled = true;
         submitBtn.textContent = 'Регистрация...';
+    }
 
     try {
         const csrfToken = getRequestVerificationToken();
@@ -752,31 +804,31 @@ async function submitChildAndInvoice() {
         const createChildResult = await createChildRes.json();
         if (!createChildResult.success) {
             showError(createChildResult.message || 'Ошибка при добавлении ребенка');
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Зарегистрировать и создать счёт';
-            if (btnSkip) btnSkip.disabled = false;
+            resetSubmitUi();
             return;
         }
 
         const clientId = createChildResult.clientId;
         if (!clientId) {
             showError('Не получен идентификатор ребёнка.');
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Зарегистрировать и создать счёт';
-            if (btnSkip) btnSkip.disabled = false;
+            resetSubmitUi();
             return;
         }
 
         const photoInput = document.getElementById('addChildPhoto');
         if (photoInput && photoInput.files && photoInput.files.length) {
+            if (window.DetsadUI) DetsadUI.setButtonLoading(submitBtn, true, { label: 'Загрузка фото...' });
             const up = await uploadChildPhoto(clientId, photoInput.files[0], false);
             if (!up.success) {
                 showError('Ребёнок создан, но фото не загрузилось: ' + (up.message || ''));
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Зарегистрировать и создать счёт';
-                if (btnSkip) btnSkip.disabled = false;
+                resetSubmitUi();
                 return;
             }
+        }
+
+        if (window.DetsadUI) {
+            DetsadUI.setButtonLoading(submitBtn, true, { label: 'Создание счёта...' });
+            DetsadUI.showOverlay('Создание счёта...');
         }
 
         const invoicePayload = {
@@ -803,19 +855,16 @@ async function submitChildAndInvoice() {
 
         if (invoiceResult.success !== false) {
             bootstrap.Modal.getInstance(document.getElementById('addChildModal')).hide();
-            window.location.reload();
+            if (window.DetsadUI) DetsadUI.reloadWithOverlay('Обновление списка...');
+            else window.location.reload();
         } else {
             showError(invoiceResult.message || 'Ребёнок добавлен, но не удалось создать счёт.');
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Зарегистрировать и создать счёт';
-            if (btnSkip) btnSkip.disabled = false;
+            resetSubmitUi();
         }
     } catch (error) {
         console.error('Error submitChildAndInvoice:', error);
         showError('Ошибка при отправке данных. Попробуйте позже.');
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Зарегистрировать и создать счёт';
-        if (btnSkip) btnSkip.disabled = false;
+        resetSubmitUi();
     }
 }
 

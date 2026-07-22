@@ -9,10 +9,12 @@ namespace WebApplication1.Controllers
     public class AccountController : Controller
     {
         private readonly AppDbContext _db;
+        private readonly ILogger<AccountController> _logger;
 
-        public AccountController(AppDbContext db)
+        public AccountController(AppDbContext db, ILogger<AccountController> logger)
         {
             _db = db;
+            _logger = logger;
         }
 
         public IActionResult Login(string? returnUrl = null)
@@ -73,6 +75,8 @@ namespace WebApplication1.Controllers
 
             if (user == null)
             {
+                _logger.LogWarning("Login failed: user not found. Email={Email} IP={Ip}",
+                    emailToSearch, HttpContext.Connection.RemoteIpAddress);
                 ModelState.AddModelError("", "Неверный email или пароль");
                 return View(model);
             }
@@ -80,18 +84,23 @@ namespace WebApplication1.Controllers
             if (string.IsNullOrEmpty(user.Password) ||
                 !PasswordHelper.VerifyPassword(model.Password, user.Password))
             {
+                _logger.LogWarning("Login failed: bad password. UserId={UserId} Email={Email} IP={Ip}",
+                    user.Id, emailToSearch, HttpContext.Connection.RemoteIpAddress);
                 ModelState.AddModelError("", "Неверный email или пароль");
                 return View(model);
             }
 
             if (string.IsNullOrEmpty(user.Organization) || user.OrganizationNavigation == null)
             {
+                _logger.LogWarning("Login failed: no organization. UserId={UserId}", user.Id);
                 ModelState.AddModelError("", "Пользователь не привязан к организации");
                 return View(model);
             }
 
             if (!await SubscriptionHelper.HasSubscriptionAccessAsync(_db, user.Organization))
             {
+                _logger.LogWarning("Login failed: subscription blocked. UserId={UserId} Org={OrgId}",
+                    user.Id, user.Organization);
                 ModelState.AddModelError("", "Доступ приостановлен: организация неактивна. Обратитесь к администратору.");
                 return View(model);
             }
@@ -100,6 +109,14 @@ namespace WebApplication1.Controllers
             HttpContext.Session.SetString("UserName", user.Name ?? "Пользователь");
             HttpContext.Session.SetString("OrganizationId", user.Organization);
             HttpContext.Session.SetString("OrganizationType", user.OrganizationNavigation.Organizationtype ?? "");
+
+            _logger.LogInformation(
+                "Login success. UserId={UserId} Email={Email} Org={OrgId} OrgType={OrgType} IP={Ip}",
+                user.Id,
+                emailToSearch,
+                user.Organization,
+                user.OrganizationNavigation.Organizationtype,
+                HttpContext.Connection.RemoteIpAddress);
 
             return RedirectToLanding(user, returnUrl);
         }
@@ -114,12 +131,18 @@ namespace WebApplication1.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Logout()
         {
+            var userId = HttpContext.Session.GetString("UserId");
+            var orgId = HttpContext.Session.GetString("OrganizationId");
+            _logger.LogInformation("Logout. UserId={UserId} Org={OrgId}", userId, orgId);
             HttpContext.Session.Clear();
             return RedirectToAction("Login", "Account");
         }
 
         public IActionResult LogoutGet()
         {
+            var userId = HttpContext.Session.GetString("UserId");
+            var orgId = HttpContext.Session.GetString("OrganizationId");
+            _logger.LogInformation("Logout (GET). UserId={UserId} Org={OrgId}", userId, orgId);
             HttpContext.Session.Clear();
             return RedirectToAction("Login", "Account");
         }

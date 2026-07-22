@@ -1,8 +1,10 @@
 @using Microsoft.AspNetCore.Mvc.Localization
+@using WebApplication1.Helpers
 @inject IHtmlLocalizer<WebApplication1.SharedResources> Localizer
 @{
     var currentCultureName = ViewData["CurrentCultureName"]?.ToString() ?? "ru";
     var returnUrl = ViewData["ReturnUrl"]?.ToString() ?? "/";
+    var userName = AuthorizationHelper.GetUserName(Context) ?? "Пользователь";
 }
 <div class="dashboard-topbar-actions">
     <button type="button"
@@ -14,13 +16,6 @@
         <span></span>
         <span></span>
     </button>
-    <div class="dashboard-search" id="dashboardSearch">
-        <input type="text" placeholder="@Localizer["SearchPlaceholder"]" id="dashboardSearchInput" autocomplete="off" />
-        <button type="button" class="dashboard-search-btn" aria-label="@Localizer["Search"]">
-            <img src="~/img/search-icon.png" alt="" class="dashboard-search-icon" />
-        </button>
-        <div class="dashboard-search-suggestions" id="dashboardSearchSuggestions" style="display: none;"></div>
-    </div>
     <div class="dashboard-notifications-wrap">
         <button type="button" class="dashboard-notifications-btn" id="dashboardNotificationsBtn" aria-label="@Localizer["Notifications"]">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" fill="currentColor"/></svg>
@@ -52,5 +47,22 @@
                 <button type="submit" class="dashboard-lang-option @(currentCultureName == "ky" ? "active" : "")">🇰🇬 @Localizer["LanguageKyrgyz"]</button>
             </form>
         </div>
+    </div>
+    <div class="dropdown dashboard-user-wrap">
+        <a class="dashboard-user-chip"
+           href="#"
+           id="userDropdown"
+           role="button"
+           data-bs-toggle="dropdown"
+           aria-expanded="false"
+           title="@userName">
+            <span class="dashboard-user-avatar" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="currentColor"/>
+                </svg>
+            </span>
+            <span class="dashboard-user-name">@userName</span>
+        </a>
+        @await Html.PartialAsync("~/Views/Shared/_UserMenuPartial.cshtml")
     </div>
 </div>

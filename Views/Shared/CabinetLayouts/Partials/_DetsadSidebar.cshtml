@@ -13,9 +13,8 @@
 }
 <aside class="dashboard-sidebar" data-shell-sidebar>
     <div class="dashboard-sidebar-top">
-        <a class="dashboard-sidebar-brand" asp-controller="Cabinet" asp-action="Index">
-            <span class="dashboard-sidebar-brand-mark">*</span>
-            <span class="dashboard-sidebar-brand-text">Secore</span>
+        <a class="dashboard-sidebar-brand dashboard-sidebar-brand--logo" asp-controller="Cabinet" asp-action="Index" title="SECORE Software Development">
+            <img src="~/web/kindergarten/img/secore-logo.png" alt="SECORE" class="dashboard-sidebar-brand-logo" asp-append-version="true" />
         </a>
         <button type="button" class="app-shell-sidebar-close" data-shell-close aria-label="Close navigation menu">×</button>
         <nav class="dashboard-sidebar-nav">
@@ -41,14 +40,5 @@
                 ["LabelClass"] = "dashboard-nav-item-label",
                 ["ActiveClass"] = "active"
             })
-
-        <form asp-controller="Account" asp-action="Logout" method="post" class="dashboard-sidebar-bottom-item dashboard-logout-form">
-            <button type="submit" class="dashboard-logout-btn" title="@Localizer["Logout"]">
-                <span class="dashboard-nav-item-icon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" fill="currentColor"/></svg>
-                </span>
-                <span class="dashboard-nav-item-label">@Localizer["Logout"]</span>
-            </button>
-        </form>
     </div>
 </aside>

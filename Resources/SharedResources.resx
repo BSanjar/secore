@@ -432,6 +432,9 @@
   <data name="Notifications" xml:space="preserve">
     <value>Уведомления</value>
   </data>
+  <data name="ClientNotifications" xml:space="preserve">
+    <value>Уведомления клиентов</value>
+  </data>
   <data name="Compact" xml:space="preserve">
     <value>Компактный</value>
   </data>

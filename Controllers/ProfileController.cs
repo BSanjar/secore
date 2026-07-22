@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using WebApplication1.Helpers;
 using WebApplication1.Models.DBModels;
 using WebApplication1.Services.Cabinets;
+using WebApplication1.ViewModels.Profile;
 
 namespace WebApplication1.Controllers
 {
@@ -35,38 +36,58 @@ namespace WebApplication1.Controllers
             if (featureGuard != null)
                 return featureGuard;
 
-            var user = await _db.Users.FindAsync(userId);
+            var user = await _db.Users
+                .AsNoTracking()
+                .Include(u => u.OrganizationNavigation)
+                .Include(u => u.UserRoles)
+                    .ThenInclude(ur => ur.RoleNavigation)
+                .FirstOrDefaultAsync(u => u.Id == userId && (u.Isdeleted == null || u.Isdeleted == 0));
+
             if (user == null)
                 return NotFound();
 
-            return View(user);
+            var organizationType = AuthorizationHelper.GetOrganizationType(HttpContext);
+            var selectedStartPage = LandingPageResolver.NormalizeStartPage(user.StartPage);
+
+            var roles = user.UserRoles
+                .Where(ur => ur.Isdeleted == null || ur.Isdeleted == 0)
+                .Select(ur => ur.RoleNavigation?.Name)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Cast<string>()
+                .ToList();
+
+            var model = new ProfileViewModel
+            {
+                Name = string.IsNullOrWhiteSpace(user.Name) ? "Пользователь" : user.Name.Trim(),
+                Email = user.Email,
+                Phone = user.Phone,
+                OrganizationName = user.OrganizationNavigation?.Name,
+                OrganizationType = organizationType,
+                StartPageLabel = selectedStartPage,
+                LastLogin = user.LastLogin,
+                Roles = roles,
+                Initials = BuildInitials(user.Name)
+            };
+
+            return View(model);
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Index(string? Name, string? Phone, string? StartPage)
+        private static string BuildInitials(string? name)
         {
-            var userId = AuthorizationHelper.GetUserId(HttpContext);
-            if (string.IsNullOrEmpty(userId))
-                return RedirectToAction("Login", "Account");
+            if (string.IsNullOrWhiteSpace(name))
+                return "?";
 
-            var featureGuard = EnsureProfileFeature();
-            if (featureGuard != null)
-                return featureGuard;
+            var parts = name
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-            var user = await _db.Users.FindAsync(userId);
-            if (user == null)
-                return NotFound();
+            if (parts.Length == 0)
+                return "?";
 
-            user.Name = Name?.Trim();
-            user.Phone = Phone?.Trim();
-            user.StartPage = LandingPageResolver.NormalizeStartPage(StartPage);
-            await _db.SaveChangesAsync();
+            if (parts.Length == 1)
+                return parts[0][..1].ToUpperInvariant();
 
-            HttpContext.Session.SetString("UserName", user.Name ?? "");
-
-            TempData["Message"] = "Профиль сохранён.";
-            return RedirectToAction(nameof(Index));
+            return string.Concat(parts[0].AsSpan(0, 1), parts[^1].AsSpan(0, 1)).ToUpperInvariant();
         }
     }
 }
