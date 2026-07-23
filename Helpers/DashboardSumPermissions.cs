@@ -54,10 +54,7 @@ public static class DashboardSumPermissions
 
         var types = new List<string>();
         if (canSecore)
-        {
             types.Add("payFromAPI");
-            types.Add("payPaymentInvoice");
-        }
 
         if (canExternal)
             types.Add("payFromExternalQR");
@@ -87,11 +84,22 @@ public static class DashboardSumPermissions
         return query.Where(t =>
             t.TransactionType != null &&
             (
-                allowed.Contains(t.TransactionType) ||
+                (t.TransactionType != "payPaymentInvoice" &&
+                 t.TransactionType != "credit" &&
+                 allowed.Contains(t.TransactionType)) ||
                 (t.TransactionType == "credit" &&
                  t.ParentTransactionNavigation != null &&
-                 t.ParentTransactionNavigation.TransactionType != null &&
-                 allowed.Contains(t.ParentTransactionNavigation.TransactionType))
+                 (
+                     t.ParentTransactionNavigation.TransactionType == "payPaymentInvoice" ||
+                     (allowed.Contains(t.ParentTransactionNavigation.TransactionType!) &&
+                      t.ParentTransactionNavigation.TransactionType != "payPaymentInvoice")
+                 ))
             ));
     }
+
+    /// <summary>
+    /// Внутреннее разнесение по счёту (не отдельный платёж для пользователя).
+    /// </summary>
+    public static bool IsInternalPaymentLedgerType(string? transactionType) =>
+        string.Equals(transactionType, "payPaymentInvoice", StringComparison.OrdinalIgnoreCase);
 }

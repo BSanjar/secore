@@ -6,13 +6,45 @@ public static class MedclinicTransactionLabels
 {
     public static string ResolveEffectiveType(Transaction transaction)
     {
-        if (string.Equals(transaction.TransactionType, "credit", StringComparison.OrdinalIgnoreCase) &&
-            transaction.ParentTransactionNavigation?.TransactionType != null)
+        if (string.Equals(transaction.TransactionType, "credit", StringComparison.OrdinalIgnoreCase))
         {
-            return transaction.ParentTransactionNavigation.TransactionType;
+            return ResolveIncomingTypeForLedgerSource(transaction.ParentTransactionNavigation)
+                ?? transaction.ParentTransactionNavigation?.TransactionType
+                ?? string.Empty;
+        }
+
+        if (DashboardSumPermissions.IsInternalPaymentLedgerType(transaction.TransactionType))
+        {
+            return ResolveIncomingTypeForLedgerSource(transaction)
+                ?? transaction.TransactionType
+                ?? string.Empty;
         }
 
         return transaction.TransactionType ?? string.Empty;
+    }
+
+    /// <summary>
+    /// Для payPaymentInvoice — канал реальной оплаты (родительский приход).
+    /// </summary>
+    static string? ResolveIncomingTypeForLedgerSource(Transaction? ledgerOrSource)
+    {
+        if (ledgerOrSource == null)
+            return null;
+
+        if (DashboardSumPermissions.IsInternalPaymentLedgerType(ledgerOrSource.TransactionType))
+        {
+            var incoming = ledgerOrSource.ParentTransactionNavigation;
+            if (incoming != null &&
+                !DashboardSumPermissions.IsInternalPaymentLedgerType(incoming.TransactionType))
+            {
+                return incoming.TransactionType;
+            }
+        }
+
+        if (!DashboardSumPermissions.IsInternalPaymentLedgerType(ledgerOrSource.TransactionType))
+            return ledgerOrSource.TransactionType;
+
+        return null;
     }
 
     public static string ChannelLabel(string? transactionType)
@@ -29,6 +61,9 @@ public static class MedclinicTransactionLabels
     }
 
     public static string ChannelLabel(Transaction transaction) =>
+        ChannelLabel(ResolveEffectiveType(transaction));
+
+    public static string PaymentTypeLabel(Transaction transaction) =>
         ChannelLabel(ResolveEffectiveType(transaction));
 
     public static string KindLabel(Transaction transaction) =>

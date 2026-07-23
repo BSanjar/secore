@@ -109,10 +109,13 @@
                         @foreach (var s in Model)
                         {
                             var isFixed = s.FixedSum == 1;
-                            var sumInfo = isFixed && s.ServiceSumm.HasValue
-                                ? s.ServiceSumm.Value.ToString("N2") + " " + Localizer["Som"].Value
-                                : (s.MinSumm.HasValue || s.MaxSumm.HasValue)
-                                    ? (s.MinSumm.HasValue ? s.MinSumm.Value.ToString("N2") + " — " : "— ") + (s.MaxSumm.HasValue ? s.MaxSumm.Value.ToString("N2") + " " + Localizer["Som"].Value : "—")
+                            var fixedSom = ParsersHelper.TyiynToSom(s.ServiceSumm);
+                            var minSom = ParsersHelper.TyiynToSom(s.MinSumm);
+                            var maxSom = ParsersHelper.TyiynToSom(s.MaxSumm);
+                            var sumInfo = isFixed && fixedSom.HasValue
+                                ? fixedSom.Value.ToString("N2") + " " + Localizer["Som"].Value
+                                : (minSom.HasValue || maxSom.HasValue)
+                                    ? (minSom.HasValue ? minSom.Value.ToString("N2") + " — " : "— ") + (maxSom.HasValue ? maxSom.Value.ToString("N2") + " " + Localizer["Som"].Value : "—")
                                     : "—";
                             <tr class="org-service-row" data-search-name="@(s.Name ?? "")">
                                 <td><strong>@(s.Name ?? "—")</strong></td>
@@ -127,9 +130,9 @@
                                                 data-id="@s.Id"
                                                 data-name="@(s.Name ?? "")"
                                                 data-fixed-sum="@(s.FixedSum == 1 ? "1" : "0")"
-                                                data-service-summ="@(s.ServiceSumm?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")"
-                                                data-min-summ="@(s.MinSumm?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")"
-                                                data-max-summ="@(s.MaxSumm?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")">
+                                                data-service-summ="@(fixedSom?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")"
+                                                data-min-summ="@(minSom?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")"
+                                                data-max-summ="@(maxSom?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                 <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor"/>
                                             </svg>

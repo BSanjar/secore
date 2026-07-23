@@ -2,6 +2,7 @@ using ClosedXML.Excel;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Dtos;
+using WebApplication1.Helpers;
 using WebApplication1.Models.DBModels;
 using WebApplication1.ViewModels.Services;
 
@@ -43,9 +44,9 @@ public class ServiceCatalogService : IServiceCatalogService
                 Id = x.Id,
                 Name = x.Name ?? "Без названия",
                 IsFixed = x.FixedSum == 1,
-                FixedAmount = x.ServiceSumm,
-                MinAmount = x.MinSumm,
-                MaxAmount = x.MaxSumm,
+                FixedAmount = ParsersHelper.TyiynToSom(x.ServiceSumm),
+                MinAmount = ParsersHelper.TyiynToSom(x.MinSumm),
+                MaxAmount = ParsersHelper.TyiynToSom(x.MaxSumm),
                 SpecializationNames = x.ServiceSpecializations
                     .Select(s => s.Specialization.Name)
                     .OrderBy(name => name)
@@ -64,9 +65,9 @@ public class ServiceCatalogService : IServiceCatalogService
                 Id = x.Id,
                 Name = x.Name ?? string.Empty,
                 IsFixed = x.FixedSum == 1,
-                FixedAmount = x.ServiceSumm,
-                MinAmount = x.MinSumm,
-                MaxAmount = x.MaxSumm,
+                FixedAmount = ParsersHelper.TyiynToSom(x.ServiceSumm),
+                MinAmount = ParsersHelper.TyiynToSom(x.MinSumm),
+                MaxAmount = ParsersHelper.TyiynToSom(x.MaxSumm),
                 SpecializationIds = x.ServiceSpecializations.Select(s => s.SpecializationId).ToList()
             })
             .FirstOrDefaultAsync();
@@ -101,9 +102,9 @@ public class ServiceCatalogService : IServiceCatalogService
             Organization = organizationId,
             Name = dto.Name.Trim(),
             FixedSum = dto.IsFixed ? 1 : 0,
-            ServiceSumm = dto.IsFixed ? dto.FixedAmount : null,
-            MinSumm = dto.IsFixed ? null : dto.MinAmount,
-            MaxSumm = dto.IsFixed ? null : dto.MaxAmount,
+            ServiceSumm = dto.IsFixed ? ParsersHelper.SomToTyiyn(dto.FixedAmount) : null,
+            MinSumm = dto.IsFixed ? null : ParsersHelper.SomToTyiyn(dto.MinAmount),
+            MaxSumm = dto.IsFixed ? null : ParsersHelper.SomToTyiyn(dto.MaxAmount),
             Isdeleted = 0
         };
 
@@ -127,9 +128,9 @@ public class ServiceCatalogService : IServiceCatalogService
 
         entity.Name = dto.Name.Trim();
         entity.FixedSum = dto.IsFixed ? 1 : 0;
-        entity.ServiceSumm = dto.IsFixed ? dto.FixedAmount : null;
-        entity.MinSumm = dto.IsFixed ? null : dto.MinAmount;
-        entity.MaxSumm = dto.IsFixed ? null : dto.MaxAmount;
+        entity.ServiceSumm = dto.IsFixed ? ParsersHelper.SomToTyiyn(dto.FixedAmount) : null;
+        entity.MinSumm = dto.IsFixed ? null : ParsersHelper.SomToTyiyn(dto.MinAmount);
+        entity.MaxSumm = dto.IsFixed ? null : ParsersHelper.SomToTyiyn(dto.MaxAmount);
         await SyncSpecializationsAsync(organizationId, id, dto.SpecializationIds);
 
         await _db.SaveChangesAsync();

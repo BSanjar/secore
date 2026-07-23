@@ -296,12 +296,23 @@
         });
     }
 
+    function formatTyiynAsSom(tyiyn) {
+        var som = (Number(tyiyn) || 0) / 100;
+        return new Intl.NumberFormat("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(som);
+    }
+
+    function formatTyiynAsSomWithSuffix(tyiyn) {
+        return formatTyiynAsSom(tyiyn) + " c";
+    }
+
     window.MedclinicUI = {
         setButtonLoading: setButtonLoading,
         showPageOverlay: showPageOverlay,
         hidePageOverlay: hidePageOverlay,
         showToast: showToast,
         confirm: confirm,
-        confirmPaidCancel: confirmPaidCancel
+        confirmPaidCancel: confirmPaidCancel,
+        formatTyiynAsSom: formatTyiynAsSom,
+        formatTyiynAsSomWithSuffix: formatTyiynAsSomWithSuffix
     };
 })(window, document);

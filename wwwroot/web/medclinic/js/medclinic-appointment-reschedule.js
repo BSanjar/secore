@@ -7,8 +7,11 @@
 
     if (!grid || !selectedBox) return;
 
-    const fmt = (v) =>
-        `${new Intl.NumberFormat("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(v) || 0)} c`;
+    const fmt = (tyiyn) => {
+        const ui = window.MedclinicUI;
+        const text = ui && ui.formatTyiynAsSom ? ui.formatTyiynAsSom(tyiyn) : new Intl.NumberFormat("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format((Number(tyiyn) || 0) / 100);
+        return `${text} c`;
+    };
 
     function esc(v) {
         return String(v ?? "")

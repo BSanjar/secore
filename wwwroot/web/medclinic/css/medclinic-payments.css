@@ -1,141 +1,260 @@
 .mc-pay {
     display: grid;
-    gap: 1.25rem;
-    max-width: 1280px;
+    gap: 0.85rem;
+    max-width: 1320px;
 }
 
-.mc-pay-hero {
-    margin-bottom: 0;
+/* Компактная сводка */
+.mc-pay-kpi {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.65rem;
+    align-items: stretch;
 }
 
-.mc-pay-stats {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1rem;
+.mc-pay-kpi__item {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.45rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid rgba(15, 118, 110, 0.14);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+    font-size: 0.82rem;
 }
 
-@media (max-width: 900px) {
-    .mc-pay-stats {
-        grid-template-columns: 1fr;
-    }
+.mc-pay-kpi__label {
+    color: #64748b;
+    font-weight: 600;
 }
 
-.mc-pay-channels {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 0.75rem;
+.mc-pay-kpi__value {
+    font-weight: 800;
+    color: #0f172a;
+    font-variant-numeric: tabular-nums;
 }
 
-.mc-pay-channel {
+.mc-pay-kpi__value small {
+    font-weight: 600;
+    font-size: 0.78rem;
+    color: #64748b;
+}
+
+/* Фильтры */
+.mc-pay-filters {
+    margin: 0;
+    padding: 0.65rem 0.75rem;
     background: #fff;
     border: 1px solid rgba(15, 118, 110, 0.12);
     border-radius: 1rem;
-    padding: 0.85rem 1rem;
-    display: grid;
-    gap: 0.2rem;
     box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
 }
 
-.mc-pay-channel__label {
-    font-size: 0.78rem;
+.mc-pay-filters__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.55rem;
+    align-items: flex-end;
+}
+
+.mc-pay-control {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+.mc-pay-control--search {
+    flex: 1 1 160px;
+    max-width: 220px;
+    position: relative;
+}
+
+.mc-pay-control--grow {
+    flex: 1 1 140px;
+    max-width: 220px;
+}
+
+.mc-pay-control__label {
+    font-size: 0.68rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: #0f766e;
+    padding-left: 0.15rem;
 }
 
-.mc-pay-channel__sum {
-    font-size: 1.15rem;
+.mc-pay-control__icon {
+    position: absolute;
+    left: 0.65rem;
+    bottom: 0.55rem;
+    color: #94a3b8;
+    font-size: 0.95rem;
+    pointer-events: none;
+}
+
+.mc-pay-control--search .mc-pay-control__input {
+    padding-left: 1.75rem;
+}
+
+.mc-pay-control__input {
+    height: 2.35rem;
+    padding: 0.35rem 0.65rem;
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    border-radius: 0.65rem;
+    background: #f8fafc;
+    font-size: 0.88rem;
+    color: #0f172a;
+    transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+    min-width: 8.5rem;
+}
+
+.mc-pay-control__input:hover {
+    background: #fff;
+    border-color: rgba(15, 118, 110, 0.22);
+}
+
+.mc-pay-control__input:focus {
+    outline: none;
+    background: #fff;
+    border-color: #14b8a6;
+    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.18);
+}
+
+.mc-pay-control__select {
+    cursor: pointer;
+    padding-right: 1.75rem;
+}
+
+.mc-pay-filters__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+    margin-left: auto;
+}
+
+.mc-pay-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 2.35rem;
+    padding: 0 1rem;
+    border-radius: 0.65rem;
+    font-size: 0.86rem;
+    font-weight: 700;
+    text-decoration: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.mc-pay-btn--primary {
+    background: linear-gradient(135deg, #0f766e, #14b8a6);
+    color: #fff;
+    border-color: rgba(15, 118, 110, 0.35);
+}
+
+.mc-pay-btn--primary:hover {
+    filter: brightness(1.05);
+    color: #fff;
+}
+
+.mc-pay-btn--ghost {
+    background: #fff;
+    color: #475569;
+    border-color: rgba(15, 23, 42, 0.12);
+}
+
+.mc-pay-btn--ghost:hover {
+    background: #f8fafc;
     color: #0f172a;
 }
 
-.mc-pay-channel__count {
-    font-size: 0.82rem;
+/* Таблица */
+.mc-pay-card {
+    background: #fff;
+    border: 1px solid rgba(15, 118, 110, 0.12);
+    border-radius: 1rem;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+    overflow: hidden;
+}
+
+.mc-pay-card__head {
+    padding: 0.55rem 1rem;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+    background: #fafafa;
+}
+
+.mc-pay-card__title {
+    font-size: 0.8rem;
+    font-weight: 700;
     color: #64748b;
 }
 
-.mc-pay-filter-form {
-    margin: 0;
-}
-
-.mc-pay-filter-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.85rem 1rem;
-    align-items: end;
-}
-
-@media (max-width: 1100px) {
-    .mc-pay-filter-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
-
-@media (max-width: 560px) {
-    .mc-pay-filter-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-.mc-pay-field {
-    display: grid;
-    gap: 0.35rem;
-    margin: 0;
-}
-
-.mc-pay-field__label {
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: #0f766e;
-}
-
-.mc-pay-field--actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    align-items: center;
-}
-
-.mc-pay-submit {
-    border-radius: 999px;
-    font-weight: 700;
-    padding-inline: 1.25rem;
-}
-
-.mc-pay-table-head {
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
-.mc-pay-table-wrap {
-    padding: 0 !important;
+.mc-pay-card__body {
     overflow: auto;
 }
 
 .mc-pay-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.92rem;
+    font-size: 0.88rem;
 }
 
 .mc-pay-table thead th {
     text-align: left;
-    padding: 0.85rem 1rem;
+    padding: 0.65rem 1rem;
     background: #f0fdfa;
     color: #0f766e;
     font-weight: 700;
-    border-bottom: 1px solid rgba(15, 118, 110, 0.12);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-bottom: 1px solid rgba(15, 118, 110, 0.1);
     white-space: nowrap;
 }
 
 .mc-pay-table tbody td {
-    padding: 0.85rem 1rem;
-    border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.05);
     vertical-align: top;
 }
 
-.mc-pay-table tbody tr:hover {
-    background: rgba(236, 254, 255, 0.55);
+/* Группа оплаты + возврат — см. medclinic-payments-groups.css */
+
+.mc-pay-table tbody tr.mc-pay-table__row--root:not(.mc-pay-table__row--group):hover td,
+.mc-pay-table tbody tr.mc-pay-table__row--child:not(.mc-pay-table__row--group):hover td {
+    background: rgba(236, 254, 255, 0.45);
+}
+
+.mc-pay-table__child-mark {
+    color: #b45309;
+    margin-right: 0.35rem;
+    font-weight: 700;
+}
+
+.mc-pay-table__child-note {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    font-style: italic;
+}
+
+.mc-pay-appt-link {
+    color: #0f766e;
+    font-weight: 600;
+    text-decoration: none;
+    border-bottom: 1px dashed rgba(15, 118, 110, 0.35);
+}
+
+.mc-pay-appt-link:hover {
+    color: #0d9488;
+    border-bottom-color: #0d9488;
+}
+
+.mc-pay-table__appt {
+    max-width: 280px;
 }
 
 .mc-pay-table__num {
@@ -146,17 +265,19 @@
 .mc-pay-table__date {
     white-space: nowrap;
     color: #475569;
+    font-variant-numeric: tabular-nums;
 }
 
 .mc-pay-table__sub {
-    font-size: 0.8rem;
+    font-size: 0.76rem;
     color: #94a3b8;
-    margin-top: 0.15rem;
+    margin-top: 0.12rem;
 }
 
 .mc-pay-amount {
     font-weight: 700;
     color: #047857;
+    font-variant-numeric: tabular-nums;
 }
 
 .mc-pay-amount--refund {
@@ -167,8 +288,8 @@
     display: inline-flex;
     align-items: center;
     border-radius: 999px;
-    padding: 0.25rem 0.65rem;
-    font-size: 0.75rem;
+    padding: 0.2rem 0.55rem;
+    font-size: 0.72rem;
     font-weight: 700;
 }
 
@@ -188,19 +309,22 @@
 }
 
 .mc-pay-empty {
-    padding: 2.5rem 1.5rem;
+    padding: 2rem 1rem;
     text-align: center;
-}
-
-.mc-pay-empty__title {
-    margin: 0 0 0.35rem;
-    font-weight: 800;
-    font-size: 1.1rem;
-}
-
-.mc-pay-empty__text {
-    margin: 0;
     color: #64748b;
-    max-width: 36rem;
-    margin-inline: auto;
+    font-size: 0.92rem;
+}
+
+@media (max-width: 768px) {
+    .mc-pay-filters__actions {
+        width: 100%;
+        margin-left: 0;
+        justify-content: flex-end;
+    }
+
+    .mc-pay-control--search,
+    .mc-pay-control--grow {
+        max-width: none;
+        flex: 1 1 100%;
+    }
 }

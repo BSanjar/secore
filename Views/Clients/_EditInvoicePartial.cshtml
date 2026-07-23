@@ -186,7 +186,7 @@
                                     <tbody id="editInvServicesBody">
                                         @foreach (var s in orgServices)
                                         {
-                                            var priceSom = s.ServiceSumm ?? 0;
+                                            var priceSom = ParsersHelper.TyiynToSom(s.ServiceSumm ?? 0);
                                             var minSom = (decimal)(s.MinSumm ?? 0) / 100m;
                                             var maxSom = (decimal)(s.MaxSumm ?? 0) / 100m;
                                             var existing = invoiceServicesList.FirstOrDefault(isv => isv.Service == (string)s.Id);

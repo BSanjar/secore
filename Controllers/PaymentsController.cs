@@ -654,6 +654,13 @@ public class PaymentsController : Controller
         var sumVisibility = DashboardSumPermissions.GetVisibility(HttpContext);
         ViewData["Title"] = "Платежи";
 
+        var today = DateTime.Today;
+        var monthStart = new DateTime(today.Year, today.Month, 1);
+        if (string.IsNullOrWhiteSpace(dateFrom))
+            dateFrom = monthStart.ToString("yyyy-MM-dd");
+        if (string.IsNullOrWhiteSpace(dateTo))
+            dateTo = today.ToString("yyyy-MM-dd");
+
         var invoiceIds = await _db.Invoices
             .AsNoTracking()
             .Where(i => i.ClientNavigation != null && i.ClientNavigation.Organization == organizationId)
@@ -665,7 +672,8 @@ public class PaymentsController : Controller
             .Include(t => t.AgentNavigation)
             .Include(t => t.InvoiceNavigation!)
                 .ThenInclude(i => i.ClientNavigation)
-            .Include(t => t.ParentTransactionNavigation)
+            .Include(t => t.ParentTransactionNavigation!)
+                .ThenInclude(p => p.ParentTransactionNavigation)
             .Where(t => t.Invoice != null && invoiceIds.Contains(t.Invoice));
 
         query = DashboardSumPermissions.ApplyDashboardSumFilter(query, sumVisibility);
@@ -719,19 +727,6 @@ public class PaymentsController : Controller
             .ToList();
 
         var channelOptions = MedclinicTransactionLabels.ChannelFilterOptions(sumVisibility);
-        var channelStats = channelOptions
-            .Select(option =>
-            {
-                var rows = successRows.Where(t => MedclinicTransactionLabels.MatchesChannelFilter(t, option.Key)).ToList();
-                return new MedclinicPaymentChannelStatViewModel
-                {
-                    Label = option.Label,
-                    SumSom = rows.Sum(t => (t.Summ ?? 0m) / 100m),
-                    Count = rows.Count
-                };
-            })
-            .Where(x => x.Count > 0 || sumVisibility.CanViewAny)
-            .ToList();
 
         var clientIdsInOrg = await _db.Invoices
             .AsNoTracking()
@@ -753,29 +748,21 @@ public class PaymentsController : Controller
             selectedClientName = clientsList.FirstOrDefault(c => c.Id == clientId)?.ClientName ?? clientId;
         }
 
-        var rows = transactions.Select(t =>
-        {
-            var isRefund = string.Equals(t.TransactionType, "credit", StringComparison.OrdinalIgnoreCase);
-            var isSuccess = string.Equals(t.TransactionStatus, "success", StringComparison.OrdinalIgnoreCase);
-            return new MedclinicPaymentRowViewModel
-            {
-                Id = t.Id,
-                TransactionDate = t.TransactionDate,
-                PatientName = t.InvoiceNavigation?.ClientNavigation?.ClientName ?? "—",
-                InvoiceTitle = t.InvoiceNavigation?.NameInvoice ?? "—",
-                PayCode = t.InvoiceNavigation?.PayCode ?? "—",
-                ChannelLabel = MedclinicTransactionLabels.ChannelLabel(t),
-                KindLabel = MedclinicTransactionLabels.KindLabel(t),
-                AmountSom = (t.Summ ?? 0m) / 100m,
-                StatusLabel = t.TransactionStatus == "success"
-                    ? (isRefund ? "Возврат" : "Успешно")
-                    : t.TransactionStatus == "error"
-                        ? "Ошибка"
-                        : t.TransactionStatus ?? "—",
-                IsRefund = isRefund,
-                IsSuccess = isSuccess
-            };
-        }).ToList();
+        var paymentInvoiceIds = await MedclinicPaymentsTableComposer.ExpandPaymentInvoiceIdsAsync(
+            _db,
+            transactions);
+
+        var appointmentLinks = await MedclinicPaymentsTableComposer.LoadAppointmentLinksAsync(
+            _db,
+            organizationId,
+            paymentInvoiceIds);
+
+        var registryUrlTemplate = (Url.Action("Registry", "Appointments") ?? string.Empty) + "?openAppointmentId={0}";
+
+        var composed = MedclinicPaymentsTableComposer.Compose(
+            transactions,
+            appointmentLinks,
+            registryUrlTemplate);
 
         var model = new MedclinicPaymentsIndexViewModel
         {
@@ -791,8 +778,9 @@ public class PaymentsController : Controller
                 !string.Equals(x.TransactionType, "credit", StringComparison.OrdinalIgnoreCase)),
             RefundCount = refundRows.Count,
             RefundsSom = refundRows.Sum(t => (t.Summ ?? 0m) / 100m),
-            ChannelStats = channelStats,
-            Rows = rows,
+            GroupCount = composed.GroupCount,
+            ChannelStats = Array.Empty<MedclinicPaymentChannelStatViewModel>(),
+            Rows = composed.Rows,
             Clients = clientsList.Select(c => (c.Id, c.ClientName ?? c.Id)).ToList(),
             ChannelOptions = channelOptions
         };

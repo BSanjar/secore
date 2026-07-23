@@ -142,19 +142,21 @@
                 foreach (var line in Model.InvoiceServices)
                 {
                     var name = line.ServiceNavigation?.Name ?? Model.NameInvoice ?? "Услуга по счёту";
-                    var priceSom = (line.ServiceSumm ?? 0) / 100m;
+                    var lineTyiyn = line.ServiceSumm ?? 0;
+                    var lineSom = ParsersHelper.TyiynToSom(lineTyiyn);
                     var qty = 1;
-                    if (line.ServiceNavigation != null && (line.ServiceNavigation.ServiceSumm ?? 0) > 0)
+                    var unitTyiyn = line.ServiceNavigation?.ServiceSumm ?? 0;
+                    if (unitTyiyn > 0)
                     {
-                        qty = (int)Math.Max(1, Math.Round(priceSom / (decimal)line.ServiceNavigation.ServiceSumm!.Value));
+                        qty = (int)Math.Max(1, Math.Round(lineTyiyn / unitTyiyn));
                     }
                     var periodVal = Model.DateStartInvoice?.ToString("MMMM yyyy", ru) ?? "—";
                     <tr>
                       <td>@name</td>
                       <td>@periodVal</td>
                       <td>@qty</td>
-                      <td>@(priceSom.ToString("N2", ru)) сом</td>
-                      <td class="total">@(priceSom.ToString("N2", ru)) сом</td>
+                      <td>@(lineSom.ToString("N2", ru)) сом</td>
+                      <td class="total">@(lineSom.ToString("N2", ru)) сом</td>
                     </tr>
                 }
             }

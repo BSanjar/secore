@@ -836,6 +836,13 @@ body.org-medclinic .appointments-page {
     height: 28px;
 }
 
+/* Убраны кнопки «предыдущий/следующий месяц» в панели даты */
+.registry-v2-period #scheduleMonthPrev,
+.registry-v2-period #scheduleMonthNext,
+.registry-v2-period__shell > .registry-v2-period__icon-btn--sm {
+    display: none !important;
+}
+
 .registry-v2-period__icon-btn:hover {
     border-color: color-mix(in srgb, var(--appt-primary) 30%, white);
     background: #fff;
@@ -1219,26 +1226,34 @@ body.org-medclinic .appointments-page {
 .registry-v2-month-panel {
     position: absolute;
     z-index: 40;
-    top: calc(100% + 4px);
+    top: calc(100% + 6px);
     left: 50%;
     transform: translateX(-50%);
-    width: min(280px, 94vw);
     min-width: 0;
-    padding: 10px;
-    border-radius: 14px;
+    border-radius: 16px;
     background: #fff;
     border: 1px solid color-mix(in srgb, var(--appt-primary) 22%, var(--appt-border));
-    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.14);
+    box-shadow: 0 20px 48px rgba(15, 23, 42, 0.16);
     animation: mc-pop 0.22s ease;
+}
+
+.registry-v2-date-panel {
+    width: min(400px, 96vw);
+    padding: 16px 18px 18px;
+}
+
+.registry-v2-month-panel {
+    width: min(280px, 94vw);
+    padding: 10px;
 }
 
 .registry-v2-date-panel__weekdays {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 2px;
-    margin-top: 8px;
-    margin-bottom: 4px;
-    font-size: 0.62rem;
+    gap: 4px;
+    margin-top: 10px;
+    margin-bottom: 6px;
+    font-size: 0.72rem;
     font-weight: 800;
     text-transform: uppercase;
     color: var(--med-muted);
@@ -1248,7 +1263,41 @@ body.org-medclinic .appointments-page {
 .registry-v2-date-panel__days {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
+    gap: 6px;
+}
+
+.registry-v2-date-panel .registry-v2-day-chip {
+    min-height: 42px;
+    font-size: 0.92rem;
+    border-radius: 10px;
+}
+
+.registry-v2-date-panel .registry-v2-day-chip--empty {
+    min-height: 42px;
+}
+
+.registry-v2-date-panel .registry-v2-month-panel__grid {
+    gap: 8px;
+}
+
+.registry-v2-date-panel .registry-v2-month-chip {
+    padding: 10px 6px;
+    font-size: 0.86rem;
+    border-radius: 11px;
+}
+
+.registry-v2-date-panel .registry-v2-month-panel__year-value {
+    font-size: 1.08rem;
+}
+
+.registry-v2-date-panel .registry-v2-month-panel__year-btn {
+    width: 38px;
+    height: 38px;
+}
+
+.registry-v2-date-panel .registry-v2-date-panel__year {
+    margin-bottom: 10px;
+    padding-bottom: 10px;
 }
 
 .registry-v2-day-chip {

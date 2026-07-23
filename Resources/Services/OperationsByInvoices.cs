@@ -565,7 +565,7 @@ public class OperationsByInvoices
                 if (string.IsNullOrEmpty(item.ServiceId) || !orgServices.TryGetValue(item.ServiceId, out var orgService))
                     continue;
                 var qty = Math.Max(1, item.Qty ?? 1);
-                var serviceSummTyiyn = (orgService.ServiceSumm ?? 0) * 100m;
+                var serviceSummTyiyn = orgService.ServiceSumm ?? 0;
                 var lineTotal = serviceSummTyiyn * qty;
                 totalTyiyn += lineTotal;
                 _db.InvoiceServices.Add(new InvoiceService
@@ -718,7 +718,7 @@ public class OperationsByInvoices
                     if (item.ServiceId == null || orgServices == null || !orgServices.TryGetValue(item.ServiceId, out var orgService))
                         continue;
                     var qty = Math.Max(1, item.Qty ?? 1);
-                    var serviceSummTyiyn = (orgService.ServiceSumm ?? 0) * 100m;
+                    var serviceSummTyiyn = orgService.ServiceSumm ?? 0;
                     totalTyiyn += serviceSummTyiyn * qty;
                     _db.InvoiceServices.Add(new InvoiceService
                     {
@@ -1239,6 +1239,7 @@ public class OperationsByInvoices
                 txnId,
                 "payPaymentInvoice",
                 cancellationToken);
+            trn.ParentTransaction = parentTrn.Id;
             _db.Transactions.Add(trn);
         }
 
@@ -1310,7 +1311,16 @@ public class OperationsByInvoices
                 ))
             .ToListAsync(cancellationToken);
 
-        foreach (var source in related)
+        var paymentSpecific = related.Where(t => t.PaymentInvoice == payment.Id).ToList();
+        var toRefund = paymentSpecific.Count > 0
+            ? paymentSpecific
+            : related
+                .Where(t => !DashboardSumPermissions.IsInternalPaymentLedgerType(t.TransactionType))
+                .ToList();
+        if (toRefund.Count == 0)
+            toRefund = related;
+
+        foreach (var source in toRefund)
         {
             var alreadyRefunded = await _db.Transactions.AnyAsync(
                 t => t.ParentTransaction == source.Id && t.TransactionStatus == "success",

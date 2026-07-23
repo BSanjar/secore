@@ -75,13 +75,6 @@
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </button>
                     <button type="button" class="registry-v2-period__today schedule-nav" data-direction="today">Сегодня</button>
-                    <span class="registry-v2-period__sep" aria-hidden="true"></span>
-                    <button type="button" class="registry-v2-period__icon-btn registry-v2-period__icon-btn--sm" id="scheduleMonthPrev" title="Предыдущий месяц" aria-label="Предыдущий месяц">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    </button>
-                    <button type="button" class="registry-v2-period__icon-btn registry-v2-period__icon-btn--sm" id="scheduleMonthNext" title="Следующий месяц" aria-label="Следующий месяц">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    </button>
                 </div>
             </div>
 
@@ -209,7 +202,8 @@
             doctorSchedulesReady: @Json.Serialize(Model.DoctorSchedulesReady),
             canManageAppointments: @Json.Serialize(canManageAppointments),
             canGenerateInvoice: @Json.Serialize(canGenerateInvoice),
-            canMarkAsPaidManually: @Json.Serialize(canMarkAsPaidManually)
+            canMarkAsPaidManually: @Json.Serialize(canMarkAsPaidManually),
+            openAppointmentId: @Json.Serialize(Context.Request.Query["openAppointmentId"].ToString())
         };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js" crossorigin="anonymous"></script>

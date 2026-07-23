@@ -104,7 +104,7 @@ namespace WebApplication1.Controllers
             ViewBag.OrganizationClients = clients;
             ViewBag.OrganizationServices = orgServices;
             ViewBag.DetsadInvoiceServicesJson = JsonSerializer.Serialize(
-                orgServices.Select(s => new { id = s.Id, name = s.Name ?? "", price = s.ServiceSumm ?? 0m }));
+                orgServices.Select(s => new { id = s.Id, name = s.Name ?? "", price = ParsersHelper.TyiynToSom(s.ServiceSumm ?? 0m) }));
             ViewBag.UseDetsadInvoiceComposer = IsDetsadProfile();
             ViewBag.DisableInvoiceServiceSelection = settings?.DisableInvoiceServiceSelection ?? false;
             if (IsDetsadProfile())
@@ -171,7 +171,7 @@ namespace WebApplication1.Controllers
                         throw new InvalidOperationException("Одна из выбранных услуг не найдена.");
 
                     var qty = Math.Max(1, item.Qty ?? 1);
-                    var unitPriceSom = service.ServiceSumm ?? 0;
+                    var unitPriceSom = ParsersHelper.TyiynToSom(service.ServiceSumm ?? 0);
                     var lineTotalSom = unitPriceSom * qty;
                     lineVms.Add(new OneTimePaymentPreviewLineVm
                     {

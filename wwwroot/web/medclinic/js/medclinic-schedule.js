@@ -72,7 +72,11 @@
     const esc = (v) => String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
     const ft = (d) => new Intl.DateTimeFormat("ru-RU", { hour: "2-digit", minute: "2-digit" }).format(d);
     const fd = (d, o) => new Intl.DateTimeFormat("ru-RU", o).format(d);
-    const fm = (v) => `${new Intl.NumberFormat("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(v) || 0)} c`;
+    const fm = (tyiyn) => {
+        const ui = window.MedclinicUI;
+        const text = ui && ui.formatTyiynAsSom ? ui.formatTyiynAsSom(tyiyn) : new Intl.NumberFormat("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format((Number(tyiyn) || 0) / 100);
+        return `${text} c`;
+    };
     const token = () => document.querySelector('input[name="__RequestVerificationToken"]')?.value || "";
     const weekdays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
     const REGISTRY_FILTERS_KEY = "medclinicRegistryFiltersV1";
@@ -144,8 +148,30 @@
         if (t === "cash") return "Наличные";
         if (t === "online") return "Онлайн";
         if (t === "insurance") return "Страховка";
-        if (t === "invoice_paid" || t === "paid") return "Оплачено";
+        if (t === "invoice_paid" || t === "paid") return "По счёту";
         return "Не указан";
+    }
+
+    function syncDetailsPaymentBadges(eventItem) {
+        const payLabel = paymentText(eventItem);
+        const payCls = paymentClass(eventItem);
+        const badge = $("appointmentDetailsPaymentBadge");
+        if (badge) {
+            badge.textContent = payLabel;
+            badge.className = `appointment-details-modal__pay-badge status-${payCls}`;
+        }
+        const chip = $("appointmentDetailsPaymentChip");
+        if (!chip) return;
+
+        const methodLabel = paymentTypeLabel(eventItem);
+        const hideChip =
+            !methodLabel ||
+            methodLabel === "Не указан" ||
+            methodLabel === payLabel ||
+            (payCls === "paid" && methodLabel === "Оплачено");
+
+        chip.classList.toggle("d-none", hideChip);
+        chip.textContent = hideChip ? "" : methodLabel;
     }
     function isQrSecoreType(ev) {
         const t = (ev?.paymentType || "").toLowerCase();
@@ -456,7 +482,21 @@
         else closeRegistryDatePanel();
     }
 
+    function removeRegistryMonthNavButtons() {
+        $("scheduleMonthPrev")?.remove();
+        $("scheduleMonthNext")?.remove();
+        document
+            .querySelectorAll(
+                ".registry-v2-period__shell button.registry-v2-period__icon-btn--sm, " +
+                    ".registry-v2-period__shell button[title*='месяц'], " +
+                    ".registry-v2-period__shell button[aria-label*='месяц']"
+            )
+            .forEach((btn) => btn.remove());
+        document.querySelectorAll(".registry-v2-period__shell .registry-v2-period__sep").forEach((el) => el.remove());
+    }
+
     function setupRegistryMonthPicker() {
+        removeRegistryMonthNavButtons();
         const core = $("scheduleDateCore");
         if (!core) return;
         core.addEventListener("click", (e) => {
@@ -464,8 +504,6 @@
             e.stopPropagation();
             toggleRegistryDatePanel();
         });
-        $("scheduleMonthPrev")?.addEventListener("click", () => shiftAnchorMonth(-1));
-        $("scheduleMonthNext")?.addEventListener("click", () => shiftAnchorMonth(1));
         $("scheduleYearPrev")?.addEventListener("click", (e) => {
             e.stopPropagation();
             if (registryPickerYear == null) registryPickerYear = state.anchor.getFullYear();
@@ -718,19 +756,11 @@
         state.selectedEvent = eventItem;
         state.detailsQrInvoiceId = null;
         showDetailsMainView();
-        const payLabel = paymentText(eventItem);
-        const payCls = paymentClass(eventItem);
         if ($("appointmentDetailsTitle")) $("appointmentDetailsTitle").textContent = eventTitle(eventItem);
         if ($("appointmentDetailsSubtitle")) {
             $("appointmentDetailsSubtitle").textContent = `${fd(eventItem.start, { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · ${ft(eventItem.start)} – ${ft(eventItem.end)}`;
         }
-        const badge = $("appointmentDetailsPaymentBadge");
-        if (badge) {
-            badge.textContent = payLabel;
-            badge.className = `appointment-details-modal__pay-badge status-${payCls}`;
-        }
-        const chip = $("appointmentDetailsPaymentChip");
-        if (chip) chip.textContent = paymentTypeLabel(eventItem);
+        syncDetailsPaymentBadges(eventItem);
         const set = (id, value, fallback = "—") => {
             const node = $(id);
             if (!node) return;
@@ -1431,13 +1461,7 @@
                 if (updated) {
                     state.selectedEvent = updated;
                     syncDetailsActionButtons(updated);
-                    const badge = $("appointmentDetailsPaymentBadge");
-                    if (badge) {
-                        badge.textContent = paymentText(updated);
-                        badge.className = `appointment-details-modal__pay-badge status-${paymentClass(updated)}`;
-                    }
-                    const chip = $("appointmentDetailsPaymentChip");
-                    if (chip) chip.textContent = paymentTypeLabel(updated);
+                    syncDetailsPaymentBadges(updated);
                 }
             }
             window.MedclinicUI?.showToast(result.message || "Статус оплаты обновлён.", "success");
@@ -1911,4 +1935,15 @@
     window.medclinicRenderAll = renderAll;
     window.medclinicSaveRegistryFilters = saveRegistryFilters;
     renderAll();
+
+    const deepLinkAppointmentId = (p.openAppointmentId || "").trim();
+    if (deepLinkAppointmentId) {
+        const deepLinkEvent = state.events.find((x) => x.id === deepLinkAppointmentId);
+        if (deepLinkEvent) {
+            state.anchor = new Date(deepLinkEvent.start);
+            state.selectedEvent = deepLinkEvent;
+            renderAll();
+            openDetails(deepLinkEvent);
+        }
+    }
 })();

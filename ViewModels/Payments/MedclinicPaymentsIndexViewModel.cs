@@ -14,6 +14,7 @@ public class MedclinicPaymentsIndexViewModel
     public int SuccessCount { get; set; }
     public int RefundCount { get; set; }
     public decimal RefundsSom { get; set; }
+    public int GroupCount { get; set; }
 
     public IReadOnlyList<MedclinicPaymentChannelStatViewModel> ChannelStats { get; set; } =
         Array.Empty<MedclinicPaymentChannelStatViewModel>();
@@ -36,11 +37,18 @@ public class MedclinicPaymentRowViewModel
     public string InvoiceTitle { get; set; } = "—";
     public string PayCode { get; set; } = "—";
     public string ChannelLabel { get; set; } = "—";
+    public string PaymentTypeLabel { get; set; } = "—";
     public string KindLabel { get; set; } = "Оплата";
+    public int? PaymentSequence { get; set; }
     public decimal AmountSom { get; set; }
     public string StatusLabel { get; set; } = "—";
     public bool IsRefund { get; set; }
     public bool IsSuccess { get; set; }
+    public bool IsGroupedChild { get; set; }
+    public bool IsHighlightedGroup { get; set; }
+    public string? AppointmentId { get; set; }
+    public string AppointmentLabel { get; set; } = "—";
+    public string? AppointmentUrl { get; set; }
 }
 
 public class MedclinicPaymentChannelStatViewModel

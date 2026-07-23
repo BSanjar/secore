@@ -7,12 +7,24 @@ namespace WebApplication1.Helpers
         public static DateTime NowForTimestamp()
           => DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
 
+        /// <summary>Сумма в БД (тыйын) → сом для UI и печати.</summary>
+        public static decimal TyiynToSom(decimal tyiyn) => tyiyn / 100m;
+
+        public static decimal? TyiynToSom(decimal? tyiyn) =>
+            tyiyn.HasValue ? TyiynToSom(tyiyn.Value) : null;
+
+        /// <summary>Сом из формы → тыйын для сохранения в БД.</summary>
+        public static decimal SomToTyiyn(decimal som) => decimal.Round(som * 100m, 0, MidpointRounding.AwayFromZero);
+
+        public static decimal? SomToTyiyn(decimal? som) =>
+            som.HasValue ? SomToTyiyn(som.Value) : null;
+
         public static string ToMoneyStringFromCents(decimal? value)
         {
             if (value == 0)
                 return "0";
 
-            return (value / 100m)?.ToString("0.00", CultureInfo.InvariantCulture);
+            return TyiynToSom(value)?.ToString("0.00", CultureInfo.InvariantCulture);
         }
 
         public static decimal? FromMoneyStringToCents(string? value)

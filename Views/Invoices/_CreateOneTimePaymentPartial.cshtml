@@ -112,7 +112,7 @@
                                         <tbody id="oneTimeServicesBody">
                                             @foreach (var service in orgServices)
                                             {
-                                                var priceSom = service.ServiceSumm ?? 0;
+                                                var priceSom = ParsersHelper.TyiynToSom(service.ServiceSumm ?? 0);
                                                 <tr class="one-time-service-row" data-service-id="@service.Id" data-name="@(service.Name ?? "")" data-price="@priceSom.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)">
                                                     <td>
                                                         <input type="checkbox" class="form-check-input one-time-service-check" />

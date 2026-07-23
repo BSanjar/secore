@@ -42,6 +42,31 @@ namespace WebApplication1.Controllers
                 .FirstOrDefault(m => !string.IsNullOrWhiteSpace(m))
             ?? "Проверьте введённые данные.";
 
+        /// <summary>Форма в сомах → поля модели в тыйынах для БД.</summary>
+        private static void ApplySomToTyiynForStorage(OrganizationService model)
+        {
+            if (model.FixedSum == 1)
+            {
+                model.ServiceSumm = ParsersHelper.SomToTyiyn(model.ServiceSumm);
+                model.MinSumm = null;
+                model.MaxSumm = null;
+            }
+            else
+            {
+                model.ServiceSumm = null;
+                model.MinSumm = ParsersHelper.SomToTyiyn(model.MinSumm);
+                model.MaxSumm = ParsersHelper.SomToTyiyn(model.MaxSumm);
+            }
+        }
+
+        /// <summary>БД (тыйын) → сом для полей формы.</summary>
+        private static void ApplyTyiynToSomForDisplay(OrganizationService model)
+        {
+            model.ServiceSumm = ParsersHelper.TyiynToSom(model.ServiceSumm);
+            model.MinSumm = ParsersHelper.TyiynToSom(model.MinSumm);
+            model.MaxSumm = ParsersHelper.TyiynToSom(model.MaxSumm);
+        }
+
         [RequirePermission("children.view")]
         public async Task<IActionResult> Index(string search = "", string isDeletedFilter = "active")
         {
@@ -120,6 +145,7 @@ namespace WebApplication1.Controllers
 
             if (ModelState.IsValid)
             {
+                ApplySomToTyiynForStorage(model);
                 model.Id = Guid.NewGuid().ToString();
                 _db.OrganizationServices.Add(model);
                 await _db.SaveChangesAsync();
@@ -150,6 +176,7 @@ namespace WebApplication1.Controllers
             if (service == null)
                 return NotFound();
 
+            ApplyTyiynToSomForDisplay(service);
             return View(service);
         }
 
@@ -198,9 +225,18 @@ namespace WebApplication1.Controllers
 
             service.Name = model.Name;
             service.FixedSum = model.FixedSum == 1 ? 1 : 0;
-            service.ServiceSumm = service.FixedSum == 1 ? model.ServiceSumm : null;
-            service.MinSumm = model.MinSumm;
-            service.MaxSumm = model.MaxSumm;
+            if (service.FixedSum == 1)
+            {
+                service.ServiceSumm = ParsersHelper.SomToTyiyn(model.ServiceSumm);
+                service.MinSumm = null;
+                service.MaxSumm = null;
+            }
+            else
+            {
+                service.ServiceSumm = null;
+                service.MinSumm = ParsersHelper.SomToTyiyn(model.MinSumm);
+                service.MaxSumm = ParsersHelper.SomToTyiyn(model.MaxSumm);
+            }
             await _db.SaveChangesAsync();
             TempData["Message"] = "Изменения сохранены.";
             if (IsFormModal(Request))

@@ -1,182 +1,342 @@
 @model WebApplication1.ViewModels.Payments.MedclinicPaymentsIndexViewModel
+
 @using System.Globalization
+
 @{
+
     ViewData["Title"] = "Платежи";
+
     var ru = CultureInfo.GetCultureInfo("ru-RU");
+
 }
+
+
 
 @section Styles {
-    <link rel="stylesheet" href="~/web/medclinic/css/medclinic-dashboard.css" asp-append-version="true" />
+
     <link rel="stylesheet" href="~/web/medclinic/css/medclinic-payments.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/web/medclinic/css/medclinic-payments-groups.css" asp-append-version="true" />
+
 }
 
-<div class="mc-pay">
-    <header class="mc-dash-hero mc-pay-hero">
-        <div>
-            <p class="mc-dash-hero__eyebrow">Финансы</p>
-            <h1 class="mc-dash-hero__title">Платежи</h1>
-            <p class="mc-dash-hero__org">Транзакции по каналам, доступным в правах «Дашборд»</p>
-        </div>
-    </header>
 
-    <section class="mc-pay-stats" aria-label="Сводка">
-        <article class="mc-dash-stat">
-            <div class="mc-dash-stat__label">Итого за период</div>
-            <div class="mc-dash-stat__value">@Model.PeriodTotalSom.ToString("N2", ru) сом</div>
-            <p class="mc-dash-stat__hint">С учётом возвратов</p>
-        </article>
-        <article class="mc-dash-stat mc-dash-stat--accent">
-            <div class="mc-dash-stat__label">Успешные оплаты</div>
-            <div class="mc-dash-stat__value">@Model.SuccessCount</div>
-            <p class="mc-dash-stat__hint">По выбранным фильтрам</p>
-        </article>
-        <article class="mc-dash-stat mc-dash-stat--warn">
-            <div class="mc-dash-stat__label">Возвраты</div>
-            <div class="mc-dash-stat__value">@Model.RefundCount</div>
-            <p class="mc-dash-stat__hint">@Model.RefundsSom.ToString("N2", ru) сом</p>
-        </article>
+
+<div class="mc-pay">
+
+    <div class="mc-pay-kpi" aria-label="Сводка за период">
+
+        <div class="mc-pay-kpi__item">
+
+            <span class="mc-pay-kpi__label">Итого</span>
+
+            <span class="mc-pay-kpi__value">@Model.PeriodTotalSom.ToString("N2", ru) <small>сом</small></span>
+
+        </div>
+
+        <div class="mc-pay-kpi__item">
+
+            <span class="mc-pay-kpi__label">Оплаты</span>
+
+            <span class="mc-pay-kpi__value">@Model.SuccessCount</span>
+
+        </div>
+
+        <div class="mc-pay-kpi__item">
+
+            <span class="mc-pay-kpi__label">Возвраты</span>
+
+            <span class="mc-pay-kpi__value">@Model.RefundCount <small>· @Model.RefundsSom.ToString("N2", ru)</small></span>
+
+        </div>
+
+    </div>
+
+
+
+    <form method="get" asp-action="Index" asp-controller="Payments" class="mc-pay-filters">
+
+        <div class="mc-pay-filters__row">
+
+            <label class="mc-pay-control mc-pay-control--search">
+
+                <span class="mc-pay-control__icon" aria-hidden="true">⌕</span>
+
+                <input type="search" name="search" class="mc-pay-control__input" placeholder="Поиск…" value="@Model.Search" autocomplete="off" />
+
+            </label>
+
+            <label class="mc-pay-control">
+
+                <span class="mc-pay-control__label">С</span>
+
+                <input type="date" name="dateFrom" class="mc-pay-control__input" value="@Model.DateFrom" />
+
+            </label>
+
+            <label class="mc-pay-control">
+
+                <span class="mc-pay-control__label">По</span>
+
+                <input type="date" name="dateTo" class="mc-pay-control__input" value="@Model.DateTo" />
+
+            </label>
+
+            <label class="mc-pay-control">
+
+                <span class="mc-pay-control__label">Статус</span>
+
+                <select name="statusFilter" class="mc-pay-control__input mc-pay-control__select">
+
+                    <option value="">Все</option>
+
+                    @if (Model.StatusFilter == "success") { <option value="success" selected>Успешно</option> } else { <option value="success">Успешно</option> }
+
+                    @if (Model.StatusFilter == "error") { <option value="error" selected>Ошибка</option> } else { <option value="error">Ошибка</option> }
+
+                </select>
+
+            </label>
+
+            @if (Model.ChannelOptions.Count > 0)
+
+            {
+
+                <label class="mc-pay-control">
+
+                    <span class="mc-pay-control__label">Канал</span>
+
+                    <select name="channelFilter" class="mc-pay-control__input mc-pay-control__select">
+
+                        <option value="">Все</option>
+
+                        @foreach (var opt in Model.ChannelOptions)
+
+                        {
+
+                            if (Model.ChannelFilter == opt.Key)
+
+                            {
+
+                                <option value="@opt.Key" selected>@opt.Label</option>
+
+                            }
+
+                            else
+
+                            {
+
+                                <option value="@opt.Key">@opt.Label</option>
+
+                            }
+
+                        }
+
+                    </select>
+
+                </label>
+
+            }
+
+            <label class="mc-pay-control mc-pay-control--grow">
+
+                <span class="mc-pay-control__label">Пациент</span>
+
+                <select name="clientId" class="mc-pay-control__input mc-pay-control__select">
+
+                    <option value="">Все</option>
+
+                    @foreach (var c in Model.Clients)
+
+                    {
+
+                        if (Model.ClientId == c.Id)
+
+                        {
+
+                            <option value="@c.Id" selected>@c.Name</option>
+
+                        }
+
+                        else
+
+                        {
+
+                            <option value="@c.Id">@c.Name</option>
+
+                        }
+
+                    }
+
+                </select>
+
+            </label>
+
+            <div class="mc-pay-filters__actions">
+
+                <button type="submit" class="mc-pay-btn mc-pay-btn--primary">Показать</button>
+
+                <a class="mc-pay-btn mc-pay-btn--ghost" asp-action="Index" asp-controller="Payments">Сброс</a>
+
+            </div>
+
+        </div>
+
+    </form>
+
+
+
+    <section class="mc-pay-card">
+        @if (Model.Rows.Count > 0)
+
+        {
+
+            <div class="mc-pay-card__body">
+
+                <table class="mc-pay-table">
+
+                    <thead>
+
+                        <tr>
+
+                            <th class="mc-pay-table__num-col">№</th>
+
+                            <th>Дата</th>
+
+                            <th>Пациент</th>
+
+                            <th>Запись</th>
+
+                            <th>Тип оплаты</th>
+
+                            <th class="mc-pay-table__num">Сумма</th>
+
+                            <th>Статус</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        @foreach (var row in Model.Rows)
+
+                        {
+
+                            var amountClass = row.IsRefund ? "mc-pay-amount mc-pay-amount--refund" : "mc-pay-amount";
+
+                            var badgeClass = row.IsSuccess
+
+                                ? (row.IsRefund ? "mc-pay-badge mc-pay-badge--refund" : "mc-pay-badge mc-pay-badge--ok")
+
+                                : "mc-pay-badge mc-pay-badge--muted";
+
+                            var rowClass = row.IsGroupedChild
+                                ? "mc-pay-table__row mc-pay-table__row--child"
+                                : "mc-pay-table__row mc-pay-table__row--root";
+                            if (row.IsHighlightedGroup)
+                            {
+                                rowClass += " mc-pay-table__row--group";
+                            }
+
+                            <tr class="@rowClass">
+
+                                <td class="mc-pay-table__num-col">
+                                    @if (row.PaymentSequence.HasValue)
+                                    {
+                                        @row.PaymentSequence
+                                    }
+                                </td>
+
+                                <td class="mc-pay-table__date">
+
+                                    @if (row.IsGroupedChild)
+
+                                    {
+
+                                        <span class="mc-pay-table__child-mark" aria-hidden="true">↳</span>
+
+                                    }
+
+                                    @(row.TransactionDate?.ToString("dd.MM.yyyy HH:mm", ru) ?? "—")
+
+                                </td>
+
+                                <td>
+
+                                    @if (!row.IsGroupedChild)
+
+                                    {
+
+                                        <strong>@row.PatientName</strong>
+
+                                        @if (!string.IsNullOrWhiteSpace(row.PayCode) && row.PayCode != "—")
+
+                                        {
+
+                                            <div class="mc-pay-table__sub">@row.PayCode</div>
+
+                                        }
+
+                                    }
+
+                                </td>
+
+                                <td class="mc-pay-table__appt">
+
+                                    @if (row.IsGroupedChild)
+
+                                    {
+
+                                        <span class="mc-pay-table__child-note">Возврат по операции выше</span>
+
+                                    }
+
+                                    else if (!string.IsNullOrWhiteSpace(row.AppointmentUrl))
+
+                                    {
+
+                                        <a class="mc-pay-appt-link" href="@row.AppointmentUrl">@row.AppointmentLabel</a>
+
+                                    }
+
+                                    else
+
+                                    {
+
+                                        @row.AppointmentLabel
+
+                                    }
+
+                                </td>
+
+                                <td>@row.PaymentTypeLabel</td>
+
+                                <td class="mc-pay-table__num"><span class="@amountClass">@row.AmountSom.ToString("N2", ru)</span></td>
+
+                                <td><span class="@badgeClass">@row.StatusLabel</span></td>
+
+                            </tr>
+
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        }
+
+        else
+
+        {
+
+            <div class="mc-pay-empty">Нет транзакций за выбранный период</div>
+
+        }
+
     </section>
 
-    @if (Model.ChannelStats.Count > 0)
-    {
-        <section class="mc-pay-channels" aria-label="По каналам">
-            @foreach (var ch in Model.ChannelStats)
-            {
-                <div class="mc-pay-channel">
-                    <span class="mc-pay-channel__label">@ch.Label</span>
-                    <strong class="mc-pay-channel__sum">@ch.SumSom.ToString("N2", ru) сом</strong>
-                    <span class="mc-pay-channel__count">@ch.Count операций</span>
-                </div>
-            }
-        </section>
-    }
-
-    <div class="mc-dash-panel mc-pay-filters">
-        <div class="mc-dash-panel__head">
-            <h2 class="mc-dash-panel__title">Фильтры</h2>
-            <p class="mc-dash-panel__sub">Период, пациент, канал и статус</p>
-        </div>
-        <div class="mc-dash-panel__body">
-            <form method="get" asp-action="Index" asp-controller="Payments" class="mc-pay-filter-form">
-                <div class="mc-pay-filter-grid">
-                    <label class="mc-pay-field">
-                        <span class="mc-pay-field__label">Поиск</span>
-                        <input type="search" name="search" class="form-control" placeholder="Пациент, счёт, PayCode…" value="@Model.Search" autocomplete="off" />
-                    </label>
-                    <label class="mc-pay-field">
-                        <span class="mc-pay-field__label">Дата от</span>
-                        <input type="date" name="dateFrom" class="form-control" value="@Model.DateFrom" />
-                    </label>
-                    <label class="mc-pay-field">
-                        <span class="mc-pay-field__label">Дата до</span>
-                        <input type="date" name="dateTo" class="form-control" value="@Model.DateTo" />
-                    </label>
-                    <label class="mc-pay-field">
-                        <span class="mc-pay-field__label">Статус</span>
-                        <select name="statusFilter" class="form-select">
-                            <option value="">Все</option>
-                            @if (Model.StatusFilter == "success") { <option value="success" selected>Успешно</option> } else { <option value="success">Успешно</option> }
-                            @if (Model.StatusFilter == "error") { <option value="error" selected>Ошибка</option> } else { <option value="error">Ошибка</option> }
-                        </select>
-                    </label>
-                    @if (Model.ChannelOptions.Count > 0)
-                    {
-                        <label class="mc-pay-field">
-                            <span class="mc-pay-field__label">Канал</span>
-                            <select name="channelFilter" class="form-select">
-                                <option value="">Все каналы</option>
-                                @foreach (var opt in Model.ChannelOptions)
-                                {
-                                    if (Model.ChannelFilter == opt.Key)
-                                    {
-                                        <option value="@opt.Key" selected>@opt.Label</option>
-                                    }
-                                    else
-                                    {
-                                        <option value="@opt.Key">@opt.Label</option>
-                                    }
-                                }
-                            </select>
-                        </label>
-                    }
-                    <label class="mc-pay-field">
-                        <span class="mc-pay-field__label">Пациент</span>
-                        <select name="clientId" class="form-select">
-                            <option value="">Все пациенты</option>
-                            @foreach (var c in Model.Clients)
-                            {
-                                if (Model.ClientId == c.Id)
-                                {
-                                    <option value="@c.Id" selected>@c.Name</option>
-                                }
-                                else
-                                {
-                                    <option value="@c.Id">@c.Name</option>
-                                }
-                            }
-                        </select>
-                    </label>
-                    <div class="mc-pay-field mc-pay-field--actions">
-                        <button type="submit" class="btn btn-primary mc-pay-submit">Применить</button>
-                        <a class="btn btn-outline-secondary" asp-action="Index" asp-controller="Payments">Сбросить</a>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div class="mc-dash-panel">
-        <div class="mc-dash-panel__head mc-pay-table-head">
-            <div>
-                <h2 class="mc-dash-panel__title">Транзакции</h2>
-                <p class="mc-dash-panel__sub">Всего записей: @Model.Rows.Count</p>
-            </div>
-        </div>
-        <div class="mc-dash-panel__body mc-pay-table-wrap">
-            @if (Model.Rows.Count > 0)
-            {
-                <table class="mc-pay-table">
-                    <thead>
-                        <tr>
-                            <th>Дата</th>
-                            <th>Пациент</th>
-                            <th>Счёт</th>
-                            <th>Канал</th>
-                            <th>Тип</th>
-                            <th class="mc-pay-table__num">Сумма</th>
-                            <th>Статус</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var row in Model.Rows)
-                        {
-                            var amountClass = row.IsRefund ? "mc-pay-amount mc-pay-amount--refund" : "mc-pay-amount";
-                            var badgeClass = row.IsSuccess
-                                ? (row.IsRefund ? "mc-pay-badge mc-pay-badge--refund" : "mc-pay-badge mc-pay-badge--ok")
-                                : "mc-pay-badge mc-pay-badge--muted";
-                            <tr>
-                                <td class="mc-pay-table__date">@(row.TransactionDate?.ToString("dd.MM.yyyy HH:mm", ru) ?? "—")</td>
-                                <td>
-                                    <strong>@row.PatientName</strong>
-                                    <div class="mc-pay-table__sub">@row.PayCode</div>
-                                </td>
-                                <td>@row.InvoiceTitle</td>
-                                <td>@row.ChannelLabel</td>
-                                <td>@row.KindLabel</td>
-                                <td class="mc-pay-table__num"><span class="@amountClass">@row.AmountSom.ToString("N2", ru)</span></td>
-                                <td><span class="@badgeClass">@row.StatusLabel</span></td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            }
-            else
-            {
-                <div class="mc-pay-empty">
-                    <p class="mc-pay-empty__title">Транзакций не найдено</p>
-                    <p class="mc-pay-empty__text">Измените период или условия фильтра — или у вашей роли нет прав на отображение сумм по каналам.</p>
-                </div>
-            }
-        </div>
-    </div>
 </div>
+
+

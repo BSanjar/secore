@@ -146,7 +146,7 @@ public class ClientsController : Controller
             .AsNoTracking()
             .Where(s => s.Organization == organizationId && (s.Isdeleted == null || s.Isdeleted == 0))
             .OrderBy(s => s.Name)
-            .Select(s => new { id = s.Id, name = s.Name ?? "", price = s.ServiceSumm ?? 0m })
+            .Select(s => new { id = s.Id, name = s.Name ?? "", price = ParsersHelper.TyiynToSom(s.ServiceSumm ?? 0m) })
             .ToListAsync();
         ViewBag.DetsadInvoiceServicesJson = JsonSerializer.Serialize(invoiceServices);
 
