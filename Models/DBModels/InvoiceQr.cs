@@ -8,6 +8,9 @@ public partial class InvoiceQr
 
     public string InvoiceId { get; set; } = null!;
 
+    /// <summary>Лицевой счёт — один QR на pay_code.</summary>
+    public string? PayCode { get; set; }
+
     public string? Transaction { get; set; }
 
     public string Status { get; set; } = null!;

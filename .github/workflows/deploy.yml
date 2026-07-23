@@ -87,7 +87,23 @@ jobs:
             docker pull "$IMAGE_TAG"
 
             echo "📁 Ensuring persistent log directories on host..."
-            mkdir -p /secore/mainSystem /secore/notificator /secore/sheduler
+            # /secore is at filesystem root — deploy user needs sudo once
+            if [ ! -d /secore/mainSystem ]; then
+              if command -v sudo >/dev/null 2>&1; then
+                sudo mkdir -p /secore/mainSystem /secore/notificator /secore/sheduler
+                sudo chmod 777 /secore /secore/mainSystem /secore/notificator /secore/sheduler
+              else
+                echo "❌ Cannot create /secore (no sudo). Create once on server:"
+                echo "   sudo mkdir -p /secore/mainSystem /secore/notificator /secore/sheduler && sudo chmod -R 777 /secore"
+                exit 1
+              fi
+            else
+              # ensure siblings exist for other services
+              if command -v sudo >/dev/null 2>&1; then
+                sudo mkdir -p /secore/mainSystem /secore/notificator /secore/sheduler
+                sudo chmod 777 /secore/mainSystem /secore/notificator /secore/sheduler 2>/dev/null || true
+              fi
+            fi
 
             echo "🧩 Starting $CONTAINER on network $NETWORK..."
             docker run -d \
@@ -105,5 +121,5 @@ jobs:
 
             echo "✅ Deployment finished."
             docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}\t{{.Networks}}"
-            echo "📝 Logs volume: /secore/mainSystem (inside container: /secore/mainSystem)"
-            ls -la /secore/mainSystem || true
+            echo "📝 Logs volume: /secore/mainSystem"
+            ls -la /secore/mainSystem || sudo ls -la /secore/mainSystem || true

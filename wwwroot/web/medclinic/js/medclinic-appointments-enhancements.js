@@ -16,6 +16,8 @@
 
     if (!modalElement || !nameInput || !patientIdInput || !legacySelect || !saveButton) return;
 
+    const ui = window.MedclinicUI || {};
+
     let selectedPatient = null;
 
     function normalizeText(value) {
@@ -46,6 +48,31 @@
 
     function getRequestVerificationToken() {
         return document.querySelector('input[name="__RequestVerificationToken"]')?.value || "";
+    }
+
+    async function readJsonResponse(response) {
+        const text = await response.text();
+        if (!text) {
+            return { response, result: {} };
+        }
+        try {
+            return { response, result: JSON.parse(text) };
+        } catch {
+            const snippet = text.replace(/\s+/g, " ").trim().slice(0, 240);
+            throw new Error(snippet || `Ошибка сервера (${response.status})`);
+        }
+    }
+
+    function setEditorFormBusy(busy) {
+        const form = document.getElementById("appointmentForm");
+        if (!form) return;
+        form.querySelectorAll("input, button, select, textarea").forEach((el) => {
+            if (el.id === "appointmentSaveButton" || el.id === "appointmentSaveDraftButton") return;
+            el.disabled = busy;
+        });
+        modalElement.querySelectorAll('[data-bs-dismiss="modal"]').forEach((el) => {
+            el.disabled = busy;
+        });
     }
 
     function setWhatsAppCheckbox(value) {
@@ -205,9 +232,16 @@
         }));
     }
 
+    function closeEditorModal() {
+        const instance = bootstrap.Modal.getInstance(modalElement);
+        if (instance) instance.hide();
+    }
+
     async function saveAppointment(event) {
         event.preventDefault();
         event.stopImmediatePropagation();
+
+        if (saveButton.disabled) return;
 
         const statusInput = document.getElementById("appointmentStatus");
         const forceDraft = saveButton.dataset.forceDraft === "1";
@@ -224,29 +258,36 @@
         const status = statusInput?.value || "active";
         const isDraft = status === "draft";
         const services = collectSelectedServices();
+        const isCreate = !document.getElementById("appointmentId")?.value;
 
         if (!patientName) {
-            window.alert("Укажите ФИО пациента.");
+            ui.showToast?.("Укажите ФИО пациента.", "danger");
             return;
         }
 
         if (!doctorId) {
-            window.alert("Выберите врача.");
+            ui.showToast?.("Не выбран врач для записи.", "danger");
             return;
         }
 
         if (!appointmentDate || !startTime || !endTime) {
-            window.alert("Укажите дату и время приема.");
+            ui.showToast?.("Не задан слот записи.", "danger");
             return;
         }
 
         if (!isDraft && services.length === 0) {
-            window.alert("Добавьте хотя бы одну услугу.");
+            ui.showToast?.("Добавьте хотя бы одну услугу.", "danger");
+            return;
+        }
+
+        const paymentType = document.getElementById("appointmentPaymentType")?.value || (isCreate ? "qr_secore" : "unpaid");
+        if (isCreate && !paymentType) {
+            ui.showToast?.("Выберите тип оплаты.", "danger");
             return;
         }
 
         if (!saveUrl) {
-            window.alert("Маршрут сохранения appointments не настроен.");
+            ui.showToast?.("Маршрут сохранения appointments не настроен.", "danger");
             return;
         }
 
@@ -263,19 +304,17 @@
             startTime,
             endTime,
             referralSource: document.getElementById("appointmentReferral")?.value || null,
-            paymentType: document.getElementById("appointmentPaymentType")?.value || null,
+            paymentType,
             appointmentStatus: status,
             isActive: document.getElementById("appointmentIsActive")?.checked ?? true,
             services
         };
 
-        if (payload.canMarkAsPaidManually === false && request.paymentType && request.paymentType !== "unpaid") {
-            request.paymentType = "unpaid";
-        }
-
-        const originalText = saveButton.textContent;
-        saveButton.disabled = true;
-        saveButton.textContent = "Сохранение...";
+        ui.setButtonLoading?.(saveButton, true, {
+            label: saveButton.dataset.loadingText || (isCreate ? "Регистрация..." : "Сохранение...")
+        });
+        setEditorFormBusy(true);
+        ui.showPageOverlay?.("Сохранение записи…");
 
         try {
             const csrfToken = getRequestVerificationToken();
@@ -289,22 +328,46 @@
                 body: JSON.stringify(request)
             });
 
-            const result = await response.json();
+            const { result } = await readJsonResponse(response);
             if (!response.ok || !result.success) {
-                throw new Error(result.message || "Не удалось сохранить запись.");
+                throw new Error(result.message || "Не удалось зарегистрировать запись.");
             }
 
-            window.location.reload();
+            closeEditorModal();
+
+            if (result.eventItem && typeof window.medclinicUpsertEvent === "function") {
+                window.medclinicUpsertEvent(result.eventItem);
+                const scheduleState = window.medclinicScheduleState;
+                if (scheduleState) {
+                    scheduleState.selectedEvent = scheduleState.events.find((x) => x.id === result.eventItem.id) || result.eventItem;
+                }
+            }
+            if (typeof window.medclinicRenderAll === "function") {
+                window.medclinicRenderAll();
+            }
+            if (typeof window.medclinicSaveRegistryFilters === "function") {
+                window.medclinicSaveRegistryFilters();
+            }
+
+            const toastKind =
+                result.message &&
+                (String(result.message).includes("не обновлён") || String(result.message).includes("не создан"))
+                    ? "warning"
+                    : "success";
+            ui.showToast?.(result.message || "Запись зарегистрирована.", toastKind);
         } catch (error) {
-            window.alert(error.message || "Не удалось сохранить запись.");
-            saveButton.disabled = false;
-            saveButton.textContent = originalText;
+            ui.showToast?.(error.message || "Не удалось зарегистрировать запись.", "danger");
+        } finally {
+            setEditorFormBusy(false);
+            ui.hidePageOverlay?.();
+            ui.setButtonLoading?.(saveButton, false);
         }
     }
 
     nameInput.addEventListener("input", () => {
         clearPatientSelectionIfNeeded();
         renderSuggestions();
+        window.medclinicValidateAppointmentForm?.();
     });
 
     nameInput.addEventListener("focus", renderSuggestions);
@@ -323,6 +386,7 @@
         if (phoneInput) {
             phoneInput.value = formatPhone(phoneInput.value);
         }
+        window.medclinicValidateAppointmentForm?.();
     });
 
     document.addEventListener("click", (event) => {

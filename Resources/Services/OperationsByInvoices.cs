@@ -10,6 +10,12 @@ namespace WebApplication1.Services;
 
 public class OperationsByInvoices
 {
+    public const string AppointmentPaymentQrSecorePaid = "qr_secore_paid";
+
+    public const int PayCodeOrganizationDigits = 5;
+    public const int PayCodeCounterDigits = 9;
+    public const int PayCodeTotalLength = PayCodeOrganizationDigits + PayCodeCounterDigits;
+
     private readonly AppDbContext _db;
     private readonly TransactionCommissionService _commissionService;
     private readonly InvoiceQrService _invoiceQrService;
@@ -270,10 +276,59 @@ public class OperationsByInvoices
                 cancellationToken);
     }
 
+    public static string FormatOrganizationPayCodePrefix(string organizationId)
+    {
+        var raw = (organizationId ?? "").Trim();
+        if (raw.Length >= PayCodeOrganizationDigits)
+            return raw[..PayCodeOrganizationDigits];
+
+        return raw.PadLeft(PayCodeOrganizationDigits, '0');
+    }
+
+    public static string FormatPayCode(string organizationId, long counter)
+    {
+        if (counter < 1 || counter > 999_999_999)
+            throw new InvalidOperationException("Счётчик лицевого счёта вне допустимого диапазона.");
+
+        return FormatOrganizationPayCodePrefix(organizationId) + counter.ToString("D9");
+    }
+
+    public static bool TryParsePayCodeCounter(string? payCode, string organizationPrefix, out long counter)
+    {
+        counter = 0;
+        if (string.IsNullOrWhiteSpace(payCode) || payCode.Length != PayCodeTotalLength)
+            return false;
+        if (!payCode.StartsWith(organizationPrefix, StringComparison.Ordinal))
+            return false;
+
+        return long.TryParse(payCode.AsSpan(PayCodeOrganizationDigits, PayCodeCounterDigits), out counter);
+    }
+
     public async Task<string> GenerateNextPayCodeAsync(string organizationId, CancellationToken cancellationToken = default)
     {
         var maxCounter = await GetMaxOrganizationPayCodeCounterAsync(organizationId, cancellationToken);
-        return organizationId + (maxCounter + 1).ToString("D9");
+        return FormatPayCode(organizationId, maxCounter + 1);
+    }
+
+    private async Task<long> GetMaxOrganizationPayCodeCounterAsync(string organizationId, CancellationToken cancellationToken = default)
+    {
+        var prefix = FormatOrganizationPayCodePrefix(organizationId);
+        var existingPayCodes = await _db.Invoices
+            .Where(i => i.Client != null
+                        && i.ClientNavigation != null
+                        && i.ClientNavigation.Organization == organizationId
+                        && i.PayCode != null)
+            .Select(i => i.PayCode)
+            .ToListAsync(cancellationToken);
+
+        long maxCounter = 0;
+        foreach (var payCode in existingPayCodes)
+        {
+            if (TryParsePayCodeCounter(payCode, prefix, out var counter) && counter > maxCounter)
+                maxCounter = counter;
+        }
+
+        return maxCounter;
     }
 
     private static JsonCheckResponse CreateCheckErrorResponse(ErrorCode errorCode, string? account = null)
@@ -296,54 +351,28 @@ public class OperationsByInvoices
         };
     }
 
-    private async Task<long> GetMaxOrganizationPayCodeCounterAsync(string organizationId, CancellationToken cancellationToken = default)
-    {
-        var prefixLen = organizationId.Length;
-        var existingPayCodes = await _db.Invoices
-            .Where(i => i.Client != null
-                        && i.ClientNavigation != null
-                        && i.ClientNavigation.Organization == organizationId
-                        && i.PayCode != null)
-            .Select(i => i.PayCode)
-            .ToListAsync(cancellationToken);
-
-        long maxCounter = 0;
-        foreach (var payCode in existingPayCodes)
-        {
-            if (payCode != null
-                && payCode.Length == prefixLen + 9
-                && payCode.StartsWith(organizationId)
-                && long.TryParse(payCode.Substring(prefixLen), out var counter)
-                && counter > maxCounter)
-            {
-                maxCounter = counter;
-            }
-        }
-
-        return maxCounter;
-    }
-
     /// <summary>
     /// Создание записи о транзакции. Три комиссии: не переданные сохраняются как 0.
     /// </summary>
     public Transaction CreateTransaction(
         string? invoiceId,
         string? paymentInvId,
-        Agent agent,
+        Agent? agent,
         decimal? sum,
         decimal? sumWithFee,
         string txnId,
         string transactionType,
         decimal? lowerCommissionFromOrg = null,
         decimal? upperCommissionFromAgent = null,
-        decimal? lowerCommissionToAgent = null)
+        decimal? lowerCommissionToAgent = null,
+        string? parentTransactionId = null)
     {
         return new Transaction
         {
             Id = Guid.NewGuid().ToString(),
             Invoice = invoiceId,
             PaymentInvoice = paymentInvId,
-            Agent = agent.Id,
+            Agent = agent?.Id,
             Summ = sum,
             TransactionSumm = sumWithFee,
             LowerCommissionFromOrg = lowerCommissionFromOrg ?? 0,
@@ -353,7 +382,8 @@ public class OperationsByInvoices
             TransactionStatus = "success",
             TransactionType = transactionType,
             TxnId = txnId,
-            TransactionSystem = "secore"
+            TransactionSystem = "secore",
+            ParentTransaction = parentTransactionId
         };
     }
 
@@ -363,7 +393,7 @@ public class OperationsByInvoices
     public async Task<Transaction> CreateTransactionWithCommissionAsync(
         string? invoiceId,
         string? paymentInvId,
-        Agent agent,
+        Agent? agent,
         decimal? sum,
         decimal? sumWithFee,
         string txnId,
@@ -385,7 +415,8 @@ public class OperationsByInvoices
                     .Select(c => c.Organization)
                     .FirstOrDefaultAsync(cancellationToken))
                 : null;
-            var commissions = await _commissionService.GetCommissionsForTransactionAsync(orgId, agent.Id, sum.Value, cancellationToken);
+            var commissions = await _commissionService.GetCommissionsForTransactionAsync(
+                orgId, agent?.Id ?? string.Empty, sum.Value, cancellationToken);
             lowerOrg = commissions.LowerCommissionFromOrg;
             upperAgent = commissions.UpperCommissionFromAgent;
             lowerAgent = commissions.LowerCommissionToAgent;
@@ -463,13 +494,21 @@ public class OperationsByInvoices
             secoreTrn.Invoice = paidPayments.First().Invoice;
 
         if (!string.IsNullOrWhiteSpace(secoreTrn.Invoice) && !string.IsNullOrWhiteSpace(secoreTrn.Id))
-            await _invoiceQrService.CloseActiveQrAsync(secoreTrn.Invoice, secoreTrn.Id, cancellationToken);
+        {
+            var refreshPayCode = invoices.FirstOrDefault(i => i.Id == secoreTrn.Invoice)?.PayCode
+                ?? invoices.FirstOrDefault()?.PayCode;
+            var anchorId = secoreTrn.Invoice ?? invoices.FirstOrDefault()?.Id;
+            if (!string.IsNullOrWhiteSpace(refreshPayCode) && !string.IsNullOrWhiteSpace(anchorId))
+                _invoiceQrService.EnqueueRefreshForPayCode(refreshPayCode, anchorId);
+        }
 
         invoices.ForEach(i => i.Balance = rest);
 
         var oldPositive = Math.Max(0m, oldBalance);
         var newPositive = Math.Max(0m, rest);
         balanceAdded = Math.Max(0m, newPositive - oldPositive);
+
+        await MarkAppointmentsPaidForInvoicePaymentsAsync(paidPayments, cancellationToken);
 
         return new ApiPaymentApplyResult
         {
@@ -561,12 +600,34 @@ public class OperationsByInvoices
         var requestPeriodicity = input.Periodicity ?? "monthly";
         var useExistingPayCode = !string.IsNullOrWhiteSpace(input.PayCode);
 
-        var orgPrefix = organizationId;
         long maxCounter = await GetMaxOrganizationPayCodeCounterAsync(organizationId, cancellationToken);
 
         var createdIds = new List<string>();
         var createdInvoices = new List<Invoice>();
         var ru = CultureInfo.GetCultureInfo("ru-RU");
+
+        Dictionary<string, string>? latestPayCodeByClientId = null;
+        if (input.ReuseClientPayCodeWhenExists)
+        {
+            var clientIds = clients.Select(c => c.Id).Where(id => !string.IsNullOrWhiteSpace(id)).Distinct().ToList();
+            if (clientIds.Count > 0)
+            {
+                var payCodeRows = await _db.Invoices
+                    .AsNoTracking()
+                    .Where(i => i.Client != null &&
+                                clientIds.Contains(i.Client) &&
+                                i.PayCode != null &&
+                                i.PayCode != "")
+                    .Select(i => new { i.Client, i.PayCode, i.DateCreated })
+                    .ToListAsync(cancellationToken);
+
+                latestPayCodeByClientId = payCodeRows
+                    .GroupBy(x => x.Client!)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.OrderByDescending(x => x.DateCreated).First().PayCode!.Trim());
+            }
+        }
 
         static DateTime GetPeriodStart(DateTime d, string periodicity)
         {
@@ -600,7 +661,28 @@ public class OperationsByInvoices
 
         foreach (var client in clients)
         {
-            var payCode = useExistingPayCode ? input.PayCode!.Trim() : (orgPrefix + (++maxCounter).ToString("D9"));
+            string payCode;
+            var hassameaccount = input.Hassameaccount || useExistingPayCode;
+            if (input.ReuseClientPayCodeWhenExists)
+            {
+                if (latestPayCodeByClientId != null &&
+                    latestPayCodeByClientId.TryGetValue(client.Id, out var existingPayCode) &&
+                    !string.IsNullOrWhiteSpace(existingPayCode))
+                {
+                    payCode = existingPayCode;
+                }
+                else
+                {
+                    payCode = FormatPayCode(organizationId, ++maxCounter);
+                }
+
+                hassameaccount = true;
+            }
+            else
+            {
+                payCode = useExistingPayCode ? input.PayCode!.Trim() : FormatPayCode(organizationId, ++maxCounter);
+            }
+
             var invoiceId = Guid.NewGuid().ToString();
 
             var dateStart = input.DateStartInvoice ?? DateTime.Today;
@@ -664,7 +746,7 @@ public class OperationsByInvoices
                 PayCode = payCode,
                 Client = client.Id,
                 AutoProlongation = autoProlongation,
-                Hassameaccount = input.Hassameaccount || useExistingPayCode,
+                Hassameaccount = hassameaccount,
                 NameInvoice = !string.IsNullOrWhiteSpace(input.NameInvoice) ? input.NameInvoice : "Счет " + (client.ClientName ?? client.Id)
             };
             _db.Invoices.Add(invoice);
@@ -847,12 +929,67 @@ public class OperationsByInvoices
         }
 
         await _db.SaveChangesAsync(cancellationToken);
-
-        foreach (var createdInvoice in createdInvoices)
-            await _invoiceQrService.GenerateForInvoiceAsync(createdInvoice, cancellationToken: cancellationToken);
-
         await tx.CommitAsync(cancellationToken);
+
+        foreach (var group in createdInvoices
+                     .Where(i => !string.IsNullOrWhiteSpace(i.PayCode))
+                     .GroupBy(i => i.PayCode!.Trim()))
+        {
+            _invoiceQrService.EnqueueRefreshForPayCode(group.Key, group.First().Id);
+        }
+
         return createdIds;
+    }
+
+    async Task MarkAppointmentsPaidForInvoicePaymentsAsync(
+        IReadOnlyList<InvoicePayment> paidPayments,
+        CancellationToken cancellationToken)
+    {
+        if (paidPayments == null || paidPayments.Count == 0)
+            return;
+
+        var invoiceIds = paidPayments
+            .Select(p => p.Invoice)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct()
+            .ToList();
+
+        var fromAppointmentInvoices = await _db.Invoices
+            .AsNoTracking()
+            .Where(i => invoiceIds.Contains(i.Id) && i.FromAppointments)
+            .Select(i => new { i.Id, i.Client })
+            .ToListAsync(cancellationToken);
+
+        if (fromAppointmentInvoices.Count == 0)
+            return;
+
+        var patientByInvoiceId = fromAppointmentInvoices.ToDictionary(x => x.Id, x => x.Client);
+        var now = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Unspecified);
+
+        foreach (var payment in paidPayments)
+        {
+            if (string.IsNullOrWhiteSpace(payment.Invoice) || !patientByInvoiceId.TryGetValue(payment.Invoice, out var patientId))
+                continue;
+            if (string.IsNullOrWhiteSpace(patientId) || payment.DateFrom == null)
+                continue;
+
+            var startsAt = payment.DateFrom.Value;
+            var endsAt = payment.DateTo ?? startsAt;
+
+            var appointment = await _db.Appointments
+                .FirstOrDefaultAsync(a =>
+                        a.PatientId == patientId &&
+                        a.IsActive &&
+                        a.StartsAt == startsAt &&
+                        a.EndsAt == endsAt,
+                    cancellationToken);
+
+            if (appointment == null)
+                continue;
+
+            appointment.PaymentType = AppointmentPaymentQrSecorePaid;
+            appointment.UpdatedAt = now;
+        }
     }
 
     public async Task<CreateOneTimeInvoiceResult> CreateOneTimeInvoiceAsync(
@@ -871,7 +1008,7 @@ public class OperationsByInvoices
 
         var invoiceId = Guid.NewGuid().ToString();
         var payCode = string.IsNullOrWhiteSpace(input.PayCode)
-            ? Random.Shared.Next(100000, 999999).ToString()
+            ? await GenerateNextPayCodeAsync(input.OrganizationId, cancellationToken)
             : input.PayCode.Trim();
         var now = ParsersHelper.NowForTimestamp();
 
@@ -895,7 +1032,8 @@ public class OperationsByInvoices
             Hassameaccount = input.Hassameaccount,
             NameInvoice = string.IsNullOrWhiteSpace(input.InvoiceName)
                 ? "Разовый платёж"
-                : input.InvoiceName.Trim()
+                : input.InvoiceName.Trim(),
+            FromAppointments = input.FromAppointments
         };
 
         _db.Invoices.Add(invoice);
@@ -927,14 +1065,294 @@ public class OperationsByInvoices
         }
 
         await _db.SaveChangesAsync(cancellationToken);
-        await _invoiceQrService.GenerateForInvoiceAsync(invoice, cancellationToken: cancellationToken);
         await tx.CommitAsync(cancellationToken);
+
+        if (input.GenerateQrOnCreate)
+        {
+            var purchaseSom = input.FixedSumm > 0 ? input.FixedSumm / 100m : (decimal?)null;
+            await _invoiceQrService.GenerateForInvoiceAsync(invoice, purchaseSom, cancellationToken);
+        }
+        else if (!input.FromAppointments)
+        {
+            _invoiceQrService.EnqueueRefreshForPayCode(payCode, invoiceId);
+        }
 
         return new CreateOneTimeInvoiceResult
         {
             InvoiceId = invoiceId,
             PayCode = payCode
         };
+    }
+
+    /// <summary>
+    /// Обновляет счёт, созданный из записи: услуги, сумму, период платежа и QR SECORE (если не оплачен).
+    /// </summary>
+    public async Task SyncAppointmentInvoiceFromBookingAsync(
+        string organizationId,
+        string invoiceId,
+        Appointment appointment,
+        OrganizationClient patient,
+        User? doctor,
+        string paymentType,
+        DateTime previousStartsAt,
+        DateTime previousEndsAt,
+        CancellationToken cancellationToken = default)
+    {
+        var invoice = await _db.Invoices
+            .Include(i => i.InvoicePayments)
+            .Include(i => i.InvoiceServices)
+            .FirstOrDefaultAsync(
+                i => i.Id == invoiceId && i.FromAppointments,
+                cancellationToken);
+
+        if (invoice == null)
+            throw new InvalidOperationException("Счёт для записи не найден.");
+
+        var clientOk = await _db.OrganizationClients
+            .AsNoTracking()
+            .AnyAsync(
+                c => c.Id == invoice.Client && c.Organization == organizationId,
+                cancellationToken);
+
+        if (!clientOk)
+            throw new InvalidOperationException("Клиент не найден.");
+
+        var serviceLines = appointment.AppointmentServices.ToList();
+        var totalTyiyn = serviceLines.Sum(x => (x.PriceTyiyn ?? 0) * Math.Max(1, x.Quantity));
+        if (totalTyiyn <= 0)
+            throw new InvalidOperationException("Сумма услуг должна быть больше 0.");
+
+        var doctorName = string.IsNullOrWhiteSpace(doctor?.Name) ? "Врач" : doctor!.Name!;
+        var patientName = string.IsNullOrWhiteSpace(patient.ClientName) ? "Пациент" : patient.ClientName!;
+        var titleDate = appointment.StartsAt.ToString("dd.MM.yyyy");
+        invoice.NameInvoice = $"Приём {patientName} • {doctorName} • {titleDate}";
+        invoice.DateStartInvoice = appointment.StartsAt.Date;
+        invoice.DateEndInvoice = appointment.StartsAt.Date;
+        invoice.FixedSumm = totalTyiyn;
+
+        foreach (var existing in invoice.InvoiceServices.ToList())
+            _db.InvoiceServices.Remove(existing);
+
+        foreach (var line in serviceLines)
+        {
+            _db.InvoiceServices.Add(new InvoiceService
+            {
+                Id = Guid.NewGuid().ToString(),
+                Invoice = invoice.Id,
+                Service = line.OrganizationServiceId,
+                ServiceSumm = (line.PriceTyiyn ?? 0) * Math.Max(1, line.Quantity)
+            });
+        }
+
+        var payment = invoice.InvoicePayments
+            .FirstOrDefault(p =>
+                p.DateFrom == previousStartsAt &&
+                p.DateTo == previousEndsAt)
+            ?? invoice.InvoicePayments
+                .OrderByDescending(p => p.DateFrom)
+                .FirstOrDefault();
+
+        if (payment != null)
+        {
+            payment.DateFrom = appointment.StartsAt;
+            payment.DateTo = appointment.EndsAt;
+            payment.PaymentSumm = totalTyiyn;
+            payment.PeriodValue = appointment.StartsAt.ToString("dd.MM.yyyy");
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        var invoicePaid = invoice.InvoicePayments.Any(p =>
+            string.Equals(p.PaymentStatus, "paid", StringComparison.OrdinalIgnoreCase));
+
+        if (string.Equals(paymentType, "qr_secore", StringComparison.OrdinalIgnoreCase) && !invoicePaid)
+        {
+            var purchaseSom = totalTyiyn / 100m;
+            await _invoiceQrService.GenerateForInvoiceAsync(invoice, purchaseSom, cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// Транзакции при ручной фиксации оплаты приёма (касса / внешний QR / карта).
+    /// По аналогии с JSON API: приход payFromExternal* и разнесение payPaymentInvoice с комиссиями.
+    /// Не вызывает SaveChanges.
+    /// </summary>
+    public async Task ApplyManualAppointmentMarkPaidTransactionsAsync(
+        string organizationId,
+        Invoice invoice,
+        IReadOnlyList<InvoicePayment> payments,
+        string? appointmentPaymentType,
+        CancellationToken cancellationToken = default)
+    {
+        if (payments == null || payments.Count == 0)
+            return;
+
+        var agent = await ResolveOrganizationPaymentAgentAsync(organizationId, cancellationToken);
+        if (ManualMarkPaidRequiresPaymentAgent(appointmentPaymentType) && agent == null)
+        {
+            throw new InvalidOperationException(
+                "Для организации не настроен платёжный агент. Невозможно записать транзакцию оплаты.");
+        }
+
+        var paymentsNeedingTrn = new List<InvoicePayment>();
+        foreach (var payment in payments)
+        {
+            var alreadyRecorded = await _db.Transactions.AsNoTracking().AnyAsync(
+                t => t.PaymentInvoice == payment.Id && t.TransactionStatus == "success",
+                cancellationToken);
+            if (!alreadyRecorded)
+                paymentsNeedingTrn.Add(payment);
+        }
+
+        if (paymentsNeedingTrn.Count == 0)
+            return;
+
+        var totalTyiyn = paymentsNeedingTrn.Sum(p => p.PaymentSumm ?? 0);
+        if (totalTyiyn <= 0)
+            return;
+
+        var incomingType = MapManualAppointmentPaymentToIncomingTransactionType(appointmentPaymentType);
+        var txnId = $"appt-manual-{Guid.NewGuid():N}";
+
+        var parentTrn = CreateTransaction(
+            invoice.Id,
+            null,
+            agent,
+            totalTyiyn,
+            totalTyiyn,
+            txnId,
+            incomingType);
+        _db.Transactions.Add(parentTrn);
+
+        foreach (var payment in paymentsNeedingTrn)
+        {
+            var paymentSumm = payment.PaymentSumm ?? 0;
+            if (paymentSumm <= 0)
+                continue;
+
+            var trn = await CreateTransactionWithCommissionAsync(
+                payment.Invoice,
+                payment.Id,
+                agent,
+                paymentSumm,
+                paymentSumm,
+                txnId,
+                "payPaymentInvoice",
+                cancellationToken);
+            _db.Transactions.Add(trn);
+        }
+
+        if (!string.IsNullOrWhiteSpace(invoice.PayCode))
+            _invoiceQrService.EnqueueRefreshForPayCode(invoice.PayCode.Trim(), invoice.Id);
+    }
+
+    async Task<Agent?> ResolveOrganizationPaymentAgentAsync(string organizationId, CancellationToken cancellationToken)
+    {
+        var link = await _db.AgentCommissions
+            .AsNoTracking()
+            .Include(ac => ac.Agent)
+            .Where(ac => ac.OrganizationId == organizationId && ac.Agent != null)
+            .OrderBy(ac => ac.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+        return link?.Agent;
+    }
+
+    static string MapManualAppointmentPaymentToIncomingTransactionType(string? appointmentPaymentType)
+    {
+        var normalized = (appointmentPaymentType ?? string.Empty).Trim().ToLowerInvariant();
+        return normalized switch
+        {
+            "qr_external" => "payFromExternalQR",
+            "card" => "payFromExternalCard",
+            "cash" => "payFromCash",
+            "unpaid" => "payFromCash",
+            _ => "payFromCash"
+        };
+    }
+
+    static bool ManualMarkPaidRequiresPaymentAgent(string? appointmentPaymentType)
+    {
+        var normalized = (appointmentPaymentType ?? string.Empty).Trim().ToLowerInvariant();
+        return normalized is "qr_secore" or "qr_secore_paid";
+    }
+
+    /// <summary>
+    /// Возврат оплаты по позиции графика счёта: credit-транзакции с отрицательной суммой и parent_transaction.
+    /// Не вызывает SaveChanges.
+    /// </summary>
+    public async Task RefundInvoicePaymentAsync(InvoicePayment payment, CancellationToken cancellationToken = default)
+    {
+        if (payment == null || string.IsNullOrWhiteSpace(payment.Id))
+            return;
+
+        var paymentTrns = await _db.Transactions
+            .Where(t =>
+                t.TransactionStatus == "success" &&
+                t.PaymentInvoice == payment.Id &&
+                t.TransactionType != "credit" &&
+                (t.Summ ?? 0) > 0)
+            .ToListAsync(cancellationToken);
+
+        var txnIds = paymentTrns
+            .Select(t => t.TxnId)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct()
+            .ToList();
+
+        var related = await _db.Transactions
+            .Where(t =>
+                t.TransactionStatus == "success" &&
+                t.TransactionType != "credit" &&
+                (t.Summ ?? 0) > 0 &&
+                (
+                    t.PaymentInvoice == payment.Id ||
+                    (t.PaymentInvoice == null && t.TxnId != null && txnIds.Contains(t.TxnId))
+                ))
+            .ToListAsync(cancellationToken);
+
+        foreach (var source in related)
+        {
+            var alreadyRefunded = await _db.Transactions.AnyAsync(
+                t => t.ParentTransaction == source.Id && t.TransactionStatus == "success",
+                cancellationToken);
+            if (alreadyRefunded)
+                continue;
+
+            var negSumm = -(source.Summ ?? 0);
+            var negTrnSumm = -(source.TransactionSumm ?? source.Summ ?? 0);
+            var refund = new Transaction
+            {
+                Id = Guid.NewGuid().ToString(),
+                Invoice = source.Invoice,
+                PaymentInvoice = source.PaymentInvoice,
+                Agent = source.Agent,
+                Summ = negSumm,
+                TransactionSumm = negTrnSumm,
+                LowerCommissionFromOrg = -(source.LowerCommissionFromOrg ?? 0),
+                UpperCommissionFromAgent = -(source.UpperCommissionFromAgent ?? 0),
+                LowerCommissionToAgent = -(source.LowerCommissionToAgent ?? 0),
+                TransactionDate = DateTime.Now,
+                TransactionStatus = "success",
+                TransactionType = "credit",
+                TxnId = $"refund-{source.Id}-{Guid.NewGuid():N}",
+                TransactionSystem = "secore",
+                ParentTransaction = source.Id
+            };
+            _db.Transactions.Add(refund);
+        }
+
+        payment.PaymentStatus = "non_paid";
+
+        if (!string.IsNullOrWhiteSpace(payment.Invoice))
+        {
+            var payCode = await _db.Invoices
+                .AsNoTracking()
+                .Where(i => i.Id == payment.Invoice)
+                .Select(i => i.PayCode)
+                .FirstOrDefaultAsync(cancellationToken);
+            if (!string.IsNullOrWhiteSpace(payCode))
+                _invoiceQrService.EnqueueRefreshForPayCode(payCode.Trim(), payment.Invoice);
+        }
     }
 
 

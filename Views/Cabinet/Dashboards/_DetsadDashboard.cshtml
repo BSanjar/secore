@@ -16,7 +16,6 @@
     var commissionRate = ViewBag.CommissionRate as decimal?;
     var commissionFixed = ViewBag.CommissionFixed as decimal?;
     var debtorsList = ViewBag.DebtorsList as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
-    var recentInvoices = ViewBag.RecentInvoices as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
     var showServiceTerms = AuthorizationHelper.IsAdminRole(Context);
 
     string CommissionKindText(string k)
@@ -147,8 +146,8 @@
         }
     </section>
 
-    <!-- Нижний блок: Должники + Отчетность -->
-    <section class="dashboard-v2__bottom">
+    <!-- Нижний блок: должники -->
+    <section class="dashboard-v2__bottom dashboard-v2__bottom--single">
         <div class="dashboard-v2__debtors">
             <div class="block-card">
                 <div class="block-card__head">
@@ -172,33 +171,6 @@
                     else
                     {
                         <p class="block-card__empty">Нет должников</p>
-                    }
-                </div>
-            </div>
-        </div>
-        <div class="dashboard-v2__invoices">
-            <div class="block-card">
-                <div class="block-card__head">
-                    <h3 class="block-card__title">Отчетность</h3>
-                    <a href="@Url.Action("Index", "Invoices")" class="block-card__link">Вся отчётность</a>
-                </div>
-                <div class="block-card__body">
-                    @if (recentInvoices.Any())
-                    {
-                        <ul class="invoices-list">
-                            @foreach (var inv in recentInvoices)
-                            {
-                                <li class="invoices-list__item">
-                                    <a href="@Url.Action("Details", "Invoices", new { id = inv.Id })" class="invoices-list__name">@inv.Name</a>
-                                    <div class="invoices-list__sum">@(((decimal)inv.Balance).ToString("N2")) сом</div>
-                                    <span class="invoices-list__status">@inv.Status</span>
-                                </li>
-                            }
-                        </ul>
-                    }
-                    else
-                    {
-                        <p class="block-card__empty">Нет активных счетов</p>
                     }
                 </div>
             </div>

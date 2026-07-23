@@ -1,0 +1,117 @@
+@{
+    var canManageAppointments = (bool?)ViewBag.CanManageAppointments == true;
+    var canMarkAsPaidManually = (bool?)ViewBag.CanMarkAsPaidManually == true;
+}
+
+<div class="modal fade" id="appointmentDetailsModal" tabindex="-1" aria-hidden="true" aria-labelledby="appointmentDetailsTitle">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable appointment-details-modal-dialog">
+        <div class="modal-content border-0 appointment-details-modal">
+            <div class="appointment-details-view" id="appointmentDetailsMainView">
+                <div class="modal-header appointment-details-modal__header">
+                    <div class="appointment-details-modal__intro">
+                        <div class="appointment-details-modal__badges">
+                            <span class="appointment-details-modal__pay-badge" id="appointmentDetailsPaymentBadge" aria-live="polite">—</span>
+                            <span class="appointment-details-modal__type-chip" id="appointmentDetailsPaymentChip">—</span>
+                        </div>
+                        <h2 class="modal-title appointment-details-modal__title" id="appointmentDetailsTitle">Карточка приёма</h2>
+                        <p class="appointment-details-modal__subtitle mb-0" id="appointmentDetailsSubtitle">Детали записи пациента</p>
+                    </div>
+                    <button type="button" class="btn doctor-modal-close appointment-details-modal__close" data-bs-dismiss="modal" aria-label="Закрыть">×</button>
+                </div>
+
+                <div class="appointment-details-toolbar" id="appointmentDetailsToolbar">
+                    <button type="button" class="btn ad-tool-btn ad-tool-btn--primary" id="appointmentDetailsOpenVisitButton">Открыть приём</button>
+                    @if (canManageAppointments)
+                    {
+                        <button type="button" class="btn ad-tool-btn ad-tool-btn--ghost" id="appointmentDetailsEditButton">Редактировать</button>
+                    }
+                    <button type="button" class="btn ad-tool-btn ad-tool-btn--qr d-none" id="appointmentDetailsShowQrButton">QR для оплаты</button>
+                    <button type="button" class="btn ad-tool-btn ad-tool-btn--ghost d-none" id="appointmentDetailsDownloadInvoiceButton">Скачать счёт на оплату</button>
+                    @if (canMarkAsPaidManually)
+                    {
+                        <button type="button" class="btn ad-tool-btn ad-tool-btn--paid d-none" id="appointmentDetailsMarkPaidButton">Отметить оплаченным</button>
+                    }
+                    @if (canManageAppointments)
+                    {
+                        <button type="button" class="btn ad-tool-btn ad-tool-btn--danger" id="appointmentDetailsCancelButton">Отменить запись</button>
+                    }
+                </div>
+
+                <div class="modal-body appointment-details-modal__body">
+                    <div class="appointment-details-layout">
+                        <section class="ad-block" aria-labelledby="appointmentDetailsPatientHeading">
+                            <h3 class="ad-block__label" id="appointmentDetailsPatientHeading">Пациент</h3>
+                            <div class="ad-hero">
+                                <div class="ad-hero__avatar" id="appointmentDetailsPatientAvatar" aria-hidden="true">?</div>
+                                <div class="ad-hero__meta">
+                                    <div class="ad-hero__name" id="appointmentDetailsPatient">—</div>
+                                    <div class="ad-hero__line" id="appointmentDetailsPhone">—</div>
+                                    <div class="ad-hero__line ad-hero__line--muted" id="appointmentDetailsEmail">—</div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="ad-block" aria-labelledby="appointmentDetailsVisitHeading">
+                            <h3 class="ad-block__label" id="appointmentDetailsVisitHeading">Приём</h3>
+                            <div class="ad-kv">
+                                <div class="ad-kv__row">
+                                    <span class="ad-kv__k">Когда</span>
+                                    <span class="ad-kv__v" id="appointmentDetailsDateTime">—</span>
+                                </div>
+                                <div class="ad-kv__row">
+                                    <span class="ad-kv__k">Врач</span>
+                                    <span class="ad-kv__v" id="appointmentDetailsDoctor">—</span>
+                                </div>
+                                <div class="ad-kv__row">
+                                    <span class="ad-kv__k">Статус</span>
+                                    <span class="ad-kv__v" id="appointmentDetailsStatus">—</span>
+                                </div>
+                                <div class="ad-kv__row">
+                                    <span class="ad-kv__k">Кабинет</span>
+                                    <span class="ad-kv__v" id="appointmentDetailsReferral">—</span>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="ad-block ad-block--wide" aria-labelledby="appointmentDetailsServicesHeading">
+                            <div class="ad-block__head">
+                                <h3 class="ad-block__label mb-0" id="appointmentDetailsServicesHeading">Услуги</h3>
+                                <span class="ad-total" id="appointmentDetailsServicesTotal"></span>
+                            </div>
+                            <div class="ad-services" id="appointmentDetailsServices" role="list"></div>
+                        </section>
+
+                        <section class="ad-block ad-block--wide" aria-labelledby="appointmentDetailsNotesHeading">
+                            <h3 class="ad-block__label" id="appointmentDetailsNotesHeading">Комментарий</h3>
+                            <div class="ad-notes" id="appointmentDetailsNotes">—</div>
+                        </section>
+
+                        <section class="ad-block ad-block--wide ad-block--soft" aria-labelledby="appointmentDetailsHistoryHeading">
+                            <h3 class="ad-block__label" id="appointmentDetailsHistoryHeading">История приёмов</h3>
+                            <div class="ad-history" id="appointmentDetailsHistory">Предыдущих приёмов не найдено.</div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+
+            <div class="appointment-details-qr-view d-none" id="appointmentDetailsQrView" aria-hidden="true">
+                <div class="ad-qr-top">
+                    <button type="button" class="btn ad-qr-back" id="appointmentDetailsQrBackButton">← Назад</button>
+                    <div class="ad-qr-top__text">
+                        <div class="ad-qr-top__title">Оплата по QR SECORE</div>
+                        <div class="ad-qr-top__sub" id="appointmentDetailsQrSubtitle">—</div>
+                    </div>
+                    <button type="button" class="btn doctor-modal-close appointment-details-modal__close" data-bs-dismiss="modal" aria-label="Закрыть">×</button>
+                </div>
+                <div class="ad-qr-body" id="appointmentDetailsQrBody">
+                    <div class="ad-qr-loading">Загрузка QR…</div>
+                </div>
+                <div class="ad-qr-actions">
+                    <a class="btn ad-qr-action" id="appointmentDetailsQrDownload" href="#" target="_blank" rel="noopener">Скачать счёт</a>
+                    <button type="button" class="btn ad-qr-action" id="appointmentDetailsQrWhatsApp">WhatsApp клиенту</button>
+                    <button type="button" class="btn ad-qr-action ad-qr-action--muted" id="appointmentDetailsQrBackFooter">Назад</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

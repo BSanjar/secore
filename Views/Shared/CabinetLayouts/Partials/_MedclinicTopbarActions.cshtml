@@ -1,19 +1,57 @@
-﻿<div class="medclinic-topbar__actions">
+﻿@using Microsoft.AspNetCore.Mvc.Localization
+@using WebApplication1.Helpers
+@inject IHtmlLocalizer<WebApplication1.SharedResources> Localizer
+@{
+    var currentCultureName = ViewData["CurrentCultureName"]?.ToString() ?? "ru";
+    var returnUrl = ViewData["ReturnUrl"]?.ToString() ?? "/";
+    var userName = AuthorizationHelper.GetUserName(Context) ?? "Пользователь";
+}
+<div class="dashboard-topbar-actions medclinic-topbar__actions">
     <button type="button"
             class="app-shell-mobile-toggle"
             data-shell-toggle
-            aria-label="Open navigation menu"
+            aria-label="@Localizer["OpenNavigationMenu"]"
             aria-expanded="false">
         <span></span>
         <span></span>
         <span></span>
     </button>
 
-    @await Html.PartialAsync("_LanguageSwitcher")
+    <div class="dashboard-lang-wrap">
+        <button type="button" class="dashboard-lang-btn" id="dashboardLangBtn" aria-label="@Localizer["Language"]" title="@Localizer["Language"]">
+            <span class="dashboard-lang-flag">@(currentCultureName == "ru" ? "🇷🇺" : currentCultureName == "en" ? "🇬🇧" : "🇰🇬")</span>
+        </button>
+        <div class="dashboard-lang-dropdown" id="dashboardLangDropdown">
+            <div class="dashboard-lang-dropdown-header">@Localizer["Language"]</div>
+            <form asp-controller="Language" asp-action="SetLanguage" method="post" asp-route-returnUrl="@returnUrl" class="dashboard-lang-form">
+                <input type="hidden" name="culture" value="ru" />
+                <button type="submit" class="dashboard-lang-option @(currentCultureName == "ru" ? "active" : "")">🇷🇺 @Localizer["LanguageRussian"]</button>
+            </form>
+            <form asp-controller="Language" asp-action="SetLanguage" method="post" asp-route-returnUrl="@returnUrl" class="dashboard-lang-form">
+                <input type="hidden" name="culture" value="en" />
+                <button type="submit" class="dashboard-lang-option @(currentCultureName == "en" ? "active" : "")">🇬🇧 @Localizer["LanguageEnglish"]</button>
+            </form>
+            <form asp-controller="Language" asp-action="SetLanguage" method="post" asp-route-returnUrl="@returnUrl" class="dashboard-lang-form">
+                <input type="hidden" name="culture" value="ky" />
+                <button type="submit" class="dashboard-lang-option @(currentCultureName == "ky" ? "active" : "")">🇰🇬 @Localizer["LanguageKyrgyz"]</button>
+            </form>
+        </div>
+    </div>
 
-    <div class="dropdown">
-        <a class="btn medclinic-topbar-dropdown-toggle rounded-pill px-3" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            Аккаунт
+    <div class="dropdown dashboard-user-wrap">
+        <a class="dashboard-user-chip"
+           href="#"
+           id="userDropdown"
+           role="button"
+           data-bs-toggle="dropdown"
+           aria-expanded="false"
+           title="@userName">
+            <span class="dashboard-user-avatar" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="currentColor"/>
+                </svg>
+            </span>
+            <span class="dashboard-user-name">@userName</span>
         </a>
         @await Html.PartialAsync("~/Views/Shared/_UserMenuPartial.cshtml")
     </div>

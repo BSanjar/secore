@@ -31,3 +31,8 @@ public class EditServiceItemDto
     public string? ServiceId { get; set; }
     public int? Qty { get; set; }
 }
+
+public class DeleteInvoiceRequest
+{
+    public string? InvoiceId { get; set; }
+}

@@ -1,0 +1,19 @@
+<div class="modal fade" id="mcPaidCancelModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered mc-confirm-dialog">
+        <div class="modal-content border-0 shadow-lg mc-confirm-modal">
+            <div class="modal-body mc-confirm-modal__body text-center">
+                <div class="mc-confirm-modal__icon" aria-hidden="true">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg>
+                </div>
+                <h2 class="mc-confirm-modal__title" id="mcPaidCancelModalTitle">Отменить запись?</h2>
+                <p class="mc-confirm-modal__message" id="mcPaidCancelModalMessage"></p>
+                <div class="mc-confirm-modal__details" id="mcPaidCancelModalDetails"></div>
+            </div>
+            <div class="modal-footer border-0 mc-confirm-modal__footer flex-column align-items-stretch gap-2 pb-4 pt-0 px-4">
+                <button type="button" class="btn mc-confirm-modal__ok" id="mcPaidCancelRefundBtn">Отменить с возвратом суммы</button>
+                <button type="button" class="btn btn-outline-secondary" id="mcPaidCancelNoRefundBtn">Отменить без возврата</button>
+                <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal" id="mcPaidCancelAbortBtn">Не отменять</button>
+            </div>
+        </div>
+    </div>
+</div>

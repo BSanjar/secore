@@ -32,7 +32,7 @@ public sealed class ShellViewModelBuilder : IShellViewModelBuilder
             : "PersonalCabinet";
         var organizationCaptionResourceKey = profileKey switch
         {
-            "medclinic" => "OrganizationProfileMedclinic",
+            "medclinic" => null,
             "detsad" => "OrganizationProfileDetsad",
             _ => null
         };

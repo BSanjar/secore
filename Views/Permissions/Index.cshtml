@@ -3,28 +3,31 @@
     ViewData["Title"] = "Права доступа";
 }
 
-<div class="mb-4 d-flex justify-content-between align-items-start flex-wrap gap-2">
-    <div>
-        <h1 class="h2 mb-1">Права доступа</h1>
-        <p class="text-muted small mb-0">Справочник прав, которые можно назначать ролям.</p>
-    </div>
-    <div class="d-flex flex-wrap gap-2">
-        <a asp-controller="Settings" asp-action="Index" class="btn btn-outline-secondary btn-sm">
-            К настройкам
-        </a>
-        <a asp-action="Create" class="btn btn-primary btn-sm">
-            Создать новое право
-        </a>
-    </div>
-</div>
+@section Styles {
+    <link rel="stylesheet" href="~/web/kindergarten/css/detsad-clients.css" asp-append-version="true" />
+}
 
-@if (Model != null && Model.Any())
-{
-    <div class="card shadow-sm border-0">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-striped table-hover align-middle mb-0">
-                    <thead class="table-light">
+<div class="children-page settings-page settings-subpage settings-list-page">
+    <nav class="detsad-breadcrumb" aria-label="Навигация">
+        <a asp-controller="Settings" asp-action="Index">Настройки</a>
+        <span class="breadcrumb-sep">/</span>
+        <span>Права доступа</span>
+    </nav>
+
+    <div class="page-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <h1 class="page-title mb-0">Права доступа</h1>
+        <div class="d-flex flex-wrap gap-2">
+            <a asp-controller="Settings" asp-action="Index" class="detsad-btn-secondary">← К настройкам</a>
+            <a asp-action="Create" class="detsad-btn-primary">Создать право</a>
+        </div>
+    </div>
+
+    @if (Model != null && Model.Any())
+    {
+        <div class="dashboard-table-card">
+            <div class="table-wrap">
+                <table class="table-soft">
+                    <thead>
                         <tr>
                             <th>Название</th>
                             <th>Код</th>
@@ -37,18 +40,15 @@
                         @foreach (var permission in Model)
                         {
                             <tr>
-                                <td>@permission.Name</td>
-                                <td><code>@permission.Code</code></td>
-                                <td>@permission.Category</td>
-                                <td>@permission.Description</td>
+                                <td class="cell-name">@permission.Name</td>
+                                <td class="cell-muted"><code class="small">@permission.Code</code></td>
+                                <td class="cell-muted">@(permission.Category ?? "—")</td>
+                                <td class="cell-muted">@(permission.Description ?? "—")</td>
                                 <td class="text-end">
                                     <div class="btn-group btn-group-sm" role="group">
-                                        <a asp-action="Edit" asp-route-id="@permission.Id" class="btn btn-outline-warning">
-                                            Редактировать
-                                        </a>
-                                        <a asp-action="Delete" asp-route-id="@permission.Id" class="btn btn-outline-danger">
-                                            Удалить
-                                        </a>
+                                        <a asp-action="Details" asp-route-id="@permission.Id" class="btn btn-outline-secondary">Детали</a>
+                                        <a asp-action="Edit" asp-route-id="@permission.Id" class="btn btn-outline-warning">Изменить</a>
+                                        <a asp-action="Delete" asp-route-id="@permission.Id" class="btn btn-outline-danger">Удалить</a>
                                     </div>
                                 </td>
                             </tr>
@@ -57,11 +57,12 @@
                 </table>
             </div>
         </div>
-    </div>
-}
-else
-{
-    <div class="alert alert-info">
-        Права доступа не найдены. <a asp-action="Create">Создайте первое право</a>.
-    </div>
-}
+    }
+    else
+    {
+        <div class="empty-state-settings">
+            <p class="mb-0">Права не найдены.</p>
+            <a asp-action="Create" class="detsad-btn-primary mt-3 d-inline-flex">Создать первое право</a>
+        </div>
+    }
+</div>

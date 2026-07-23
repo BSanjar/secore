@@ -1,0 +1,80 @@
+<div class="modal fade" id="appointmentRescheduleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable appointment-reschedule-dialog">
+        <div class="modal-content border-0 shadow-lg appointment-reschedule-modal">
+            <div class="modal-header appointment-reschedule-modal__header">
+                <div>
+                    <button type="button" class="btn appointment-reschedule-back" id="appointmentRescheduleBackButton">← К карточке записи</button>
+                    <h2 class="modal-title mb-1" id="appointmentRescheduleTitle">Редактирование записи</h2>
+                    <p class="text-muted mb-0" id="appointmentRescheduleSubtitle"></p>
+                </div>
+                <button type="button" class="btn doctor-modal-close" data-bs-dismiss="modal" aria-label="Закрыть">×</button>
+            </div>
+            <div class="modal-body appointment-reschedule-modal__body">
+                <fieldset id="appointmentRescheduleFieldset">
+                <div class="alert alert-warning small d-none" id="appointmentRescheduleHint"></div>
+                <input type="hidden" id="appointmentRescheduleId" />
+                <input type="hidden" id="appointmentRescheduleDoctorId" />
+                <input type="hidden" id="appointmentReschedulePatientId" />
+                <input type="hidden" id="appointmentReschedulePaymentType" />
+                <input type="hidden" id="appointmentRescheduleStart" />
+                <input type="hidden" id="appointmentRescheduleEnd" />
+
+                <div class="appointment-reschedule-context" id="appointmentRescheduleContext"></div>
+
+                <div class="appointment-create-section">
+                    <h3 class="appointment-create-section__title">Пациент</h3>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">ФИО</label>
+                            <input id="appointmentReschedulePatientName" class="form-control appointment-create-input" autocomplete="name" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Телефон</label>
+                            <input id="appointmentReschedulePhone" class="form-control appointment-create-input" inputmode="tel" autocomplete="tel" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Email</label>
+                            <input id="appointmentRescheduleEmail" class="form-control appointment-create-input" type="email" autocomplete="email" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Комментарий</label>
+                            <input id="appointmentRescheduleComment" class="form-control appointment-create-input" placeholder="Необязательно" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="appointment-create-section">
+                    <h3 class="appointment-create-section__title">Дата и время</h3>
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label">Дата приёма</label>
+                            <input type="date" id="appointmentRescheduleDate" class="form-control appointment-create-input" />
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Свободные слоты</label>
+                            <div class="appointment-reschedule-slots" id="appointmentRescheduleSlots"></div>
+                            <div class="form-text" id="appointmentRescheduleSlotSummary">Выберите дату и слот</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="appointment-create-section">
+                    <div class="appointment-create-section__head">
+                        <h3 class="appointment-create-section__title mb-0">Услуги</h3>
+                        <input type="search" id="appointmentRescheduleServiceSearch" class="form-control form-control-sm appointment-create-service-search" placeholder="Поиск услуги..." />
+                    </div>
+                    <div class="appointment-create-service-grid" id="appointmentRescheduleServiceCatalog"></div>
+                    <div class="appointment-create-selected" id="appointmentRescheduleSelectedServices">
+                        <div class="appointment-create-selected__empty text-muted small">Выберите услуги</div>
+                    </div>
+                    <div class="appointment-create-total" id="appointmentRescheduleServicesTotal">Итого: 0,00 c</div>
+                </div>
+                </fieldset>
+            </div>
+            <div class="modal-footer appointment-reschedule-modal__footer">
+                <button type="button" class="btn appointment-details-btn appointment-details-btn--ghost" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn appointment-create-submit-btn" id="appointmentRescheduleSaveButton" data-loading-text="Сохранение...">Сохранить изменения</button>
+            </div>
+        </div>
+    </div>
+</div>

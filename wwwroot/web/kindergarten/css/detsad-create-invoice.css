@@ -247,3 +247,121 @@
 .preview-executor {
     font-size: 0.8rem;
 }
+
+/* Detsad — упрощённый шаг 2 */
+.create-invoice-wrap--detsad .create-invoice-form-card {
+    border: none;
+    box-shadow: none;
+    background: transparent;
+}
+
+.create-invoice-wrap--detsad .create-invoice-form-card .card-body {
+    padding: 0;
+}
+
+.create-invoice-wrap--detsad .create-invoice-step2-head {
+    margin-bottom: 0.75rem !important;
+}
+
+.create-invoice-submit-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    margin: 0 -0.25rem;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, #fff 40%);
+    border-top: 1px solid #e2e8f0;
+    box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.create-invoice-submit-bar__back {
+    flex-shrink: 0;
+    border-radius: 10px;
+    font-weight: 500;
+}
+
+.ds-create-invoice-cta {
+    flex: 1 1 220px;
+    min-height: 3.25rem;
+    padding: 0.85rem 1.5rem;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.0625rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: #fff;
+    background: linear-gradient(135deg, #059669 0%, #047857 55%, #065f46 100%);
+    box-shadow: 0 8px 20px rgba(4, 120, 87, 0.35);
+    transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+}
+
+.ds-create-invoice-cta:hover:not(:disabled) {
+    color: #fff;
+    filter: brightness(1.05);
+    box-shadow: 0 10px 28px rgba(4, 120, 87, 0.42);
+    transform: translateY(-1px);
+}
+
+.ds-create-invoice-cta:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.ds-create-invoice-cta:disabled {
+    opacity: 0.55;
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+.create-invoice-wrap--detsad .create-invoice-submit-btn {
+    border-radius: 10px;
+    padding: 0.65rem 1rem;
+    font-weight: 600;
+    margin-top: 0.5rem;
+}
+
+.create-invoice-preview-card--detsad {
+    max-width: 100%;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.create-invoice-preview-card--detsad .card-body {
+    background: #fff;
+    padding: 1.25rem 1.35rem;
+}
+
+.create-invoice-preview-card--detsad .preview-header {
+    border-bottom-color: #e2e8f0 !important;
+}
+
+.create-invoice-preview-card--detsad .preview-details {
+    color: #475569;
+    line-height: 1.45;
+}
+
+.create-invoice-preview-card--detsad .preview-total {
+    font-size: 1.05rem;
+    color: #0f172a;
+}
+
+.ds-inv-preview-dates {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.ds-inv-preview-next-pay {
+    font-size: 0.9375rem;
+    color: #475569;
+    line-height: 1.45;
+}
+
+.ds-inv-preview-next-pay:not(:empty) {
+    color: #0f172a;
+    font-weight: 500;
+}

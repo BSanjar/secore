@@ -4,12 +4,13 @@
     var clients = ViewBag.OrganizationClients as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
     var orgServices = ViewBag.OrganizationServices as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
     var disableInvoiceServiceSelection = ViewBag.DisableInvoiceServiceSelection as bool? ?? false;
+    var useDetsadInvoiceComposer = ViewBag.UseDetsadInvoiceComposer as bool? ?? false;
     var allowedHassameaccount = ViewBag.AllowedHassameaccount as bool? ?? false;
     var invoicePayCodeMode = ViewBag.InvoicePayCodeMode as string ?? (allowedHassameaccount ? "both" : "new_only");
 }
 <link rel="stylesheet" href="~/web/kindergarten/css/detsad-create-invoice.css" asp-append-version="true" />
 
-<div class="create-invoice-wrap" data-disable-invoice-service-selection="@(disableInvoiceServiceSelection ? "true" : "false")" data-allowed-hassame-account="@(allowedHassameaccount ? "true" : "false")" data-invoice-pay-code-mode="@invoicePayCodeMode">
+<div class="create-invoice-wrap @(useDetsadInvoiceComposer ? "create-invoice-wrap--detsad" : "")" data-disable-invoice-service-selection="@(disableInvoiceServiceSelection ? "true" : "false")" data-use-detsad-composer="@(useDetsadInvoiceComposer ? "true" : "false")" data-allowed-hassame-account="@(allowedHassameaccount ? "true" : "false")" data-invoice-pay-code-mode="@invoicePayCodeMode">
     <!-- Шаг 1: Выбор получателей -->
     <div class="create-invoice-step" id="createInvoiceStep1">
         <div class="row g-0 create-invoice-step1-row">
@@ -92,14 +93,29 @@
         <div class="row g-0">
             <div class="col-lg-6 create-invoice-form-col">
                 <div class="p-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <strong>Шаг 2. Создание счёта</strong>
+                    <div class="d-flex justify-content-end align-items-center mb-3 create-invoice-step2-head @(!useDetsadInvoiceComposer ? "" : "d-none")">
                         <button type="button" class="btn btn-sm btn-outline-secondary" id="invoiceStep2Back">Назад</button>
                     </div>
 
-                    <div class="card mb-3">
-                        <div class="card-header py-2"><strong>Детали счёта</strong></div>
+                    <div class="card mb-3 create-invoice-form-card">
+                        @if (!useDetsadInvoiceComposer)
+                        {
+                            <div class="card-header py-2"><strong>Детали счёта</strong></div>
+                        }
                         <div class="card-body py-2">
+                            @if (useDetsadInvoiceComposer)
+                            {
+                                @await Html.PartialAsync("~/Views/Clients/_DetsadInvoiceComposer.cshtml")
+                                <input type="hidden" id="invoiceName" value="" />
+                                <input type="hidden" id="invoicePeriodicity" value="monthly" />
+                                <input type="checkbox" id="invoiceAutoProlongation" checked class="d-none" aria-hidden="true" />
+                                <input type="checkbox" id="invoiceUseCurrentDateTime" checked class="d-none" aria-hidden="true" />
+                                <input type="hidden" id="invoiceDateStart" value="" />
+                                <input type="hidden" id="invoiceDateEnd" value="" />
+                                <input type="hidden" id="invoicePayCode" value="" />
+                            }
+                            else
+                            {
                             <div class="mb-2">
                                 <label class="form-label small">Название счёта</label>
                                 <input type="text" id="invoiceName" class="form-control form-control-sm" placeholder="Например: Оплата за месяц" />
@@ -188,10 +204,11 @@
                                     </span>
                                 </div>
                             </div>
+                            }
                         </div>
                     </div>
 
-                    @if (disableInvoiceServiceSelection)
+                    @if (disableInvoiceServiceSelection && !useDetsadInvoiceComposer)
                     {
                         <div class="card mb-3" id="invoiceManualServiceCard">
                             <div class="card-header py-2"><strong>Услуга по счёту</strong></div>
@@ -205,7 +222,7 @@
                         </div>
                     }
 
-                    <div class="card mb-3 @(disableInvoiceServiceSelection ? "d-none" : "")" id="invoiceServicesCard">
+                    <div class="card mb-3 @(disableInvoiceServiceSelection || useDetsadInvoiceComposer ? "d-none" : "")" id="invoiceServicesCard">
                         <div class="card-header py-2"><strong>Услуги</strong></div>
                         <div class="card-body py-2">
                             <p class="small text-muted mb-2">Выберите услуги из списка организации и укажите количество.</p>
@@ -250,6 +267,8 @@
                         </div>
                     </div>
 
+                    @if (!useDetsadInvoiceComposer)
+                    {
                     <div class="card mb-3">
                         <div class="card-header py-2 d-flex align-items-center justify-content-between">
                             <strong>QR-код</strong>
@@ -261,14 +280,18 @@
                             <div id="invoiceQrContainer" class="invoice-qr-container"></div>
                         </div>
                     </div>
+                    }
 
-                    <button type="button" class="btn btn-success w-100" id="invoiceCreateBtn">Создать счёт на оплату</button>
+                    @if (!useDetsadInvoiceComposer)
+                    {
+                    <button type="button" class="btn btn-success w-100 create-invoice-submit-btn" id="invoiceCreateBtn">Создать счёт на оплату</button>
+                    }
                 </div>
             </div>
 
             <div class="col-lg-6 create-invoice-preview-col">
                 <div class="p-3">
-                    <div class="card create-invoice-preview-card" id="invoicePreviewCard">
+                    <div class="card create-invoice-preview-card @(useDetsadInvoiceComposer ? "create-invoice-preview-card--detsad" : "")" id="invoicePreviewCard">
                         <div class="card-body">
                             <div class="preview-header text-center border-bottom pb-2 mb-2">
                                 <div class="preview-service-name">SECORE</div>
@@ -276,11 +299,11 @@
                             </div>
                             <div class="preview-details small mb-2">
                                 <div><strong>Название:</strong> <span id="previewName">—</span></div>
-                                <div><strong>Дата начала:</strong> <span id="previewDateStart">—</span></div>
+                                <div class="@(useDetsadInvoiceComposer ? "d-none" : "")"><strong>Дата начала:</strong> <span id="previewDateStart">—</span></div>
                                 <div><strong>Периодичность:</strong> <span id="previewPeriodicity">—</span></div>
                                 <div id="previewDateEndRow" class="d-none"><strong>Дата конца:</strong> <span id="previewDateEnd">—</span></div>
                             </div>
-                            <div class="table-responsive">
+                            <div class="table-responsive @(useDetsadInvoiceComposer ? "d-none" : "")" id="previewLinesWrap">
                                 <table class="table table-sm preview-table">
                                     <thead>
                                         <tr><th>Наименование</th><th>Цена</th><th>Кол-во</th><th>Сумма</th></tr>
@@ -293,12 +316,18 @@
                             <div class="preview-total border-top pt-2 mt-2">
                                 <strong>Итого: <span id="previewTotal">0</span> сом</strong>
                             </div>
-                            <div class="preview-executor text-muted small mt-2 pt-2 border-top">
+                            @if (useDetsadInvoiceComposer)
+                            {
+                                <div class="ds-inv-preview-dates" id="invoicePreviewDatesDetsad">
+                                    <p class="ds-inv-preview-next-pay mb-0" id="previewNextPaymentLine">—</p>
+                                </div>
+                            }
+                            <div class="preview-executor text-muted small mt-2 pt-2 border-top @(useDetsadInvoiceComposer ? "d-none" : "")">
                                 Исполнитель: <span id="previewExecutor">—</span>
                             </div>
                         </div>
                     </div>
-                    <div class="card mt-3 create-invoice-preview-payments-card" id="invoicePreviewPaymentsCard">
+                    <div class="card mt-3 create-invoice-preview-payments-card @(useDetsadInvoiceComposer ? "d-none" : "")" id="invoicePreviewPaymentsCard">
                         <div class="card-header py-2"><strong>Предварительные оплаты</strong></div>
                         <div class="card-body py-2">
                             <div class="table-responsive">
@@ -316,5 +345,12 @@
                 </div>
             </div>
         </div>
+        @if (useDetsadInvoiceComposer)
+        {
+            <div class="create-invoice-submit-bar" role="region" aria-label="Действия">
+                <button type="button" class="btn btn-outline-secondary create-invoice-submit-bar__back" id="invoiceStep2BackDetsad">Назад</button>
+                <button type="button" class="btn ds-create-invoice-cta" id="invoiceCreateBtn">Создать счёт на оплату</button>
+            </div>
+        }
     </div>
 </div>

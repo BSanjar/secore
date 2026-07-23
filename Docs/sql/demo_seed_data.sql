@@ -6,7 +6,7 @@
 --
 -- Организации:
 --   org-med-01     medclinic  — Медицинский центр «Здоровье Плюс»
---   org-detsad-01  detsad     — Детский сад №15 «Балажан»
+--   01000  detsad     — Детский сад №15 «Балажан»
 --   org-school-01  standart   — Школа №42 им. Абая (школьный биллинг)
 --   org-simple-01  simple     — ИП «Касымов Сервис» (упрощённый кабинет)
 --
@@ -93,14 +93,18 @@ INSERT INTO permissions (id, name, code, description, category, isdeleted, area)
 ('perm-40', 'Просмотр специализаций',         'specializations.view',        'Справочник специализаций', 'Медструктура', 0, 'medclinic'),
 ('perm-41', 'Просмотр пациентов',             'patients.view',               'Справочник пациентов', 'Медструктура', 0, 'medclinic'),
 ('perm-42', 'Просмотр услуг (мед)',           'services.view',               'Услуги клиники', 'Услуги', 0, 'medclinic'),
-('perm-43', 'Услуги организации',             'orgservices.view',            'Услуги организации', 'Услуги', 0, NULL);
+('perm-43', 'Услуги организации',             'orgservices.view',            'Услуги организации', 'Услуги', 0, NULL),
+('perm-44', 'Суммы: QR SECORE',               'dashboard.sums.qr_secore',    'Отображать суммы, принятые через QR SECORE', 'Дашборд', 0, NULL),
+('perm-45', 'Суммы: QR внешний',              'dashboard.sums.qr_external',  'Отображать суммы, принятые через внешний QR', 'Дашборд', 0, NULL),
+('perm-46', 'Суммы: наличные',                'dashboard.sums.cash',         'Отображать суммы, принятые через наличные', 'Дашборд', 0, NULL),
+('perm-47', 'Суммы: карта',                   'dashboard.sums.card',         'Отображать суммы, принятые через карту', 'Дашборд', 0, NULL);
 
 -- ---------------------------------------------------------------------------
 -- 4. Organizations
 -- ---------------------------------------------------------------------------
 INSERT INTO organization (id, name, organizationtype, is_active) VALUES
 ('org-med-01',    'Медицинский центр «Здоровье Плюс»', 'medclinic', true),
-('org-detsad-01', 'Детский сад №15 «Балажан»',         'detsad',    true),
+('01000', 'Детский сад №15 «Балажан»',         'detsad',    true),
 ('org-school-01', 'Школа №42 им. Абая',                'standart',  true),
 ('org-simple-01', 'ИП «Касымов Сервис»',               'simple',    true);
 
@@ -118,7 +122,7 @@ INSERT INTO organization_settings (
  'info@zdorovie.kg', '+996700111001', '+996312111001', 'Асанова Гульнара Токтогуловна',
  'г. Бишкек, ул. Ибраимова 115', NULL, 'subscription', 'reuse_active',
  false, NULL, false, false),
-('org-detsad-01', false, true, 'both', 5,
+('01000', false, true, 'both', 5,
  'info@balazhan.kg', '+996700222002', '+996312222002', 'Бекова Айгуль Сапарбековна',
  'г. Бишкек, мкр. Джал-23, д. 7', NULL, NULL, 'reuse_active',
  true, 'comm-percent-2', true, true),
@@ -160,8 +164,8 @@ INSERT INTO roles (id, name, organization, isdeleted, rights, avilable_services)
 ('role-med-doctor',   'Врач',          'org-med-01', 0, NULL, NULL),
 ('role-med-registry', 'Регистратор',   'org-med-01', 0, NULL, NULL),
 -- Detsad
-('role-ds-admin',     'Администратор', 'org-detsad-01', 0, NULL, NULL),
-('role-ds-teacher',   'Воспитатель',   'org-detsad-01', 0, NULL, NULL),
+('role-ds-admin',     'Администратор', '01000', 0, NULL, NULL),
+('role-ds-teacher',   'Воспитатель',   '01000', 0, NULL, NULL),
 -- School (standart)
 ('role-sch-admin',    'Администратор', 'org-school-01', 0, NULL, NULL),
 ('role-sch-acc',      'Бухгалтер',     'org-school-01', 0, NULL, NULL),
@@ -184,9 +188,9 @@ INSERT INTO users (
  'WIxV884rhWmxU8WrvxP590MIuIogAXzGmbg1zJMZXRY=', 0, 'org-med-01', 'user', 'appointments', true),
 
 ('user-ds-admin', 'Бекова Айгуль Сапарбековна', 'admin@balazhan.kg', '+996700222201',
- 'WIxV884rhWmxU8WrvxP590MIuIogAXzGmbg1zJMZXRY=', 0, 'org-detsad-01', 'admin', 'cabinet', true),
+ 'WIxV884rhWmxU8WrvxP590MIuIogAXzGmbg1zJMZXRY=', 0, '01000', 'admin', 'cabinet', true),
 ('user-ds-teacher', 'Омурзакова Мээрим Айбековна', 'teacher@balazhan.kg', '+996700222202',
- 'WIxV884rhWmxU8WrvxP590MIuIogAXzGmbg1zJMZXRY=', 0, 'org-detsad-01', 'user', 'cabinet', true),
+ 'WIxV884rhWmxU8WrvxP590MIuIogAXzGmbg1zJMZXRY=', 0, '01000', 'user', 'cabinet', true),
 
 ('user-sch-admin', 'Жумабаев Нурлан Асылбекович', 'admin@school42.kg', '+996700333301',
  'WIxV884rhWmxU8WrvxP590MIuIogAXzGmbg1zJMZXRY=', 0, 'org-school-01', 'admin', 'cabinet', true),
@@ -242,6 +246,7 @@ SELECT 'rp-med-reg-' || p.id, 'role-med-registry', p.id, 0
 FROM permissions p
 WHERE p.code IN (
     'dashboard.view', 'nav.dashboard', 'nav.home',
+    'dashboard.sums.qr_secore', 'dashboard.sums.qr_external', 'dashboard.sums.cash', 'dashboard.sums.card',
     'appointments.view', 'appointments.registry.view', 'appointments.edit',
     'appointments.manage', 'appointments.invoice', 'appointments.payment.status',
     'nav.appointments', 'doctors.view', 'nav.doctors',
@@ -346,10 +351,10 @@ INSERT INTO organization_services (id, name, organization, service_summ, fixed_s
 ('svc-med-blood',    'Общий анализ крови',            'org-med-01',  45000, 1, NULL, NULL, 0),
 ('svc-med-package',  'Чек-ап «Базовый»',              'org-med-01', 890000, 1, NULL, NULL, 0),
 -- Detsad
-('svc-ds-fee',       'Ежемесячная оплата за сад',     'org-detsad-01', 850000, 1, NULL, NULL, 0),
-('svc-ds-food',      'Питание',                       'org-detsad-01', 250000, 1, NULL, NULL, 0),
-('svc-ds-extra',     'Кружки / доп.занятия',          'org-detsad-01', 150000, 0, 50000, 500000, 0),
-('svc-ds-camp',      'Летний лагерь (1 смена)',       'org-detsad-01',1200000, 1, NULL, NULL, 0),
+('svc-ds-fee',       'Ежемесячная оплата за сад',     '01000', 850000, 1, NULL, NULL, 0),
+('svc-ds-food',      'Питание',                       '01000', 250000, 1, NULL, NULL, 0),
+('svc-ds-extra',     'Кружки / доп.занятия',          '01000', 150000, 0, 50000, 500000, 0),
+('svc-ds-camp',      'Летний лагерь (1 смена)',       '01000',1200000, 1, NULL, NULL, 0),
 -- School
 ('svc-sch-tuition',  'Обучение (месяц)',              'org-school-01', 550000, 1, NULL, NULL, 0),
 ('svc-sch-lunch',    'Питание в столовой',            'org-school-01', 180000, 1, NULL, NULL, 0),
@@ -371,10 +376,10 @@ INSERT INTO service_specializations (id, organization_service_id, specialization
 -- 13. Client groups (detsad + school)
 -- ---------------------------------------------------------------------------
 INSERT INTO org_client_groups (id, name, parent_group_id, organization_id, is_deleted, logo, created_date) VALUES
-('grp-ds-root',   'Все группы',   NULL,          'org-detsad-01', 0, NULL, NOW()),
-('grp-ds-junior', 'Младшая (2-3)', 'grp-ds-root', 'org-detsad-01', 0, NULL, NOW()),
-('grp-ds-middle', 'Средняя (3-4)', 'grp-ds-root', 'org-detsad-01', 0, NULL, NOW()),
-('grp-ds-senior', 'Старшая (5-6)', 'grp-ds-root', 'org-detsad-01', 0, NULL, NOW()),
+('grp-ds-root',   'Все группы',   NULL,          '01000', 0, NULL, NOW()),
+('grp-ds-junior', 'Младшая (2-3)', 'grp-ds-root', '01000', 0, NULL, NOW()),
+('grp-ds-middle', 'Средняя (3-4)', 'grp-ds-root', '01000', 0, NULL, NOW()),
+('grp-ds-senior', 'Старшая (5-6)', 'grp-ds-root', '01000', 0, NULL, NOW()),
 ('grp-sch-root',  'Классы',        NULL,          'org-school-01', 0, NULL, NOW()),
 ('grp-sch-5a',    '5 «А» класс',   'grp-sch-root','org-school-01', 0, NULL, NOW()),
 ('grp-sch-7b',    '7 «Б» класс',   'grp-sch-root','org-school-01', 0, NULL, NOW()),
@@ -384,9 +389,9 @@ INSERT INTO org_client_groups (id, name, parent_group_id, organization_id, is_de
 -- 14. Organization fields + clients
 -- ---------------------------------------------------------------------------
 INSERT INTO organization_fields (id, field_name, field_type, field_select_values, isdeleted, organization, filterbyfield) VALUES
-('fld-ds-birth',   'Дата рождения',     'datetime', NULL, 0, 'org-detsad-01', true),
-('fld-ds-allergy', 'Аллергия',          'selected', 'Нет;Пищевая;Лекарственная;Другая', 0, 'org-detsad-01', true),
-('fld-ds-parent',  'ФИО родителя',      'string',   NULL, 0, 'org-detsad-01', false),
+('fld-ds-birth',   'Дата рождения',     'datetime', NULL, 0, '01000', true),
+('fld-ds-allergy', 'Аллергия',          'selected', 'Нет;Пищевая;Лекарственная;Другая', 0, '01000', true),
+('fld-ds-parent',  'ФИО родителя',      'string',   NULL, 0, '01000', false),
 ('fld-sch-grade',  'Класс',             'selected', '5А;5Б;7А;7Б;9А;9Б', 0, 'org-school-01', true),
 ('fld-sch-doc',    'Серия паспорта',    'string',   NULL, 0, 'org-school-01', false),
 ('fld-med-blood',  'Группа крови',      'selected', 'I(0);II(A);III(B);IV(AB)', 0, 'org-med-01', true),
@@ -415,19 +420,19 @@ INSERT INTO organization_clients (
  NULL, NULL, NULL),
 
 -- Detsad children (client_name = ребёнок / плательщик)
-('cli-ds-01', 'org-detsad-01', 'Алиева Амина (мать: Алиева Нургуль)', 'fiz', NULL, '+996555201001',
+('cli-ds-01', '01000', 'Алиева Амина (мать: Алиева Нургуль)', 'fiz', NULL, '+996555201001',
  'г. Бишкек, мкр. Джал-23, д. 12', 'nurgul.alieva@mail.kg', -850000, 1, NOW() - INTERVAL '90 days', NOW(), 'user-ds-admin',
  '+996555201001', NULL, 'grp-ds-junior'),
-('cli-ds-02', 'org-detsad-01', 'Бекмурзаев Арстан (отец: Бекмурзаев Талант)', 'fiz', NULL, '+996555201002',
+('cli-ds-02', '01000', 'Бекмурзаев Арстан (отец: Бекмурзаев Талант)', 'fiz', NULL, '+996555201002',
  'г. Бишкек, ул. Ахунбаева 45', 'talant.b@gmail.com', 0, 1, NOW() - INTERVAL '80 days', NOW(), 'user-ds-admin',
  '+996555201002', '@talant_b', 'grp-ds-middle'),
-('cli-ds-03', 'org-detsad-01', 'Жээнбекова Медина (мать: Жээнбекова Айчурек)', 'fiz', NULL, '+996555201003',
+('cli-ds-03', '01000', 'Жээнбекова Медина (мать: Жээнбекова Айчурек)', 'fiz', NULL, '+996555201003',
  'г. Бишкек, мкр. Тунгуч 3-21', 'aichurek.j@mail.kg', 250000, 1, NOW() - INTERVAL '70 days', NOW(), 'user-ds-admin',
  '+996555201003', NULL, 'grp-ds-senior'),
-('cli-ds-04', 'org-detsad-01', 'Кадыров Дастан (мать: Кадырова Эльвира)', 'fiz', NULL, '+996555201004',
+('cli-ds-04', '01000', 'Кадыров Дастан (мать: Кадырова Эльвира)', 'fiz', NULL, '+996555201004',
  'г. Бишкек, ул. Байтик Баатыра 10', 'elvira.k@gmail.com', -1100000, 1, NOW() - INTERVAL '40 days', NOW(), 'user-ds-teacher',
  NULL, NULL, 'grp-ds-junior'),
-('cli-ds-05', 'org-detsad-01', 'Токтосунова Арууке (отец: Токтосунов Максат)', 'fiz', NULL, '+996555201005',
+('cli-ds-05', '01000', 'Токтосунова Арууке (отец: Токтосунов Максат)', 'fiz', NULL, '+996555201005',
  'г. Бишкек, мкр. Кок-Жар 7-14', 'maksat.t@mail.kg', 0, 0, NOW() - INTERVAL '15 days', NOW(), 'user-ds-admin',
  '+996555201005', NULL, 'grp-ds-middle'),
 
@@ -694,8 +699,8 @@ INSERT INTO transactions (
 -- ---------------------------------------------------------------------------
 INSERT INTO agent_commission (id, agent_id, organization_id, commission_id, lower_commission_id) VALUES
 ('ac-med-01', 'agent-demo-01', 'org-med-01',    'comm-percent-2',  NULL),
-('ac-ds-01',  'agent-demo-01', 'org-detsad-01', 'comm-percent-15','comm-percent-2'),
-('ac-ds-02',  'agent-demo-02', 'org-detsad-01', 'comm-percent-15','comm-fixed-5'),
+('ac-ds-01',  'agent-demo-01', '01000', 'comm-percent-15','comm-percent-2'),
+('ac-ds-02',  'agent-demo-02', '01000', 'comm-percent-15','comm-fixed-5'),
 ('ac-sch-01', 'agent-demo-01', 'org-school-01', 'comm-percent-15', NULL),
 ('ac-sm-01',  'agent-demo-01', 'org-simple-01', 'comm-fixed-5',    NULL);
 

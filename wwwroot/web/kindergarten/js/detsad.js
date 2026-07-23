@@ -111,16 +111,104 @@
         }, 120);
     }
 
+    var TOAST_CONTAINER_ID = 'dsToastContainer';
+    var FLASH_KEY = 'detsadFlashToast';
+
+    function ensureToastContainer() {
+        var container = document.getElementById(TOAST_CONTAINER_ID);
+        if (container) return container;
+        container = document.createElement('div');
+        container.id = TOAST_CONTAINER_ID;
+        container.className = 'ds-toast-container';
+        document.body.appendChild(container);
+        return container;
+    }
+
+    function showToast(message, type) {
+        if (!message) return;
+        type = type === 'danger' || type === 'error' ? 'danger' : 'success';
+        if (typeof bootstrap === 'undefined' || !bootstrap.Toast) {
+            window.alert(message);
+            return;
+        }
+        var container = ensureToastContainer();
+        var el = document.createElement('div');
+        el.className = 'toast ds-toast ds-toast--' + type + ' border-0';
+        el.setAttribute('role', 'alert');
+        el.setAttribute('aria-live', 'assertive');
+        el.setAttribute('aria-atomic', 'true');
+
+        if (type === 'success') {
+            el.innerHTML =
+                '<div class="ds-toast__inner">' +
+                '<div class="ds-toast__icon-wrap" aria-hidden="true">' +
+                '<svg class="ds-toast__icon" width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+                '<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>' +
+                '<path d="M8 12.5l2.5 2.5L16 9.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>' +
+                '</svg></div>' +
+                '<div class="ds-toast__text">' +
+                '<div class="ds-toast__title">Готово!</div>' +
+                '<div class="ds-toast__message">' + escapeHtml(message) + '</div>' +
+                '</div>' +
+                '<button type="button" class="btn-close ds-toast__close" data-bs-dismiss="toast" aria-label="Закрыть"></button>' +
+                '</div>';
+        } else {
+            el.innerHTML =
+                '<div class="ds-toast__inner ds-toast__inner--danger">' +
+                '<div class="ds-toast__text">' +
+                '<div class="ds-toast__title">Ошибка</div>' +
+                '<div class="ds-toast__message">' + escapeHtml(message) + '</div>' +
+                '</div>' +
+                '<button type="button" class="btn-close ds-toast__close" data-bs-dismiss="toast" aria-label="Закрыть"></button>' +
+                '</div>';
+        }
+
+        container.appendChild(el);
+        var toast = new bootstrap.Toast(el, { delay: type === 'success' ? 7000 : 5500, autohide: true });
+        el.addEventListener('hidden.bs.toast', function () {
+            el.remove();
+        });
+        toast.show();
+    }
+
+    function queueFlashToast(message, type) {
+        try {
+            sessionStorage.setItem(FLASH_KEY, JSON.stringify({ message: message, type: type || 'success' }));
+        } catch (e) { /* ignore */ }
+    }
+
+    function consumeFlashToast() {
+        try {
+            var raw = sessionStorage.getItem(FLASH_KEY);
+            if (!raw) return;
+            sessionStorage.removeItem(FLASH_KEY);
+            var data = JSON.parse(raw);
+            if (data && data.message) {
+                window.setTimeout(function () {
+                    showToast(data.message, data.type);
+                }, 200);
+            }
+        } catch (e) { /* ignore */ }
+    }
+
+    function flashAndReload(message, reloadMessage) {
+        queueFlashToast(message, 'success');
+        reloadWithOverlay(reloadMessage || 'Обновление списка...');
+    }
+
     window.DetsadUI = {
         loaderHtml: loaderHtml,
         showOverlay: showOverlay,
         hideOverlay: hideOverlay,
         setButtonLoading: setButtonLoading,
         withButtonLoading: withButtonLoading,
-        reloadWithOverlay: reloadWithOverlay
+        reloadWithOverlay: reloadWithOverlay,
+        showToast: showToast,
+        flashAndReload: flashAndReload
     };
 
     document.addEventListener('DOMContentLoaded', function () {
+        consumeFlashToast();
         // Soft press feedback for interactive controls without explicit handlers
         document.body.addEventListener('click', function (e) {
             var t = e.target && e.target.closest

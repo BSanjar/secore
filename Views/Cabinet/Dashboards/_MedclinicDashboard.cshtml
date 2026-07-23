@@ -1,395 +1,220 @@
 ﻿@model WebApplication1.ViewModels.Cabinet.MedclinicDashboardViewModel
 @using WebApplication1.Helpers
+@using System.Globalization
 @{
     ViewData["Title"] = "Главная";
     var showServiceTerms = AuthorizationHelper.IsAdminRole(Context);
+    var todayLabel = char.ToUpper(Model.TodayTitle[0], CultureInfo.GetCultureInfo("ru-RU")) + Model.TodayTitle.Substring(1);
 }
 
 @section Styles {
-    <style>
-        .medclinic-dashboard {
-            display: grid;
-            gap: 1.5rem;
-        }
-
-        .medclinic-dashboard__metrics {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 1rem;
-        }
-
-        .medclinic-dashboard__info {
-            display: grid;
-            grid-template-columns: minmax(0, 1.7fr) minmax(320px, 1fr);
-            gap: 1rem;
-        }
-
-        .medclinic-dashboard__info--full {
-            grid-template-columns: 1fr;
-        }
-
-        .medclinic-dashboard__surface {
-            background: #fff;
-            border: 1px solid rgba(15, 23, 42, 0.08);
-            border-radius: 1rem;
-            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
-            overflow: hidden;
-        }
-
-        .medclinic-dashboard__header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 1rem;
-            padding: 1.1rem 1.25rem;
-            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
-        }
-
-        .medclinic-dashboard__title {
-            margin: 0;
-            font-size: 1.05rem;
-            font-weight: 700;
-            color: #0f172a;
-        }
-
-        .medclinic-dashboard__subtitle {
-            margin: 0.35rem 0 0;
-            color: #64748b;
-            font-size: 0.92rem;
-        }
-
-        .medclinic-dashboard__metric {
-            padding: 1.1rem 1.15rem;
-            border-radius: 1rem;
-            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-            border: 1px solid rgba(15, 23, 42, 0.08);
-            box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
-        }
-
-        .medclinic-dashboard__metric-label {
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            color: #64748b;
-        }
-
-        .medclinic-dashboard__metric-value {
-            margin-top: 0.55rem;
-            font-size: 1.9rem;
-            line-height: 1.1;
-            font-weight: 800;
-            color: #0f172a;
-        }
-
-        .medclinic-dashboard__metric-description {
-            margin: 0.55rem 0 0;
-            color: #64748b;
-            font-size: 0.92rem;
-        }
-
-        .medclinic-dashboard__chart-wrap {
-            padding: 1.25rem;
-        }
-
-        .medclinic-dashboard__period {
-            display: inline-flex;
-            gap: 0.4rem;
-            padding: 0.25rem;
-            border-radius: 999px;
-            background: #eff6ff;
-            margin-bottom: 1rem;
-        }
-
-        .medclinic-dashboard__period-btn {
-            border: 0;
-            background: transparent;
-            color: #1d4ed8;
-            padding: 0.45rem 0.9rem;
-            border-radius: 999px;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-
-        .medclinic-dashboard__period-btn.active {
-            background: #1d4ed8;
-            color: #fff;
-            box-shadow: 0 10px 25px rgba(29, 78, 216, 0.22);
-        }
-
-        .medclinic-dashboard__canvas {
-            position: relative;
-            min-height: 320px;
-        }
-
-        .medclinic-dashboard__terms {
-            padding: 1.25rem;
-        }
-
-        .medclinic-dashboard__terms-name {
-            font-size: 1.15rem;
-            font-weight: 700;
-            color: #0f172a;
-            margin-bottom: 1rem;
-        }
-
-        .medclinic-dashboard__terms-list {
-            display: grid;
-            gap: 0.85rem;
-        }
-
-        .medclinic-dashboard__terms-row {
-            display: grid;
-            gap: 0.2rem;
-            padding-bottom: 0.85rem;
-            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
-        }
-
-        .medclinic-dashboard__terms-row:last-child {
-            padding-bottom: 0;
-            border-bottom: 0;
-        }
-
-        .medclinic-dashboard__terms-label {
-            color: #64748b;
-            font-size: 0.82rem;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-        }
-
-        .medclinic-dashboard__terms-value {
-            color: #0f172a;
-            font-weight: 600;
-        }
-
-        .medclinic-dashboard__table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .medclinic-dashboard__table th,
-        .medclinic-dashboard__table td {
-            padding: 0.95rem 1.25rem;
-            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
-            text-align: left;
-            vertical-align: middle;
-        }
-
-        .medclinic-dashboard__table th:last-child,
-        .medclinic-dashboard__table td:last-child {
-            text-align: right;
-        }
-
-        .medclinic-dashboard__table tbody tr:hover {
-            background: #f8fafc;
-        }
-
-        .medclinic-dashboard__status {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.35rem;
-            padding: 0.35rem 0.7rem;
-            border-radius: 999px;
-            font-size: 0.84rem;
-            font-weight: 600;
-            background: #dcfce7;
-            color: #166534;
-        }
-
-        .medclinic-dashboard__empty {
-            padding: 2.5rem 1.25rem;
-            text-align: center;
-            color: #64748b;
-        }
-
-        @@media (max-width: 1199px) {
-            .medclinic-dashboard__metrics,
-            .medclinic-dashboard__info {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="~/web/medclinic/css/medclinic-dashboard.css" asp-append-version="true" />
 }
 
-<div class="medclinic-dashboard">
-    <section class="medclinic-dashboard__metrics">
-        @foreach (var metric in Model.Metrics)
+<div class="mc-dash">
+    <header class="mc-dash-hero">
+        <div>
+            <p class="mc-dash-hero__eyebrow">Расписание на сегодня</p>
+            <h1 class="mc-dash-hero__title">@todayLabel</h1>
+            <p class="mc-dash-hero__org">@Model.OrganizationName</p>
+        </div>
+        @if (Model.ShowNewAppointmentButton && !string.IsNullOrEmpty(Model.NewAppointmentUrl))
         {
-            <article class="medclinic-dashboard__metric">
-                <div class="medclinic-dashboard__metric-label">@metric.Label</div>
-                <div class="medclinic-dashboard__metric-value">@metric.Value</div>
-                <p class="medclinic-dashboard__metric-description">@metric.Description</p>
-            </article>
+            <a class="mc-dash-cta" href="@Model.NewAppointmentUrl">
+                <span class="mc-dash-cta__icon" aria-hidden="true">+</span>
+                Новая запись
+            </a>
         }
+    </header>
+
+    <section class="mc-dash-stats" aria-label="Записи на сегодня">
+        <article class="mc-dash-stat">
+            <div class="mc-dash-stat__label">Записей на сегодня</div>
+            <div class="mc-dash-stat__value">@Model.AppointmentsTotalToday</div>
+            <p class="mc-dash-stat__hint">Активные приёмы в расписании</p>
+        </article>
+        <article class="mc-dash-stat mc-dash-stat--accent">
+            <div class="mc-dash-stat__label">Принято</div>
+            <div class="mc-dash-stat__value">@Model.AppointmentsAcceptedToday</div>
+            <p class="mc-dash-stat__hint">Оплачено или закрыто по оплате</p>
+        </article>
+        <article class="mc-dash-stat mc-dash-stat--warn">
+            <div class="mc-dash-stat__label">Ожидают приёма</div>
+            <div class="mc-dash-stat__value">@Model.AppointmentsRemainingToday</div>
+            <p class="mc-dash-stat__hint">Ещё без оплаты / не приняты</p>
+        </article>
     </section>
 
-    <section class="medclinic-dashboard__info @(showServiceTerms ? "" : "medclinic-dashboard__info--full")">
-        <div class="medclinic-dashboard__surface">
-            <div class="medclinic-dashboard__header">
-                <div>
-                    <h2 class="medclinic-dashboard__title">Динамика оплат</h2>
-                    <p class="medclinic-dashboard__subtitle">Сумма успешных транзакций за неделю, месяц и год.</p>
-                </div>
-            </div>
-            <div class="medclinic-dashboard__chart-wrap">
-                <div class="medclinic-dashboard__period">
-                    <button type="button" class="medclinic-dashboard__period-btn active" data-period="week">Неделя</button>
-                    <button type="button" class="medclinic-dashboard__period-btn" data-period="month">Месяц</button>
-                    <button type="button" class="medclinic-dashboard__period-btn" data-period="year">Год</button>
-                </div>
-                <div class="medclinic-dashboard__canvas">
-                    <canvas id="medclinicDashboardChart"></canvas>
-                </div>
-            </div>
-        </div>
+    <section class="mc-dash-finance" aria-label="Финансы">
+        <h2 class="mc-dash-section-title">Финансы</h2>
 
-        @if (showServiceTerms)
+        @if (Model.CanViewPaymentSums)
         {
-            <aside class="medclinic-dashboard__surface">
-                <div class="medclinic-dashboard__header">
-                    <div>
-                        <h2 class="medclinic-dashboard__title">Условия обслуживания</h2>
-                        <p class="medclinic-dashboard__subtitle">Текущая модель расчётов и параметры обслуживания организации.</p>
+            <div class="mc-dash-finance__today">
+                <div class="mc-dash-finance__today-value">@Model.TodayTransactionsSumSom.ToString("N2") сом</div>
+                <p class="mc-dash-finance__today-label">Поступления за сегодня (по доступным каналам из прав «Дашборд»)</p>
+            </div>
+
+            <div class="mc-dash-grid @(showServiceTerms ? "" : "mc-dash-grid--full")">
+                <div class="mc-dash-panel">
+                    <div class="mc-dash-panel__head">
+                        <h3 class="mc-dash-panel__title">Динамика оплат</h3>
+                        <p class="mc-dash-panel__sub">Суммы с учётом возвратов и разрешённых каналов</p>
                     </div>
-                </div>
-                <div class="medclinic-dashboard__terms">
-                    <div class="medclinic-dashboard__terms-name">@Model.OrganizationName</div>
-                    <div class="medclinic-dashboard__terms-list">
-                        <div class="medclinic-dashboard__terms-row">
-                            <span class="medclinic-dashboard__terms-label">Тариф</span>
-                            <span class="medclinic-dashboard__terms-value">@(Model.HasSubscription ? "Подписка" : "Комиссия по операциям")</span>
+                    <div class="mc-dash-panel__body">
+                        <div class="mc-dash-period">
+                            <button type="button" class="mc-dash-period__btn active" data-period="week">Неделя</button>
+                            <button type="button" class="mc-dash-period__btn" data-period="month">Месяц</button>
+                            <button type="button" class="mc-dash-period__btn" data-period="year">Год</button>
                         </div>
-                        <div class="medclinic-dashboard__terms-row">
-                            <span class="medclinic-dashboard__terms-label">Статус</span>
-                            <span class="medclinic-dashboard__terms-value">@Model.BillingStatus</span>
-                        </div>
-                        <div class="medclinic-dashboard__terms-row">
-                            <span class="medclinic-dashboard__terms-label">Тип комиссии</span>
-                            <span class="medclinic-dashboard__terms-value">@Model.CommissionKindText</span>
-                        </div>
-                        <div class="medclinic-dashboard__terms-row">
-                            <span class="medclinic-dashboard__terms-label">Значение комиссии</span>
-                            <span class="medclinic-dashboard__terms-value">@Model.CommissionValueText</span>
-                        </div>
-                        <div class="medclinic-dashboard__terms-row">
-                            <span class="medclinic-dashboard__terms-label">Модель расчёта</span>
-                            <span class="medclinic-dashboard__terms-value">@Model.CommissionModelName</span>
-                        </div>
-                        <div class="medclinic-dashboard__terms-row">
-                            <span class="medclinic-dashboard__terms-label">Валюта</span>
-                            <span class="medclinic-dashboard__terms-value">KGS (сом)</span>
+                        <div class="mc-dash-chart">
+                            <canvas id="medclinicDashboardChart"></canvas>
                         </div>
                     </div>
                 </div>
-            </aside>
-        }
-    </section>
 
-    <section class="medclinic-dashboard__surface">
-        <div class="medclinic-dashboard__header">
-            <div>
-                <h2 class="medclinic-dashboard__title">Транзакции</h2>
-                <p class="medclinic-dashboard__subtitle">Последние успешные транзакции организации.</p>
+                @if (showServiceTerms)
+                {
+                    <aside class="mc-dash-panel">
+                        <div class="mc-dash-panel__head">
+                            <h3 class="mc-dash-panel__title">Условия обслуживания</h3>
+                            <p class="mc-dash-panel__sub">Только для администратора</p>
+                        </div>
+                        <div class="mc-dash-panel__body">
+                            <div class="mc-dash-terms-row">
+                                <span class="mc-dash-terms-k">Тариф</span>
+                                <span class="mc-dash-terms-v">@(Model.HasSubscription ? "Подписка" : "Комиссия по операциям")</span>
+                            </div>
+                            <div class="mc-dash-terms-row">
+                                <span class="mc-dash-terms-k">Статус</span>
+                                <span class="mc-dash-terms-v">@Model.BillingStatus</span>
+                            </div>
+                            <div class="mc-dash-terms-row">
+                                <span class="mc-dash-terms-k">Тип комиссии</span>
+                                <span class="mc-dash-terms-v">@Model.CommissionKindText</span>
+                            </div>
+                            <div class="mc-dash-terms-row">
+                                <span class="mc-dash-terms-k">Значение</span>
+                                <span class="mc-dash-terms-v">@Model.CommissionValueText</span>
+                            </div>
+                            <div class="mc-dash-terms-row">
+                                <span class="mc-dash-terms-k">Модель</span>
+                                <span class="mc-dash-terms-v">@Model.CommissionModelName</span>
+                            </div>
+                        </div>
+                    </aside>
+                }
             </div>
-            <a asp-controller="Invoices" asp-action="Index" class="btn btn-outline-primary">Открыть счета</a>
-        </div>
 
-        @if (Model.Transactions.Count == 0)
-        {
-            <div class="medclinic-dashboard__empty">Транзакций пока нет.</div>
+            <div class="mc-dash-panel">
+                <div class="mc-dash-panel__head">
+                    <h3 class="mc-dash-panel__title">Платежи</h3>
+                    <p class="mc-dash-panel__sub">Последние операции, включая возвраты по доступным каналам</p>
+                </div>
+                @if (Model.Transactions.Count == 0)
+                {
+                    <div class="mc-dash-empty">Операций пока нет</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="mc-dash-table">
+                            <thead>
+                                <tr>
+                                    <th>Дата</th>
+                                    <th>Пациент</th>
+                                    <th>Описание</th>
+                                    <th>Тип</th>
+                                    <th>Статус</th>
+                                    <th>Сумма</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var t in Model.Transactions)
+                                {
+                                    <tr>
+                                        <td>@(t.TransactionDate?.ToString("dd.MM.yyyy HH:mm") ?? "—")</td>
+                                        <td>@t.PatientName</td>
+                                        <td>@t.Description</td>
+                                        <td>@t.KindLabel</td>
+                                        <td>
+                                            <span class="mc-dash-badge @(t.IsCredit ? "mc-dash-badge--refund" : "mc-dash-badge--ok")">@t.StatusLabel</span>
+                                        </td>
+                                        <td class="@(t.IsCredit ? "mc-dash-amount--neg" : "")">@t.AmountSom.ToString("N2") сом</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
         }
         else
         {
-            <div class="table-responsive">
-                <table class="medclinic-dashboard__table">
-                    <thead>
-                        <tr>
-                            <th>Дата</th>
-                            <th>Пациент</th>
-                            <th>Описание</th>
-                            <th>Статус</th>
-                            <th>Сумма</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var transaction in Model.Transactions)
-                        {
-                            <tr>
-                                <td>@(transaction.TransactionDate?.ToString("dd.MM.yyyy HH:mm") ?? "—")</td>
-                                <td>@transaction.PatientName</td>
-                                <td>@transaction.Description</td>
-                                <td><span class="medclinic-dashboard__status">Успешно</span></td>
-                                <td>@transaction.Amount.ToString("N2") сом</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+            <div class="mc-dash-finance__locked">
+                Финансовые блоки скрыты: у роли нет прав категории «Дашборд» (суммы по каналам оплаты).
+                Настройте их в <strong>Настройки → Роли → Права</strong>.
             </div>
         }
     </section>
 </div>
 
-@section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <script>
-        (function () {
-            var chartWeek = @Html.Raw(Model.ChartWeekJson);
-            var chartMonth = @Html.Raw(Model.ChartMonthJson);
-            var chartYear = @Html.Raw(Model.ChartYearJson);
+@if (Model.CanViewPaymentSums)
+{
+    @section Scripts {
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+        <script>
+            (function () {
+                var chartWeek = @Html.Raw(Model.ChartWeekJson);
+                var chartMonth = @Html.Raw(Model.ChartMonthJson);
+                var chartYear = @Html.Raw(Model.ChartYearJson);
+                var canvas = document.getElementById('medclinicDashboardChart');
+                if (!canvas) return;
 
-            var canvas = document.getElementById('medclinicDashboardChart');
-            if (!canvas) return;
+                var datasets = {
+                    week: { labels: chartWeek.map(function (x) { return x.label; }), values: chartWeek.map(function (x) { return x.value; }) },
+                    month: { labels: chartMonth.map(function (x) { return x.label; }), values: chartMonth.map(function (x) { return x.value; }) },
+                    year: { labels: chartYear.map(function (x) { return x.label; }), values: chartYear.map(function (x) { return x.value; }) }
+                };
 
-            var datasets = {
-                week: { labels: chartWeek.map(function (x) { return x.label; }), values: chartWeek.map(function (x) { return x.value; }) },
-                month: { labels: chartMonth.map(function (x) { return x.label; }), values: chartMonth.map(function (x) { return x.value; }) },
-                year: { labels: chartYear.map(function (x) { return x.label; }), values: chartYear.map(function (x) { return x.value; }) }
-            };
-
-            var chart = new Chart(canvas, {
-                type: 'bar',
-                data: {
-                    labels: datasets.week.labels,
-                    datasets: [{
-                        label: 'Оплаты, сом',
-                        data: datasets.week.values,
-                        backgroundColor: 'rgba(14, 116, 144, 0.75)',
-                        borderRadius: 12,
-                        maxBarThickness: 28
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function (value) { return value + ' сом'; }
-                            }
-                        },
-                        x: {
-                            grid: { display: false }
+                var chart = new Chart(canvas, {
+                    type: 'bar',
+                    data: {
+                        labels: datasets.week.labels,
+                        datasets: [{
+                            label: 'Оплаты, сом',
+                            data: datasets.week.values,
+                            backgroundColor: 'rgba(14, 116, 144, 0.78)',
+                            borderRadius: 10,
+                            maxBarThickness: 26
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { callback: function (v) { return v + ' сом'; } }
+                            },
+                            x: { grid: { display: false } }
                         }
                     }
-                }
-            });
-
-            document.querySelectorAll('.medclinic-dashboard__period-btn').forEach(function (button) {
-                button.addEventListener('click', function () {
-                    var period = this.dataset.period;
-                    if (!period) return;
-
-                    document.querySelectorAll('.medclinic-dashboard__period-btn').forEach(function (item) {
-                        item.classList.remove('active');
-                    });
-                    this.classList.add('active');
-
-                    chart.data.labels = datasets[period].labels;
-                    chart.data.datasets[0].data = datasets[period].values;
-                    chart.update();
                 });
-            });
-        })();
-    </script>
+
+                document.querySelectorAll('.mc-dash-period__btn').forEach(function (button) {
+                    button.addEventListener('click', function () {
+                        var period = this.dataset.period;
+                        if (!period) return;
+                        document.querySelectorAll('.mc-dash-period__btn').forEach(function (b) { b.classList.remove('active'); });
+                        this.classList.add('active');
+                        chart.data.labels = datasets[period].labels;
+                        chart.data.datasets[0].data = datasets[period].values;
+                        chart.update();
+                    });
+                });
+            })();
+        </script>
+    }
 }

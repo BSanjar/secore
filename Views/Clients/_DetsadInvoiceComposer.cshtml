@@ -1,0 +1,23 @@
+@{
+    var servicesJson = ViewData["ServicesJson"] as string ?? ViewBag.DetsadInvoiceServicesJson as string ?? "[]";
+}
+<div class="ds-inv-compose-wrap">
+    <script type="application/json" class="ds-inv-compose-data">@Html.Raw(servicesJson)</script>
+    <div class="ds-inv-compose">
+        <label class="form-label fw-semibold mb-1" for="dsInvComposeName">Наименование счёта</label>
+        <input type="text" class="form-control form-control-lg ds-inv-compose__invoice-name" id="dsInvComposeName" placeholder="Введите название или выберите услуги ниже" autocomplete="off" />
+        <div class="ds-inv-compose__amount-row" hidden>
+            <input type="number" class="form-control form-control-lg ds-inv-compose__amount" step="0.01" min="0" placeholder="Сумма, сом" inputmode="decimal" />
+        </div>
+        <p class="ds-inv-compose__catalog-title">Услуги</p>
+        <div class="ds-inv-compose__catalog-wrap">
+            <div class="ds-inv-compose__catalog" role="listbox" aria-multiselectable="true"></div>
+            <p class="ds-inv-compose__catalog-empty" hidden>Нет услуг</p>
+        </div>
+        <div class="ds-inv-compose__summary" hidden>
+            <span class="ds-inv-compose__summary-label">Итого</span>
+            <span class="ds-inv-compose__summary-total"></span>
+        </div>
+        <div class="ds-inv-compose__error" hidden></div>
+    </div>
+</div>

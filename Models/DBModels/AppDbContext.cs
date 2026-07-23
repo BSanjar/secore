@@ -170,6 +170,9 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.QrMode)
                 .HasColumnType("character varying")
                 .HasColumnName("qr_mode");
+            entity.Property(e => e.FromAppointments)
+                .HasDefaultValue(false)
+                .HasColumnName("from_appointments");
             entity.Property(e => e.UserCreater)
                 .HasColumnType("character varying")
                 .HasColumnName("user_creater");
@@ -273,11 +276,13 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => e.InvoiceId, "idx_invoice_qr_invoice_id");
 
+            entity.HasIndex(e => e.PayCode, "idx_invoice_qr_pay_code");
+
             entity.HasIndex(e => e.Transaction, "idx_invoice_qr_transaction");
 
-            entity.HasIndex(e => e.InvoiceId, "ux_invoice_qr_active_per_invoice")
+            entity.HasIndex(e => e.PayCode, "ux_invoice_qr_pay_code")
                 .IsUnique()
-                .HasFilter("((status)::text = 'active'::text)");
+                .HasFilter("(pay_code IS NOT NULL AND pay_code <> '')");
 
             entity.Property(e => e.Id)
                 .HasColumnType("character varying")
@@ -285,6 +290,9 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.InvoiceId)
                 .HasColumnType("character varying")
                 .HasColumnName("invoice_id");
+            entity.Property(e => e.PayCode)
+                .HasColumnType("character varying")
+                .HasColumnName("pay_code");
             entity.Property(e => e.Transaction)
                 .HasColumnType("character varying")
                 .HasColumnName("transaction");
@@ -1437,6 +1445,10 @@ public partial class AppDbContext : DbContext
                 .HasComment("нижняя комиссия к агенту (тыйыны)")
                 .HasColumnType("numeric(18,2)")
                 .HasColumnName("lower_commission_to_agent");
+            entity.Property(e => e.ParentTransaction)
+                .HasComment("исходная транзакция при возврате (credit)")
+                .HasColumnType("character varying")
+                .HasColumnName("parent_transaction");
 
             entity.HasOne(d => d.InvoiceNavigation).WithMany(p => p.Transactions)
                 .HasForeignKey(d => d.Invoice)
@@ -1445,6 +1457,10 @@ public partial class AppDbContext : DbContext
             entity.HasOne(d => d.AgentNavigation).WithMany(p => p.Transactions)
                 .HasForeignKey(d => d.Agent)
                 .HasConstraintName("transactions_fk_agent");
+
+            entity.HasOne(d => d.ParentTransactionNavigation).WithMany(p => p.InverseParentTransaction)
+                .HasForeignKey(d => d.ParentTransaction)
+                .HasConstraintName("transactions_fk_parent");
         });
 
         modelBuilder.Entity<User>(entity =>

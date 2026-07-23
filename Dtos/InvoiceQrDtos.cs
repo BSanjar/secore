@@ -13,6 +13,8 @@ public class InvoiceQrDto
 
     public string InvoiceId { get; set; } = "";
 
+    public string? PayCode { get; set; }
+
     public string? Transaction { get; set; }
 
     public string Status { get; set; } = "";

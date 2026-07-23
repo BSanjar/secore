@@ -231,6 +231,10 @@
     margin-bottom: 1.75rem;
 }
 
+.dashboard-v2__bottom--single {
+    grid-template-columns: 1fr;
+}
+
 @media (max-width: 768px) {
     .dashboard-v2__bottom { grid-template-columns: 1fr; }
 }

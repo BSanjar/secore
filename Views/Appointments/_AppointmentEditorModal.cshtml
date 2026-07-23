@@ -1,0 +1,167 @@
+@model WebApplication1.ViewModels.Appointments.AppointmentsIndexViewModel
+@{
+    var canManageAppointments = (bool?)ViewBag.CanManageAppointments == true;
+}
+
+<div class="modal fade" id="appointmentEditorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable appointment-create-modal-dialog">
+        <div class="modal-content border-0 shadow-lg appointment-create-modal">
+            <div class="modal-header appointment-create-modal__header">
+                <div class="appointment-editor-header__main">
+                    <button type="button" class="btn appointment-editor-back d-none" id="appointmentEditorBackToDetails">← К карточке записи</button>
+                    <h2 class="modal-title mb-1" id="appointmentEditorTitle">Новая запись</h2>
+                    <p class="text-muted mb-0" id="appointmentEditorSubtitle"></p>
+                </div>
+                <div class="editor-actions d-flex gap-2 align-items-center">
+                    <button type="button" class="btn ghost-btn d-none" id="appointmentSaveDraftButton">Черновик</button>
+                    <button type="button" class="btn appointment-create-submit-btn" id="appointmentSaveButton" data-loading-text="Регистрация..." @(Model.StorageReady ? null : "disabled") disabled>Зарегистрировать запись</button>
+                    <button type="button" class="btn doctor-modal-close" data-bs-dismiss="modal" aria-label="Close">×</button>
+                </div>
+            </div>
+            <div class="modal-body appointment-create-modal__body">
+                <div class="alert alert-warning small d-none" id="appointmentScheduleHint"></div>
+                <form id="appointmentForm" autocomplete="off">
+                    <input type="hidden" id="appointmentId" />
+                    <input type="hidden" id="appointmentPatientId" />
+                    <input type="hidden" id="appointmentStatus" value="active" />
+                    <input type="hidden" id="appointmentPaymentType" value="qr_secore" />
+                    <input type="hidden" id="appointmentDoctor" value="" />
+                    <input type="hidden" id="appointmentDate" />
+                    <input type="hidden" id="appointmentStart" />
+                    <input type="hidden" id="appointmentEnd" />
+                    <input type="checkbox" id="appointmentIsActive" class="d-none" checked />
+                    <select id="appointmentPatient" class="d-none" tabindex="-1" aria-hidden="true">
+                        <option value=""></option>
+                        @foreach (var patient in Model.Patients)
+                        {
+                            <option value="@patient.Id">@patient.Name</option>
+                        }
+                    </select>
+
+                    <div id="appointmentEditorCreateShell" class="appointment-create-layout">
+                        <div class="appointment-create-context" id="appointmentCreateContext">
+                            <div class="appointment-create-context__doctor" id="appointmentCreateDoctorName">—</div>
+                            <div class="appointment-create-context__meta" id="appointmentCreateSlotSummary">—</div>
+                        </div>
+
+                        <div class="appointment-create-section">
+                            <h3 class="appointment-create-section__title">Пациент</h3>
+                            <div class="row g-3">
+                                <div class="col-md-7">
+                                    <label class="form-label">ФИО</label>
+                                    <div class="patient-lookup">
+                                        <input id="appointmentPatientName" class="form-control appointment-create-input" placeholder="Фамилия и имя" autocomplete="name" />
+                                        <div id="appointmentPatientLookupState" class="form-text">Начните ввод — подскажем существующих пациентов.</div>
+                                        <div id="appointmentPatientSuggestions" class="patient-lookup__suggestions list-group" style="display:none;"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label">Телефон</label>
+                                    <input id="appointmentPhone" class="form-control appointment-create-input" placeholder="+996 555 123 456" inputmode="tel" autocomplete="tel" />
+                                    <div class="form-check mt-2">
+                                        <input class="form-check-input" type="checkbox" id="appointmentUsePhoneAsWhatsApp" checked />
+                                        <label class="form-check-label" for="appointmentUsePhoneAsWhatsApp">WhatsApp = телефон</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Email</label>
+                                    <input id="appointmentEmail" class="form-control appointment-create-input" type="email" placeholder="email@example.com" autocomplete="email" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Комментарий</label>
+                                    <input id="appointmentComment" class="form-control appointment-create-input" placeholder="Необязательно" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="appointment-create-section">
+                            <div class="appointment-create-section__head">
+                                <h3 class="appointment-create-section__title mb-0">Услуги</h3>
+                                <input type="search" id="appointmentServiceSearch" class="form-control form-control-sm appointment-create-service-search" placeholder="Поиск услуги..." />
+                            </div>
+                            <div class="appointment-create-service-grid" id="appointmentServiceCatalog"></div>
+                            <div class="appointment-create-selected" id="appointmentSelectedServices">
+                                <div class="appointment-create-selected__empty text-muted small">Выберите услуги из каталога</div>
+                            </div>
+                            <div class="appointment-create-total" id="appointmentServicesTotal">Итого: 0,00 с</div>
+                            <tbody id="appointmentServicesTable" class="d-none"></tbody>
+                        </div>
+
+                        <div class="appointment-create-section">
+                            <h3 class="appointment-create-section__title">Тип оплаты</h3>
+                            <div class="appointment-create-pay-grid" role="radiogroup" aria-label="Тип оплаты">
+                                <label class="appointment-create-pay-card">
+                                    <input type="radio" name="appointmentPaymentChoice" value="qr_secore" checked />
+                                    <span class="appointment-create-pay-card__title">QR — оплата SECORE</span>
+                                    <span class="appointment-create-pay-card__hint">Счёт и QR сразу после записи</span>
+                                </label>
+                                <label class="appointment-create-pay-card">
+                                    <input type="radio" name="appointmentPaymentChoice" value="qr_external" />
+                                    <span class="appointment-create-pay-card__title">QR — внешняя</span>
+                                    <span class="appointment-create-pay-card__hint">Разовый счёт без QR в системе</span>
+                                </label>
+                                <label class="appointment-create-pay-card">
+                                    <input type="radio" name="appointmentPaymentChoice" value="card" />
+                                    <span class="appointment-create-pay-card__title">Оплата картой</span>
+                                    <span class="appointment-create-pay-card__hint">Счёт для оплаты на терминале</span>
+                                </label>
+                                <label class="appointment-create-pay-card">
+                                    <input type="radio" name="appointmentPaymentChoice" value="cash" />
+                                    <span class="appointment-create-pay-card__title">Наличная оплата</span>
+                                    <span class="appointment-create-pay-card__hint">Счёт для кассы</span>
+                                </label>
+                            </div>
+                            <div class="form-text d-none" id="appointmentPaymentTypeHint"></div>
+                        </div>
+                    </div>
+
+                    <div id="appointmentEditorVisitShell" class="appointment-editor-body d-none">
+                        <input type="hidden" id="appointmentReferral" />
+                        <select id="appointmentServiceSelector" class="d-none"><option value=""></option></select>
+                        <div id="appointmentSlotButtons" class="appointment-visit-slots d-none"></div>
+                        <div class="editor-block mb-4">
+                            <h3 class="editor-block__title">Данные приёма</h3>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">ФИО пациента</label>
+                                    <input id="appointmentVisitPatientName" class="form-control" readonly />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Время</label>
+                                    <input id="appointmentVisitDateTime" class="form-control" readonly />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="editor-block" id="appointmentMedicalSection" data-editor-section="visit">
+                            <h3 class="editor-block__title">Медицинская часть приема</h3>
+                            <div class="row g-3">
+                                <div class="col-12"><label class="form-label">Жалобы пациента</label><textarea id="appointmentComplaints" class="form-control appointment-medical-textarea" rows="4"></textarea></div>
+                                <div class="col-12"><label class="form-label">Диагноз</label><textarea id="appointmentDiagnosis" class="form-control appointment-medical-textarea" rows="4"></textarea></div>
+                                <div class="col-12"><label class="form-label">Рекомендации</label><textarea id="appointmentRecommendations" class="form-control appointment-medical-textarea" rows="4"></textarea></div>
+                                <div class="col-12"><label class="form-label">Направления</label><textarea id="appointmentResearchReferral" class="form-control appointment-medical-textarea" rows="4"></textarea></div>
+                                <div class="col-12"><label class="form-label">Комментарий врача</label><textarea id="appointmentMedicalComment" class="form-control appointment-medical-textarea" rows="4"></textarea></div>
+                            </div>
+                        </div>
+                        <div class="appointment-editor-side mt-4">
+                            <div class="editor-block appointment-templates-block" id="appointmentTemplatesSection" data-editor-section="visit">
+                                <div class="appointment-templates-header">
+                                    <h3 class="editor-block__title mb-0">Шаблоны</h3>
+                                    <button type="button" class="btn btn-sm ghost-btn" id="appointmentTemplateClearField">Очистить поле</button>
+                                </div>
+                                <div class="appointment-template-search"><input id="appointmentTemplateSearch" class="form-control" type="search" placeholder="Поиск..." /></div>
+                                <div class="appointment-template-tabs" role="tablist">
+                                    <button type="button" class="appointment-template-tab active" data-template-tab="diagnosis">Диагноз</button>
+                                    <button type="button" class="appointment-template-tab" data-template-tab="recommendation">Рекомендации</button>
+                                    <button type="button" class="appointment-template-tab" data-template-tab="research">Направления</button>
+                                    <button type="button" class="appointment-template-tab" data-template-tab="comment">Комментарии</button>
+                                </div>
+                                <div id="appointmentTemplateItems" class="appointment-template-items"></div>
+                                <div id="appointmentTemplateEmpty" class="appointment-template-empty d-none">Шаблоны не найдены.</div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

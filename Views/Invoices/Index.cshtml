@@ -9,6 +9,7 @@
     var periodicity = ViewBag.Periodicity as string ?? "";
     var dateCreatedFrom = ViewBag.DateCreatedFrom as string ?? "";
     var dateCreatedTo = ViewBag.DateCreatedTo as string ?? "";
+    var hidePeriodicityFilter = ViewBag.HidePeriodicityFilter as bool? ?? false;
 }
 
 @section Styles {
@@ -81,6 +82,8 @@
             </div>
         </div>
         <div class="row g-2 mb-0 invoices-filters-row-2">
+            @if (!hidePeriodicityFilter)
+            {
             <div class="col invoices-filter-col">
                 <label class="form-label small text-muted mb-1">Периодичность</label>
                 <select id="invoicesPeriodicityFilter" class="form-select filter-select w-100">
@@ -93,6 +96,7 @@
                     @if (periodicity == "any") { <option value="any" selected>Любая</option> } else { <option value="any">Любая</option> }
                 </select>
             </div>
+            }
             <div class="col invoices-filter-col">
                 <label class="form-label small text-muted mb-1">Дата создания (от)</label>
                 <input type="date" id="invoicesDateFrom" class="form-control filter-select w-100" value="@dateCreatedFrom">
@@ -212,6 +216,7 @@
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            var hidePeriodicityFilter = @(hidePeriodicityFilter ? "true" : "false");
             var searchInput = document.getElementById('invoicesSearchInput');
             var searchType = document.getElementById('invoicesSearchType');
             var statusFilter = document.getElementById('invoicesStatusFilter');
@@ -243,7 +248,11 @@
                 if (searchInput) params.set('search', searchInput.value.trim());
                 if (statusFilter) params.set('statusFilter', statusFilter.value);
                 if (clientFilterInput) params.set('clientId', clientFilterInput.value || '');
-                if (periodicityFilter) params.set('periodicity', periodicityFilter.value);
+                if (hidePeriodicityFilter) {
+                    params.set('periodicity', 'monthly');
+                } else if (periodicityFilter) {
+                    params.set('periodicity', periodicityFilter.value);
+                }
                 if (dateFrom && dateFrom.value) params.set('dateCreatedFrom', dateFrom.value);
                 else params.delete('dateCreatedFrom');
                 if (dateTo && dateTo.value) params.set('dateCreatedTo', dateTo.value);

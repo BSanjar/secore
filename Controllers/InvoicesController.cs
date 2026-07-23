@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using WebApplication1.Models.DBModels;
 using WebApplication1.Helpers;
 using WebApplication1.Services;
+using WebApplication1.Services.Cabinets;
 using WebApplication1.Dtos;
 using ClosedXML.Excel;
 
@@ -20,6 +21,7 @@ namespace WebApplication1.Controllers
         private readonly PuppeteerPdfBrowserService _puppeteerPdf;
         private readonly InvoiceQrService _invoiceQrService;
         private readonly ILogger<InvoicesController> _logger;
+        private readonly ICurrentTenantService _currentTenantService;
 
         public InvoicesController(
             AppDbContext db,
@@ -28,7 +30,8 @@ namespace WebApplication1.Controllers
             ExcelExportService excelExportService,
             PuppeteerPdfBrowserService puppeteerPdf,
             InvoiceQrService invoiceQrService,
-            ILogger<InvoicesController> logger)
+            ILogger<InvoicesController> logger,
+            ICurrentTenantService currentTenantService)
         {
             _db = db;
             _viewRender = viewRender;
@@ -37,6 +40,7 @@ namespace WebApplication1.Controllers
             _puppeteerPdf = puppeteerPdf;
             _invoiceQrService = invoiceQrService;
             _logger = logger;
+            _currentTenantService = currentTenantService;
         }
 
         private string? GetOrganizationId()
@@ -47,6 +51,26 @@ namespace WebApplication1.Controllers
         private string? GetUserId()
         {
             return HttpContext.Session.GetString("UserId");
+        }
+
+        private bool IsDetsadProfile()
+        {
+            var tenant = _currentTenantService.GetCurrent();
+            return string.Equals(tenant.Profile.Key, "detsad", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private string ResolvePeriodicityForListing(string periodicity)
+        {
+            if (IsDetsadProfile())
+                return "monthly";
+            return periodicity ?? "";
+        }
+
+        private static IQueryable<Invoice> ApplyPeriodicityFilter(IQueryable<Invoice> query, string periodicity)
+        {
+            if (!string.IsNullOrWhiteSpace(periodicity))
+                query = query.Where(i => i.Periodicity == periodicity);
+            return query;
         }
 
         private async Task PopulateInvoiceCreateViewBagsAsync(string organizationId, bool includeGroups, CancellationToken cancellationToken = default)
@@ -79,11 +103,22 @@ namespace WebApplication1.Controllers
 
             ViewBag.OrganizationClients = clients;
             ViewBag.OrganizationServices = orgServices;
+            ViewBag.DetsadInvoiceServicesJson = JsonSerializer.Serialize(
+                orgServices.Select(s => new { id = s.Id, name = s.Name ?? "", price = s.ServiceSumm ?? 0m }));
+            ViewBag.UseDetsadInvoiceComposer = IsDetsadProfile();
             ViewBag.DisableInvoiceServiceSelection = settings?.DisableInvoiceServiceSelection ?? false;
-            ViewBag.AllowedHassameaccount = settings?.AllowedHassameaccount ?? false;
-            ViewBag.InvoicePayCodeMode = !string.IsNullOrEmpty(settings?.InvoicePayCodeMode)
-                ? settings.InvoicePayCodeMode
-                : (settings?.AllowedHassameaccount == true ? "both" : "new_only");
+            if (IsDetsadProfile())
+            {
+                ViewBag.AllowedHassameaccount = true;
+                ViewBag.InvoicePayCodeMode = "duplicate_only";
+            }
+            else
+            {
+                ViewBag.AllowedHassameaccount = settings?.AllowedHassameaccount ?? false;
+                ViewBag.InvoicePayCodeMode = !string.IsNullOrEmpty(settings?.InvoicePayCodeMode)
+                    ? settings.InvoicePayCodeMode
+                    : (settings?.AllowedHassameaccount == true ? "both" : "new_only");
+            }
         }
 
         private async Task<OneTimePaymentPreviewVm> BuildOneTimePaymentPreviewAsync(
@@ -200,6 +235,9 @@ namespace WebApplication1.Controllers
             if (string.IsNullOrEmpty(organizationId))
                 return RedirectToAction("Login", "Account");
 
+            if (string.Equals(_currentTenantService.GetCurrent().Profile.Key, "medclinic", StringComparison.OrdinalIgnoreCase))
+                return NotFound();
+
             var query = _db.Invoices
                 .Include(i => i.ClientNavigation)
                 .Include(i => i.Transactions)
@@ -211,8 +249,8 @@ namespace WebApplication1.Controllers
             if (!string.IsNullOrWhiteSpace(clientId))
                 query = query.Where(i => i.Client == clientId);
 
-            if (!string.IsNullOrWhiteSpace(periodicity))
-                query = query.Where(i => i.Periodicity == periodicity);
+            periodicity = ResolvePeriodicityForListing(periodicity);
+            query = ApplyPeriodicityFilter(query, periodicity);
 
             if (DateTime.TryParse(dateCreatedFrom, out var fromDate))
                 query = query.Where(i => i.DateCreated >= fromDate.Date);
@@ -246,6 +284,7 @@ namespace WebApplication1.Controllers
             ViewBag.ClientId = clientId;
             ViewBag.SelectedClientName = selectedClientName;
             ViewBag.Periodicity = periodicity;
+            ViewBag.HidePeriodicityFilter = IsDetsadProfile();
             ViewBag.DateCreatedFrom = dateCreatedFrom;
             ViewBag.DateCreatedTo = dateCreatedTo;
             ViewBag.Clients = clients;
@@ -275,8 +314,8 @@ namespace WebApplication1.Controllers
                 query = query.Where(i => i.InvoiceStatus == statusFilter);
             if (!string.IsNullOrWhiteSpace(clientId))
                 query = query.Where(i => i.Client == clientId);
-            if (!string.IsNullOrWhiteSpace(periodicity))
-                query = query.Where(i => i.Periodicity == periodicity);
+            periodicity = ResolvePeriodicityForListing(periodicity);
+            query = ApplyPeriodicityFilter(query, periodicity);
             if (DateTime.TryParse(dateCreatedFrom, out var fromDate))
                 query = query.Where(i => i.DateCreated >= fromDate.Date);
             if (DateTime.TryParse(dateCreatedTo, out var toDate))
@@ -359,8 +398,8 @@ namespace WebApplication1.Controllers
                 query = query.Where(i => i.InvoiceStatus == statusFilter);
             if (!string.IsNullOrWhiteSpace(clientId))
                 query = query.Where(i => i.Client == clientId);
-            if (!string.IsNullOrWhiteSpace(periodicity))
-                query = query.Where(i => i.Periodicity == periodicity);
+            periodicity = ResolvePeriodicityForListing(periodicity);
+            query = ApplyPeriodicityFilter(query, periodicity);
             if (DateTime.TryParse(dateCreatedFrom, out var fromDate))
                 query = query.Where(i => i.DateCreated >= fromDate.Date);
             if (DateTime.TryParse(dateCreatedTo, out var toDate))
@@ -956,14 +995,18 @@ namespace WebApplication1.Controllers
             if (ids.Count == 0)
                 return Json(new { payCodeOptions = Array.Empty<object>() });
 
-            var list = await _db.Invoices
+            var listQuery = _db.Invoices
                 .Where(i => i.ClientNavigation != null &&
                             i.ClientNavigation.Organization == organizationId &&
                             i.Client != null &&
                             ids.Contains(i.Client) &&
-                            i.Hassameaccount &&
                             i.PayCode != null &&
-                            i.PayCode.Length > 0)
+                            i.PayCode.Length > 0);
+
+            if (!IsDetsadProfile())
+                listQuery = listQuery.Where(i => i.Hassameaccount);
+
+            var list = await listQuery
                 .Select(i => new { i.PayCode, i.Id, i.NameInvoice })
                 .ToListAsync();
 
@@ -1162,7 +1205,8 @@ namespace WebApplication1.Controllers
                 }).ToList(),
                 OrgServices = orgServices,
                 PayCode = request.PayCode,
-                Hassameaccount = request.Hassameaccount
+                Hassameaccount = IsDetsadProfile() || request.Hassameaccount,
+                ReuseClientPayCodeWhenExists = IsDetsadProfile()
             };
 
             try
@@ -1350,6 +1394,55 @@ namespace WebApplication1.Controllers
             };
 
             return View("~/Views/Invoices/ConfirmOneTimePayment.cshtml", viewModel);
+        }
+
+        [RequirePermission("invoices.create")]
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> DeleteInvoice([FromBody] DeleteInvoiceRequest? request)
+        {
+            var organizationId = GetOrganizationId();
+            if (string.IsNullOrEmpty(organizationId))
+                return Json(new { success = false, message = "Не авторизован." });
+
+            var invoiceId = request?.InvoiceId?.Trim();
+            if (string.IsNullOrEmpty(invoiceId))
+                return Json(new { success = false, message = "Не указан счёт." });
+
+            var invoice = await _db.Invoices
+                .Include(i => i.ClientNavigation)
+                .FirstOrDefaultAsync(i => i.Id == invoiceId && i.ClientNavigation != null && i.ClientNavigation.Organization == organizationId);
+
+            if (invoice == null)
+                return Json(new { success = false, message = "Счёт не найден." });
+
+            if (string.Equals(invoice.InvoiceStatus, "closed", StringComparison.OrdinalIgnoreCase))
+                return Json(new { success = true, message = "Счёт уже закрыт." });
+
+            var payCode = invoice.PayCode?.Trim();
+            invoice.InvoiceStatus = "closed";
+            await _db.SaveChangesAsync(HttpContext.RequestAborted);
+
+            if (!string.IsNullOrWhiteSpace(payCode))
+            {
+                var anchorId = await _db.Invoices
+                    .AsNoTracking()
+                    .Where(i => i.PayCode == payCode
+                        && i.InvoiceStatus == "actual"
+                        && i.ClientNavigation != null
+                        && i.ClientNavigation.Organization == organizationId)
+                    .OrderByDescending(i => i.DateCreated)
+                    .Select(i => i.Id)
+                    .FirstOrDefaultAsync(HttpContext.RequestAborted);
+
+                if (!string.IsNullOrEmpty(anchorId))
+                    _invoiceQrService.EnqueueRefreshForPayCode(payCode, anchorId);
+                else
+                    await _invoiceQrService.DisableActiveQrAsync(invoiceId, HttpContext.RequestAborted);
+            }
+
+            _logger.LogInformation("Invoice closed (deleted). InvoiceId={InvoiceId} PayCode={PayCode}", invoiceId, payCode);
+            return Json(new { success = true, message = "Счёт удалён." });
         }
 
         [RequirePermission("invoices.view")]

@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace WebApplication1.Models.JsonApiModels
 {
@@ -6,7 +6,7 @@ namespace WebApplication1.Models.JsonApiModels
     {
         [JsonPropertyOrder(-2)]
         [JsonPropertyName("result")]
-        public int Result { get; set; }
+        public int Result {     get; set; }
 
         [JsonPropertyOrder(-1)]
         [JsonPropertyName("description")]

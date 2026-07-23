@@ -53,6 +53,27 @@ body.medclinic-shell--collapsed .medclinic-shell__layout {
     gap: 14px;
     color: #fff;
     text-decoration: none;
+    border-radius: 14px;
+    padding: 4px 6px 4px 0;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+body.medclinic-shell .medclinic-sidebar a.medclinic-brand,
+body.medclinic-shell .medclinic-sidebar a.medclinic-brand:hover,
+body.medclinic-shell .medclinic-sidebar a.medclinic-brand:focus,
+body.medclinic-shell .medclinic-sidebar a.medclinic-brand:visited,
+body.medclinic-shell .medclinic-sidebar a.medclinic-brand:active {
+    color: #fff;
+    text-decoration: none;
+}
+
+body.medclinic-shell .medclinic-sidebar a.medclinic-brand:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.medclinic-brand__text strong,
+.medclinic-brand__text small {
+    color: inherit;
 }
 
 .medclinic-brand__logo {
@@ -123,6 +144,20 @@ body.medclinic-shell--collapsed .medclinic-brand {
     margin-top: auto;
 }
 
+body.medclinic-shell .medclinic-sidebar .medclinic-sidebar__footer a,
+body.medclinic-shell .medclinic-sidebar .medclinic-sidebar__footer a:hover,
+body.medclinic-shell .medclinic-sidebar .medclinic-sidebar__footer a:focus,
+body.medclinic-shell .medclinic-sidebar .medclinic-sidebar__footer a:visited {
+    color: rgba(255, 255, 255, 0.84);
+    text-decoration: none;
+}
+
+body.medclinic-shell .medclinic-sidebar .medclinic-sidebar__footer a:hover,
+body.medclinic-shell .medclinic-sidebar .medclinic-sidebar__footer a.active {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.14);
+}
+
 .medclinic-nav__link {
     color: rgba(255, 255, 255, 0.84);
     text-decoration: none;
@@ -133,6 +168,13 @@ body.medclinic-shell--collapsed .medclinic-brand {
     display: flex;
     align-items: center;
     gap: 12px;
+}
+
+body.medclinic-shell .medclinic-sidebar a.medclinic-nav__link,
+body.medclinic-shell .medclinic-sidebar a.medclinic-nav__link:hover,
+body.medclinic-shell .medclinic-sidebar a.medclinic-nav__link:focus,
+body.medclinic-shell .medclinic-sidebar a.medclinic-nav__link:visited {
+    text-decoration: none;
 }
 
 .medclinic-nav__link:hover,
@@ -170,9 +212,16 @@ body.medclinic-shell--collapsed .medclinic-brand {
 }
 
 .medclinic-nav__group > summary:hover,
-.medclinic-nav__group--active-child > summary {
+.medclinic-nav__group[open] > summary,
+.medclinic-nav__group--active-child > summary,
+.medclinic-nav__group-summary.active {
     color: #fff;
     background: rgba(255, 255, 255, 0.14);
+}
+
+.medclinic-nav__group--active-child > summary,
+.medclinic-nav__group-summary.active {
+    box-shadow: inset 3px 0 0 rgba(255, 255, 255, 0.85);
 }
 
 .medclinic-nav__group-chevron {
@@ -223,6 +272,15 @@ body.medclinic-shell--collapsed .medclinic-nav__group-chevron {
     min-width: 22px;
     text-align: center;
     font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.medclinic-nav__icon svg {
+    width: 18px;
+    height: 18px;
+    display: block;
 }
 
 .medclinic-nav__label {
@@ -404,4 +462,41 @@ body.medclinic-shell--collapsed .medclinic-nav__link {
     .medclinic-page .page-title {
         font-size: 1.6rem;
     }
+}
+
+/* Верхняя панель: язык и пользователь (как в детсаде) */
+.medclinic-topbar .dashboard-topbar-actions {
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+body.medclinic-shell .medclinic-topbar .dashboard-user-chip {
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(15, 118, 110, 0.15);
+    color: #0f172a;
+    max-width: min(220px, 42vw);
+}
+
+body.medclinic-shell .medclinic-topbar .dashboard-user-chip:hover,
+body.medclinic-shell .medclinic-topbar .dashboard-user-chip:focus,
+body.medclinic-shell .medclinic-topbar .dashboard-user-chip[aria-expanded="true"] {
+    background: #fff;
+    color: #0f172a;
+    border-color: rgba(15, 118, 110, 0.28);
+}
+
+body.medclinic-shell .medclinic-topbar .dashboard-lang-btn {
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(15, 118, 110, 0.15);
+}
+
+body.medclinic-shell .medclinic-topbar .dashboard-lang-btn:hover {
+    background: #fff;
+    border-color: rgba(15, 118, 110, 0.28);
+}
+
+body.medclinic-shell .medclinic-topbar .dashboard-user-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }

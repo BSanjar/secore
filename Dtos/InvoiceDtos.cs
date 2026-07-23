@@ -46,6 +46,8 @@ public class CreateInvoicesInput
     public Dictionary<string, OrganizationService>? OrgServices { get; set; }
     public string? PayCode { get; set; }
     public bool Hassameaccount { get; set; }
+    /// <summary>Детсад: для каждого ребёнка использовать существующий лицевой счёт, если есть.</summary>
+    public bool ReuseClientPayCodeWhenExists { get; set; }
 }
 
 public class CreateInvoiceServiceItemInput
@@ -73,6 +75,9 @@ public class CreateOneTimeInvoiceInput
     public string? PaymentPeriodValue { get; set; }
     public decimal? PaymentSumm { get; set; }
     public List<CreateOneTimePaymentServiceLineInput> ServiceLines { get; set; } = new();
+    public bool FromAppointments { get; set; }
+    /// <summary>Сразу создать QR SECORE (синхронно). Иначе для счетов из приёма QR не создаётся.</summary>
+    public bool GenerateQrOnCreate { get; set; }
 }
 
 public class CreateOneTimePaymentServiceLineInput

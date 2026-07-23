@@ -56,7 +56,16 @@ public partial class Transaction
     /// </summary>
     public string? TransactionType { get; set; }
 
+    /// <summary>
+    /// Исходная транзакция при возврате (credit).
+    /// </summary>
+    public string? ParentTransaction { get; set; }
+
     public virtual Invoice? InvoiceNavigation { get; set; }
 
     public virtual Agent? AgentNavigation { get; set; }
+
+    public virtual Transaction? ParentTransactionNavigation { get; set; }
+
+    public virtual ICollection<Transaction> InverseParentTransaction { get; set; } = new List<Transaction>();
 }

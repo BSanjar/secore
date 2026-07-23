@@ -142,6 +142,14 @@ public class ClientsController : Controller
         if (string.Equals(organizationType, "standart", StringComparison.OrdinalIgnoreCase))
             return View("~/Views/Clients/StandartIndex.cshtml");
 
+        var invoiceServices = await _db.OrganizationServices
+            .AsNoTracking()
+            .Where(s => s.Organization == organizationId && (s.Isdeleted == null || s.Isdeleted == 0))
+            .OrderBy(s => s.Name)
+            .Select(s => new { id = s.Id, name = s.Name ?? "", price = s.ServiceSumm ?? 0m })
+            .ToListAsync();
+        ViewBag.DetsadInvoiceServicesJson = JsonSerializer.Serialize(invoiceServices);
+
         return View();
     }
 
@@ -190,9 +198,68 @@ public class ClientsController : Controller
             .OrderBy(d => d)
             .FirstOrDefault();
 
+        var actualInvoiceEntities = invoices
+            .Where(i => string.Equals(i.InvoiceStatus, "actual", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        var monthlyTotalSom = actualInvoiceEntities
+            .Where(i => string.Equals(i.Periodicity, "monthly", StringComparison.OrdinalIgnoreCase))
+            .Sum(i => (i.FixedSumm ?? 0m) / 100m);
+        if (monthlyTotalSom == 0m)
+            monthlyTotalSom = actualInvoiceEntities.Sum(i => (i.FixedSumm ?? 0m) / 100m);
+
+        var debtInfo = _operationsByInvoices.BuildDebtInfo(actualInvoiceEntities);
+
+        var primaryBalanceSom = actualInvoiceEntities.Count > 0
+            ? (actualInvoiceEntities[0].Balance ?? 0m) / 100m
+            : totalBalanceSom;
+
+        decimal debtSom = 0m;
+        if (primaryBalanceSom < 0m)
+            debtSom = Math.Abs(primaryBalanceSom);
+        else
+            debtSom = debtInfo.DuePayments.Sum(p => (p.PaymentSumm ?? 0m) / 100m);
+
+        var planSom = debtInfo.PlanPayments.Sum(p => (p.PaymentSumm ?? 0m) / 100m);
+        var plannedSom = planSom;
+        if (plannedSom <= 0m && debtInfo.FuturePayments.Any())
+            plannedSom = debtInfo.FuturePayments.Sum(p => (p.PaymentSumm ?? 0m) / 100m);
+        if (plannedSom <= 0m)
+            plannedSom = monthlyTotalSom;
+
+        decimal nextPaymentSom;
+        if (debtSom > 0m && plannedSom > 0m)
+            nextPaymentSom = debtSom + plannedSom;
+        else if (debtSom > 0m)
+            nextPaymentSom = debtSom;
+        else
+            nextPaymentSom = plannedSom;
+
+        var paymentSummary = new
+        {
+            monthlyTotalSom,
+            debtSom,
+            plannedSom,
+            nextPaymentSom
+        };
+
+        var payCodesForQr = invoices
+            .Select(i => i.PayCode)
+            .Where(p => !string.IsNullOrWhiteSpace(p))
+            .Distinct()
+            .ToList();
+
+        var qrByPayCode = payCodesForQr.Count > 0
+            ? await _db.InvoiceQrs
+                .AsNoTracking()
+                .Where(q => q.PayCode != null && payCodesForQr.Contains(q.PayCode))
+                .ToDictionaryAsync(q => q.PayCode!)
+            : new Dictionary<string, InvoiceQr>();
+
         var payload = new
         {
             success = true,
+            paymentSummary,
             client = new
             {
                 id = client.Id,
@@ -205,9 +272,9 @@ public class ClientsController : Controller
             },
             invoices = invoices.Select(i =>
             {
-                var latestQr = (i.InvoiceQrs ?? Array.Empty<InvoiceQr>())
-                    .OrderByDescending(q => q.CreatedAt)
-                    .FirstOrDefault();
+                InvoiceQr? latestQr = null;
+                if (!string.IsNullOrWhiteSpace(i.PayCode) && qrByPayCode.TryGetValue(i.PayCode, out var sharedQr))
+                    latestQr = sharedQr;
 
                 return new
                 {

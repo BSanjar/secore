@@ -13,11 +13,11 @@
         if (item.HasChildren)
         {
             var children = item.Children ?? Array.Empty<WebApplication1.Services.Cabinets.Navigation.CabinetNavItem>();
-                    var groupOpen = children.Any(child =>
-                        string.Equals(child.Controller, activeController, StringComparison.OrdinalIgnoreCase) &&
-                        string.Equals(child.Action, activeAction, StringComparison.OrdinalIgnoreCase));
-            <details class="medclinic-nav__group @(groupOpen ? "medclinic-nav__group--active-child" : "")" @(groupOpen ? "open" : null)>
-                <summary class="medclinic-nav__group-summary" title="@Localizer[item.Title]">
+            var groupOpen = children.Any(child =>
+                string.Equals(child.Controller, activeController, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(child.Action, activeAction, StringComparison.OrdinalIgnoreCase));
+            <details class="medclinic-nav__group @(groupOpen ? "medclinic-nav__group--active-child is-active-group" : "")" @(groupOpen ? "open" : null)>
+                <summary class="medclinic-nav__group-summary @(groupOpen ? "active" : "")" title="@Localizer[item.Title]">
                     <span class="medclinic-nav__icon">@Html.Raw(item.IconHtml)</span>
                     <span class="medclinic-nav__label">@Localizer[item.Label]</span>
                     <span class="medclinic-nav__group-chevron" aria-hidden="true"></span>

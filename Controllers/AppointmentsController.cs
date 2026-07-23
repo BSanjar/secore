@@ -66,6 +66,7 @@ public class AppointmentsController : Controller
             return Unauthorized();
 
         ViewBag.IsDoctorRole = false;
+        ViewData["Title"] = "Расписание записей";
         return View(model);
     }
 
@@ -465,12 +466,16 @@ public class AppointmentsController : Controller
                     return BadRequest(new { success = false, message = scheduleValidation });
             }
 
+            // string.Equals(..., StringComparison) is not translatable by EF Core — use ToLower().
             var overlapExists = await _db.Appointments
                 .AsNoTracking()
                 .AnyAsync(x =>
                     x.OrganizationId == organizationId &&
                     x.DoctorId == doctor.Id &&
                     x.Id != request.AppointmentId &&
+                    x.IsActive &&
+                    (x.AppointmentStatus == null ||
+                     x.AppointmentStatus.ToLower() != "cancelled") &&
                     x.StartsAt < endsAt &&
                     startsAt < x.EndsAt);
 
@@ -503,17 +508,52 @@ public class AppointmentsController : Controller
             }
         }
 
-        var appointment = string.IsNullOrWhiteSpace(request.AppointmentId)
-            ? null
-            : await _db.Appointments
+        var isNewAppointment = string.IsNullOrWhiteSpace(request.AppointmentId);
+
+        Appointment? appointment = null;
+        string? linkedInvoiceId = null;
+        DateTime? invoiceSlotStartsAt = null;
+        DateTime? invoiceSlotEndsAt = null;
+
+        if (!isNewAppointment)
+        {
+            appointment = await _db.Appointments
                 .Include(x => x.AppointmentServices)
                 .FirstOrDefaultAsync(x => x.Id == request.AppointmentId && x.OrganizationId == organizationId);
 
-        if (appointment != null && isDoctorRole && !string.IsNullOrWhiteSpace(currentUserId) && appointment.DoctorId != currentUserId)
-        {
-            return Forbid();
+            if (appointment == null)
+            {
+                return NotFound(new
+                {
+                    success = false,
+                    message = "Запись не найдена."
+                });
+            }
+
+            if (isDoctorRole && !string.IsNullOrWhiteSpace(currentUserId) && appointment.DoctorId != currentUserId)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new
+                {
+                    success = false,
+                    message = "Недостаточно прав для изменения этой записи."
+                });
+            }
+
+            if (!string.IsNullOrWhiteSpace(appointment.PatientId))
+            {
+                invoiceSlotStartsAt = appointment.StartsAt;
+                invoiceSlotEndsAt = appointment.EndsAt;
+                var linkedInvoice = await FindAppointmentInvoiceBySlotAsync(
+                    organizationId,
+                    appointment.PatientId,
+                    invoiceSlotStartsAt.Value,
+                    invoiceSlotEndsAt.Value);
+                linkedInvoiceId = linkedInvoice?.Id;
+            }
         }
 
+        try
+        {
         if (appointment == null)
         {
             appointment = new Appointment
@@ -534,12 +574,29 @@ public class AppointmentsController : Controller
         appointment.Notes = request.Comment?.Trim();
         appointment.ReferralSource = request.ReferralSource?.Trim();
         var normalizedPaymentType = NormalizePaymentType(request.PaymentType);
+        if (!isNewAppointment && normalizedPaymentType == "unpaid")
+        {
+            var existingPaymentType = NormalizePaymentType(appointment.PaymentType);
+            if (existingPaymentType != "unpaid")
+                normalizedPaymentType = existingPaymentType;
+        }
+        if (isNewAppointment && !IsBookingPaymentType(normalizedPaymentType))
+        {
+            return BadRequest(new
+            {
+                success = false,
+                message = "Выберите тип оплаты для новой записи."
+            });
+        }
+
         var canMarkAsPaidManually =
             PermissionHelper.HasPermission(HttpContext, "appointments.payment.status") ||
             PermissionHelper.HasPermission(HttpContext, "appointments.invoice") ||
             PermissionHelper.HasPermission(HttpContext, "invoices.create") ||
             PermissionHelper.HasPermission(HttpContext, "appointments.manage");
-        if (IsPaidPaymentType(normalizedPaymentType) && !canMarkAsPaidManually)
+        if (IsPaidPaymentType(normalizedPaymentType) &&
+            !IsBookingPaymentType(normalizedPaymentType) &&
+            !canMarkAsPaidManually)
         {
             return BadRequest(new
             {
@@ -574,12 +631,98 @@ public class AppointmentsController : Controller
         }
 
         await _db.SaveChangesAsync();
-        await _notificationService.CreateOrUpdateAppointmentReminderAsync(appointment, patient, doctor);
+
+        try
+        {
+            await _notificationService.CreateOrUpdateAppointmentReminderAsync(appointment, patient, doctor);
+        }
+        catch
+        {
+            // Напоминание не должно блокировать сохранение записи.
+        }
+
+        string? createdInvoiceId = null;
+        string? createdInvoiceUrl = null;
+        string? invoiceSyncWarning = null;
+
+        if (isNewAppointment &&
+            IsBookingPaymentType(normalizedPaymentType) &&
+            appointment.AppointmentServices.Count > 0 &&
+            !string.IsNullOrWhiteSpace(userId))
+        {
+            try
+            {
+                var invoiceResult = await CreateInvoiceForAppointmentAsync(
+                    organizationId,
+                    userId,
+                    appointment,
+                    patient,
+                    doctor,
+                    normalizedPaymentType);
+                createdInvoiceId = invoiceResult.InvoiceId;
+                createdInvoiceUrl = Url.Action("Details", "Invoices", new { id = invoiceResult.InvoiceId });
+            }
+            catch (InvalidOperationException ex)
+            {
+                invoiceSyncWarning = $"Запись сохранена, но счёт не создан: {ex.Message}";
+            }
+        }
+        else if (!isNewAppointment &&
+                 !string.IsNullOrWhiteSpace(linkedInvoiceId) &&
+                 appointment.AppointmentServices.Count > 0 &&
+                 invoiceSlotStartsAt.HasValue &&
+                 invoiceSlotEndsAt.HasValue)
+        {
+            try
+            {
+                await _operationsByInvoices.SyncAppointmentInvoiceFromBookingAsync(
+                    organizationId,
+                    linkedInvoiceId,
+                    appointment,
+                    patient,
+                    doctor,
+                    normalizedPaymentType,
+                    invoiceSlotStartsAt.Value,
+                    invoiceSlotEndsAt.Value);
+            }
+            catch (InvalidOperationException ex)
+            {
+                invoiceSyncWarning = $"Запись сохранена, но счёт не обновлён: {ex.Message}";
+            }
+        }
+        else if (!isNewAppointment &&
+                 string.IsNullOrWhiteSpace(linkedInvoiceId) &&
+                 IsBookingPaymentType(normalizedPaymentType) &&
+                 appointment.AppointmentServices.Count > 0 &&
+                 !string.IsNullOrWhiteSpace(userId))
+        {
+            try
+            {
+                var invoiceResult = await CreateInvoiceForAppointmentAsync(
+                    organizationId,
+                    userId,
+                    appointment,
+                    patient,
+                    doctor,
+                    normalizedPaymentType);
+                createdInvoiceId = invoiceResult.InvoiceId;
+                createdInvoiceUrl = Url.Action("Details", "Invoices", new { id = invoiceResult.InvoiceId });
+            }
+            catch (InvalidOperationException ex)
+            {
+                invoiceSyncWarning = $"Запись сохранена, но счёт не создан: {ex.Message}";
+            }
+        }
+
+        var hasPaidInvoice = await AppointmentHasPaidInvoiceAsync(organizationId, appointment, normalizedPaymentType);
 
         return Json(new
         {
             success = true,
-            message = "Запись сохранена.",
+            message = invoiceSyncWarning
+                ?? (createdInvoiceId != null ? "Запись и счёт созданы." : "Запись сохранена."),
+            invoiceId = createdInvoiceId,
+            invoiceUrl = createdInvoiceUrl,
             eventItem = new AppointmentCalendarEventViewModel
             {
                 Id = appointment.Id,
@@ -595,8 +738,10 @@ public class AppointmentsController : Controller
                 Status = appointment.IsActive ? "busy" : "available",
                 Notes = appointment.Notes ?? string.Empty,
                 ReferralSource = appointment.ReferralSource,
-                PaymentType = appointment.PaymentType,
-                HasPaidInvoice = IsPaidPaymentType(appointment.PaymentType),
+                PaymentType = hasPaidInvoice && !IsPaidPaymentType(normalizedPaymentType)
+                    ? "invoice_paid"
+                    : appointment.PaymentType,
+                HasPaidInvoice = hasPaidInvoice,
                 IsActive = appointment.IsActive,
                 CreatedAt = appointment.CreatedAt,
                 UpdatedAt = appointment.UpdatedAt,
@@ -612,6 +757,15 @@ public class AppointmentsController : Controller
                     .ToList()
             }
         });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new
+            {
+                success = false,
+                message = ex.Message
+            });
+        }
     }
 
     [HttpPost]
@@ -699,11 +853,12 @@ public class AppointmentsController : Controller
             ClientId = appointment.PatientId!,
             FixedSumm = totalTyiyn,
             InvoiceName = $"Приём {patientName} • {doctorName} • {titleDate}",
-            PayCode = $"MED-{ParsersHelper.NowForTimestamp():yyyyMMddHHmmss}",
             DateStartInvoice = appointment.StartsAt.Date,
             DateEndInvoice = appointment.StartsAt.Date,
             Balance = 0,
             Hassameaccount = false,
+            FromAppointments = true,
+            GenerateQrOnCreate = true,
             PaymentDateFrom = appointment.StartsAt,
             PaymentDateTo = appointment.EndsAt,
             PaymentPeriodValue = appointment.StartsAt.ToString("dd.MM.yyyy"),
@@ -727,7 +882,7 @@ public class AppointmentsController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     [RequirePermission("appointments.edit")]
-    public async Task<IActionResult> Cancel([FromBody] GenerateAppointmentInvoiceRequest request)
+    public async Task<IActionResult> Cancel([FromBody] CancelAppointmentRequest request)
     {
         var tenant = _currentTenantService.GetCurrent();
         if (!tenant.Profile.HasFeature(CabinetFeatures.Appointments))
@@ -744,6 +899,7 @@ public class AppointmentsController : Controller
         var isDoctorRole = AuthorizationHelper.IsDoctorRole(HttpContext);
 
         var appointmentQuery = _db.Appointments
+            .Include(x => x.Patient)
             .Where(x => x.OrganizationId == organizationId && x.Id == request.AppointmentId);
 
         if (isDoctorRole && !string.IsNullOrWhiteSpace(currentUserId))
@@ -753,12 +909,501 @@ public class AppointmentsController : Controller
         if (appointment == null)
             return NotFound(new { success = false, message = "Запись не найдена." });
 
+        if (!appointment.IsActive || string.Equals(appointment.AppointmentStatus, "cancelled", StringComparison.OrdinalIgnoreCase))
+            return BadRequest(new { success = false, message = "Запись уже отменена." });
+
+        var now = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Unspecified);
+
+        InvoicePayment? paidPayment = null;
+        if (!string.IsNullOrWhiteSpace(appointment.PatientId))
+        {
+            var invoice = await _db.Invoices
+                .Include(i => i.InvoicePayments)
+                .Include(i => i.ClientNavigation)
+                .Where(i => i.FromAppointments && i.Client == appointment.PatientId)
+                .Where(i => i.ClientNavigation != null && i.ClientNavigation.Organization == organizationId)
+                .Where(i => i.InvoicePayments.Any(p =>
+                    p.DateFrom == appointment.StartsAt &&
+                    p.DateTo == appointment.EndsAt))
+                .OrderByDescending(i => i.DateCreated)
+                .FirstOrDefaultAsync();
+
+            paidPayment = invoice?.InvoicePayments
+                .FirstOrDefault(p =>
+                    p.DateFrom == appointment.StartsAt &&
+                    p.DateTo == appointment.EndsAt &&
+                    string.Equals(p.PaymentStatus, "paid", StringComparison.OrdinalIgnoreCase));
+        }
+
+        var hasPaid = paidPayment != null ||
+                      IsPaidPaymentType(appointment.PaymentType) ||
+                      await AppointmentHasPaidInvoiceAsync(organizationId, appointment, appointment.PaymentType);
+
+        if (hasPaid && request.RefundPayment)
+        {
+            if (paidPayment == null)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Оплата по записи найдена, но позиция счёта для возврата не определена."
+                });
+            }
+
+            await using var dbTransaction = await _db.Database.BeginTransactionAsync();
+            try
+            {
+                await _operationsByInvoices.RefundInvoicePaymentAsync(paidPayment);
+                appointment.PaymentType = "unpaid";
+                appointment.AppointmentStatus = "cancelled";
+                appointment.IsActive = false;
+                appointment.UpdatedAt = now;
+                await _db.SaveChangesAsync();
+                await dbTransaction.CommitAsync();
+            }
+            catch
+            {
+                await dbTransaction.RollbackAsync();
+                throw;
+            }
+
+            return Json(new
+            {
+                success = true,
+                message = "Запись отменена, оплата возвращена (созданы транзакции возврата).",
+                refunded = true
+            });
+        }
+
+        if (hasPaid && !request.RefundPayment)
+        {
+            appointment.AppointmentStatus = "cancelled";
+            appointment.IsActive = false;
+            appointment.UpdatedAt = now;
+            await _db.SaveChangesAsync();
+
+            return Json(new
+            {
+                success = true,
+                message = "Запись отменена без возврата суммы.",
+                refunded = false
+            });
+        }
+
         appointment.AppointmentStatus = "cancelled";
         appointment.IsActive = false;
-        appointment.UpdatedAt = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Unspecified);
+        appointment.UpdatedAt = now;
         await _db.SaveChangesAsync();
 
-        return Json(new { success = true, message = "Запись отменена." });
+        return Json(new { success = true, message = "Запись отменена.", refunded = false });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [RequirePermission("appointments.edit")]
+    public async Task<IActionResult> MarkPaid([FromBody] MarkAppointmentPaidRequest request)
+    {
+        var tenant = _currentTenantService.GetCurrent();
+        if (!tenant.Profile.HasFeature(CabinetFeatures.Appointments))
+            return NotFound();
+
+        var organizationId = tenant.OrganizationId;
+        if (string.IsNullOrWhiteSpace(organizationId))
+            return Unauthorized();
+
+        var canMarkAsPaidManually =
+            PermissionHelper.HasPermission(HttpContext, "appointments.payment.status") ||
+            PermissionHelper.HasPermission(HttpContext, "appointments.invoice") ||
+            PermissionHelper.HasPermission(HttpContext, "invoices.create") ||
+            PermissionHelper.HasPermission(HttpContext, "appointments.manage");
+        if (!canMarkAsPaidManually)
+        {
+            return Forbid();
+        }
+
+        if (string.IsNullOrWhiteSpace(request.AppointmentId))
+        {
+            return BadRequest(new { success = false, message = "Не выбрана запись." });
+        }
+
+        var currentUserId = AuthorizationHelper.GetUserId(HttpContext);
+        var isDoctorRole = AuthorizationHelper.IsDoctorRole(HttpContext);
+
+        var appointmentQuery = _db.Appointments
+            .Include(x => x.Patient)
+            .Include(x => x.Doctor)
+            .Include(x => x.AppointmentServices)
+            .Where(x => x.OrganizationId == organizationId && x.Id == request.AppointmentId);
+
+        if (isDoctorRole && !string.IsNullOrWhiteSpace(currentUserId))
+            appointmentQuery = appointmentQuery.Where(x => x.DoctorId == currentUserId);
+
+        var appointment = await appointmentQuery.FirstOrDefaultAsync();
+        if (appointment == null)
+            return NotFound(new { success = false, message = "Запись не найдена." });
+
+        if (!AllowsManualMarkPaid(appointment.PaymentType))
+        {
+            return BadRequest(new
+            {
+                success = false,
+                message = "Для записей с оплатой через QR SECORE статус меняется автоматически после оплаты."
+            });
+        }
+
+        var paidRanges = await LoadPaidAppointmentRangesAsync(organizationId);
+        var alreadyPaid = !string.IsNullOrWhiteSpace(appointment.PatientId) &&
+                          paidRanges.Any(p =>
+                              p.PatientId == appointment.PatientId &&
+                              p.DateFrom <= appointment.StartsAt &&
+                              appointment.EndsAt <= p.DateTo);
+        if (alreadyPaid || IsPaidPaymentType(appointment.PaymentType))
+        {
+            return BadRequest(new { success = false, message = "Запись уже отмечена как оплаченная." });
+        }
+
+        var invoice = await _db.Invoices
+            .Include(i => i.InvoicePayments)
+            .Include(i => i.ClientNavigation)
+            .Where(i => i.FromAppointments && i.Client == appointment.PatientId)
+            .Where(i => i.ClientNavigation != null && i.ClientNavigation.Organization == organizationId)
+            .Where(i => i.InvoicePayments.Any(p =>
+                p.DateFrom == appointment.StartsAt &&
+                p.DateTo == appointment.EndsAt))
+            .OrderByDescending(i => i.DateCreated)
+            .FirstOrDefaultAsync();
+
+        if (invoice == null)
+        {
+            return BadRequest(new
+            {
+                success = false,
+                message = "Счёт по записи не найден. Сначала создайте счёт при регистрации."
+            });
+        }
+
+        var now = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Unspecified);
+        var paymentsToMark = invoice.InvoicePayments
+            .Where(p => p.DateFrom == appointment.StartsAt && p.DateTo == appointment.EndsAt)
+            .Where(p => !string.Equals(p.PaymentStatus, "paid", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (paymentsToMark.Count == 0)
+        {
+            return BadRequest(new { success = false, message = "Нет неоплаченных позиций счёта для этой записи." });
+        }
+
+        var bookingPaymentType = appointment.PaymentType;
+
+        await using var dbTransaction = await _db.Database.BeginTransactionAsync();
+        try
+        {
+            await _operationsByInvoices.ApplyManualAppointmentMarkPaidTransactionsAsync(
+                organizationId,
+                invoice,
+                paymentsToMark,
+                bookingPaymentType);
+
+            foreach (var payment in paymentsToMark)
+            {
+                payment.PaymentStatus = "paid";
+            }
+
+            appointment.PaymentType = "invoice_paid";
+            appointment.UpdatedAt = now;
+            await _db.SaveChangesAsync();
+            await dbTransaction.CommitAsync();
+        }
+        catch (InvalidOperationException ex)
+        {
+            await dbTransaction.RollbackAsync();
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+        catch
+        {
+            await dbTransaction.RollbackAsync();
+            throw;
+        }
+
+        var doctor = appointment.Doctor;
+        var patient = appointment.Patient;
+
+        return Json(new
+        {
+            success = true,
+            message = "Запись и счёт отмечены как оплаченные.",
+            eventItem = new AppointmentCalendarEventViewModel
+            {
+                Id = appointment.Id,
+                Title = appointment.Title ?? "Приём",
+                DoctorId = appointment.DoctorId,
+                Doctor = doctor != null ? (doctor.Name ?? "Не назначен") : "Не назначен",
+                PatientId = appointment.PatientId,
+                PatientName = patient?.ClientName,
+                Phone = appointment.Phone,
+                Email = appointment.Email,
+                Start = appointment.StartsAt,
+                End = appointment.EndsAt,
+                Status = appointment.IsActive ? "busy" : "available",
+                Notes = appointment.Notes ?? string.Empty,
+                ReferralSource = appointment.ReferralSource,
+                PaymentType = appointment.PaymentType,
+                HasPaidInvoice = true,
+                IsActive = appointment.IsActive,
+                CreatedAt = appointment.CreatedAt,
+                UpdatedAt = appointment.UpdatedAt,
+                Services = appointment.AppointmentServices
+                    .OrderBy(x => x.ServiceName)
+                    .Select(x => new AppointmentServiceLineViewModel
+                    {
+                        OrganizationServiceId = x.OrganizationServiceId,
+                        Name = x.ServiceName ?? "Услуга",
+                        PriceTyiyn = x.PriceTyiyn ?? 0,
+                        Quantity = x.Quantity
+                    })
+                    .ToList()
+            }
+        });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetPaymentQr(string appointmentId)
+    {
+        var tenant = _currentTenantService.GetCurrent();
+        if (!tenant.Profile.HasFeature(CabinetFeatures.Appointments))
+            return NotFound();
+
+        var organizationId = tenant.OrganizationId;
+        if (string.IsNullOrWhiteSpace(organizationId))
+            return Unauthorized();
+
+        if (string.IsNullOrWhiteSpace(appointmentId))
+            return BadRequest(new { success = false, message = "Не выбрана запись." });
+
+        var currentUserId = AuthorizationHelper.GetUserId(HttpContext);
+        var isDoctorRole = AuthorizationHelper.IsDoctorRole(HttpContext);
+
+        var appointmentQuery = _db.Appointments
+            .Include(x => x.AppointmentServices)
+            .Where(x => x.OrganizationId == organizationId && x.Id == appointmentId);
+
+        if (isDoctorRole && !string.IsNullOrWhiteSpace(currentUserId))
+            appointmentQuery = appointmentQuery.Where(x => x.DoctorId == currentUserId);
+
+        var appointment = await appointmentQuery.FirstOrDefaultAsync();
+        if (appointment == null)
+            return NotFound(new { success = false, message = "Запись не найдена." });
+
+        if (!string.Equals(appointment.PaymentType, "qr_secore", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(appointment.PaymentType, "qr_secore_paid", StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest(new { success = false, message = "QR SECORE доступен только для записей с этим типом оплаты." });
+        }
+
+        var invoice = await FindAppointmentInvoiceAsync(organizationId, appointment);
+        if (invoice == null)
+        {
+            return BadRequest(new { success = false, message = "Счёт по записи не найден." });
+        }
+
+        var qr = await _db.InvoiceQrs
+            .Where(q => q.InvoiceId == invoice.Id)
+            .OrderByDescending(q => q.CreatedAt)
+            .FirstOrDefaultAsync();
+
+        var amountTyiyn = appointment.AppointmentServices
+            .Sum(x => (x.PriceTyiyn ?? 0) * Math.Max(1, x.Quantity));
+
+        return Json(new
+        {
+            success = true,
+            invoiceId = invoice.Id,
+            payCode = invoice.PayCode ?? qr?.PayCode,
+            amountTyiyn,
+            qrLink = qr?.QrLink,
+            qrCodeBase64 = qr?.QrCodeBase64,
+            status = qr?.Status
+        });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAppointmentInvoice(string appointmentId)
+    {
+        var tenant = _currentTenantService.GetCurrent();
+        if (!tenant.Profile.HasFeature(CabinetFeatures.Appointments))
+            return NotFound();
+
+        var organizationId = tenant.OrganizationId;
+        if (string.IsNullOrWhiteSpace(organizationId))
+            return Unauthorized();
+
+        if (string.IsNullOrWhiteSpace(appointmentId))
+            return BadRequest(new { success = false, message = "Не выбрана запись." });
+
+        var currentUserId = AuthorizationHelper.GetUserId(HttpContext);
+        var isDoctorRole = AuthorizationHelper.IsDoctorRole(HttpContext);
+
+        var appointmentQuery = _db.Appointments
+            .AsNoTracking()
+            .Where(x => x.OrganizationId == organizationId && x.Id == appointmentId);
+
+        if (isDoctorRole && !string.IsNullOrWhiteSpace(currentUserId))
+            appointmentQuery = appointmentQuery.Where(x => x.DoctorId == currentUserId);
+
+        var appointment = await appointmentQuery.FirstOrDefaultAsync();
+        if (appointment == null)
+            return NotFound(new { success = false, message = "Запись не найдена." });
+
+        if (await AppointmentHasPaidInvoiceAsync(organizationId, appointment, appointment.PaymentType ?? string.Empty))
+        {
+            return BadRequest(new { success = false, message = "Счёт уже оплачен." });
+        }
+
+        var invoice = await FindAppointmentInvoiceAsync(organizationId, appointment);
+        if (invoice == null)
+            return NotFound(new { success = false, message = "Счёт по записи не найден." });
+
+        return Json(new
+        {
+            success = true,
+            invoiceId = invoice.Id,
+            payCode = invoice.PayCode
+        });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SendInvoiceWhatsApp([FromBody] SendAppointmentInvoiceWhatsAppRequest request)
+    {
+        var tenant = _currentTenantService.GetCurrent();
+        if (!tenant.Profile.HasFeature(CabinetFeatures.Appointments))
+            return NotFound();
+
+        var organizationId = tenant.OrganizationId;
+        if (string.IsNullOrWhiteSpace(organizationId))
+            return Unauthorized();
+
+        if (string.IsNullOrWhiteSpace(request.AppointmentId))
+            return BadRequest(new { success = false, message = "Не выбрана запись." });
+
+        var currentUserId = AuthorizationHelper.GetUserId(HttpContext);
+        var isDoctorRole = AuthorizationHelper.IsDoctorRole(HttpContext);
+
+        var appointmentQuery = _db.Appointments
+            .Include(x => x.Patient)
+            .Include(x => x.AppointmentServices)
+            .Where(x => x.OrganizationId == organizationId && x.Id == request.AppointmentId);
+
+        if (isDoctorRole && !string.IsNullOrWhiteSpace(currentUserId))
+            appointmentQuery = appointmentQuery.Where(x => x.DoctorId == currentUserId);
+
+        var appointment = await appointmentQuery.FirstOrDefaultAsync();
+        if (appointment == null)
+            return NotFound(new { success = false, message = "Запись не найдена." });
+
+        var patient = appointment.Patient;
+        if (patient == null)
+            return BadRequest(new { success = false, message = "У записи нет пациента." });
+
+        var whatsapp = patient.ClientWa?.Trim();
+        if (string.IsNullOrWhiteSpace(whatsapp) && !string.IsNullOrWhiteSpace(appointment.Phone))
+            whatsapp = appointment.Phone.Trim();
+        if (string.IsNullOrWhiteSpace(whatsapp))
+            return BadRequest(new { success = false, message = "У клиента не указан WhatsApp." });
+
+        var invoice = !string.IsNullOrWhiteSpace(request.InvoiceId)
+            ? await _db.Invoices.FirstOrDefaultAsync(i => i.Id == request.InvoiceId && i.Client == appointment.PatientId)
+            : await FindAppointmentInvoiceAsync(organizationId, appointment);
+
+        if (invoice == null)
+            return BadRequest(new { success = false, message = "Счёт по записи не найден." });
+
+        var qr = await _db.InvoiceQrs
+            .Where(q => q.InvoiceId == invoice.Id)
+            .OrderByDescending(q => q.CreatedAt)
+            .FirstOrDefaultAsync();
+
+        var amountTyiyn = appointment.AppointmentServices
+            .Sum(x => (x.PriceTyiyn ?? 0) * Math.Max(1, x.Quantity));
+        var amountText = amountTyiyn.ToString("N2");
+        var clientName = string.IsNullOrWhiteSpace(patient.ClientName) ? "клиент" : patient.ClientName.Trim();
+        var payCode = invoice.PayCode ?? qr?.PayCode ?? "—";
+        var pdfUrl = Url.Action("DownloadPdf", "Invoices", new { id = invoice.Id }, Request.Scheme)
+                     ?? $"/Invoices/DownloadPdf?id={invoice.Id}";
+
+        var subject = "Счёт на оплату приёма";
+        var message =
+            $"Здравствуйте, {clientName}!\n\n" +
+            $"Счёт на оплату приёма {appointment.StartsAt:dd.MM.yyyy HH:mm}.\n" +
+            $"Сумма: {amountText} сом\n" +
+            $"Лицевой счёт: {payCode}\n" +
+            (string.IsNullOrWhiteSpace(qr?.QrLink) ? "" : $"QR-ссылка: {qr.QrLink}\n") +
+            $"Скачать счёт: {pdfUrl}";
+
+        await _notificationService.CreateNotificationAsync(
+            patient.Id,
+            "whatsapp",
+            whatsapp,
+            subject,
+            message,
+            metadata: System.Text.Json.JsonSerializer.Serialize(new
+            {
+                source = "appointment_qr",
+                appointmentId = appointment.Id,
+                invoiceId = invoice.Id
+            }));
+
+        return Json(new
+        {
+            success = true,
+            message = "Счёт отправлен в очередь WhatsApp."
+        });
+    }
+
+    private async Task<Invoice?> FindAppointmentInvoiceAsync(string organizationId, Appointment appointment)
+    {
+        if (string.IsNullOrWhiteSpace(appointment.PatientId))
+            return null;
+
+        return await FindAppointmentInvoiceBySlotAsync(
+            organizationId,
+            appointment.PatientId,
+            appointment.StartsAt,
+            appointment.EndsAt);
+    }
+
+    private async Task<Invoice?> FindAppointmentInvoiceBySlotAsync(
+        string organizationId,
+        string patientId,
+        DateTime startsAt,
+        DateTime endsAt)
+    {
+        return await _db.Invoices
+            .Include(i => i.InvoicePayments)
+            .Include(i => i.ClientNavigation)
+            .Where(i => i.FromAppointments && i.Client == patientId)
+            .Where(i => i.ClientNavigation != null && i.ClientNavigation.Organization == organizationId)
+            .Where(i => i.InvoicePayments.Any(p =>
+                p.DateFrom == startsAt &&
+                p.DateTo == endsAt))
+            .OrderByDescending(i => i.DateCreated)
+            .FirstOrDefaultAsync();
+    }
+
+    private async Task<bool> AppointmentHasPaidInvoiceAsync(
+        string organizationId,
+        Appointment appointment,
+        string paymentType)
+    {
+        if (IsPaidPaymentType(paymentType))
+            return true;
+
+        var invoice = await FindAppointmentInvoiceAsync(organizationId, appointment);
+        if (invoice == null)
+            return false;
+
+        return invoice.InvoicePayments.Any(p =>
+            string.Equals(p.PaymentStatus, "paid", StringComparison.OrdinalIgnoreCase));
     }
 
     [HttpPost]
@@ -1201,10 +1846,67 @@ public class AppointmentsController : Controller
 
     private sealed record PaidAppointmentRange(string PatientId, DateTime DateFrom, DateTime DateTo);
 
+    private static bool IsBookingPaymentType(string? paymentType)
+    {
+        var normalized = (paymentType ?? string.Empty).Trim().ToLowerInvariant();
+        return normalized is "qr_secore" or "qr_external" or "card" or "cash";
+    }
+
+    private static bool ShouldGenerateQrForBooking(string? paymentType) =>
+        string.Equals(paymentType, "qr_secore", StringComparison.OrdinalIgnoreCase);
+
+    private async Task<CreateOneTimeInvoiceResult> CreateInvoiceForAppointmentAsync(
+        string organizationId,
+        string userId,
+        Appointment appointment,
+        OrganizationClient patient,
+        User? doctor,
+        string paymentType)
+    {
+        var serviceLines = appointment.AppointmentServices.ToList();
+        if (serviceLines.Count == 0)
+            throw new InvalidOperationException("Добавьте услуги перед созданием счёта.");
+
+        var doctorName = string.IsNullOrWhiteSpace(doctor?.Name) ? "Врач" : doctor!.Name!;
+        var patientName = string.IsNullOrWhiteSpace(patient.ClientName) ? "Пациент" : patient.ClientName!;
+        var titleDate = appointment.StartsAt.ToString("dd.MM.yyyy");
+        var totalTyiyn = serviceLines.Sum(x => (x.PriceTyiyn ?? 0) * Math.Max(1, x.Quantity));
+
+        return await _operationsByInvoices.CreateOneTimeInvoiceAsync(new CreateOneTimeInvoiceInput
+        {
+            OrganizationId = organizationId,
+            UserId = userId,
+            ClientId = appointment.PatientId!,
+            FixedSumm = totalTyiyn,
+            InvoiceName = $"Приём {patientName} • {doctorName} • {titleDate}",
+            DateStartInvoice = appointment.StartsAt.Date,
+            DateEndInvoice = appointment.StartsAt.Date,
+            Balance = 0,
+            Hassameaccount = false,
+            FromAppointments = true,
+            GenerateQrOnCreate = ShouldGenerateQrForBooking(paymentType),
+            PaymentDateFrom = appointment.StartsAt,
+            PaymentDateTo = appointment.EndsAt,
+            PaymentPeriodValue = appointment.StartsAt.ToString("dd.MM.yyyy"),
+            PaymentSumm = totalTyiyn,
+            ServiceLines = serviceLines.Select(x => new CreateOneTimePaymentServiceLineInput
+            {
+                OrganizationServiceId = x.OrganizationServiceId,
+                ServiceSumm = (x.PriceTyiyn ?? 0) * Math.Max(1, x.Quantity)
+            }).ToList()
+        });
+    }
+
     private static bool IsPaidPaymentType(string? paymentType)
     {
         var normalized = (paymentType ?? string.Empty).Trim().ToLowerInvariant();
-        return normalized is "cash" or "card" or "online" or "insurance" or "invoice_paid" or "paid";
+        return normalized is "online" or "insurance" or "invoice_paid" or "paid" or "qr_secore_paid";
+    }
+
+    private static bool AllowsManualMarkPaid(string? paymentType)
+    {
+        var normalized = (paymentType ?? string.Empty).Trim().ToLowerInvariant();
+        return normalized is "qr_external" or "card" or "cash" or "unpaid";
     }
 
     private static string NormalizePaymentType(string? paymentType)
@@ -1212,6 +1914,9 @@ public class AppointmentsController : Controller
         var normalized = (paymentType ?? string.Empty).Trim().ToLowerInvariant();
         return normalized switch
         {
+            "qr_secore_paid" => "qr_secore_paid",
+            "qr_secore" => "qr_secore",
+            "qr_external" => "qr_external",
             "cash" => "cash",
             "card" => "card",
             "online" => "online",

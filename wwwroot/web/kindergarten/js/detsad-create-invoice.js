@@ -227,6 +227,7 @@
 
     function initStep2(container, lockedToClient) {
         var step2Back = container.querySelector('#invoiceStep2Back');
+        var step2BackDetsad = container.querySelector('#invoiceStep2BackDetsad');
         var step1 = container.querySelector('#createInvoiceStep1');
         var step2 = container.querySelector('#createInvoiceStep2');
         var payCodeEl = container.querySelector('#invoicePayCode');
@@ -243,12 +244,33 @@
         if (lockedToClient && step2Back) {
             step2Back.classList.add('d-none');
         }
+        if (lockedToClient && step2BackDetsad) {
+            step2BackDetsad.classList.add('d-none');
+        }
         var wrap = container.querySelector('.create-invoice-wrap') || container;
         var disableServiceSelection = wrap.getAttribute('data-disable-invoice-service-selection') === 'true';
+        var useDetsadComposer = wrap.getAttribute('data-use-detsad-composer') === 'true';
         var allowedHassame = wrap.getAttribute('data-allowed-hassame-account') === 'true';
         var payCodeMode = (wrap.getAttribute('data-invoice-pay-code-mode') || 'new_only');
         var showPayCodeSelect = (payCodeMode === 'duplicate_only' || payCodeMode === 'both');
         var allowNewPayCode = (payCodeMode === 'both');
+
+        container._detsadComposeApi = null;
+        if (useDetsadComposer && window.DetsadInvoiceCompose) {
+            var composeRoot = container.querySelector('.ds-inv-compose');
+            if (composeRoot) {
+                container._detsadComposeApi = DetsadInvoiceCompose.init(composeRoot, {
+                    onChange: function () {
+                        if (container._detsadComposeApi && nameEl) {
+                            container._detsadComposeApi.syncHiddenName(nameEl);
+                        }
+                        updatePreview(container);
+                        updateCreateInvoiceSubmitState(container);
+                    }
+                });
+            }
+        }
+        updateCreateInvoiceSubmitState(container);
 
         var autoProlongationEl = container.querySelector('#invoiceAutoProlongation');
         var useCurrentDateTimeEl = container.querySelector('#invoiceUseCurrentDateTime');
@@ -374,12 +396,48 @@
                 step1.classList.remove('d-none');
             });
         }
+        if (step2BackDetsad && step1 && step2) {
+            step2BackDetsad.addEventListener('click', function() {
+                step2.classList.add('d-none');
+                step1.classList.remove('d-none');
+            });
+        }
 
         function setPayCodeAndPreview(val) {
             if (payCodeEl) payCodeEl.value = val || '—';
             updatePreview(container);
         }
-        if (showPayCodeSelect) {
+        function loadDetsadPayCodeForPreview() {
+            if (!useDetsadComposer || !payCodeEl) return;
+            if (selectedClientIds.length !== 1) {
+                payCodeEl.value = selectedClientIds.length > 1 ? '—' : '—';
+                updatePreview(container);
+                return;
+            }
+            var cid = selectedClientIds[0];
+            fetch(baseUrl + '/GetInvoicePayCodeOptions?clientIds=' + encodeURIComponent(cid))
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var opts = data.payCodeOptions || [];
+                    if (opts.length > 0 && opts[0].payCode) {
+                        setPayCodeAndPreview(opts[0].payCode);
+                        return;
+                    }
+                    fetch(baseUrl + '/GetNextInvoiceNumber')
+                        .then(function (r) { return r.json(); })
+                        .then(function (d) { setPayCodeAndPreview(d.payCode); })
+                        .catch(function () { setPayCodeAndPreview('00001000000001'); });
+                })
+                .catch(function () {
+                    fetch(baseUrl + '/GetNextInvoiceNumber')
+                        .then(function (r) { return r.json(); })
+                        .then(function (d) { setPayCodeAndPreview(d.payCode); })
+                        .catch(function () { setPayCodeAndPreview('00001000000001'); });
+                });
+        }
+        if (useDetsadComposer) {
+            loadDetsadPayCodeForPreview();
+        } else if (showPayCodeSelect) {
             var payCodeSelect = container.querySelector('#invoicePayCodeSelect');
             var clientIdsParam = selectedClientIds.length ? '?clientIds=' + encodeURIComponent(selectedClientIds.join(',')) : '';
             fetch(baseUrl + '/GetInvoicePayCodeOptions' + clientIdsParam)
@@ -524,7 +582,23 @@
                     alert('Укажите дату конца счёта или включите автопролонгацию.');
                     return;
                 }
-                if (disableServiceSelection) {
+                if (container._detsadComposeApi) {
+                    var cv = container._detsadComposeApi.validate();
+                    if (!cv.ok) {
+                        alert(cv.message || 'Заполните счёт.');
+                        return;
+                    }
+                    var part = container._detsadComposeApi.getPayloadPart();
+                    if (!part) {
+                        alert('Не удалось сформировать счёт.');
+                        return;
+                    }
+                    payload.nameInvoice = part.nameInvoice;
+                    payload.serviceItems = part.serviceItems || [];
+                    if (part.manualServicePriceSom != null) {
+                        payload.manualServicePriceSom = part.manualServicePriceSom;
+                    }
+                } else if (disableServiceSelection) {
                     var manualPriceEl = container.querySelector('#invoiceManualPriceSom');
                     var manualPrice = manualPriceEl ? parseFloat(manualPriceEl.value) : NaN;
                     if (isNaN(manualPrice) || manualPrice < 0) {
@@ -545,7 +619,7 @@
                         return;
                     }
                 }
-                if (showPayCodeSelect) {
+                if (showPayCodeSelect && !useDetsadComposer) {
                     var payCodeSelect = container.querySelector('#invoicePayCodeSelect');
                     var selectedPayCode = payCodeSelect && payCodeSelect.value && payCodeSelect.value !== '__new__' && payCodeSelect.value !== '' ? payCodeSelect.value : null;
                     if (payCodeMode === 'duplicate_only' && !selectedPayCode) {
@@ -556,6 +630,9 @@
                         payload.payCode = selectedPayCode;
                         payload.hassameaccount = true;
                     }
+                }
+                if (useDetsadComposer) {
+                    payload.hassameaccount = true;
                 }
                 if (window.DetsadUI) {
                     DetsadUI.setButtonLoading(createBtn, true, { label: 'Создание...' });
@@ -583,20 +660,31 @@
                     .then(function(result) {
                         if (result.ok && result.data.success) {
                             bootstrap.Modal.getInstance(container.closest('.modal')).hide();
-                            if (window.DetsadUI) DetsadUI.reloadWithOverlay(result.data.message || 'Счета созданы...');
-                            else {
+                            if (window.DetsadUI && typeof DetsadUI.flashAndReload === 'function') {
+                                DetsadUI.flashAndReload(result.data.message || 'Счета созданы', 'Обновление списка...');
+                            } else if (window.DetsadUI) {
+                                DetsadUI.reloadWithOverlay(result.data.message || 'Счета созданы...');
+                            } else {
                                 alert(result.data.message || 'Счета созданы.');
                                 if (typeof window.location.reload === 'function') window.location.reload();
                             }
                         } else {
                             if (window.DetsadUI) DetsadUI.hideOverlay();
-                            alert(result.data.message || 'Ошибка ' + result.status + '.');
+                            if (window.DetsadUI && DetsadUI.showToast) {
+                                DetsadUI.showToast(result.data.message || 'Ошибка ' + result.status + '.', 'danger');
+                            } else {
+                                alert(result.data.message || 'Ошибка ' + result.status + '.');
+                            }
                         }
                     })
                     .catch(function(err) {
                         console.error('CreateInvoices error', err);
                         if (window.DetsadUI) DetsadUI.hideOverlay();
-                        alert('Ошибка сети или сервера. Проверьте консоль браузера (F12).');
+                        if (window.DetsadUI && DetsadUI.showToast) {
+                            DetsadUI.showToast('Ошибка сети или сервера. Проверьте консоль браузера (F12).', 'danger');
+                        } else {
+                            alert('Ошибка сети или сервера. Проверьте консоль браузера (F12).');
+                        }
                     })
                     .finally(function() {
                         if (window.DetsadUI) DetsadUI.setButtonLoading(createBtn, false);
@@ -609,6 +697,15 @@
         }
 
         updatePreview(container);
+    }
+
+    function updateCreateInvoiceSubmitState(container) {
+        var wrap = container.querySelector('.create-invoice-wrap') || container;
+        if (wrap.getAttribute('data-use-detsad-composer') !== 'true') return;
+        var btn = container.querySelector('#invoiceCreateBtn');
+        if (!btn) return;
+        var valid = container._detsadComposeApi && container._detsadComposeApi.validate().ok;
+        btn.disabled = !valid;
     }
 
     function updatePreview(container) {
@@ -671,7 +768,13 @@
         if (previewDateEndRow) previewDateEndRow.classList.toggle('d-none', !showDateEnd);
         if (previewDateEnd) previewDateEnd.textContent = showDateEnd ? formatDateTimeForPreview(dateEndVal) : '—';
 
-        if (previewNumber) previewNumber.textContent = payCode;
+        if (previewNumber) {
+            if (useDetsadComposer && selectedClientIds.length > 1) {
+                previewNumber.textContent = 'Лицевой счёт у каждого ребёнка свой';
+            } else {
+                previewNumber.textContent = payCode;
+            }
+        }
         if (previewName) previewName.textContent = name;
         if (previewDateStart) previewDateStart.textContent = formatDateTimeForPreview(dateStart);
         if (previewPeriodicity) previewPeriodicity.textContent = periodicity;
@@ -679,9 +782,20 @@
 
         var wrap = container.querySelector('.create-invoice-wrap') || container;
         var disableServiceSelection = wrap.getAttribute('data-disable-invoice-service-selection') === 'true';
+        var useDetsadComposer = wrap.getAttribute('data-use-detsad-composer') === 'true';
         var total = 0;
         var html = '';
-        if (disableServiceSelection) {
+        if (useDetsadComposer && container._detsadComposeApi) {
+            if (container._detsadComposeApi.syncHiddenName) {
+                container._detsadComposeApi.syncHiddenName(container.querySelector('#invoiceName'));
+            }
+            var compPreview = container._detsadComposeApi.getPreviewLines();
+            total = compPreview.total || 0;
+            if (previewName && compPreview.name) previewName.textContent = compPreview.name;
+            (compPreview.lines || []).forEach(function (line) {
+                html += '<tr><td>' + escapeHtml(line.name) + '</td><td>' + line.price.toFixed(2) + '</td><td>' + line.qty + '</td><td>' + line.total.toFixed(2) + '</td></tr>';
+            });
+        } else if (disableServiceSelection) {
             var manualName = (container.querySelector('#invoiceName') || {}).value || '—';
             var manualPrice = parseFloat((container.querySelector('#invoiceManualPriceSom') || {}).value) || 0;
             total = manualPrice;
@@ -700,8 +814,34 @@
                 html += '<tr><td>' + escapeHtml(nameVal) + '</td><td>' + price.toFixed(2) + '</td><td>' + qty + '</td><td>' + lineTotal.toFixed(2) + '</td></tr>';
             });
         }
-        if (previewLinesBody) previewLinesBody.innerHTML = html || '<tr><td colspan="4" class="text-muted text-center">Нет позиций</td></tr>';
+        if (previewLinesBody && !useDetsadComposer) previewLinesBody.innerHTML = html || '<tr><td colspan="4" class="text-muted text-center">Нет позиций</td></tr>';
         if (previewTotal) previewTotal.textContent = total.toFixed(2);
+
+        if (useDetsadComposer) {
+            var previewLine = container.querySelector('#previewNextPaymentLine');
+            var dash = '—';
+            if (total <= 0) {
+                if (previewLine) previewLine.textContent = dash;
+            } else {
+                var dateStartValDs = (container.querySelector('#invoiceDateStart') || {}).value;
+                var d0ds = parseDateVal(dateStartValDs);
+                var useCurrentDs = (container.querySelector('#invoiceUseCurrentDateTime') || {}).checked !== false;
+                var periodicityValDs = (container.querySelector('#invoicePeriodicity') || {}).value || 'monthly';
+                var periodEndDs = null;
+                if (d0ds && !isNaN(d0ds.getTime())) {
+                    if (useCurrentDs && periodicityValDs === 'monthly') {
+                        periodEndDs = new Date(d0ds.getFullYear(), d0ds.getMonth() + 1, d0ds.getDate());
+                    } else {
+                        periodEndDs = getPeriodEndDate(d0ds, periodicityValDs, useCurrentDs);
+                    }
+                }
+                var dateOnlyStr = periodEndDs ? fmtDate(periodEndDs) : dash;
+                if (previewLine) {
+                    previewLine.textContent = dateOnlyStr === dash ? dash : ('Следующий платеж: до ' + dateOnlyStr);
+                }
+            }
+            return;
+        }
 
         var previewPaymentsBody = container.querySelector('#previewPaymentsBody');
         if (previewPaymentsBody) {

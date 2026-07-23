@@ -78,6 +78,9 @@ public partial class Invoice
     /// </summary>
     public string? QrMode { get; set; }
 
+    /// <summary>Счёт создан из записи на приём (регистратура medclinic).</summary>
+    public bool FromAppointments { get; set; }
+
     public virtual OrganizationClient? ClientNavigation { get; set; }
 
     public virtual ICollection<InvoicePayment> InvoicePayments { get; set; } = new List<InvoicePayment>();

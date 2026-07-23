@@ -190,12 +190,14 @@ public class CabinetController : Controller
             .Where(i => i.Client != null && clientIds.Contains(i.Client))
             .ToListAsync();
 
-        var transactions = await _db.Transactions
-            .Where(t => t.TransactionStatus == "success" &&
-                        t.Invoice != null &&
-                        invoiceIds.Contains(t.Invoice) &&
-                        t.Summ.HasValue &&
-                        t.TransactionType == "payPaymentInvoice")
+        var sumVisibility = DashboardSumPermissions.GetVisibility(HttpContext);
+        var transactions = await DashboardSumPermissions.ApplyDashboardSumFilter(
+                _db.Transactions.Where(t =>
+                    t.TransactionStatus == "success" &&
+                    t.Invoice != null &&
+                    invoiceIds.Contains(t.Invoice) &&
+                    t.Summ.HasValue),
+                sumVisibility)
             .ToListAsync();
 
         var now = DateTime.UtcNow;
@@ -284,20 +286,6 @@ public class CabinetController : Controller
             })
             .ToList();
 
-        var recentInvoices = invoices
-            .Where(i => i.InvoiceStatus == "actual")
-            .OrderByDescending(i => i.DateCreated ?? DateTime.MinValue)
-            .Take(10)
-            .Select(i => new
-            {
-                i.Id,
-                Name = i.NameInvoice ?? "Без названия",
-                Balance = (i.Balance ?? 0m) / 100m,
-                Status = i.InvoiceStatus == "actual" ? "Активный" : i.InvoiceStatus ?? "-",
-                ClientName = i.ClientNavigation?.ClientName
-            })
-            .ToList();
-
         ViewBag.MonthIncome = monthIncome;
         ViewBag.YearIncome = yearIncome;
         ViewBag.TotalClients = clients.Count;
@@ -313,54 +301,88 @@ public class CabinetController : Controller
         ViewBag.CommissionRate = commissionRate;
         ViewBag.CommissionFixed = commissionFixed;
         ViewBag.DebtorsList = debtorsList;
-        ViewBag.RecentInvoices = recentInvoices;
 
         return View("~/Views/Cabinet/Dashboards/_DetsadDashboard.cshtml");
     }
 
     private async Task<IActionResult> RenderMedclinicDashboardAsync(string organizationId)
     {
+        var sumVisibility = DashboardSumPermissions.GetVisibility(HttpContext);
         var today = DateTime.Today;
         var currentMonth = today.Month;
         var currentYear = today.Year;
+        var todayEnd = today.AddDays(1);
 
-        var todayAcceptedPatients = await _db.Transactions
+        var todayAppointments = await _db.Appointments
             .AsNoTracking()
-            .Where(x =>
-                x.TransactionStatus == "success" &&
-                x.TransactionDate.HasValue &&
-                x.TransactionDate.Value.Date == today &&
-                x.InvoiceNavigation != null &&
-                x.InvoiceNavigation.ClientNavigation != null &&
-                x.InvoiceNavigation.ClientNavigation.Organization == organizationId)
-            .Select(x => x.InvoiceNavigation!.ClientNavigation!.Id)
-            .Distinct()
-            .CountAsync();
-
-        var doctorUserIds = await _db.UserRoles
-            .AsNoTracking()
-            .Where(ur => (ur.Isdeleted == null || ur.Isdeleted == 0) && ur.User != null && ur.Role != null)
-            .Join(
-                _db.Roles.AsNoTracking()
-                    .Where(r => (r.Isdeleted == null || r.Isdeleted == 0) &&
-                                r.Organization == organizationId &&
-                                r.Name != null &&
-                                (EF.Functions.ILike(r.Name, "%doctor%") || EF.Functions.ILike(r.Name, "%врач%"))),
-                ur => ur.Role,
-                r => r.Id,
-                (ur, _) => ur.User!)
-            .Distinct()
+            .Where(a =>
+                a.OrganizationId == organizationId &&
+                a.IsActive &&
+                a.StartsAt >= today &&
+                a.StartsAt < todayEnd)
+            .Select(a => new { a.PatientId, a.StartsAt, a.EndsAt, a.PaymentType })
             .ToListAsync();
 
-        var doctorsCount = await _db.Users
+        var paidSlotsToday = await _db.InvoicePayments
             .AsNoTracking()
-            .Where(x =>
-                x.Organization == organizationId &&
-                (x.Isdeleted == null || x.Isdeleted == 0) &&
-                doctorUserIds.Contains(x.Id))
-            .CountAsync();
+            .Where(p =>
+                p.PaymentStatus == "paid" &&
+                p.DateFrom.HasValue &&
+                p.DateFrom.Value >= today &&
+                p.DateFrom.Value < todayEnd)
+            .Where(p =>
+                p.InvoiceNavigation != null &&
+                p.InvoiceNavigation.FromAppointments &&
+                p.InvoiceNavigation.ClientNavigation != null &&
+                p.InvoiceNavigation.ClientNavigation.Organization == organizationId)
+            .Select(p => new
+            {
+                PatientId = p.InvoiceNavigation!.Client,
+                StartsAt = p.DateFrom!.Value,
+                EndsAt = p.DateTo ?? p.DateFrom!.Value
+            })
+            .ToListAsync();
 
-        var transactionsQuery = _db.Transactions
+        static bool IsPaidAppointmentPayment(string? paymentType)
+        {
+            var n = (paymentType ?? string.Empty).Trim().ToLowerInvariant();
+            return n is "online" or "insurance" or "invoice_paid" or "paid" or "qr_secore_paid";
+        }
+
+        var acceptedToday = todayAppointments.Count(a =>
+        {
+            if (IsPaidAppointmentPayment(a.PaymentType))
+                return true;
+            if (string.IsNullOrWhiteSpace(a.PatientId))
+                return false;
+            return paidSlotsToday.Any(p =>
+                p.PatientId == a.PatientId &&
+                p.StartsAt == a.StartsAt &&
+                p.EndsAt == a.EndsAt);
+        });
+
+        var totalToday = todayAppointments.Count;
+        var remainingToday = Math.Max(0, totalToday - acceptedToday);
+
+        string? newAppointmentUrl = null;
+        var showNewAppointment = false;
+        if (PermissionHelper.HasPermission(HttpContext, "appointments.registry.view"))
+        {
+            showNewAppointment = true;
+            newAppointmentUrl = Url.Action("Registry", "Appointments");
+        }
+        else if (PermissionHelper.HasPermission(HttpContext, "appointments.doctor.view"))
+        {
+            showNewAppointment = true;
+            newAppointmentUrl = Url.Action("Doctor", "Appointments");
+        }
+        else if (PermissionHelper.HasPermission(HttpContext, "appointments.edit"))
+        {
+            showNewAppointment = true;
+            newAppointmentUrl = Url.Action("Registry", "Appointments");
+        }
+
+        var transactionsBaseQuery = _db.Transactions
             .AsNoTracking()
             .Where(x =>
                 x.InvoiceNavigation != null &&
@@ -368,80 +390,78 @@ public class CabinetController : Controller
                 x.InvoiceNavigation.ClientNavigation.Organization == organizationId &&
                 x.TransactionStatus == "success");
 
-        var transactionsAmount = await transactionsQuery
-            .SumAsync(x => (decimal?)x.Summ) ?? 0m;
+        var transactionsQuery = DashboardSumPermissions.ApplyDashboardSumFilter(transactionsBaseQuery, sumVisibility);
 
-        var recentTransactions = await transactionsQuery
-            .OrderByDescending(x => x.TransactionDate)
-            .Take(12)
-            .Select(x => new MedclinicDashboardTransactionViewModel
-            {
-                Id = x.Id,
-                PatientName = x.InvoiceNavigation!.ClientNavigation!.ClientName ?? "—",
-                Description = x.InvoiceNavigation.NameInvoice ?? "Платёж",
-                TransactionDate = x.TransactionDate,
-                Amount = (x.Summ ?? 0m) / 100m,
-                Status = x.TransactionStatus ?? string.Empty
-            })
-            .ToListAsync();
+        var todayTransactionsSumTyiyn = sumVisibility.CanViewAny
+            ? await transactionsQuery
+                .Where(t => t.TransactionDate.HasValue && t.TransactionDate.Value >= today && t.TransactionDate.Value < todayEnd)
+                .SumAsync(t => (decimal?)t.Summ) ?? 0m
+            : 0m;
+
+        var recentTransactions = sumVisibility.CanViewAny
+            ? await transactionsQuery
+                .OrderByDescending(x => x.TransactionDate)
+                .Take(20)
+                .Select(x => new MedclinicDashboardTransactionViewModel
+                {
+                    Id = x.Id,
+                    PatientName = x.InvoiceNavigation!.ClientNavigation!.ClientName ?? "—",
+                    Description = x.InvoiceNavigation.NameInvoice ?? "Платёж",
+                    TransactionDate = x.TransactionDate,
+                    AmountSom = (x.Summ ?? 0m) / 100m,
+                    IsCredit = x.TransactionType == "credit",
+                    KindLabel = x.TransactionType == "credit" ? "Возврат" : "Оплата",
+                    StatusLabel = x.TransactionType == "credit" ? "Возврат" : "Успешно"
+                })
+                .ToListAsync()
+            : new List<MedclinicDashboardTransactionViewModel>();
 
         var weekStart = today.AddDays(-6);
         var firstDay = new DateTime(currentYear, currentMonth, 1);
         var lastDay = firstDay.AddMonths(1).AddDays(-1);
-
         var dailyChartStart = weekStart < firstDay ? weekStart : firstDay;
         var dailyChartEndExclusive = lastDay.AddDays(1);
 
-        var dailySums = await transactionsQuery
-            .Where(t =>
-                t.TransactionDate.HasValue &&
-                t.TransactionDate.Value.Date >= dailyChartStart &&
-                t.TransactionDate.Value.Date < dailyChartEndExclusive)
-            .GroupBy(t => t.TransactionDate!.Value.Date)
-            .Select(g => new
-            {
-                Date = g.Key,
-                Sum = g.Sum(t => ((decimal?)t.Summ) ?? 0m) / 100m
-            })
-            .ToListAsync();
+        var dailySumsByDate = new Dictionary<DateTime, decimal>();
+        var monthlySumsByMonth = new Dictionary<int, decimal>();
+        if (sumVisibility.CanViewAny)
+        {
+            var dailySums = await transactionsQuery
+                .Where(t =>
+                    t.TransactionDate.HasValue &&
+                    t.TransactionDate.Value >= dailyChartStart &&
+                    t.TransactionDate.Value < dailyChartEndExclusive)
+                .GroupBy(t => t.TransactionDate!.Value.Date)
+                .Select(g => new { Date = g.Key, Sum = g.Sum(t => ((decimal?)t.Summ) ?? 0m) / 100m })
+                .ToListAsync();
+            dailySumsByDate = dailySums.ToDictionary(x => x.Date, x => x.Sum);
 
-        var dailySumsByDate = dailySums.ToDictionary(x => x.Date, x => x.Sum);
-
-        var monthlySums = await transactionsQuery
-            .Where(t => t.TransactionDate.HasValue && t.TransactionDate.Value.Year == currentYear)
-            .GroupBy(t => t.TransactionDate!.Value.Month)
-            .Select(g => new
-            {
-                Month = g.Key,
-                Sum = g.Sum(t => ((decimal?)t.Summ) ?? 0m) / 100m
-            })
-            .ToListAsync();
-
-        var monthlySumsByMonth = monthlySums.ToDictionary(x => x.Month, x => x.Sum);
+            var monthlySums = await transactionsQuery
+                .Where(t => t.TransactionDate.HasValue && t.TransactionDate.Value.Year == currentYear)
+                .GroupBy(t => t.TransactionDate!.Value.Month)
+                .Select(g => new { Month = g.Key, Sum = g.Sum(t => ((decimal?)t.Summ) ?? 0m) / 100m })
+                .ToListAsync();
+            monthlySumsByMonth = monthlySums.ToDictionary(x => x.Month, x => x.Sum);
+        }
 
         var chartWeek = new List<object>();
         for (var dayShift = 6; dayShift >= 0; dayShift--)
         {
             var date = today.AddDays(-dayShift);
-            var sum = dailySumsByDate.GetValueOrDefault(date, 0m);
-            chartWeek.Add(new { label = date.ToString("dd.MM"), value = sum });
+            chartWeek.Add(new { label = date.ToString("dd.MM"), value = dailySumsByDate.GetValueOrDefault(date, 0m) });
         }
 
         var chartMonth = new List<object>();
         for (var date = firstDay; date <= lastDay; date = date.AddDays(1))
-        {
-            var sum = dailySumsByDate.GetValueOrDefault(date, 0m);
-            chartMonth.Add(new { label = date.ToString("dd.MM"), value = sum });
-        }
+            chartMonth.Add(new { label = date.ToString("dd.MM"), value = dailySumsByDate.GetValueOrDefault(date, 0m) });
 
         var chartYear = new List<object>();
         for (var month = 1; month <= 12; month++)
         {
-            var sum = monthlySumsByMonth.GetValueOrDefault(month, 0m);
             chartYear.Add(new
             {
                 label = new DateTime(currentYear, month, 1).ToString("MMM", System.Globalization.CultureInfo.GetCultureInfo("ru-RU")),
-                value = sum
+                value = monthlySumsByMonth.GetValueOrDefault(month, 0m)
             });
         }
 
@@ -485,29 +505,16 @@ public class CabinetController : Controller
 
         var model = new MedclinicDashboardViewModel
         {
-            Metrics = new[]
-            {
-                new MedclinicDashboardMetricViewModel
-                {
-                    Label = "Принято сегодня",
-                    Value = todayAcceptedPatients.ToString(),
-                    Description = "Уникальные пациенты с успешными оплатами за сегодня."
-                },
-                new MedclinicDashboardMetricViewModel
-                {
-                    Label = "Докторов",
-                    Value = doctorsCount.ToString(),
-                    Description = "Активные пользователи клиники в текущей организации."
-                },
-                new MedclinicDashboardMetricViewModel
-                {
-                    Label = "Сумма транзакций",
-                    Value = $"{transactionsAmount / 100m:N2} c",
-                    Description = "Успешные транзакции клиники за всё время."
-                }
-            },
-            Transactions = recentTransactions,
             OrganizationName = organization?.Name ?? "Medclinic",
+            TodayTitle = today.ToString("dddd, d MMMM", System.Globalization.CultureInfo.GetCultureInfo("ru-RU")),
+            AppointmentsTotalToday = totalToday,
+            AppointmentsAcceptedToday = acceptedToday,
+            AppointmentsRemainingToday = remainingToday,
+            ShowNewAppointmentButton = showNewAppointment,
+            NewAppointmentUrl = newAppointmentUrl,
+            CanViewPaymentSums = sumVisibility.CanViewAny,
+            TodayTransactionsSumSom = todayTransactionsSumTyiyn / 100m,
+            Transactions = recentTransactions,
             HasSubscription = hasSubscription,
             BillingStatus = hasSubscription ? "Активна" : "Комиссионный",
             CommissionKindText = CommissionKindText(commissionKind),

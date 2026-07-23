@@ -33,3 +33,24 @@ public class GenerateAppointmentInvoiceRequest
 {
     public string? AppointmentId { get; set; }
 }
+
+public class MarkAppointmentPaidRequest
+{
+    public string? AppointmentId { get; set; }
+}
+
+public class CancelAppointmentRequest
+{
+    public string? AppointmentId { get; set; }
+
+    /// <summary>
+    /// При отмене оплаченной записи — создать возвратные транзакции и снять оплату со счёта.
+    /// </summary>
+    public bool RefundPayment { get; set; }
+}
+
+public class SendAppointmentInvoiceWhatsAppRequest
+{
+    public string? AppointmentId { get; set; }
+    public string? InvoiceId { get; set; }
+}

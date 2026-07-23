@@ -3,7 +3,25 @@
     const pageType = p.pageType || "registry";
     const canManageAppointments = p.canManageAppointments !== false;
     const canGenerateInvoice = p.canGenerateInvoice !== false;
+    const canMarkAsPaidManually = p.canMarkAsPaidManually === true;
+    const markPaidUrl = p.markPaidUrl || "";
+    const paymentQrUrl = p.paymentQrUrl || "";
+    const appointmentInvoiceUrl = p.appointmentInvoiceUrl || "";
+    const sendInvoiceWhatsAppUrl = p.sendInvoiceWhatsAppUrl || "";
     const $ = (id) => document.getElementById(id);
+
+    async function readJsonResponse(response) {
+        const text = await response.text();
+        if (!text) {
+            return { response, result: {} };
+        }
+        try {
+            return { response, result: JSON.parse(text) };
+        } catch {
+            const snippet = text.replace(/\s+/g, " ").trim().slice(0, 240);
+            throw new Error(snippet || `Ошибка сервера (${response.status})`);
+        }
+    }
 
     const doctorGrid = $("scheduleCalendarGrid");
     const registryGrid = $("gridView");
@@ -33,10 +51,15 @@
         doctorBlocks: p.doctorBlocks || [],
         medicalTemplates: p.medicalTemplates || [],
         departments: p.departments || [],
-        doctorFilters: p.doctorFilters || [],
+        doctorFilters: (p.doctorFilters || []).map((doc) => ({
+            ...doc,
+            departmentIds: doc.departmentIds || doc.DepartmentIds || []
+        })),
         selectedDepartmentIds: new Set((p.departments || []).map((x) => x.value)),
         selectedDoctorIds: new Set((p.doctorFilters || []).map((x) => x.value)),
-        paymentFilter: "all"
+        paymentFilter: "all",
+        returnToDetails: false,
+        detailsQrInvoiceId: null
     };
 
     window.medclinicScheduleState = state;
@@ -44,6 +67,7 @@
     const periodModal = $("appointmentPeriodModal") ? new bootstrap.Modal($("appointmentPeriodModal")) : null;
     const detailsModal = $("appointmentDetailsModal") ? new bootstrap.Modal($("appointmentDetailsModal")) : null;
     const editorModal = $("appointmentEditorModal") ? new bootstrap.Modal($("appointmentEditorModal")) : null;
+    const rescheduleModal = $("appointmentRescheduleModal") ? new bootstrap.Modal($("appointmentRescheduleModal")) : null;
 
     const esc = (v) => String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
     const ft = (d) => new Intl.DateTimeFormat("ru-RU", { hour: "2-digit", minute: "2-digit" }).format(d);
@@ -51,6 +75,48 @@
     const fm = (v) => `${new Intl.NumberFormat("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(v) || 0)} c`;
     const token = () => document.querySelector('input[name="__RequestVerificationToken"]')?.value || "";
     const weekdays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+    const REGISTRY_FILTERS_KEY = "medclinicRegistryFiltersV1";
+
+    function saveRegistryFilters() {
+        if (pageType !== "registry" || !$("registryDoctorSelect")) return;
+        try {
+            sessionStorage.setItem(
+                REGISTRY_FILTERS_KEY,
+                JSON.stringify({
+                    anchor: toIsoDate(state.anchor),
+                    departmentId: $("registryDepartmentSelect")?.value || "",
+                    doctorId: $("registryDoctorSelect")?.value || ""
+                })
+            );
+        } catch {
+            /* ignore quota / private mode */
+        }
+    }
+
+    function restoreRegistryFilters() {
+        if (pageType !== "registry" || !$("registryDoctorSelect")) return;
+        let preservedDoctor = "";
+        try {
+            const raw = sessionStorage.getItem(REGISTRY_FILTERS_KEY);
+            if (raw) {
+                const data = JSON.parse(raw);
+                if (data.anchor) {
+                    const restored = new Date(`${data.anchor}T12:00:00`);
+                    if (!Number.isNaN(restored.getTime())) state.anchor = restored;
+                }
+                const deptSelect = $("registryDepartmentSelect");
+                if (deptSelect && data.departmentId) {
+                    const hasDept = Array.from(deptSelect.options).some((o) => o.value === data.departmentId);
+                    if (hasDept) deptSelect.value = data.departmentId;
+                }
+                preservedDoctor = data.doctorId || "";
+            }
+        } catch {
+            /* ignore corrupt storage */
+        }
+        ensureRegistryDefaultDepartment();
+        refreshRegistryDoctorSelect(preservedDoctor);
+    }
 
     function addDays(date, days) { const d = new Date(date); d.setDate(d.getDate() + days); return d; }
     function monthAnchor(date) { return new Date(date.getFullYear(), date.getMonth(), 1); }
@@ -62,9 +128,29 @@
     function paymentClass(ev) {
         if (ev.hasPaidInvoice) return "paid";
         const t = (ev.paymentType || "").toLowerCase();
-        return (!t || t === "unpaid" || t === "none") ? "unpaid" : "paid";
+        if (t === "qr_secore_paid" || t === "invoice_paid" || t === "paid") return "paid";
+        return "unpaid";
     }
-    function paymentText(ev) { return paymentClass(ev) === "paid" ? "Оплачено" : "Не оплачено"; }
+    function paymentText(ev) {
+        const t = (ev.paymentType || "").toLowerCase();
+        if (t === "qr_secore_paid") return "Оплачено через QR SECORE";
+        return paymentClass(ev) === "paid" ? "Оплачено" : "Не оплачено";
+    }
+    function paymentTypeLabel(ev) {
+        const t = (ev.paymentType || "").toLowerCase();
+        if (t === "qr_secore" || t === "qr_secore_paid") return "QR SECORE";
+        if (t === "qr_external") return "QR внешняя";
+        if (t === "card") return "Карта";
+        if (t === "cash") return "Наличные";
+        if (t === "online") return "Онлайн";
+        if (t === "insurance") return "Страховка";
+        if (t === "invoice_paid" || t === "paid") return "Оплачено";
+        return "Не указан";
+    }
+    function isQrSecoreType(ev) {
+        const t = (ev?.paymentType || "").toLowerCase();
+        return t === "qr_secore";
+    }
     function serviceText(ev) { return (ev.services || []).map((x) => x.name).filter(Boolean).join(", ") || (ev.title || "Прием"); }
     function eventTitle(ev) { return ev.patientName || ev.title || "Прием"; }
     function doctorMeta(doctorId) {
@@ -95,8 +181,93 @@
         const defaultReferral = getDoctorDefaultReferral(doctorId);
         if (defaultReferral) referral.value = defaultReferral;
     }
+    function getRegistryDoctorId() {
+        return $("registryDoctorSelect")?.value || "";
+    }
+    function registryDoctorsFiltered() {
+        const deptId = ($("registryDepartmentSelect")?.value || "").trim();
+        return state.doctorFilters.filter((doc) => {
+            const deptIds = doc.departmentIds || [];
+            if (!deptId) return true;
+            return deptIds.some((id) => String(id) === String(deptId));
+        });
+    }
+    function ensureRegistryDefaultDepartment() {
+        const deptSelect = $("registryDepartmentSelect");
+        if (!deptSelect || !state.departments?.length) return;
+        const val = (deptSelect.value || "").trim();
+        const ok = state.departments.some((d) => String(d.value) === String(val));
+        if (!ok) deptSelect.value = state.departments[0].value;
+    }
+    function refreshRegistryDoctorSelect(preserveDoctorId) {
+        const select = $("registryDoctorSelect");
+        const deptSelect = $("registryDepartmentSelect");
+        if (!select) return;
+        const deptId = (deptSelect?.value || "").trim();
+        const docs = registryDoctorsFiltered();
+        const current = preserveDoctorId || select.value;
+
+        if (!deptId) {
+            select.disabled = true;
+            select.innerHTML = "";
+            select.value = "";
+            return;
+        }
+
+        if (!docs.length) {
+            select.disabled = true;
+            select.innerHTML = '<option value="" disabled selected>Нет врачей</option>';
+            select.value = "";
+            return;
+        }
+
+        select.disabled = false;
+        select.innerHTML = docs.map((doc) => `<option value="${esc(doc.value)}">${esc(doc.label)}</option>`).join("");
+        if (current && docs.some((doc) => String(doc.value) === String(current))) select.value = current;
+        else select.value = docs[0].value;
+    }
+    function setupRegistryFilters() {
+        restoreRegistryFilters();
+        $("registryDepartmentSelect")?.addEventListener("change", () => {
+            refreshRegistryDoctorSelect();
+            saveRegistryFilters();
+            renderAll();
+        });
+        $("registryDoctorSelect")?.addEventListener("change", () => {
+            saveRegistryFilters();
+            renderAll();
+        });
+    }
+    function updateRegistryScheduleCaption() {
+        const cap = $("registryScheduleDoctorCaption");
+        const countBadge = $("registryScheduleDayCount");
+        if (!cap) return;
+        const doctorId = getRegistryDoctorId();
+        const dateStr = fd(state.anchor, { weekday: "long", day: "numeric", month: "long" });
+        if (!doctorId) {
+            cap.textContent = dateStr;
+            if (countBadge) countBadge.hidden = true;
+            return;
+        }
+        const meta = doctorMeta(doctorId);
+        cap.textContent = meta.subtitle
+            ? `${dateStr} · ${meta.name} · ${meta.subtitle}`
+            : `${dateStr} · ${meta.name}`;
+        if (countBadge) {
+            const count = state.events.filter(
+                (ev) => ev.doctorId === doctorId && sameDay(ev.start, state.anchor) && ev.isActive !== false
+            ).length;
+            countBadge.hidden = false;
+            countBadge.textContent = count ? `${count} ${count === 1 ? "запись" : count < 5 ? "записи" : "записей"}` : "Нет записей";
+        }
+    }
     function selectedDoctors() {
         if (pageType === "doctor") return state.doctorFilters;
+        if ($("registryDoctorSelect")) {
+            const doctorId = getRegistryDoctorId();
+            const doc = state.doctorFilters.find((x) => x.value === doctorId);
+            return doc ? [doc] : [];
+        }
         return state.doctorFilters
             .filter((doc) => state.selectedDoctorIds.has(doc.value))
             .filter((doc) => !doc.departmentIds?.length || doc.departmentIds.some((id) => state.selectedDepartmentIds.has(id)));
@@ -119,19 +290,212 @@
     function allHours() { return Array.from({ length: 10 }, (_, i) => 8 + i); }
     function setPeriodLabel() {
         const label = $("schedulePeriodLabel");
-        if (!label) return;
-        if (state.view === "day") { label.textContent = fd(state.anchor, { weekday: "long", day: "numeric", month: "long" }); return; }
-        if (state.view === "week") {
-            const s = startOfWeek(state.anchor); const e = addDays(s, 6);
-            label.textContent = `${fd(s, { day: "numeric", month: "long" })} — ${fd(e, { day: "numeric", month: "long" })}`;
-            return;
+        if (label) {
+            if (state.view === "day") { label.textContent = fd(state.anchor, { weekday: "long", day: "numeric", month: "long" }); }
+            else if (state.view === "week") {
+                const s = startOfWeek(state.anchor); const e = addDays(s, 6);
+                label.textContent = `${fd(s, { day: "numeric", month: "long" })} — ${fd(e, { day: "numeric", month: "long" })}`;
+            } else {
+                label.textContent = fd(state.anchor, { month: "long", year: "numeric" });
+            }
         }
-        label.textContent = fd(state.anchor, { month: "long", year: "numeric" });
+        syncRegistryFilterDate();
     }
-    function syncDatePicker() { const picker = $("scheduleDatePicker"); if (picker) picker.value = toIsoDate(state.anchor); }
-    function setHint(message) { const hint = $("appointmentScheduleHint"); if (hint) { hint.style.display = message ? "" : "none"; hint.textContent = message || ""; } }
+    function syncRegistryFilterDate() {
+        const weekday = $("registryFilterWeekday");
+        const dateLine = $("registryFilterDate");
+        if (!weekday && !dateLine) return;
+        const isToday = sameDay(state.anchor, new Date());
+        if (weekday) {
+            weekday.textContent = isToday
+                ? `Сегодня, ${fd(state.anchor, { weekday: "long" })}`
+                : fd(state.anchor, { weekday: "long" });
+        }
+        if (dateLine) dateLine.textContent = fd(state.anchor, { day: "numeric", month: "long" });
+    }
+    function syncDatePicker() {
+        const picker = $("scheduleDatePicker");
+        if (picker && picker.type === "date") picker.value = toIsoDate(state.anchor);
+        syncRegistryMonthUi();
+    }
+
+    const MONTH_NAMES_SHORT = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"];
+    let registryPickerYear = null;
+    let registryPickerMonth = null;
+
+    function setAnchorDate(year, monthIndex, day) {
+        const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+        const safeDay = Math.min(Math.max(1, day), lastDay);
+        state.anchor = new Date(year, monthIndex, safeDay);
+        saveRegistryFilters();
+        renderAll();
+    }
+
+    function shiftAnchorMonth(delta) {
+        const d = new Date(state.anchor);
+        d.setDate(1);
+        d.setMonth(d.getMonth() + delta);
+        const day = state.anchor.getDate();
+        const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+        d.setDate(Math.min(day, lastDay));
+        state.anchor = d;
+        saveRegistryFilters();
+        renderAll();
+    }
+
+    function syncRegistryMonthUi() {
+        const label = $("scheduleMonthLabel");
+        if (label) {
+            label.textContent = fd(state.anchor, { month: "long", year: "numeric" });
+        }
+        const panel = $("scheduleDatePanel");
+        if (panel && !panel.hidden && registryPickerYear != null && registryPickerMonth != null) {
+            drawRegistryDatePanel();
+        }
+    }
+
+    function drawRegistryDatePanel() {
+        if (registryPickerYear == null || registryPickerMonth == null) return;
+        drawRegistryMonthGrid(registryPickerYear);
+        drawRegistryDayGrid(registryPickerYear, registryPickerMonth);
+    }
+
+    function drawRegistryMonthGrid(year) {
+        const grid = $("scheduleMonthGrid");
+        const yearLabel = $("scheduleYearLabel");
+        if (!grid) return;
+        registryPickerYear = year;
+        if (yearLabel) yearLabel.textContent = String(year);
+        const now = new Date();
+        grid.innerHTML = MONTH_NAMES_SHORT.map((name, index) => {
+            const isActive = registryPickerYear === year && registryPickerMonth === index;
+            const isNow = now.getFullYear() === year && now.getMonth() === index;
+            const classes = ["registry-v2-month-chip"];
+            if (isActive) classes.push("is-active");
+            if (isNow) classes.push("is-now");
+            return `<button type="button" class="${classes.join(" ")}" data-month-index="${index}" role="option" aria-selected="${isActive}">${esc(name)}</button>`;
+        }).join("");
+        grid.querySelectorAll("[data-month-index]").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const monthIndex = Number(btn.dataset.monthIndex);
+                if (Number.isNaN(monthIndex)) return;
+                registryPickerMonth = monthIndex;
+                drawRegistryDatePanel();
+            });
+        });
+    }
+
+    function drawRegistryDayGrid(year, monthIndex) {
+        const grid = $("scheduleDayGrid");
+        if (!grid) return;
+        const first = new Date(year, monthIndex, 1);
+        const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+        const startOffset = (first.getDay() + 6) % 7;
+        const today = new Date();
+        const selectedDay = state.anchor.getDate();
+        const selectedSameMonth =
+            state.anchor.getFullYear() === year && state.anchor.getMonth() === monthIndex;
+
+        let html = "";
+        for (let i = 0; i < startOffset; i += 1) {
+            html += '<span class="registry-v2-day-chip registry-v2-day-chip--empty" aria-hidden="true"></span>';
+        }
+        for (let day = 1; day <= lastDay; day += 1) {
+            const isActive = selectedSameMonth && selectedDay === day;
+            const isToday =
+                today.getFullYear() === year &&
+                today.getMonth() === monthIndex &&
+                today.getDate() === day;
+            const classes = ["registry-v2-day-chip"];
+            if (isActive) classes.push("is-active");
+            if (isToday) classes.push("is-today");
+            html += `<button type="button" class="${classes.join(" ")}" data-day="${day}">${day}</button>`;
+        }
+        grid.innerHTML = html;
+        grid.querySelectorAll("[data-day]").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const day = Number(btn.dataset.day);
+                if (Number.isNaN(day)) return;
+                setAnchorDate(year, monthIndex, day);
+                closeRegistryDatePanel();
+            });
+        });
+    }
+
+    function registryDatePanelTrigger() {
+        return $("scheduleDateCore");
+    }
+
+    function openRegistryDatePanel() {
+        const panel = $("scheduleDatePanel");
+        const toggle = registryDatePanelTrigger();
+        if (!panel || !toggle) return;
+        registryPickerYear = state.anchor.getFullYear();
+        registryPickerMonth = state.anchor.getMonth();
+        drawRegistryDatePanel();
+        panel.hidden = false;
+        toggle.setAttribute("aria-expanded", "true");
+        toggle.closest(".registry-v2-month-popover-wrap")?.classList.add("is-open");
+    }
+
+    function closeRegistryDatePanel() {
+        const panel = $("scheduleDatePanel");
+        const toggle = registryDatePanelTrigger();
+        if (!panel || !toggle) return;
+        panel.hidden = true;
+        toggle.setAttribute("aria-expanded", "false");
+        toggle.closest(".registry-v2-month-popover-wrap")?.classList.remove("is-open");
+    }
+
+    function toggleRegistryDatePanel() {
+        const panel = $("scheduleDatePanel");
+        if (!panel) return;
+        if (panel.hidden) openRegistryDatePanel();
+        else closeRegistryDatePanel();
+    }
+
+    function setupRegistryMonthPicker() {
+        const core = $("scheduleDateCore");
+        if (!core) return;
+        core.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleRegistryDatePanel();
+        });
+        $("scheduleMonthPrev")?.addEventListener("click", () => shiftAnchorMonth(-1));
+        $("scheduleMonthNext")?.addEventListener("click", () => shiftAnchorMonth(1));
+        $("scheduleYearPrev")?.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (registryPickerYear == null) registryPickerYear = state.anchor.getFullYear();
+            if (registryPickerMonth == null) registryPickerMonth = state.anchor.getMonth();
+            registryPickerYear -= 1;
+            drawRegistryDatePanel();
+        });
+        $("scheduleYearNext")?.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (registryPickerYear == null) registryPickerYear = state.anchor.getFullYear();
+            if (registryPickerMonth == null) registryPickerMonth = state.anchor.getMonth();
+            registryPickerYear += 1;
+            drawRegistryDatePanel();
+        });
+        document.addEventListener("click", (e) => {
+            if (!e.target.closest(".registry-v2-month-popover-wrap")) closeRegistryDatePanel();
+        });
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") closeRegistryDatePanel();
+        });
+        syncRegistryMonthUi();
+    }
+    function setHint(message) { const hint = $("appointmentScheduleHint"); if (hint) { hint.classList.toggle("d-none", !message); hint.textContent = message || ""; } }
     function applyEditorMode(mode) {
         const isVisit = mode === "visit";
+        const createShell = $("appointmentEditorCreateShell");
+        const visitShell = $("appointmentEditorVisitShell");
+        if (createShell) createShell.classList.toggle("d-none", isVisit);
+        if (visitShell) visitShell.classList.toggle("d-none", !isVisit);
+        $("appointmentSaveDraftButton")?.classList.toggle("d-none", !isVisit);
         document.querySelectorAll("[data-editor-section]").forEach((node) => {
             const sectionMode = node.getAttribute("data-editor-section") || "";
             if (sectionMode.includes("visit")) {
@@ -140,18 +504,24 @@
         });
 
         const editorBody = $("appointmentForm");
-        const sideColumn = document.querySelector("#appointmentEditorModal .appointment-editor-side");
-        const hasVisibleSideContent = sideColumn
-            ? Array.from(sideColumn.children).some((child) => window.getComputedStyle(child).display !== "none")
-            : false;
         if (editorBody) {
-            editorBody.classList.toggle("appointment-editor-body--single", !hasVisibleSideContent);
+            editorBody.classList.toggle("appointment-editor-body--single", !isVisit);
+        }
+    }
+    function updateCreateContext(doctorId, slotDate, endDate) {
+        const nameEl = $("appointmentCreateDoctorName");
+        const slotEl = $("appointmentCreateSlotSummary");
+        const meta = doctorMeta(doctorId);
+        if (nameEl) nameEl.textContent = meta.subtitle ? `${meta.name} · ${meta.subtitle}` : meta.name;
+        if (slotEl && slotDate) {
+            const end = endDate || slotDate;
+            slotEl.textContent = `${fd(slotDate, { weekday: "long", day: "numeric", month: "long" })} · ${ft(slotDate)} – ${ft(end)}`;
         }
     }
     function syncPaymentStatusControl(eventItem) {
         const select = $("appointmentPaymentType");
         const hint = $("appointmentPaymentTypeHint");
-        if (!select) return;
+        if (!select || select.type === "hidden") return;
 
         const hasPaidInvoice = !!eventItem?.hasPaidInvoice;
         if (hasPaidInvoice) {
@@ -259,6 +629,10 @@
     function renderServices() {
         const tb = $("appointmentServicesTable");
         const totalNode = $("appointmentServicesTotal");
+        if ($("appointmentSelectedServices") && typeof window.medclinicRenderSelectedServices === "function") {
+            window.medclinicRenderSelectedServices();
+            return;
+        }
         if (!tb) return;
         if (!state.selectedServices.length) {
             tb.innerHTML = '<tr class="appointment-services-empty"><td colspan="4" class="text-center text-muted py-4">Пока услуги не выбраны.</td></tr>';
@@ -331,32 +705,469 @@
         drawList();
     }
 
+    function formatAppointmentStatus(status) {
+        const value = (status || "").toLowerCase();
+        if (value === "busy" || value === "active") return "Активна";
+        if (value === "draft") return "Черновик";
+        if (value === "cancelled") return "Отменена";
+        return status || "—";
+    }
+
     function openDetails(eventItem) {
+        showDetailsMainView();
         state.selectedEvent = eventItem;
+        state.detailsQrInvoiceId = null;
+        showDetailsMainView();
+        const payLabel = paymentText(eventItem);
+        const payCls = paymentClass(eventItem);
         if ($("appointmentDetailsTitle")) $("appointmentDetailsTitle").textContent = eventTitle(eventItem);
-        if ($("appointmentDetailsSubtitle")) $("appointmentDetailsSubtitle").textContent = `${fd(eventItem.start, { day: "numeric", month: "long", year: "numeric" })} · ${ft(eventItem.start)} - ${ft(eventItem.end)}`;
-        const set = (id, value, fallback = "—") => { const node = $(id); if (node) node.textContent = value || fallback; };
-        set("appointmentDetailsPatient", eventItem.patientName);
+        if ($("appointmentDetailsSubtitle")) {
+            $("appointmentDetailsSubtitle").textContent = `${fd(eventItem.start, { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · ${ft(eventItem.start)} – ${ft(eventItem.end)}`;
+        }
+        const badge = $("appointmentDetailsPaymentBadge");
+        if (badge) {
+            badge.textContent = payLabel;
+            badge.className = `appointment-details-modal__pay-badge status-${payCls}`;
+        }
+        const chip = $("appointmentDetailsPaymentChip");
+        if (chip) chip.textContent = paymentTypeLabel(eventItem);
+        const set = (id, value, fallback = "—") => {
+            const node = $(id);
+            if (!node) return;
+            node.textContent = value || fallback;
+            if (id === "appointmentDetailsNotes" || id === "appointmentDetailsHistory") {
+                node.classList.toggle("is-empty", !(value || "").trim() || value === fallback);
+            }
+        };
+        const patientName = eventItem.patientName || "—";
+        set("appointmentDetailsPatient", patientName);
+        const avatar = $("appointmentDetailsPatientAvatar");
+        if (avatar) {
+            const letter = (patientName || "?").trim().charAt(0).toUpperCase() || "?";
+            avatar.textContent = letter;
+        }
         set("appointmentDetailsPhone", eventItem.phone);
         set("appointmentDetailsEmail", eventItem.email);
         set("appointmentDetailsDoctor", eventItem.doctor || doctorMeta(eventItem.doctorId).name);
-        set("appointmentDetailsDateTime", `${fd(eventItem.start, { day: "numeric", month: "long", year: "numeric" })}, ${ft(eventItem.start)} - ${ft(eventItem.end)}`);
-        set("appointmentDetailsPaymentType", paymentText(eventItem));
-        set("appointmentDetailsStatus", eventItem.status || "active");
-        const historyText = state.events
+        set("appointmentDetailsDateTime", `${fd(eventItem.start, { day: "numeric", month: "long", year: "numeric" })}, ${ft(eventItem.start)} – ${ft(eventItem.end)}`);
+        set("appointmentDetailsStatus", formatAppointmentStatus(eventItem.status));
+        const historyItems = state.events
             .filter((x) => x.id !== eventItem.id && eventItem.patientId && x.patientId === eventItem.patientId)
             .sort((a, b) => b.start - a.start)
-            .slice(0, 5)
-            .map((x) => `${fd(x.start, { day: "2-digit", month: "2-digit", year: "numeric" })} ${ft(x.start)} - ${paymentText(x)}`)
-            .join("\n");
-        set("appointmentDetailsHistory", historyText, "Предыдущих приемов не найдено.");
+            .slice(0, 5);
+        const historyText = historyItems.length
+            ? historyItems
+                .map((x) => `${fd(x.start, { day: "2-digit", month: "2-digit", year: "numeric" })} ${ft(x.start)} · ${paymentText(x)}`)
+                .join("\n")
+            : "";
+        set("appointmentDetailsHistory", historyText, "Предыдущих приёмов не найдено.");
         set("appointmentDetailsReferral", eventItem.referralSource);
         const noteModel = parseMedicalNotes(eventItem.notes || "");
-        const summary = [noteModel.complaints && `Жалобы: ${noteModel.complaints}`, noteModel.diagnosis && `Диагноз: ${noteModel.diagnosis}`, noteModel.recommendations && `Рекомендации: ${noteModel.recommendations}`, noteModel.researchReferral && `Направления: ${noteModel.researchReferral}`, noteModel.comment && `Комментарий: ${noteModel.comment}`].filter(Boolean).join("\n\n");
-        set("appointmentDetailsNotes", summary || eventItem.notes || "—");
-        const serviceTable = $("appointmentDetailsServices");
-        if (serviceTable) serviceTable.innerHTML = (eventItem.services || []).length ? eventItem.services.map((x) => `<tr><td>${esc(x.name)}</td><td>${fm(x.priceTyiyn)}</td><td>${x.quantity}</td></tr>`).join("") : '<tr><td colspan="3" class="text-center text-muted py-4">Услуги не выбраны.</td></tr>';
+        const summary = [
+            noteModel.complaints && `Жалобы: ${noteModel.complaints}`,
+            noteModel.diagnosis && `Диагноз: ${noteModel.diagnosis}`,
+            noteModel.recommendations && `Рекомендации: ${noteModel.recommendations}`,
+            noteModel.researchReferral && `Направления: ${noteModel.researchReferral}`,
+            noteModel.comment && `Комментарий: ${noteModel.comment}`
+        ]
+            .filter(Boolean)
+            .join("\n\n");
+        set("appointmentDetailsNotes", summary || eventItem.notes || "—", "Комментарий не указан.");
+        const serviceBox = $("appointmentDetailsServices");
+        const services = eventItem.services || [];
+        let servicesTotal = 0;
+        if (serviceBox) {
+            if (!services.length) {
+                serviceBox.innerHTML = '<div class="ad-services__empty">Услуги не выбраны</div>';
+            } else {
+                serviceBox.innerHTML = services
+                    .map((x) => {
+                        const qty = Math.max(1, Number(x.quantity || 1));
+                        const line = Number(x.priceTyiyn || 0) * qty;
+                        servicesTotal += line;
+                        const name = esc(x.name || "Услуга");
+                        return `<div class="ad-service-row" role="listitem"><span class="ad-service-row__name" title="${name}">${name}</span><span class="ad-service-row__qty">× ${qty}</span><span class="ad-service-row__price">${fm(line)}</span></div>`;
+                    })
+                    .join("");
+            }
+        }
+        const totalNode = $("appointmentDetailsServicesTotal");
+        if (totalNode) {
+            totalNode.textContent = services.length ? `Итого: ${fm(servicesTotal)}` : "";
+        }
+        syncDetailsActionButtons(eventItem);
         detailsModal?.show();
+    }
+
+    function syncDetailsActionButtons(ev) {
+        const qrBtn = $("appointmentDetailsShowQrButton");
+        const paidBtn = $("appointmentDetailsMarkPaidButton");
+        const downloadBtn = $("appointmentDetailsDownloadInvoiceButton");
+        const showQr = !!ev && isQrSecoreType(ev) && paymentClass(ev) !== "paid";
+        const showPaid = !!ev && canShowMarkPaid(ev);
+        const showDownload = !!ev && paymentClass(ev) !== "paid";
+        if (qrBtn) qrBtn.classList.toggle("d-none", !showQr);
+        if (paidBtn) paidBtn.classList.toggle("d-none", !showPaid);
+        if (downloadBtn) downloadBtn.classList.toggle("d-none", !showDownload);
+    }
+
+    async function downloadAppointmentInvoicePdf() {
+        const ev = state.selectedEvent;
+        if (!ev?.id) return;
+        if (!appointmentInvoiceUrl) {
+            window.MedclinicUI?.showToast("Скачивание счёта недоступно.", "warning");
+            return;
+        }
+        const btn = $("appointmentDetailsDownloadInvoiceButton");
+        window.MedclinicUI?.setButtonLoading?.(btn, true, { label: "Подготовка…" });
+        try {
+            const response = await fetch(`${appointmentInvoiceUrl}?appointmentId=${encodeURIComponent(ev.id)}`, {
+                headers: { "X-Requested-With": "XMLHttpRequest" }
+            });
+            const { result } = await readJsonResponse(response);
+            if (!response.ok || !result.success || !result.invoiceId) {
+                throw new Error(result.message || "Не удалось получить счёт.");
+            }
+            window.open(`/Invoices/DownloadPdf?id=${encodeURIComponent(result.invoiceId)}`, "_blank", "noopener,noreferrer");
+        } catch (error) {
+            window.MedclinicUI?.showToast(error.message || "Не удалось скачать счёт.", "danger");
+        } finally {
+            window.MedclinicUI?.setButtonLoading?.(btn, false);
+        }
+    }
+
+    function showDetailsMainView() {
+        const main = $("appointmentDetailsMainView");
+        const qr = $("appointmentDetailsQrView");
+        if (main) main.classList.remove("d-none");
+        if (qr) {
+            qr.classList.add("d-none");
+            qr.setAttribute("aria-hidden", "true");
+        }
+    }
+
+    function showDetailsQrView() {
+        const main = $("appointmentDetailsMainView");
+        const qr = $("appointmentDetailsQrView");
+        if (main) main.classList.add("d-none");
+        if (qr) {
+            qr.classList.remove("d-none");
+            qr.setAttribute("aria-hidden", "false");
+        }
+    }
+
+    function renderAppointmentQr(bodyEl, payload) {
+        if (!bodyEl) return;
+        const link = payload?.qrLink;
+        const b64 = payload?.qrCodeBase64;
+        const payCode = payload?.payCode || "";
+        const amount = Number(payload?.amountTyiyn || 0);
+        const logoSrc = "/web/kindergarten/img/secore-logo.png";
+        const amountHtml = amount > 0 ? `<div class="ad-qr-amount">${esc(fm(amount))}</div>` : "";
+        const payCodeHtml = payCode ? `<span class="ad-qr-paycode">Лицевой счёт: ${esc(payCode)}</span>` : "";
+        const hint = `<p class="ad-qr-hint">Отсканируйте код в приложении банка для оплаты${payCodeHtml}</p>${amountHtml}`;
+
+        if (b64) {
+            bodyEl.innerHTML =
+                `<div class="ad-qr-frame"><img src="data:image/png;base64,${b64}" alt="QR для оплаты" width="280" height="280" /><img class="ad-qr-logo" src="${logoSrc}" alt="SECORE" width="52" height="52" /></div>${hint}`;
+            return;
+        }
+
+        if (link && typeof QRCode !== "undefined") {
+            bodyEl.innerHTML =
+                `<div class="ad-qr-frame"><canvas id="appointmentPayQrCanvas" width="280" height="280" aria-label="QR для оплаты"></canvas><img class="ad-qr-logo" src="${logoSrc}" alt="SECORE" width="52" height="52" /></div>${hint}`;
+            const canvas = document.getElementById("appointmentPayQrCanvas");
+            QRCode.toCanvas(canvas, link, {
+                width: 280,
+                margin: 1,
+                color: { dark: "#0c4a6e", light: "#ffffff" }
+            }, (err) => {
+                if (err) bodyEl.innerHTML = '<div class="ad-qr-error">Не удалось построить QR</div>';
+            });
+            return;
+        }
+
+        bodyEl.innerHTML = '<div class="ad-qr-error">QR ещё не сформирован для этой записи.</div>';
+    }
+
+    async function openAppointmentQrScreen() {
+        const ev = state.selectedEvent;
+        if (!ev?.id || !paymentQrUrl) {
+            window.MedclinicUI?.showToast("QR недоступен для этой записи.", "warning");
+            return;
+        }
+        showDetailsQrView();
+        const body = $("appointmentDetailsQrBody");
+        const sub = $("appointmentDetailsQrSubtitle");
+        const download = $("appointmentDetailsQrDownload");
+        const waBtn = $("appointmentDetailsQrWhatsApp");
+        if (sub) sub.textContent = eventTitle(ev);
+        if (body) body.innerHTML = '<div class="ad-qr-loading">Загрузка QR…</div>';
+        if (download) {
+            download.href = "#";
+            download.classList.add("is-disabled");
+        }
+        if (waBtn) waBtn.disabled = true;
+        state.detailsQrInvoiceId = null;
+
+        window.MedclinicUI?.showPageOverlay?.("Загрузка QR…");
+        try {
+            const response = await fetch(`${paymentQrUrl}?appointmentId=${encodeURIComponent(ev.id)}`, {
+                headers: { "X-Requested-With": "XMLHttpRequest" }
+            });
+            const { result } = await readJsonResponse(response);
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || "Не удалось загрузить QR.");
+            }
+            state.detailsQrInvoiceId = result.invoiceId || null;
+            if (sub) {
+                const bits = [eventTitle(ev)];
+                if (result.payCode) bits.push(`Л/с ${result.payCode}`);
+                sub.textContent = bits.join(" · ");
+            }
+            renderAppointmentQr(body, result);
+            if (download && result.invoiceId) {
+                download.href = `/Invoices/DownloadPdf?id=${encodeURIComponent(result.invoiceId)}`;
+                download.classList.remove("is-disabled");
+            }
+            if (waBtn) waBtn.disabled = !result.invoiceId;
+        } catch (error) {
+            if (body) body.innerHTML = `<div class="ad-qr-error">${esc(error.message || "Ошибка загрузки QR")}</div>`;
+        } finally {
+            window.MedclinicUI?.hidePageOverlay?.();
+        }
+    }
+
+    async function sendAppointmentInvoiceWhatsApp() {
+        const ev = state.selectedEvent;
+        const invoiceId = state.detailsQrInvoiceId;
+        if (!ev?.id || !invoiceId || !sendInvoiceWhatsAppUrl) return;
+        const btn = $("appointmentDetailsQrWhatsApp");
+        window.MedclinicUI?.showPageOverlay?.("Отправка в WhatsApp…");
+        try {
+            const response = await fetch(sendInvoiceWhatsAppUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Requested-With": "XMLHttpRequest",
+                    ...(token() ? { RequestVerificationToken: token() } : {})
+                },
+                body: JSON.stringify({ appointmentId: ev.id, invoiceId })
+            });
+            const { result } = await readJsonResponse(response);
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || "Не удалось отправить в WhatsApp.");
+            }
+            window.MedclinicUI?.showToast(result.message || "Счёт поставлен в очередь WhatsApp.", "success");
+        } catch (error) {
+            window.MedclinicUI?.showToast(error.message || "Не удалось отправить в WhatsApp.", "danger");
+        } finally {
+            window.MedclinicUI?.hidePageOverlay?.();
+            window.MedclinicUI?.setButtonLoading?.(btn, false);
+        }
+    }
+
+    function openVisitFromDetails() {
+        if (!state.selectedEvent) return;
+        if (!canManageAppointments) {
+            window.MedclinicUI?.showToast("Недостаточно прав для проведения приёма.", "danger");
+            return;
+        }
+        state.returnToDetails = true;
+        $("appointmentEditorBackToDetails")?.classList.remove("d-none");
+        openEditor(state.selectedEvent, state.selectedEvent.start);
+    }
+
+    function setRescheduleHint(message) {
+        const hint = $("appointmentRescheduleHint");
+        if (!hint) return;
+        hint.classList.toggle("d-none", !message);
+        hint.textContent = message || "";
+    }
+
+    function setRescheduleFormBusy(busy) {
+        const fieldset = $("appointmentRescheduleFieldset");
+        if (fieldset) fieldset.disabled = busy;
+        $("appointmentRescheduleModal")?.querySelectorAll('[data-bs-dismiss="modal"], .appointment-reschedule-back').forEach((el) => {
+            el.disabled = busy;
+        });
+    }
+
+    function renderRescheduleSlots() {
+        const box = $("appointmentRescheduleSlots");
+        const doctorId = $("appointmentRescheduleDoctorId")?.value || "";
+        const dateValue = $("appointmentRescheduleDate")?.value || "";
+        const appointmentId = $("appointmentRescheduleId")?.value || "";
+        const summary = $("appointmentRescheduleSlotSummary");
+        if (!box) return;
+        if (!doctorId || !dateValue) {
+            box.innerHTML = '<span class="text-muted small">Выберите дату приёма.</span>';
+            return;
+        }
+        const schedule = doctorSchedule(doctorId, dateValue);
+        if (!schedule || !schedule.isWorking) {
+            box.innerHTML = '<span class="text-muted small">Врач не принимает в этот день.</span>';
+            return;
+        }
+        const duration = durationForDoctor(doctorId);
+        const start = timeToMin(schedule.startTime);
+        const end = timeToMin(schedule.endTime);
+        if (start == null || end == null || end <= start) {
+            box.innerHTML = '<span class="text-muted small">Нет доступных слотов.</span>';
+            return;
+        }
+        const unavailable = unavailableIntervalsForDoctorDate(doctorId, dateValue, appointmentId);
+        const selectedStart = $("appointmentRescheduleStart")?.value || "";
+        const html = [];
+        for (let m = start; m + duration <= end; m += duration) {
+            const overlapsBusy = unavailable.some((interval) => m < interval.end && m + duration > interval.start);
+            if (overlapsBusy) continue;
+            const s = minutesToTime(m);
+            const e = minutesToTime(m + duration);
+            const active = selectedStart === s ? " is-active" : "";
+            html.push(`<button type="button" class="appointment-reschedule-slot${active}" data-start="${s}" data-end="${e}">${s}</button>`);
+        }
+        if (!html.length) {
+            box.innerHTML = '<span class="text-muted small">Свободных слотов на этот день нет.</span>';
+            return;
+        }
+        box.innerHTML = html.join("");
+        box.querySelectorAll(".appointment-reschedule-slot").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                box.querySelectorAll(".appointment-reschedule-slot").forEach((b) => b.classList.remove("is-active"));
+                btn.classList.add("is-active");
+                if ($("appointmentRescheduleStart")) $("appointmentRescheduleStart").value = btn.dataset.start || "";
+                if ($("appointmentRescheduleEnd")) $("appointmentRescheduleEnd").value = btn.dataset.end || "";
+                if (summary) summary.textContent = `Выбрано: ${btn.dataset.start} – ${btn.dataset.end}`;
+                validateRescheduleForm();
+            });
+        });
+    }
+
+    function validateRescheduleForm() {
+        const btn = $("appointmentRescheduleSaveButton");
+        if (!btn) return;
+        const name = ($("appointmentReschedulePatientName")?.value || "").trim();
+        const dateValue = $("appointmentRescheduleDate")?.value || "";
+        const start = $("appointmentRescheduleStart")?.value || "";
+        const end = $("appointmentRescheduleEnd")?.value || "";
+        const hasServices = (state.selectedServices?.length || 0) > 0;
+        btn.disabled = !name || !dateValue || !start || !end || !hasServices;
+    }
+    window.medclinicValidateRescheduleForm = validateRescheduleForm;
+
+    function openRescheduleModal(ev) {
+        if (!ev?.id || !canManageAppointments) return;
+        state.selectedEvent = ev;
+        state.returnToDetails = true;
+        const notesModel = parseMedicalNotes(ev.notes || "");
+        if ($("appointmentRescheduleId")) $("appointmentRescheduleId").value = ev.id;
+        if ($("appointmentRescheduleDoctorId")) $("appointmentRescheduleDoctorId").value = ev.doctorId || "";
+        if ($("appointmentReschedulePatientId")) $("appointmentReschedulePatientId").value = ev.patientId || "";
+        if ($("appointmentReschedulePaymentType")) $("appointmentReschedulePaymentType").value = ev.paymentType || "unpaid";
+        if ($("appointmentReschedulePatientName")) $("appointmentReschedulePatientName").value = ev.patientName || "";
+        if ($("appointmentReschedulePhone")) $("appointmentReschedulePhone").value = ev.phone || "";
+        if ($("appointmentRescheduleEmail")) $("appointmentRescheduleEmail").value = ev.email || "";
+        if ($("appointmentRescheduleComment")) $("appointmentRescheduleComment").value = notesModel.comment || (ev.notes && !String(ev.notes).startsWith("__medjson__") ? ev.notes : "") || "";
+        if ($("appointmentRescheduleDate")) $("appointmentRescheduleDate").value = toIsoDate(ev.start);
+        if ($("appointmentRescheduleStart")) $("appointmentRescheduleStart").value = ft(ev.start);
+        if ($("appointmentRescheduleEnd")) $("appointmentRescheduleEnd").value = ft(ev.end);
+        const meta = doctorMeta(ev.doctorId);
+        const ctx = $("appointmentRescheduleContext");
+        if (ctx) {
+            ctx.innerHTML = `<strong>${esc(meta.name)}</strong><span>${esc(meta.subtitle)}</span><span>${esc(paymentTypeLabel(ev))} · ${esc(paymentText(ev))}</span>`;
+        }
+        if ($("appointmentRescheduleSubtitle")) {
+            $("appointmentRescheduleSubtitle").textContent = `${fd(ev.start, { weekday: "long", day: "numeric", month: "long" })} · ${ft(ev.start)} – ${ft(ev.end)}`;
+        }
+        state.selectedServices = (ev.services || []).map((x) => ({
+            organizationServiceId: x.organizationServiceId || null,
+            serviceName: x.name || "Услуга",
+            priceTyiyn: Number(x.priceTyiyn || 0),
+            quantity: Number(x.quantity || 1)
+        }));
+        window.medclinicRenderRescheduleServices?.();
+        window.medclinicRefreshRescheduleCatalog?.();
+        renderRescheduleSlots();
+        const slotSummary = $("appointmentRescheduleSlotSummary");
+        if (slotSummary) slotSummary.textContent = `Текущий слот: ${ft(ev.start)} – ${ft(ev.end)}`;
+        validateRescheduleForm();
+        setRescheduleHint("");
+        detailsModal?.hide();
+        rescheduleModal?.show();
+    }
+
+    async function saveReschedule() {
+        const btn = $("appointmentRescheduleSaveButton");
+        if (btn?.disabled || !p.saveUrl) return;
+        const appointmentId = $("appointmentRescheduleId")?.value || "";
+        const patientName = ($("appointmentReschedulePatientName")?.value || "").trim();
+        const services = (state.selectedServices || []).map((s) => ({
+            organizationServiceId: s.organizationServiceId || null,
+            serviceName: s.serviceName || null,
+            priceTyiyn: Number(s.priceTyiyn || 0),
+            quantity: Math.max(1, Number(s.quantity || 1))
+        }));
+        const request = {
+            appointmentId,
+            patientId: $("appointmentReschedulePatientId")?.value || null,
+            patientName,
+            doctorId: $("appointmentRescheduleDoctorId")?.value || "",
+            phone: $("appointmentReschedulePhone")?.value || null,
+            email: $("appointmentRescheduleEmail")?.value || null,
+            comment: (() => {
+                const plain = ($("appointmentRescheduleComment")?.value || "").trim();
+                const evNotes = state.selectedEvent?.notes || "";
+                if (String(evNotes).startsWith("__medjson__")) {
+                    const model = parseMedicalNotes(evNotes);
+                    return `__medjson__${JSON.stringify({ ...model, comment: plain || model.comment || "" })}`;
+                }
+                return plain || null;
+            })(),
+            appointmentDate: $("appointmentRescheduleDate")?.value || "",
+            startTime: $("appointmentRescheduleStart")?.value || "",
+            endTime: $("appointmentRescheduleEnd")?.value || "",
+            paymentType: $("appointmentReschedulePaymentType")?.value || "unpaid",
+            appointmentStatus: "active",
+            isActive: true,
+            usePhoneAsWhatsApp: true,
+            services
+        };
+        window.MedclinicUI?.setButtonLoading?.(btn, true, { label: "Сохранение..." });
+        setRescheduleFormBusy(true);
+        window.MedclinicUI?.showPageOverlay?.("Сохранение изменений…");
+        try {
+            const response = await fetch(p.saveUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Requested-With": "XMLHttpRequest",
+                    ...(token() ? { RequestVerificationToken: token() } : {})
+                },
+                body: JSON.stringify(request)
+            });
+            const { result } = await readJsonResponse(response);
+            if (!response.ok || !result.success) throw new Error(result.message || "Не удалось сохранить изменения.");
+            if (result.eventItem) upsertEventFromServer(result.eventItem);
+            state.returnToDetails = false;
+            state.selectedEvent = null;
+            rescheduleModal?.hide();
+            detailsModal?.hide();
+            saveRegistryFilters();
+            window.medclinicRenderAll?.();
+            const toastKind =
+                result.message &&
+                (String(result.message).includes("не обновлён") || String(result.message).includes("не создан"))
+                    ? "warning"
+                    : "success";
+            window.MedclinicUI?.showToast(result.message || "Запись обновлена.", toastKind);
+        } catch (error) {
+            window.MedclinicUI?.showToast(error.message || "Не удалось сохранить изменения.", "danger");
+        } finally {
+            setRescheduleFormBusy(false);
+            window.MedclinicUI?.hidePageOverlay?.();
+            window.MedclinicUI?.setButtonLoading?.(btn, false);
+        }
     }
 
     function openPeriod(date) {
@@ -378,27 +1189,45 @@
     function openEditor(ev, slotDate) {
         if (!canManageAppointments) return;
         const isExistingEvent = !!ev?.id;
+        if (!isExistingEvent) {
+            state.returnToDetails = false;
+            $("appointmentEditorBackToDetails")?.classList.add("d-none");
+        }
         applyEditorMode(isExistingEvent ? "visit" : "create");
-        if ($("appointmentEditorTitle")) $("appointmentEditorTitle").textContent = isExistingEvent ? "Проведение приема" : "Создание записи";
-        if ($("appointmentEditorSubtitle")) $("appointmentEditorSubtitle").textContent = isExistingEvent ? "Заполните данные и медицинскую часть" : "Выберите время, услуги и сохраните запись";
-        if ($("appointmentSaveButton")) $("appointmentSaveButton").textContent = isExistingEvent ? "Сохранить прием" : "Сохранить запись";
+        if ($("appointmentEditorTitle")) $("appointmentEditorTitle").textContent = isExistingEvent ? "Проведение приёма" : "Новая запись";
+        if ($("appointmentEditorSubtitle")) {
+            $("appointmentEditorSubtitle").textContent = isExistingEvent
+                ? `${eventTitle(ev)} · ${fd(ev.start, { day: "numeric", month: "long" })} ${ft(ev.start)} – ${ft(ev.end)}`
+                : "";
+        }
+        const saveBtn = $("appointmentSaveButton");
+        if (saveBtn) {
+            saveBtn.textContent = isExistingEvent ? "Сохранить приём" : "Зарегистрировать запись";
+            saveBtn.dataset.loadingText = isExistingEvent ? "Сохранение..." : "Регистрация...";
+        }
         if (!ev || !ev.id) {
-            ["appointmentId", "appointmentPatientId", "appointmentPatientName", "appointmentPhone", "appointmentEmail", "appointmentReferral", "appointmentComment"].forEach((id) => { if ($(id)) $(id).value = ""; });
+            ["appointmentId", "appointmentPatientId", "appointmentPatientName", "appointmentPhone", "appointmentEmail", "appointmentComment"].forEach((id) => { if ($(id)) $(id).value = ""; });
+            if ($("appointmentReferral")) $("appointmentReferral").value = "";
             if ($("appointmentPatient")) $("appointmentPatient").selectedIndex = 0;
             const date = slotDate || new Date();
-            if ($("appointmentDoctor")) $("appointmentDoctor").value = ev?.doctorId || p.currentDoctorId || "";
-            if ($("appointmentDate")) $("appointmentDate").value = date.toISOString().slice(0, 10);
+            const doctorId = ev?.doctorId || (pageType === "registry" ? getRegistryDoctorId() : "") || p.currentDoctorId || "";
+            if ($("appointmentDoctor")) $("appointmentDoctor").value = doctorId;
+            if ($("appointmentDate")) $("appointmentDate").value = toIsoDate(date);
             if ($("appointmentStart")) $("appointmentStart").value = `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
             const end = new Date(date);
-            end.setMinutes(end.getMinutes() + durationForDoctor(resolveDoctorIdForEditor() || ev?.doctorId));
+            end.setMinutes(end.getMinutes() + durationForDoctor(doctorId));
             if ($("appointmentEnd")) $("appointmentEnd").value = `${String(end.getHours()).padStart(2, "0")}:${String(end.getMinutes()).padStart(2, "0")}`;
-            if ($("appointmentPaymentType")) $("appointmentPaymentType").value = "unpaid";
+            if ($("appointmentPaymentType")) $("appointmentPaymentType").value = "qr_secore";
+            const defaultPay = document.querySelector('input[name="appointmentPaymentChoice"][value="qr_secore"]');
+            if (defaultPay) defaultPay.checked = true;
+            window.medclinicAppointmentCreate?.syncPayment?.();
             if ($("appointmentStatus")) $("appointmentStatus").value = "active";
             if ($("appointmentIsActive")) $("appointmentIsActive").checked = true;
             fillMedicalFields("");
             state.selectedServices = [];
             renderServices();
-            applyDoctorDefaults(resolveDoctorIdForEditor());
+            updateCreateContext(doctorId, date, end);
+            applyDoctorDefaults(doctorId);
         } else {
             if ($("appointmentId")) $("appointmentId").value = ev.id || "";
             if ($("appointmentPatient")) $("appointmentPatient").value = ev.patientId || "";
@@ -407,9 +1236,11 @@
             if ($("appointmentDoctor")) $("appointmentDoctor").value = ev.doctorId || "";
             if ($("appointmentPhone")) $("appointmentPhone").value = ev.phone || "";
             if ($("appointmentEmail")) $("appointmentEmail").value = ev.email || "";
-            if ($("appointmentDate")) $("appointmentDate").value = ev.start.toISOString().slice(0, 10);
-            if ($("appointmentStart")) $("appointmentStart").value = ev.start.toTimeString().slice(0, 5);
-            if ($("appointmentEnd")) $("appointmentEnd").value = ev.end.toTimeString().slice(0, 5);
+            if ($("appointmentDate")) $("appointmentDate").value = toIsoDate(ev.start);
+            if ($("appointmentStart")) $("appointmentStart").value = ft(ev.start);
+            if ($("appointmentEnd")) $("appointmentEnd").value = ft(ev.end);
+            if ($("appointmentVisitPatientName")) $("appointmentVisitPatientName").value = ev.patientName || eventTitle(ev);
+            if ($("appointmentVisitDateTime")) $("appointmentVisitDateTime").value = `${fd(ev.start, { day: "numeric", month: "long", year: "numeric" })} · ${ft(ev.start)} – ${ft(ev.end)}`;
             if ($("appointmentReferral")) $("appointmentReferral").value = ev.referralSource || "";
             if ($("appointmentPaymentType")) $("appointmentPaymentType").value = ev.paymentType || "unpaid";
             const notesModel = parseMedicalNotes(ev.notes || "");
@@ -425,42 +1256,90 @@
         editorModal?.show();
     }
 
-    async function cancelSelected() {
-        if (!state.selectedEvent?.id || !p.cancelUrl) return;
-        if (!confirm("Отменить выбранную запись?")) return;
-        const btn = $("appointmentDetailsCancelButton");
-        const text = btn?.textContent || "Отменить запись";
-        if (btn) { btn.disabled = true; btn.textContent = "Отмена..."; }
-        try {
-            const response = await fetch(p.cancelUrl, { method: "POST", headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest", ...(token() ? { RequestVerificationToken: token() } : {}) }, body: JSON.stringify({ appointmentId: state.selectedEvent.id }) });
-            const result = await response.json();
-            if (!response.ok || !result.success) throw new Error(result.message || "Не удалось отменить запись.");
-            window.location.reload();
-        } catch (error) {
-            window.alert(error.message || "Не удалось отменить запись.");
-            if (btn) { btn.disabled = false; btn.textContent = text; }
-        }
+    function isAppointmentPaid(ev) {
+        if (!ev) return false;
+        return !!ev.hasPaidInvoice || paymentClass(ev) === "paid";
     }
 
-    async function generateInvoice() {
-        if (!canGenerateInvoice || !p.generateInvoiceUrl || !state.selectedEvent?.id) return;
-        const btn = $("appointmentGenerateInvoiceButton");
-        const text = btn?.textContent || "Счет на оплату";
-        if (btn) { btn.disabled = true; btn.textContent = "Формирование..."; }
+    async function cancelSelected() {
+        if (!state.selectedEvent?.id || !p.cancelUrl) return;
+        const ui = window.MedclinicUI || {};
+        const ev = state.selectedEvent;
+        const details = `<strong>${esc(eventTitle(ev))}</strong><br><span class="text-muted">${esc(fd(ev.start, { weekday: "long", day: "numeric", month: "long" }))} · ${esc(ft(ev.start))}–${esc(ft(ev.end))}</span>`;
+
+        let refundPayment = false;
+        if (isAppointmentPaid(ev)) {
+            const choice = await (ui.confirmPaidCancel
+                ? ui.confirmPaidCancel({
+                      title: "Отменить оплаченную запись?",
+                      message: "По записи уже была оплата. Отменить с возвратом суммы или без возврата?",
+                      details
+                  })
+                : Promise.resolve(null));
+            if (choice === null || choice === undefined) return;
+            refundPayment = choice === "refund";
+        } else {
+            const confirmed = await (ui.confirm
+                ? ui.confirm({
+                      title: "Отменить запись?",
+                      message: "Запись будет снята с расписания.",
+                      details,
+                      confirmLabel: "Да, отменить",
+                      cancelLabel: "Нет"
+                  })
+                : Promise.resolve(window.confirm("Отменить выбранную запись?")));
+            if (!confirmed) return;
+        }
+
+        ui.showPageOverlay?.("Отмена записи…");
         try {
-            const response = await fetch(p.generateInvoiceUrl, { method: "POST", headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest", ...(token() ? { RequestVerificationToken: token() } : {}) }, body: JSON.stringify({ appointmentId: state.selectedEvent.id }) });
-            const result = await response.json();
-            if (!response.ok || !result.success) throw new Error(result.message || "Не удалось сформировать счет.");
-            if (result.url) window.location.href = result.url;
+            const response = await fetch(p.cancelUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Requested-With": "XMLHttpRequest",
+                    ...(token() ? { RequestVerificationToken: token() } : {})
+                },
+                body: JSON.stringify({ appointmentId: ev.id, refundPayment })
+            });
+            const { result } = await readJsonResponse(response);
+            if (!response.ok || !result.success) throw new Error(result.message || "Не удалось отменить запись.");
+            const cancelledId = ev.id;
+            state.events = state.events.filter((x) => x.id !== cancelledId);
+            state.selectedEvent = null;
+            detailsModal?.hide();
+            rescheduleModal?.hide();
+            saveRegistryFilters();
+            renderAll();
+            ui.showToast?.(result.message || "Запись отменена.", "success");
         } catch (error) {
-            window.alert(error.message || "Не удалось сформировать счет.");
+            ui.showToast?.(error.message || "Не удалось отменить запись.", "danger");
         } finally {
-            if (btn) { btn.disabled = false; btn.textContent = text; }
+            ui.hidePageOverlay?.();
         }
     }
 
     function validateSchedule() {
         if (!$("appointmentSaveButton")) return;
+        const createShell = $("appointmentEditorCreateShell");
+        const isCreateMode = createShell && !createShell.classList.contains("d-none");
+        if (isCreateMode) {
+            setHint("");
+            const doctorId = resolveDoctorIdForEditor();
+            const hasServices = (state.selectedServices?.length || 0) > 0;
+            const patientName = ($("appointmentPatientName")?.value || "").trim();
+            const dateValue = $("appointmentDate")?.value || "";
+            const startValue = $("appointmentStart")?.value || "";
+            const endValue = $("appointmentEnd")?.value || "";
+            if (!p.storageReady) {
+                setHint("Сначала примените SQL-скрипт appointments.");
+                $("appointmentSaveButton").disabled = true;
+                return;
+            }
+            $("appointmentSaveButton").disabled =
+                !doctorId || !hasServices || !patientName || !dateValue || !startValue || !endValue;
+            return;
+        }
         if (!p.storageReady) { setHint("Сначала примените SQL-скрипт appointments."); $("appointmentSaveButton").disabled = true; return; }
         if (!state.doctorSchedulesReady) { setHint("Таблица смен врачей еще не создана."); $("appointmentSaveButton").disabled = false; return; }
         const doctorId = resolveDoctorIdForEditor();
@@ -494,6 +1373,89 @@
             const item = state.events.find((x) => x.id === b.dataset.eventId);
             if (item) openDetails(item);
         }));
+        bindMarkPaidButtons(root);
+    }
+
+    function appointmentTotalTyiyn(ev) {
+        return (ev?.services || []).reduce((sum, x) => {
+            const qty = Math.max(1, Number(x.quantity || 1));
+            return sum + Number(x.priceTyiyn || 0) * qty;
+        }, 0);
+    }
+
+    async function markAppointmentPaid(appointmentId) {
+        if (!appointmentId || !markPaidUrl) return;
+        const ev = state.events.find((x) => x.id === appointmentId);
+        const ui = window.MedclinicUI || {};
+        const total = ev ? appointmentTotalTyiyn(ev) : 0;
+        const amountLine = ev
+            ? `<div class="mt-2"><span class="text-muted">Сумма к принятию:</span> <strong style="font-size:1.15em">${esc(fm(total))}</strong></div>`
+            : "";
+        const confirmed = await (ui.confirm
+            ? ui.confirm({
+                title: "Отметить оплаченным?",
+                message: "Статус записи и связанного счёта будет изменён на «Оплачено».",
+                details: ev
+                    ? `<strong>${esc(eventTitle(ev))}</strong><br><span class="text-muted">${esc(fd(ev.start, { day: "numeric", month: "long" }))} · ${esc(ft(ev.start))}–${esc(ft(ev.end))}</span>${amountLine}`
+                    : "",
+                confirmLabel: "Да, оплачено",
+                cancelLabel: "Отмена"
+            })
+            : Promise.resolve(window.confirm(
+                ev
+                    ? `Отметить запись и связанный счёт как оплаченные?\n\n${eventTitle(ev)}\nСумма к принятию: ${fm(total)}`
+                    : "Отметить запись и связанный счёт как оплаченные?"
+            )));
+        if (!confirmed) return;
+
+        window.MedclinicUI?.showPageOverlay?.("Обновление оплаты…");
+        try {
+            const response = await fetch(markPaidUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Requested-With": "XMLHttpRequest",
+                    ...(token() ? { RequestVerificationToken: token() } : {})
+                },
+                body: JSON.stringify({ appointmentId })
+            });
+            const { result } = await readJsonResponse(response);
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || "Не удалось сменить статус оплаты.");
+            }
+            if (result.eventItem) upsertEventFromServer(result.eventItem);
+            saveRegistryFilters();
+            renderAll();
+            if (state.selectedEvent?.id === appointmentId && result.eventItem) {
+                const updated = state.events.find((x) => x.id === appointmentId);
+                if (updated) {
+                    state.selectedEvent = updated;
+                    syncDetailsActionButtons(updated);
+                    const badge = $("appointmentDetailsPaymentBadge");
+                    if (badge) {
+                        badge.textContent = paymentText(updated);
+                        badge.className = `appointment-details-modal__pay-badge status-${paymentClass(updated)}`;
+                    }
+                    const chip = $("appointmentDetailsPaymentChip");
+                    if (chip) chip.textContent = paymentTypeLabel(updated);
+                }
+            }
+            window.MedclinicUI?.showToast(result.message || "Статус оплаты обновлён.", "success");
+        } catch (error) {
+            window.MedclinicUI?.showToast(error.message || "Не удалось сменить статус оплаты.", "danger");
+        } finally {
+            window.MedclinicUI?.hidePageOverlay?.();
+        }
+    }
+
+    function bindMarkPaidButtons(root) {
+        root.querySelectorAll("[data-mark-paid-id]").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                markAppointmentPaid(btn.getAttribute("data-mark-paid-id"));
+            });
+        });
     }
 
     function doctorEventCard(ev, compact) {
@@ -602,10 +1564,119 @@
         }));
     }
 
+    function upsertEventFromServer(item) {
+        if (!item) return;
+        const ev = {
+            ...item,
+            start: new Date(item.start),
+            end: new Date(item.end),
+            services: (item.services || []).map((x) => ({
+                ...x,
+                priceTyiyn: Number(x.priceTyiyn || 0),
+                quantity: Number(x.quantity || 1)
+            }))
+        };
+        const idx = state.events.findIndex((x) => x.id === ev.id);
+        if (idx >= 0) state.events[idx] = ev;
+        else state.events.push(ev);
+    }
+
+    function canShowMarkPaid(ev) {
+        if (!canMarkAsPaidManually || !markPaidUrl) return false;
+        if (paymentClass(ev) === "paid") return false;
+        const t = (ev.paymentType || "").toLowerCase();
+        if (t === "qr_secore" || t === "qr_secore_paid") return false;
+        return t === "qr_external" || t === "card" || t === "cash" || t === "unpaid";
+    }
+
+    function canShowMarkPaidOnCard(ev) {
+        return pageType === "registry" && canShowMarkPaid(ev);
+    }
+
     function registryCard(ev, meta) {
-        return `<button class="slot-card ${paymentClass(ev)}" data-event-id="${esc(ev.id)}"><div class="slot-top"><div><div class="slot-patient">${esc(eventTitle(ev))}</div><div class="slot-service">${esc(serviceText(ev))}</div></div><span class="status-tag status-${paymentClass(ev)}">${paymentText(ev)}</span></div><div class="slot-meta"><span>${ft(ev.start)}-${ft(ev.end)}</span><span>${esc(meta.subtitle)}</span></div></button>`;
+        const markBtn = canShowMarkPaidOnCard(ev)
+            ? `<div class="slot-card__pay-action"><button type="button" class="registry-mark-paid-btn" data-mark-paid-id="${esc(ev.id)}">Отметить оплаченным</button></div>`
+            : "";
+        return `<div class="slot-card slot-card--panel ${paymentClass(ev)}"><button type="button" class="slot-card__main" data-event-id="${esc(ev.id)}"><div class="slot-top"><div><div class="slot-patient">${esc(eventTitle(ev))}</div><div class="slot-service">${esc(serviceText(ev))}</div></div><span class="status-tag status-${paymentClass(ev)}">${paymentText(ev)}</span></div><div class="slot-meta"><span>${ft(ev.start)}-${ft(ev.end)}</span><span>${esc(meta.subtitle)}</span></div></button>${markBtn}</div>`;
+    }
+    function appointmentOverlapsMinutes(ev, startMin, duration) {
+        const a = ev.start.getHours() * 60 + ev.start.getMinutes();
+        const b = ev.end.getHours() * 60 + ev.end.getMinutes();
+        return startMin < b && startMin + duration > a;
+    }
+    function renderRegistrySingleDoctorSchedule() {
+        registryGrid.className = "registry-v2-grid";
+        const doctorId = getRegistryDoctorId();
+        const dateIso = toIsoDate(state.anchor);
+        const meta = doctorMeta(doctorId);
+
+        if (!doctorId) {
+            registryGrid.innerHTML = '<div class="registry-v2-empty">Выберите врача в блоке «Запись пациента».</div>';
+            return;
+        }
+        if (!state.doctorSchedulesReady) {
+            registryGrid.innerHTML = '<div class="registry-v2-empty">Таблица смен врачей ещё не настроена.</div>';
+            return;
+        }
+
+        const schedule = doctorSchedule(doctorId, dateIso);
+        if (!schedule || !schedule.isWorking) {
+            registryGrid.innerHTML = `<div class="registry-v2-empty"><strong>${esc(meta.name)}</strong> не принимает в этот день.</div>`;
+            return;
+        }
+
+        const duration = durationForDoctor(doctorId);
+        const start = timeToMin(schedule.startTime);
+        const end = timeToMin(schedule.endTime);
+        if (start == null || end == null || end <= start) {
+            registryGrid.innerHTML = '<div class="registry-v2-empty">Смена врача на этот день не задана.</div>';
+            return;
+        }
+
+        const unavailable = unavailableIntervalsForDoctorDate(doctorId, dateIso, "");
+        const dayEvents = state.events
+            .filter((ev) => ev.doctorId === doctorId && sameDay(ev.start, state.anchor) && ev.isActive !== false)
+            .sort((a, b) => a.start - b.start);
+
+        const rows = [];
+        for (let minute = start; minute + duration <= end; minute += duration) {
+            const slotStart = minutesToTime(minute);
+            const slotEnd = minutesToTime(minute + duration);
+            const overlappingEvent = dayEvents.find((ev) => appointmentOverlapsMinutes(ev, minute, duration));
+            const isBlocked = unavailable.some((interval) => minute < interval.end && minute + duration > interval.start);
+
+            if (overlappingEvent) {
+                const evStart = overlappingEvent.start.getHours() * 60 + overlappingEvent.start.getMinutes();
+                if (minute === evStart) {
+                    rows.push(`<div class="registry-v2-row registry-v2-row--busy"><div class="registry-v2-row__time">${esc(slotStart)}<span class="registry-v2-row__time-end">${esc(slotEnd)}</span></div><div class="registry-v2-row__body">${registryCard(overlappingEvent, meta)}</div></div>`);
+                } else {
+                    rows.push(`<div class="registry-v2-row registry-v2-row--busy"><div class="registry-v2-row__time">${esc(slotStart)}</div><div class="registry-v2-row__body"><span class="registry-v2-blocked">Занято</span></div></div>`);
+                }
+            } else if (isBlocked) {
+                rows.push(`<div class="registry-v2-row registry-v2-row--blocked"><div class="registry-v2-row__time">${esc(slotStart)}</div><div class="registry-v2-row__body"><span class="registry-v2-blocked">Недоступно</span></div></div>`);
+            } else {
+                rows.push(`<button type="button" class="registry-v2-row registry-v2-row--free" data-slot-minute="${minute}"><div class="registry-v2-row__time">${esc(slotStart)}<span class="registry-v2-row__time-end">${esc(slotEnd)}</span></div><div class="registry-v2-row__body"><span class="registry-v2-free-label">Свободно — записать</span></div></button>`);
+            }
+        }
+
+        registryGrid.innerHTML = rows.length
+            ? `<div class="registry-v2-timeline"><div class="registry-v2-timeline__head"><div>Время</div><div>Приём</div></div>${rows.join("")}</div>`
+            : '<div class="registry-v2-empty">Нет слотов в рамках смены врача.</div>';
+
+        bindEventButtons(registryGrid);
+        registryGrid.querySelectorAll("[data-slot-minute]").forEach((btn) => btn.addEventListener("click", () => {
+            if (!canManageAppointments) return;
+            const minute = Number(btn.dataset.slotMinute);
+            const dt = new Date(`${dateIso}T00:00:00`);
+            dt.setHours(Math.floor(minute / 60), minute % 60, 0, 0);
+            openEditor({ doctorId }, dt);
+        }));
     }
     function renderRegistryDay() {
+        if ($("registryDoctorSelect")) {
+            renderRegistrySingleDoctorSchedule();
+            return;
+        }
         const docs = selectedDoctors();
         registryGrid.style.setProperty("--registry-doctor-columns", Math.max(docs.length, 1));
         let html = '<div class="grid-wrap"><div class="doctor-grid-head"><div class="time-head">Время</div>';
@@ -685,14 +1756,33 @@
     }
 
     function renderDoctorPage() { setPeriodLabel(); syncDatePicker(); if (state.view === "day") renderDoctorDay(); else if (state.view === "week") renderDoctorWeek(); else renderDoctorMonth(); }
-    function renderRegistryPage() { setPeriodLabel(); syncDatePicker(); selectedDoctorPills(); renderAvailability(); renderRegistryList(); renderRegistryLoad(); setRegistryTab(state.activeTab); if (state.view === "day") renderRegistryDay(); else if (state.view === "week") renderRegistryWeek(); else renderRegistryMonth(); }
+    function renderRegistryPage() {
+        if (pageType === "registry") state.view = "day";
+        setPeriodLabel();
+        syncDatePicker();
+        updateRegistryScheduleCaption();
+        if ($("registryDoctorSelect")) {
+            renderRegistrySingleDoctorSchedule();
+            return;
+        }
+        selectedDoctorPills();
+        renderAvailability();
+        renderRegistryList();
+        renderRegistryLoad();
+        setRegistryTab(state.activeTab);
+        if (state.view === "day") renderRegistryDay();
+        else if (state.view === "week") renderRegistryWeek();
+        else renderRegistryMonth();
+    }
     function renderAll() { if (pageType === "doctor") renderDoctorPage(); else renderRegistryPage(); }
     function shiftByNav(direction) {
-        if (direction === "today") { state.anchor = state.view === "month" ? monthAnchor(new Date()) : new Date(); renderAll(); return; }
+        if (pageType === "registry") state.view = "day";
+        if (direction === "today") { state.anchor = state.view === "month" ? monthAnchor(new Date()) : new Date(); saveRegistryFilters(); renderAll(); return; }
         const k = direction === "prev" ? -1 : 1;
         if (state.view === "day") state.anchor = addDays(state.anchor, k);
         else if (state.view === "week") state.anchor = addDays(state.anchor, k * 7);
         else state.anchor = new Date(state.anchor.getFullYear(), state.anchor.getMonth() + k, 1);
+        saveRegistryFilters();
         renderAll();
     }
 
@@ -705,16 +1795,69 @@
         renderAll();
     }));
     document.querySelectorAll(".schedule-nav").forEach((btn) => btn.addEventListener("click", () => shiftByNav(btn.dataset.direction)));
-    $("scheduleDatePicker")?.addEventListener("change", (e) => {
-        const date = new Date(`${e.target.value}T00:00:00`);
-        if (!Number.isNaN(date.getTime())) { state.anchor = state.view === "month" ? monthAnchor(date) : date; renderAll(); }
+    const legacyDatePicker = $("scheduleDatePicker");
+    if (legacyDatePicker) {
+        legacyDatePicker.addEventListener("change", (e) => {
+            const date = new Date(`${e.target.value}T00:00:00`);
+            if (!Number.isNaN(date.getTime())) {
+                state.anchor = state.view === "month" ? monthAnchor(date) : date;
+                saveRegistryFilters();
+                renderAll();
+            }
+        });
+    }
+    $("appointmentCreateButton")?.addEventListener("click", () => {
+        const dt = new Date(state.anchor);
+        const doctorId = pageType === "registry" ? getRegistryDoctorId() : "";
+        const schedule = doctorId ? doctorSchedule(doctorId, toIsoDate(state.anchor)) : null;
+        const startMin = schedule?.isWorking ? timeToMin(schedule.startTime) : 9 * 60;
+        const safeStart = startMin == null ? 9 * 60 : startMin;
+        dt.setHours(Math.floor(safeStart / 60), safeStart % 60, 0, 0);
+        openEditor(doctorId ? { doctorId } : null, dt);
     });
-    $("appointmentCreateButton")?.addEventListener("click", () => { const dt = new Date(state.anchor); dt.setHours(9, 0, 0, 0); openEditor(null, dt); });
     $("appointmentPeriodAddButton")?.addEventListener("click", () => { const dt = state.selectedDate ? new Date(state.selectedDate) : new Date(); dt.setHours(9, 0, 0, 0); openEditor(null, dt); });
-    $("appointmentDetailsOpenVisitButton")?.addEventListener("click", () => { if (state.selectedEvent) openEditor(state.selectedEvent, state.selectedEvent.start); });
-    $("appointmentDetailsEditButton")?.addEventListener("click", () => { if (state.selectedEvent) openEditor(state.selectedEvent, state.selectedEvent.start); });
+    $("appointmentDetailsOpenVisitButton")?.addEventListener("click", openVisitFromDetails);
+    $("appointmentDetailsEditButton")?.addEventListener("click", () => { if (state.selectedEvent) openRescheduleModal(state.selectedEvent); });
     $("appointmentDetailsCancelButton")?.addEventListener("click", cancelSelected);
-    $("appointmentGenerateInvoiceButton")?.addEventListener("click", generateInvoice);
+    $("appointmentDetailsShowQrButton")?.addEventListener("click", openAppointmentQrScreen);
+    $("appointmentDetailsDownloadInvoiceButton")?.addEventListener("click", downloadAppointmentInvoicePdf);
+    $("appointmentDetailsMarkPaidButton")?.addEventListener("click", () => {
+        if (state.selectedEvent?.id) markAppointmentPaid(state.selectedEvent.id);
+    });
+    $("appointmentDetailsQrBackButton")?.addEventListener("click", showDetailsMainView);
+    $("appointmentDetailsQrBackFooter")?.addEventListener("click", showDetailsMainView);
+    $("appointmentDetailsQrWhatsApp")?.addEventListener("click", sendAppointmentInvoiceWhatsApp);
+    $("appointmentEditorBackToDetails")?.addEventListener("click", () => {
+        state.returnToDetails = false;
+        editorModal?.hide();
+        if (state.selectedEvent) {
+            const fresh = state.events.find((x) => x.id === state.selectedEvent.id) || state.selectedEvent;
+            openDetails(fresh);
+        }
+    });
+    $("appointmentRescheduleBackButton")?.addEventListener("click", () => {
+        state.returnToDetails = false;
+        rescheduleModal?.hide();
+        if (state.selectedEvent) openDetails(state.selectedEvent);
+    });
+    $("appointmentRescheduleDate")?.addEventListener("change", () => {
+        if ($("appointmentRescheduleStart")) $("appointmentRescheduleStart").value = "";
+        if ($("appointmentRescheduleEnd")) $("appointmentRescheduleEnd").value = "";
+        renderRescheduleSlots();
+        validateRescheduleForm();
+    });
+    $("appointmentReschedulePatientName")?.addEventListener("input", validateRescheduleForm);
+    $("appointmentRescheduleSaveButton")?.addEventListener("click", saveReschedule);
+    $("appointmentDetailsModal")?.addEventListener("hidden.bs.modal", showDetailsMainView);
+    $("appointmentEditorModal")?.addEventListener("hidden.bs.modal", () => {
+        $("appointmentEditorBackToDetails")?.classList.add("d-none");
+        if (!state.returnToDetails) return;
+        state.returnToDetails = false;
+        const id = state.selectedEvent?.id;
+        if (!id || !detailsModal) return;
+        const fresh = state.events.find((x) => x.id === id) || state.selectedEvent;
+        openDetails(fresh);
+    });
     $("appointmentSaveDraftButton")?.addEventListener("click", () => {
         const saveButton = $("appointmentSaveButton");
         if ($("appointmentStatus")) $("appointmentStatus").value = "draft";
@@ -746,17 +1889,26 @@
     ["appointmentDate", "appointmentEnd"].forEach((id) => { $(id)?.addEventListener("change", validateSchedule); $(id)?.addEventListener("input", validateSchedule); });
 
     if (pageType === "registry") {
-        setupMultiselect("departments", state.departments, { list: "appointmentsDepartmentsList", trigger: "appointmentsDepartmentsTrigger", summary: "appointmentsDepartmentsSummary", menu: "appointmentsDepartmentsMenu", search: "appointmentsDepartmentSearch", selectAll: "appointmentsSelectAllDepartments" });
-        setupMultiselect("doctors", state.doctorFilters, { list: "appointmentsDoctorsList", trigger: "appointmentsDoctorsTrigger", summary: "appointmentsDoctorsSummary", menu: "appointmentsDoctorsMenu", search: "appointmentsDoctorSearch", selectAll: "appointmentsSelectAllDoctors" });
-        $("appointmentPaymentFilter")?.addEventListener("change", (e) => { state.paymentFilter = e.target.value || "all"; renderAll(); });
-        $("registryQuickViewFilter")?.addEventListener("change", (e) => { setRegistryTab(e.target.value || "grid"); });
-        document.querySelectorAll("#registryTabs .tab-btn").forEach((btn) => btn.addEventListener("click", () => { if ($("registryQuickViewFilter")) $("registryQuickViewFilter").value = btn.dataset.tab || "grid"; setRegistryTab(btn.dataset.tab || "grid"); }));
-        $("availabilityDoctor")?.addEventListener("change", renderAvailability);
-        $("availabilityDuration")?.addEventListener("change", renderAvailability);
+        if ($("registryDoctorSelect")) {
+            setupRegistryFilters();
+            setupRegistryMonthPicker();
+        } else {
+            setupMultiselect("departments", state.departments, { list: "appointmentsDepartmentsList", trigger: "appointmentsDepartmentsTrigger", summary: "appointmentsDepartmentsSummary", menu: "appointmentsDepartmentsMenu", search: "appointmentsDepartmentSearch", selectAll: "appointmentsSelectAllDepartments" });
+            setupMultiselect("doctors", state.doctorFilters, { list: "appointmentsDoctorsList", trigger: "appointmentsDoctorsTrigger", summary: "appointmentsDoctorsSummary", menu: "appointmentsDoctorsMenu", search: "appointmentsDoctorSearch", selectAll: "appointmentsSelectAllDoctors" });
+            $("appointmentPaymentFilter")?.addEventListener("change", (e) => { state.paymentFilter = e.target.value || "all"; renderAll(); });
+            $("registryQuickViewFilter")?.addEventListener("change", (e) => { setRegistryTab(e.target.value || "grid"); });
+            document.querySelectorAll("#registryTabs .tab-btn").forEach((btn) => btn.addEventListener("click", () => { if ($("registryQuickViewFilter")) $("registryQuickViewFilter").value = btn.dataset.tab || "grid"; setRegistryTab(btn.dataset.tab || "grid"); }));
+            $("availabilityDoctor")?.addEventListener("change", renderAvailability);
+            $("availabilityDuration")?.addEventListener("change", renderAvailability);
+        }
     }
 
     renderTemplates();
     renderServices();
     validateSchedule();
+    window.medclinicValidateAppointmentForm = validateSchedule;
+    window.medclinicUpsertEvent = upsertEventFromServer;
+    window.medclinicRenderAll = renderAll;
+    window.medclinicSaveRegistryFilters = saveRegistryFilters;
     renderAll();
 })();

@@ -12,10 +12,12 @@ namespace WebApplication1.Services;
 public class ClientService
 {
     private readonly AppDbContext _db;
+    private readonly InvoiceQrService _invoiceQrService;
 
-    public ClientService(AppDbContext db)
+    public ClientService(AppDbContext db, InvoiceQrService invoiceQrService)
     {
         _db = db;
+        _invoiceQrService = invoiceQrService;
     }
 
     /// <summary>
@@ -172,8 +174,42 @@ public class ClientService
             }
         }
 
+        if (input.ClientStatus == 2)
+            await CloseClientInvoicesWhenClientDeletedAsync(client.Id, organizationId, cancellationToken);
+
         await _db.SaveChangesAsync(cancellationToken);
         return true;
+    }
+
+    /// <summary>При удалении клиента (status=2) закрывает все его счета и отключает QR по затронутым лицевым счетам.</summary>
+    private async Task CloseClientInvoicesWhenClientDeletedAsync(
+        string clientId,
+        string organizationId,
+        CancellationToken cancellationToken)
+    {
+        var invoices = await _db.Invoices
+            .Where(i => i.Client == clientId
+                && i.InvoiceStatus != "closed"
+                && i.ClientNavigation != null
+                && i.ClientNavigation.Organization == organizationId)
+            .ToListAsync(cancellationToken);
+
+        if (invoices.Count == 0)
+            return;
+
+        var anchorByPayCode = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var invoice in invoices)
+        {
+            invoice.InvoiceStatus = "closed";
+            var payCode = invoice.PayCode?.Trim();
+            if (!string.IsNullOrWhiteSpace(payCode) && !anchorByPayCode.ContainsKey(payCode))
+                anchorByPayCode[payCode] = invoice.Id;
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        foreach (var anchorInvoiceId in anchorByPayCode.Values)
+            await _invoiceQrService.DisableActiveQrAsync(anchorInvoiceId, cancellationToken);
     }
 
     /// <summary>

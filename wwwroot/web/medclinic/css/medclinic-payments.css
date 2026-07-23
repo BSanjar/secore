@@ -1,0 +1,206 @@
+.mc-pay {
+    display: grid;
+    gap: 1.25rem;
+    max-width: 1280px;
+}
+
+.mc-pay-hero {
+    margin-bottom: 0;
+}
+
+.mc-pay-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+@media (max-width: 900px) {
+    .mc-pay-stats {
+        grid-template-columns: 1fr;
+    }
+}
+
+.mc-pay-channels {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
+}
+
+.mc-pay-channel {
+    background: #fff;
+    border: 1px solid rgba(15, 118, 110, 0.12);
+    border-radius: 1rem;
+    padding: 0.85rem 1rem;
+    display: grid;
+    gap: 0.2rem;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+}
+
+.mc-pay-channel__label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #0f766e;
+}
+
+.mc-pay-channel__sum {
+    font-size: 1.15rem;
+    color: #0f172a;
+}
+
+.mc-pay-channel__count {
+    font-size: 0.82rem;
+    color: #64748b;
+}
+
+.mc-pay-filter-form {
+    margin: 0;
+}
+
+.mc-pay-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.85rem 1rem;
+    align-items: end;
+}
+
+@media (max-width: 1100px) {
+    .mc-pay-filter-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 560px) {
+    .mc-pay-filter-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.mc-pay-field {
+    display: grid;
+    gap: 0.35rem;
+    margin: 0;
+}
+
+.mc-pay-field__label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #0f766e;
+}
+
+.mc-pay-field--actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.mc-pay-submit {
+    border-radius: 999px;
+    font-weight: 700;
+    padding-inline: 1.25rem;
+}
+
+.mc-pay-table-head {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.mc-pay-table-wrap {
+    padding: 0 !important;
+    overflow: auto;
+}
+
+.mc-pay-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+}
+
+.mc-pay-table thead th {
+    text-align: left;
+    padding: 0.85rem 1rem;
+    background: #f0fdfa;
+    color: #0f766e;
+    font-weight: 700;
+    border-bottom: 1px solid rgba(15, 118, 110, 0.12);
+    white-space: nowrap;
+}
+
+.mc-pay-table tbody td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+    vertical-align: top;
+}
+
+.mc-pay-table tbody tr:hover {
+    background: rgba(236, 254, 255, 0.55);
+}
+
+.mc-pay-table__num {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.mc-pay-table__date {
+    white-space: nowrap;
+    color: #475569;
+}
+
+.mc-pay-table__sub {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin-top: 0.15rem;
+}
+
+.mc-pay-amount {
+    font-weight: 700;
+    color: #047857;
+}
+
+.mc-pay-amount--refund {
+    color: #b45309;
+}
+
+.mc-pay-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 0.25rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.mc-pay-badge--ok {
+    background: #ecfdf5;
+    color: #047857;
+}
+
+.mc-pay-badge--refund {
+    background: #fffbeb;
+    color: #b45309;
+}
+
+.mc-pay-badge--muted {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+.mc-pay-empty {
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+}
+
+.mc-pay-empty__title {
+    margin: 0 0 0.35rem;
+    font-weight: 800;
+    font-size: 1.1rem;
+}
+
+.mc-pay-empty__text {
+    margin: 0;
+    color: #64748b;
+    max-width: 36rem;
+    margin-inline: auto;
+}
