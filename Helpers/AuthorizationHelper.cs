@@ -30,7 +30,8 @@ namespace WebApplication1.Helpers
                 return;
             }
 
-            if (string.Equals(organizationType, "medclinic", StringComparison.OrdinalIgnoreCase) && AuthorizationHelper.IsDoctorRole(context.HttpContext))
+            if (string.Equals(organizationType, "medclinic", StringComparison.OrdinalIgnoreCase)
+                && AuthorizationHelper.IsDoctorOnlyMode(context.HttpContext))
             {
                 var controller = context.RouteData.Values["controller"]?.ToString();
                 var allowedWithoutPermission = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -50,7 +51,10 @@ namespace WebApplication1.Helpers
                             ? PermissionHelper.HasPermission(context.HttpContext, "invoices.view")
                             : controller.Equals("Payments", StringComparison.OrdinalIgnoreCase)
                                 ? PermissionHelper.HasPermission(context.HttpContext, "transactions.view")
-                                : false;
+                                : controller.Equals("Doctors", StringComparison.OrdinalIgnoreCase)
+                                    || controller.Equals("Users", StringComparison.OrdinalIgnoreCase)
+                                    ? PermissionHelper.HasPermission(context.HttpContext, "doctors.view")
+                                    : false;
 
                     if (!hasControllerPermission)
                     {
@@ -173,16 +177,69 @@ namespace WebApplication1.Helpers
             return roles.Contains("doctor") || roles.Contains("врач");
         }
 
+        /// <summary>
+        /// Ограниченный режим врача: без прав администратора и без доступа к управлению сотрудниками.
+        /// </summary>
+        public static bool IsDoctorOnlyMode(HttpContext httpContext)
+        {
+            if (!IsDoctorRole(httpContext))
+                return false;
+
+            if (IsAdminRole(httpContext))
+                return false;
+
+            if (PermissionHelper.HasPermission(httpContext, "doctors.view"))
+                return false;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Создание и редактирование карточек сотрудников (не для регистратуры с doctors.view).
+        /// </summary>
+        public static bool CanManageStaff(HttpContext httpContext)
+        {
+            if (PermissionHelper.HasPermission(httpContext, "doctors.edit"))
+                return true;
+
+            return IsAdminRole(httpContext)
+                && string.Equals(GetOrganizationType(httpContext), "medclinic", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Создание и изменение детей, групп, услуг (не для воспитателя с children.view).
+        /// </summary>
+        public static bool CanManageChildren(HttpContext httpContext)
+        {
+            if (PermissionHelper.HasPermission(httpContext, "children.create"))
+                return true;
+
+            var orgType = GetOrganizationType(httpContext);
+            return IsAdminRole(httpContext)
+                && !string.Equals(orgType, "medclinic", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Ручная рассылка уведомлений клиентам (не для воспитателя).
+        /// </summary>
+        public static bool CanSendNotifications(HttpContext httpContext)
+        {
+            if (PermissionHelper.HasPermission(httpContext, "notifications.send"))
+                return true;
+
+            return IsAdminRole(httpContext);
+        }
+
         public static bool IsAdminRole(HttpContext httpContext)
         {
             var userId = GetUserId(httpContext);
             if (string.IsNullOrEmpty(userId))
                 return false;
 
+            var db = httpContext.RequestServices.GetRequiredService<AppDbContext>();
             var cacheKey = RequestRoleCacheKeyPrefix + userId;
             if (!httpContext.Items.TryGetValue(cacheKey, out var cached) || cached is not HashSet<string> roles)
             {
-                var db = httpContext.RequestServices.GetRequiredService<AppDbContext>();
                 roles = db.UserRoles
                     .Where(ur => ur.User == userId && (ur.Isdeleted == null || ur.Isdeleted == 0))
                     .Include(ur => ur.RoleNavigation)
@@ -194,10 +251,25 @@ namespace WebApplication1.Helpers
                 httpContext.Items[cacheKey] = roles;
             }
 
-            return roles.Contains("admin")
-                   || roles.Contains("администратор")
-                   || roles.Contains("superadmin")
-                   || roles.Contains("суперадмин");
+            if (roles.Contains("admin")
+                || roles.Contains("администратор")
+                || roles.Contains("superadmin")
+                || roles.Contains("суперадмин"))
+            {
+                return true;
+            }
+
+            var legacyRole = httpContext.Session.GetString("UserRole")
+                ?? db.Users.AsNoTracking()
+                    .Where(u => u.Id == userId)
+                    .Select(u => u.Role)
+                    .FirstOrDefault();
+
+            if (string.IsNullOrWhiteSpace(legacyRole))
+                return false;
+
+            var normalizedLegacy = legacyRole.Trim().ToLowerInvariant();
+            return normalizedLegacy is "admin" or "superadmin";
         }
     }
 

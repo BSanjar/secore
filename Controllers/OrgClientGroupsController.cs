@@ -74,6 +74,7 @@ namespace WebApplication1.Controllers
                 .Select(g => new { g.Id, g.Name })
                 .ToListAsync();
             ViewBag.ParentGroupsForModal = parentGroupsList;
+            ViewBag.CanManageChildren = AuthorizationHelper.CanManageChildren(HttpContext);
 
             return View(roots);
         }

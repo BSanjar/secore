@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using WebApplication1.Models.DBModels;
+using WebApplication1.Dtos;
 using WebApplication1.Helpers;
-using System.Security.Cryptography;
-using System.Text;
+using WebApplication1.Models.DBModels;
+using WebApplication1.Services;
 
 namespace WebApplication1.Controllers
 {
@@ -11,11 +11,16 @@ namespace WebApplication1.Controllers
     public class UsersController : Controller
     {
         private readonly AppDbContext _db;
+        private readonly IDoctorDirectoryService _doctorDirectoryService;
 
-        public UsersController(AppDbContext db)
+        public UsersController(AppDbContext db, IDoctorDirectoryService doctorDirectoryService)
         {
             _db = db;
+            _doctorDirectoryService = doctorDirectoryService;
         }
+
+        private static bool IsMedclinic(HttpContext httpContext) =>
+            string.Equals(AuthorizationHelper.GetOrganizationType(httpContext), "medclinic", StringComparison.OrdinalIgnoreCase);
 
         // GET: Users
         public async Task<IActionResult> Index()
@@ -40,6 +45,9 @@ namespace WebApplication1.Controllers
         // GET: Users/Create
         public IActionResult Create()
         {
+            if (IsMedclinic(HttpContext) && !AuthorizationHelper.CanManageStaff(HttpContext))
+                return RedirectToAction("AccessDenied", "Home", new { permissionCode = "doctors.edit" });
+
             return View();
         }
 
@@ -48,6 +56,9 @@ namespace WebApplication1.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Name,Email,Phone,Password")] User user)
         {
+            if (IsMedclinic(HttpContext) && !AuthorizationHelper.CanManageStaff(HttpContext))
+                return RedirectToAction("AccessDenied", "Home", new { permissionCode = "doctors.edit" });
+
             var organizationId = AuthorizationHelper.GetOrganizationId(HttpContext);
             if (string.IsNullOrEmpty(organizationId))
             {
@@ -117,6 +128,19 @@ namespace WebApplication1.Controllers
             if (string.IsNullOrEmpty(organizationId))
             {
                 return Unauthorized();
+            }
+
+            if (IsMedclinic(HttpContext))
+            {
+                if (!PermissionHelper.HasPermission(HttpContext, "doctors.view"))
+                    return RedirectToAction("AccessDenied", "Home", new { permissionCode = "doctors.view" });
+
+                var staffCard = await _doctorDirectoryService.GetStaffCardAsync(organizationId, id);
+                if (staffCard == null)
+                    return NotFound();
+
+                staffCard.CanEdit = AuthorizationHelper.CanManageStaff(HttpContext);
+                return View("EditMedclinic", staffCard);
             }
 
             var user = await _db.Users
@@ -270,4 +294,3 @@ namespace WebApplication1.Controllers
         }
     }
 }
-

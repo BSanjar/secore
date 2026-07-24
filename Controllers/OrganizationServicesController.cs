@@ -96,6 +96,7 @@ namespace WebApplication1.Controllers
 
             ViewBag.Search = search?.Trim() ?? "";
             ViewBag.IsDeletedFilter = isDeletedFilter;
+            ViewBag.CanManageChildren = AuthorizationHelper.CanManageChildren(HttpContext);
             return View(list);
         }
 

@@ -80,6 +80,7 @@ INSERT INTO permissions (id, name, code, description, category, isdeleted, area)
 ('perm-28', 'Просмотр профиля',               'profile.view',                'Просмотр профиля', 'Профиль', 0, NULL),
 ('perm-29', 'Поддержка',                      'support.view',                'Доступ к поддержке', 'Поддержка', 0, NULL),
 ('perm-30', 'Уведомления',                    'notifications.view',          'Просмотр уведомлений', 'Уведомления', 0, NULL),
+('perm-49', 'Отправка уведомлений',           'notifications.send',          'Ручная рассылка уведомлений клиентам', 'Уведомления', 0, NULL),
 -- Medclinic
 ('perm-31', 'Просмотр приёмов',               'appointments.view',           'Просмотр календаря приёмов', 'Записи', 0, 'medclinic'),
 ('perm-32', 'Расписание врача',               'appointments.doctor.view',    'Кабинет врача: своё расписание', 'Записи', 0, 'medclinic'),
@@ -89,6 +90,7 @@ INSERT INTO permissions (id, name, code, description, category, isdeleted, area)
 ('perm-36', 'Счёт из приёма',                 'appointments.invoice',        'Формирование счёта из приёма', 'Записи', 0, 'medclinic'),
 ('perm-37', 'Статус оплаты приёма',           'appointments.payment.status', 'Изменение статуса оплаты приёма', 'Записи', 0, 'medclinic'),
 ('perm-38', 'Просмотр врачей',                'doctors.view',                'Справочник врачей', 'Медструктура', 0, 'medclinic'),
+('perm-48', 'Редактирование сотрудников',     'doctors.edit',                'Создание и изменение карточек сотрудников', 'Медструктура', 0, 'medclinic'),
 ('perm-39', 'Просмотр отделений',             'departments.view',            'Справочник отделений', 'Медструктура', 0, 'medclinic'),
 ('perm-40', 'Просмотр специализаций',         'specializations.view',        'Справочник специализаций', 'Медструктура', 0, 'medclinic'),
 ('perm-41', 'Просмотр пациентов',             'patients.view',               'Справочник пациентов', 'Медструктура', 0, 'medclinic'),

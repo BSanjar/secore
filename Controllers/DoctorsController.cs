@@ -36,6 +36,7 @@ public class DoctorsController : Controller
         return View(new ViewModels.Doctors.DoctorsIndexViewModel
         {
             Search = search?.Trim(),
+            CanManageStaff = AuthorizationHelper.CanManageStaff(HttpContext),
             Doctors = doctors
         });
     }
@@ -47,12 +48,7 @@ public class DoctorsController : Controller
         if (gate != null)
             return gate;
 
-        var organizationId = _currentTenantService.GetCurrent().OrganizationId!;
-        var model = await _doctorDirectoryService.GetDoctorAssignmentsAsync(organizationId, id);
-        if (model == null)
-            return NotFound();
-
-        return View(model);
+        return RedirectToAction("Edit", "Users", new { id });
     }
 
     [HttpGet]
@@ -72,11 +68,73 @@ public class DoctorsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SaveStaffCard(string id, [Bind(Prefix = "Form")] StaffCardSaveDto dto)
+    {
+        var gate = await EnsureAccessAsync();
+        if (gate != null)
+            return gate;
+
+        var manageGate = EnsureManageStaffAccess();
+        if (manageGate != null)
+            return manageGate;
+
+        var organizationId = _currentTenantService.GetCurrent().OrganizationId!;
+
+        dto.Id = id;
+        dto.SelectedRoleIds = Request.Form["SelectedRoleIds"].ToList().Where(x => x != null).Select(x => x!).ToList();
+        dto.SelectedDepartmentIds = Request.Form["SelectedDepartmentIds"].ToList().Where(x => x != null).Select(x => x!).ToList();
+        dto.SelectedSpecializationIds = Request.Form["SelectedSpecializationIds"].ToList().Where(x => x != null).Select(x => x!).ToList();
+        dto.PrimaryDepartmentId = Request.Form["PrimaryDepartmentId"].FirstOrDefault();
+        dto.PrimarySpecializationId = Request.Form["PrimarySpecializationId"].FirstOrDefault();
+        dto.DaysOfWeek = Request.Form["DaysOfWeek"]
+            .Select(x => int.TryParse(x, out var day) ? day : 0)
+            .Where(x => x is >= 1 and <= 7)
+            .ToList();
+
+        if (string.IsNullOrWhiteSpace(dto.Password))
+            ModelState.Remove("Form.Password");
+
+        TryValidateModel(dto);
+
+        if (!ModelState.IsValid)
+        {
+            var model = await _doctorDirectoryService.GetStaffCardAsync(organizationId, id);
+            if (model == null)
+                return NotFound();
+
+            model.Form = dto;
+            model.CanEdit = true;
+            return View("~/Views/Users/EditMedclinic.cshtml", model);
+        }
+
+        var result = await _doctorDirectoryService.UpdateStaffCardAsync(organizationId, dto);
+        if (!result.Success)
+        {
+            ModelState.AddModelError(string.Empty, result.Message);
+            var model = await _doctorDirectoryService.GetStaffCardAsync(organizationId, id);
+            if (model == null)
+                return NotFound();
+
+            model.Form = dto;
+            model.CanEdit = true;
+            return View("~/Views/Users/EditMedclinic.cshtml", model);
+        }
+
+        TempData["Message"] = result.Message;
+        return RedirectToAction("Edit", "Users", new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(string id, DoctorAssignmentsUpsertDto dto)
     {
         var gate = await EnsureAccessAsync();
         if (gate != null)
             return gate;
+
+        var manageGate = EnsureManageStaffAccess();
+        if (manageGate != null)
+            return manageGate;
 
         if (id != dto.Id)
             return NotFound();
@@ -95,7 +153,7 @@ public class DoctorsController : Controller
         }
 
         TempData["Message"] = result.Message;
-        return RedirectToAction(nameof(Edit), new { id });
+        return RedirectToAction("Edit", "Users", new { id });
     }
 
     [HttpPost]
@@ -106,6 +164,10 @@ public class DoctorsController : Controller
         if (gate != null)
             return gate;
 
+        var manageGate = EnsureManageStaffAccess();
+        if (manageGate != null)
+            return manageGate;
+
         dto.UserId = id;
 
         var organizationId = _currentTenantService.GetCurrent().OrganizationId!;
@@ -114,11 +176,11 @@ public class DoctorsController : Controller
         if (!result.Success)
         {
             TempData["Error"] = result.Message;
-            return RedirectToAction(nameof(Edit), new { id });
+            return RedirectToAction("Edit", "Users", new { id });
         }
 
         TempData["Message"] = result.Message;
-        return RedirectToAction(nameof(Edit), new { id });
+        return RedirectToAction("Edit", "Users", new { id });
     }
 
     [HttpPost]
@@ -129,13 +191,17 @@ public class DoctorsController : Controller
         if (gate != null)
             return gate;
 
+        var manageGate = EnsureManageStaffAccess();
+        if (manageGate != null)
+            return manageGate;
+
         var organizationId = _currentTenantService.GetCurrent().OrganizationId!;
         var result = await _doctorDirectoryService.UpdateAppointmentDurationAsync(organizationId, id, appointmentDurationMinutes);
 
         if (!result.Success)
         {
             TempData["Error"] = result.Message;
-            return RedirectToAction(nameof(Edit), new { id });
+            return RedirectToAction("Edit", "Users", new { id });
         }
 
         TempData["Message"] = result.Message;
@@ -150,6 +216,10 @@ public class DoctorsController : Controller
         if (gate != null)
             return gate;
 
+        var manageGate = EnsureManageStaffAccess();
+        if (manageGate != null)
+            return manageGate;
+
         dto.UserId = id;
 
         var organizationId = _currentTenantService.GetCurrent().OrganizationId!;
@@ -158,11 +228,19 @@ public class DoctorsController : Controller
         if (!result.Success)
         {
             TempData["Error"] = result.Message;
-            return RedirectToAction(nameof(Edit), new { id });
+            return RedirectToAction("Edit", "Users", new { id });
         }
 
         TempData["Message"] = result.Message;
-        return RedirectToAction(nameof(Edit), new { id });
+        return RedirectToAction("Edit", "Users", new { id });
+    }
+
+    private IActionResult? EnsureManageStaffAccess()
+    {
+        if (AuthorizationHelper.CanManageStaff(HttpContext))
+            return null;
+
+        return RedirectToAction("AccessDenied", "Home", new { permissionCode = "doctors.edit" });
     }
 
     private async Task<IActionResult?> EnsureAccessAsync()

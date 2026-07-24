@@ -1,0 +1,736 @@
+/* Medclinic — Сотрудники и связанные страницы */
+.mc-staff {
+    display: grid;
+    gap: 0.65rem;
+    max-width: 1320px;
+}
+
+.dashboard-page.mc-staff {
+    margin: 0;
+}
+
+.mc-staff-alert {
+    margin: 0;
+    padding: 0.55rem 0.85rem;
+    border-radius: 0.75rem;
+    font-size: 0.88rem;
+    border: 0;
+}
+
+.mc-staff-breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-bottom: 0.15rem;
+}
+
+.mc-staff-breadcrumb a {
+    color: #0f766e;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.mc-staff-breadcrumb a:hover {
+    color: #0d9488;
+}
+
+.mc-staff-breadcrumb__sep {
+    opacity: 0.45;
+}
+
+.mc-staff-hero {
+    background: #fff;
+    border: 1px solid rgba(15, 118, 110, 0.12);
+    border-radius: 1rem;
+    padding: 0.85rem 1rem;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+}
+
+.mc-staff-hero__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
+}
+
+.mc-staff-hero__title {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.2;
+}
+
+.mc-staff-hero__sub {
+    margin: 0.15rem 0 0;
+    font-size: 0.84rem;
+    color: #64748b;
+}
+
+.mc-staff-hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.mc-staff-panel {
+    background: #fff;
+    border: 1px solid rgba(15, 118, 110, 0.1);
+    border-radius: 1rem;
+    padding: 0.85rem 1rem;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+}
+
+.mc-staff-panel__head {
+    margin-bottom: 0.65rem;
+}
+
+.mc-staff-panel__title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.mc-staff-panel__sub {
+    margin: 0.12rem 0 0;
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+.mc-staff-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    align-items: flex-end;
+    margin-bottom: 0.65rem;
+}
+
+.mc-staff-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.18rem;
+    min-width: 0;
+    flex: 1 1 180px;
+}
+
+.mc-staff-field--grow {
+    flex: 2 1 240px;
+}
+
+.mc-staff-field__label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #0f766e;
+}
+
+.mc-staff-input,
+.mc-staff-select {
+    height: 2.35rem;
+    padding: 0.35rem 0.65rem;
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    border-radius: 0.65rem;
+    background: #f8fafc;
+    font-size: 0.88rem;
+    color: #0f172a;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.mc-staff-input:focus,
+.mc-staff-select:focus {
+    outline: none;
+    background: #fff;
+    border-color: #14b8a6;
+    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.16);
+}
+
+.mc-staff-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    height: 2.35rem;
+    padding: 0 0.9rem;
+    border-radius: 0.65rem;
+    font-size: 0.84rem;
+    font-weight: 700;
+    text-decoration: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: filter 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.mc-staff-btn--primary {
+    background: linear-gradient(135deg, #0f766e, #14b8a6);
+    color: #fff;
+}
+
+.mc-staff-btn--primary:hover {
+    filter: brightness(1.05);
+    color: #fff;
+}
+
+.mc-staff-btn--ghost {
+    background: #fff;
+    color: #475569;
+    border-color: rgba(15, 23, 42, 0.12);
+}
+
+.mc-staff-btn--ghost:hover {
+    background: #f8fafc;
+    color: #0f172a;
+}
+
+.mc-staff-btn--soft {
+    background: #ecfdf5;
+    color: #047857;
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+.mc-staff-btn--soft:hover {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.mc-staff-btn--danger {
+    background: #fff1f2;
+    color: #be123c;
+    border-color: rgba(244, 63, 94, 0.2);
+}
+
+.mc-staff-btn--sm {
+    height: 2rem;
+    padding: 0 0.65rem;
+    font-size: 0.78rem;
+    border-radius: 0.55rem;
+}
+
+.mc-staff-table-wrap {
+    overflow: auto;
+    margin: 0 -0.15rem;
+}
+
+.mc-staff-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.86rem;
+}
+
+.mc-staff-table thead th {
+    text-align: left;
+    padding: 0.55rem 0.75rem;
+    background: #f0fdfa;
+    color: #0f766e;
+    font-weight: 700;
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-bottom: 1px solid rgba(15, 118, 110, 0.1);
+    white-space: nowrap;
+}
+
+.mc-staff-table tbody td {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+    vertical-align: middle;
+}
+
+.mc-staff-table tbody tr:hover {
+    background: rgba(236, 254, 255, 0.45);
+}
+
+.mc-staff-table__name {
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.mc-staff-table__muted {
+    font-size: 0.78rem;
+    color: #64748b;
+}
+
+.mc-staff-table__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.35rem;
+}
+
+.mc-staff-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.28rem;
+}
+
+.mc-staff-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.16rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.mc-staff-chip--role {
+    background: #ecfeff;
+    color: #0e7490;
+}
+
+.mc-staff-chip--dept {
+    background: #f1f5f9;
+    color: #334155;
+}
+
+.mc-staff-chip--spec {
+    background: #eef2ff;
+    color: #4338ca;
+}
+
+.mc-staff-empty {
+    padding: 1.5rem 0.5rem;
+    text-align: center;
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.mc-staff-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.55rem;
+    margin-top: 0.65rem;
+}
+
+.mc-staff-stat {
+    background: #f8fafc;
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    border-radius: 0.75rem;
+    padding: 0.65rem 0.75rem;
+    min-height: 100%;
+}
+
+.mc-staff-stat__label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+    margin-bottom: 0.35rem;
+}
+
+.mc-staff-stat__value {
+    font-weight: 700;
+    color: #0f172a;
+    font-size: 0.9rem;
+}
+
+.mc-staff-stat__line {
+    font-size: 0.8rem;
+    color: #475569;
+    margin-top: 0.12rem;
+}
+
+.mc-staff-checkgrid {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.mc-staff-checkcard {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.65rem;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 0.75rem;
+    background: #fff;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.mc-staff-checkcard:hover {
+    border-color: rgba(20, 184, 166, 0.35);
+}
+
+.mc-staff-checkcard:has(input:checked) {
+    border-color: rgba(15, 118, 110, 0.45);
+    background: rgba(236, 254, 255, 0.35);
+    box-shadow: 0 0 0 1px rgba(20, 184, 166, 0.12);
+}
+
+.mc-staff-checkcard__main {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+    min-width: 0;
+}
+
+.mc-staff-checkcard__title {
+    font-weight: 700;
+    color: #0f172a;
+    font-size: 0.88rem;
+}
+
+.mc-staff-checkcard__sub {
+    font-size: 0.76rem;
+    color: #64748b;
+}
+
+.mc-staff-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+}
+
+.mc-staff-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.75rem;
+}
+
+.mc-staff-form .form-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #0f766e;
+    margin-bottom: 0.2rem;
+}
+
+.mc-staff-form .form-control,
+.mc-staff-form .form-select {
+    height: 2.35rem;
+    border-radius: 0.65rem;
+    border-color: rgba(15, 23, 42, 0.1);
+    background: #f8fafc;
+    font-size: 0.88rem;
+}
+
+.mc-staff-form .form-control:focus,
+.mc-staff-form .form-select:focus {
+    border-color: #14b8a6;
+    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.16);
+}
+
+.mc-staff-form textarea.form-control {
+    height: auto;
+    min-height: 4.5rem;
+}
+
+.mc-staff-hint {
+    font-size: 0.76rem;
+    color: #64748b;
+    margin-top: 0.35rem;
+}
+
+.mc-staff-modal .modal-content {
+    border: 1px solid rgba(15, 118, 110, 0.12);
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.mc-staff-modal .modal-header {
+    padding: 0.85rem 1rem;
+    background: #f8fafc;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.mc-staff-modal .modal-body {
+    padding: 0.85rem 1rem;
+}
+
+.mc-staff-modal .modal-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+}
+
+.mc-staff-modal .schedule-radio {
+    border-radius: 0.55rem;
+    padding: 0.35rem 0.65rem;
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    background: #fff;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.mc-staff-modal .schedule-radio:has(input:checked) {
+    border-color: #14b8a6;
+    background: #ecfdf5;
+    color: #047857;
+}
+
+.mc-staff-calendar-panel .schedule-board,
+.mc-staff-calendar-panel.schedule-board {
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+}
+
+.mc-staff-calendar-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding-bottom: 0.65rem;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+    margin-bottom: 0.65rem;
+}
+
+.mc-staff-seg {
+    display: inline-flex;
+    padding: 0.15rem;
+    border-radius: 0.65rem;
+    background: #f1f5f9;
+    gap: 0.15rem;
+}
+
+.mc-staff-seg .btn {
+    border: 0;
+    border-radius: 0.5rem !important;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 0.35rem 0.7rem;
+}
+
+.mc-staff-seg .btn.active {
+    background: #fff;
+    color: #0f766e;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+}
+
+.mc-staff-card-form:not(.is-editing) fieldset[disabled] .form-control,
+.mc-staff-card-form:not(.is-editing) fieldset[disabled] .form-select {
+    background: #f8fafc;
+    border-color: rgba(15, 23, 42, 0.08);
+    color: #0f172a;
+    opacity: 1;
+}
+
+.mc-staff-card-form .validation-summary-valid,
+.mc-staff-card-form .mc-staff-validation-summary:empty {
+    display: none !important;
+}
+
+.mc-staff-save-btn {
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.mc-staff-save-btn.is-visible {
+    animation: mc-fade-in 0.22s ease;
+}
+
+@keyframes mc-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 768px) {
+    .mc-staff-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .mc-staff-hero__actions {
+        width: 100%;
+    }
+
+    .mc-staff-hero__actions .mc-staff-btn {
+        flex: 1 1 auto;
+    }
+}
+
+/* Catalog / spravochniki */
+.mc-staff-import {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.mc-staff-import .form-control {
+    max-width: 220px;
+    min-height: 2rem;
+    font-size: 0.82rem;
+}
+
+.mc-staff-import__hint {
+    width: 100%;
+    margin-top: 0.35rem;
+    font-size: 0.78rem;
+    color: #64748b;
+}
+
+.mc-staff-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.5rem;
+    padding: 0.1rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+}
+
+.mc-staff-badge--active {
+    background: rgba(16, 185, 129, 0.12);
+    color: #047857;
+}
+
+.mc-staff-badge--muted {
+    background: rgba(100, 116, 139, 0.12);
+    color: #475569;
+}
+
+.mc-staff-badge--notify-new {
+    background: rgba(59, 130, 246, 0.12);
+    color: #1d4ed8;
+}
+
+.mc-staff-badge--notify-processing {
+    background: rgba(245, 158, 11, 0.14);
+    color: #b45309;
+}
+
+.mc-staff-badge--notify-sent {
+    background: rgba(34, 197, 94, 0.14);
+    color: #15803d;
+}
+
+.mc-staff-badge--notify-failed {
+    background: rgba(239, 68, 68, 0.12);
+    color: #b91c1c;
+}
+
+.mc-staff-notify-filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.65rem 0.85rem;
+    align-items: end;
+    margin-bottom: 0.85rem;
+}
+
+.mc-staff-notify-filters__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    align-items: center;
+}
+
+.mc-staff-templates-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: 1rem;
+}
+
+@media (max-width: 992px) {
+    .mc-staff-templates-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.mc-staff-validation-summary:not(.validation-summary-errors) {
+    display: none;
+}
+
+.mc-staff-notify-picker {
+    border: 1px solid rgba(15, 118, 110, 0.12);
+    border-radius: 0.85rem;
+    background: #f8fafc;
+    overflow: hidden;
+}
+
+.notify-picker__list {
+    max-height: 420px;
+    overflow: auto;
+    padding: 0.75rem;
+    display: grid;
+    gap: 0.55rem;
+}
+
+.notify-option {
+    display: block;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 0.75rem;
+    background: #fff;
+    padding: 0.75rem 0.85rem;
+    cursor: pointer;
+}
+
+.notify-option__row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+}
+
+.notify-option__title {
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.notify-option__meta,
+.notify-option__channels {
+    color: #64748b;
+    font-size: 0.84rem;
+    margin-top: 0.15rem;
+    display: block;
+}
+
+.notify-channel {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 0.75rem;
+    padding: 0.85rem 1rem;
+    background: #fff;
+    margin-bottom: 0.65rem;
+}
+
+.notify-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+    margin: 1rem 0;
+}
+
+.notify-summary__item {
+    border-radius: 0.75rem;
+    padding: 0.75rem 0.9rem;
+    background: #f0fdfa;
+    border: 1px solid rgba(15, 118, 110, 0.12);
+}
+
+.notify-summary__label {
+    color: #64748b;
+    font-size: 0.78rem;
+}
+
+.notify-summary__value {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.mc-staff-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}

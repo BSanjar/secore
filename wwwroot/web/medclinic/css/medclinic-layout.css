@@ -29,15 +29,16 @@ body.medclinic-shell--collapsed .medclinic-shell__layout {
 }
 
 .medclinic-sidebar {
-    background: linear-gradient(180deg, #0f766e 0%, #14b8a6 100%);
+    background: linear-gradient(180deg, #0b5f59 0%, #0f766e 42%, #14b8a6 100%);
     color: #fff;
-    padding: 28px 22px;
+    padding: 24px 18px;
     display: flex;
     flex-direction: column;
-    gap: 28px;
+    gap: 22px;
     position: sticky;
     top: 0;
     height: 100vh;
+    box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.08);
 }
 
 .medclinic-sidebar__top {
@@ -76,16 +77,27 @@ body.medclinic-shell .medclinic-sidebar a.medclinic-brand:hover {
     color: inherit;
 }
 
-.medclinic-brand__logo {
-    width: 48px;
-    height: 48px;
-    border-radius: 16px;
-    background: linear-gradient(135deg, #38bdf8 0%, #0f766e 100%);
-    display: grid;
-    place-items: center;
-    font-weight: 700;
-    font-size: 1.2rem;
-    box-shadow: 0 10px 22px rgba(15, 118, 110, 0.35);
+.medclinic-brand--logo {
+    gap: 12px;
+    padding: 2px 6px 2px 0;
+    min-width: 0;
+}
+
+.medclinic-brand__logo-img {
+    display: block;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    object-fit: cover;
+    flex-shrink: 0;
+    box-shadow: 0 8px 18px rgba(8, 47, 44, 0.28);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+body.medclinic-shell .medclinic-sidebar a.medclinic-brand:hover .medclinic-brand__logo-img {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px rgba(8, 47, 44, 0.34);
 }
 
 .medclinic-brand strong,
@@ -109,6 +121,11 @@ body.medclinic-shell--collapsed .medclinic-sidebar__top {
 
 body.medclinic-shell--collapsed .medclinic-brand {
     justify-content: center;
+}
+
+body.medclinic-shell--collapsed .medclinic-brand__logo-img {
+    width: 40px;
+    height: 40px;
 }
 
 .medclinic-sidebar__toggle {
@@ -142,6 +159,8 @@ body.medclinic-shell--collapsed .medclinic-brand {
 
 .medclinic-sidebar__footer {
     margin-top: auto;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
 }
 
 body.medclinic-shell .medclinic-sidebar .medclinic-sidebar__footer a,
@@ -181,6 +200,10 @@ body.medclinic-shell .medclinic-sidebar a.medclinic-nav__link:visited {
 .medclinic-nav__link.active {
     color: #fff;
     background: rgba(255, 255, 255, 0.14);
+}
+
+.medclinic-nav__link.active {
+    box-shadow: inset 3px 0 0 rgba(255, 255, 255, 0.88);
 }
 
 .medclinic-nav__link--muted {
@@ -249,8 +272,15 @@ body.medclinic-shell .medclinic-sidebar a.medclinic-nav__link:visited {
 }
 
 .medclinic-nav__link--nested {
-    padding-left: 20px;
+    padding-left: 14px;
     font-size: 0.94rem;
+}
+
+.medclinic-nav__link--nested .medclinic-nav__icon {
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+    border-radius: 9px;
 }
 
 body.medclinic-shell--collapsed .medclinic-nav__group-items {
@@ -268,13 +298,26 @@ body.medclinic-shell--collapsed .medclinic-nav__group-chevron {
 }
 
 .medclinic-nav__icon {
-    width: 22px;
-    min-width: 22px;
-    text-align: center;
-    font-size: 1rem;
+    width: 34px;
+    min-width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.medclinic-nav__link:hover .medclinic-nav__icon,
+.medclinic-nav__link.active .medclinic-nav__icon,
+.medclinic-nav__group > summary:hover .medclinic-nav__icon,
+.medclinic-nav__group[open] > summary .medclinic-nav__icon,
+.medclinic-nav__group--active-child > summary .medclinic-nav__icon {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.16);
 }
 
 .medclinic-nav__icon svg {
@@ -303,8 +346,20 @@ body.medclinic-shell--collapsed .medclinic-nav__label {
 
 body.medclinic-shell--collapsed .medclinic-nav__link {
     justify-content: center;
-    padding-left: 10px;
-    padding-right: 10px;
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+body.medclinic-shell--collapsed .medclinic-nav__icon {
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+}
+
+@media (min-width: 1101px) {
+    body.medclinic-shell .medclinic-sidebar .app-shell-sidebar-close {
+        display: none;
+    }
 }
 
 .medclinic-content {

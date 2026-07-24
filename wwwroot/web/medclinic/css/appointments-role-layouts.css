@@ -758,6 +758,10 @@ body.org-medclinic .appointments-page {
     align-items: center;
 }
 
+.registry-v2-toolbar__grid--own {
+    grid-template-columns: minmax(0, 1fr);
+}
+
 .registry-v2-toolbar__foot {
     display: flex;
     flex-wrap: wrap;

@@ -751,7 +751,7 @@
     <value>Загрузка счетов...</value>
   </data>
   <data name="MedicalCabinet" xml:space="preserve">
-    <value>Медицинский кабинет</value>
+    <value>SECORE</value>
   </data>
   <data name="OrganizationProfileMedclinic" xml:space="preserve">
     <value>Профиль организации: Medclinic</value>

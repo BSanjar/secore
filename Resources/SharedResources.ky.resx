@@ -751,7 +751,7 @@
     <value>Эсептер жүктөлүүдө...</value>
   </data>
   <data name="MedicalCabinet" xml:space="preserve">
-    <value>Медициналык кабинет</value>
+    <value>SECORE</value>
   </data>
   <data name="OrganizationProfileMedclinic" xml:space="preserve">
     <value>Уюмдун профили: Medclinic</value>

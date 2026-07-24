@@ -1,7 +1,8 @@
 ﻿@model WebApplication1.ViewModels.Doctors.DoctorAssignmentsEditViewModel
 @using System.Text.Json
 @{
-    ViewData["Title"] = "Приемы врача";
+    ViewData["Title"] = Model.DoctorName + " — Приёмы";
+    ViewData["HideTopbarTitle"] = true;
     var eventsJson = JsonSerializer.Serialize(Model.Events.Select(x => new
     {
         id = x.Id,
@@ -16,59 +17,66 @@
 }
 
 @section Styles {
+    <partial name="Partials/_MedclinicStaffStyles" />
     <link rel="stylesheet" href="~/web/medclinic/css/medclinic-schedule.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/doctor-schedule.css" asp-append-version="true" />
 }
 
-<div class="dashboard-page">
+<div class="mc-staff dashboard-page">
     @if (TempData["Message"] != null)
     {
-        <div class="alert alert-success border-0 shadow-sm mb-4">@TempData["Message"]</div>
+        <div class="alert alert-success mc-staff-alert">@TempData["Message"]</div>
     }
     @if (TempData["Error"] != null)
     {
-        <div class="alert alert-danger border-0 shadow-sm mb-4">@TempData["Error"]</div>
+        <div class="alert alert-danger mc-staff-alert">@TempData["Error"]</div>
     }
 
-    <div class="medclinic-surface p-4 mb-4">
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <nav class="mc-staff-breadcrumb" aria-label="Навигация">
+        <a asp-action="Index">Сотрудники</a>
+        <span class="mc-staff-breadcrumb__sep">›</span>
+        <a asp-controller="Users" asp-action="Edit" asp-route-id="@Model.DoctorId">@Model.DoctorName</a>
+        <span class="mc-staff-breadcrumb__sep">›</span>
+        <span>Приёмы</span>
+    </nav>
+
+    <div class="mc-staff-hero">
+        <div class="mc-staff-hero__row">
             <div>
-                <h1 class="h3 mb-1">@Model.DoctorName</h1>
-                <p class="text-muted mb-0">Календарь приемов врача.</p>
+                <h1 class="mc-staff-hero__title">@Model.DoctorName</h1>
+                <p class="mc-staff-hero__sub">Календарь приёмов сотрудника.</p>
             </div>
-            <div class="d-flex flex-wrap gap-2">
-                <a class="btn btn-outline-secondary" asp-action="Index">К списку докторов</a>
-                <a class="btn btn-primary" asp-action="Edit" asp-route-id="@Model.DoctorId">Edit</a>
-                <a class="btn btn-outline-primary" asp-controller="Users" asp-action="Edit" asp-route-id="@Model.DoctorId">Карточка пользователя</a>
+            <div class="mc-staff-hero__actions">
+                <a class="mc-staff-btn mc-staff-btn--ghost" asp-action="Index">Назад к списку</a>
             </div>
         </div>
     </div>
 
-    <div class="medclinic-surface schedule-board mb-4">
-        <div class="p-4 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div class="mc-staff-panel mc-staff-calendar-panel schedule-board">
+        <div class="mc-staff-calendar-toolbar" id="doctorCalendarToolbar">
             <div>
-                <h2 class="h5 mb-1">Календарь врача</h2>
-                <p class="text-muted mb-0">Фон показывает рабочее время, поверх него отображаются назначенные приемы.</p>
+                <h2 class="mc-staff-panel__title mb-0">Календарь</h2>
+                <p class="mc-staff-panel__sub mb-0">Рабочее время и назначенные приёмы.</p>
             </div>
             <div class="d-flex flex-wrap gap-2 align-items-center">
-                <div class="btn-group" role="group">
-                    <button class="btn btn-outline-secondary doctor-calendar-nav" data-direction="prev" type="button">Назад</button>
+                <div class="mc-staff-seg btn-group" role="group">
+                    <button class="btn btn-outline-secondary doctor-calendar-nav" data-direction="prev" type="button">‹</button>
                     <button class="btn btn-outline-secondary doctor-calendar-nav" data-direction="today" type="button">Сегодня</button>
-                    <button class="btn btn-outline-secondary doctor-calendar-nav" data-direction="next" type="button">Вперед</button>
+                    <button class="btn btn-outline-secondary doctor-calendar-nav" data-direction="next" type="button">›</button>
                 </div>
-                <div class="btn-group doctor-calendar-switcher" role="group">
-                    <button class="btn btn-primary active" data-view="week" type="button">Неделя</button>
-                    <button class="btn btn-outline-primary" data-view="month" type="button">Месяц</button>
+                <div class="mc-staff-seg btn-group doctor-calendar-switcher" role="group">
+                    <button class="btn active" data-view="week" type="button">Неделя</button>
+                    <button class="btn" data-view="month" type="button">Месяц</button>
                 </div>
             </div>
         </div>
-        <div class="px-4 pt-3">
-            <div class="d-flex flex-wrap gap-2 text-muted small mb-3">
-                <span class="medclinic-badge medclinic-badge--available">Рабочий день</span>
-                <span class="medclinic-badge medclinic-badge--busy">Прием</span>
-            </div>
+
+        <div class="d-flex flex-wrap gap-2 mb-2">
+            <span class="medclinic-badge medclinic-badge--available">Рабочий день</span>
+            <span class="medclinic-badge medclinic-badge--busy">Приём</span>
         </div>
-        <div class="schedule-calendar px-4 pb-4">
+
+        <div class="schedule-calendar">
             <div class="schedule-calendar__header">
                 <div id="doctorCalendarPeriodLabel" class="schedule-calendar__period"></div>
             </div>

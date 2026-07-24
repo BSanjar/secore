@@ -1,74 +1,77 @@
-﻿@using Microsoft.AspNetCore.Mvc.Localization
-@using Microsoft.AspNetCore.Localization
-@using WebApplication1.Services.Cabinets
-@inject IHtmlLocalizer<WebApplication1.SharedResources> Localizer
-@inject IShellViewModelBuilder ShellViewModelBuilder
-@{
-    Layout = "~/Views/Shared/CabinetLayouts/_BaseCabinetLayout.cshtml";
-
-    var shell = ShellViewModelBuilder.Build();
-    ViewData["BodyClass"] = shell.BodyClass;
-    ViewData["CabinetTitleSuffixKey"] = shell.TitleSuffixResourceKey;
-    ViewData["IncludeAntiforgery"] = shell.IncludeAntiforgery;
-
-    var requestCulture = Context.Features.Get<IRequestCultureFeature>();
-    var currentCulture = requestCulture?.RequestCulture?.UICulture ?? System.Globalization.CultureInfo.CurrentUICulture;
-    var currentCultureName = currentCulture.Name ?? "ru";
-    if (currentCultureName.Length > 2) { currentCultureName = currentCultureName.Substring(0, 2); }
-    var returnUrl = string.IsNullOrEmpty(Context.Request.Path) ? "/" : $"{Context.Request.Path.Value}{Context.Request.QueryString}";
-}
-
-@section LayoutStyles {
-    <link rel="stylesheet" href="~/css/dashboard-soft.css" asp-append-version="true" />
-    <link rel="stylesheet" href="@shell.CabinetCssPath" asp-append-version="true" />
-    @RenderSection("Styles", required: false)
-}
-
-@section LayoutScripts {
-    <script src="~/web/medclinic/js/medclinic-layout.js" asp-append-version="true"></script>
-    <script>
-        (function () {
-            var langBtn = document.getElementById('dashboardLangBtn');
-            var langDropdown = document.getElementById('dashboardLangDropdown');
-            if (langBtn && langDropdown) {
-                langBtn.addEventListener('click', function (e) {
-                    e.stopPropagation();
-                    langDropdown.classList.toggle('is-open');
-                });
-                document.addEventListener('click', function () { langDropdown.classList.remove('is-open'); });
-            }
-        })();
-    </script>
-    @RenderSection("Scripts", required: false)
-}
-
-<div class="medclinic-shell__layout">
-    @await Html.PartialAsync("~/Views/Shared/CabinetLayouts/Partials/_MedclinicSidebar.cshtml")
-    <button type="button" class="app-shell-overlay" data-shell-overlay aria-hidden="true" aria-label="@Localizer["CloseNavigationMenu"]"></button>
-
-    <div class="medclinic-content">
-        <header class="medclinic-topbar">
-            <div class="medclinic-topbar__meta">
-                <div class="medclinic-topbar__title">@ViewData["Title"]</div>
-                @if (!string.IsNullOrEmpty(shell.OrganizationCaptionResourceKey))
-                {
-                    <div class="medclinic-topbar__subtitle">@Localizer[shell.OrganizationCaptionResourceKey].Value</div>
-                }
-            </div>
-            @await Html.PartialAsync(
-                "~/Views/Shared/CabinetLayouts/Partials/_MedclinicTopbarActions.cshtml",
-                viewData: new ViewDataDictionary(ViewData)
-                {
-                    ["CurrentCultureName"] = currentCultureName,
-                    ["ReturnUrl"] = returnUrl
-                })
-        </header>
-
-        <main class="medclinic-page">
-            @RenderBody()
-        </main>
-    </div>
-</div>
-
-
+﻿@using Microsoft.AspNetCore.Mvc.Localization
+@using Microsoft.AspNetCore.Localization
+@using WebApplication1.Services.Cabinets
+@inject IHtmlLocalizer<WebApplication1.SharedResources> Localizer
+@inject IShellViewModelBuilder ShellViewModelBuilder
+@{
+    Layout = "~/Views/Shared/CabinetLayouts/_BaseCabinetLayout.cshtml";
+
+    var shell = ShellViewModelBuilder.Build();
+    ViewData["BodyClass"] = shell.BodyClass;
+    ViewData["CabinetTitleSuffixKey"] = shell.TitleSuffixResourceKey;
+    ViewData["IncludeAntiforgery"] = shell.IncludeAntiforgery;
+
+    var requestCulture = Context.Features.Get<IRequestCultureFeature>();
+    var currentCulture = requestCulture?.RequestCulture?.UICulture ?? System.Globalization.CultureInfo.CurrentUICulture;
+    var currentCultureName = currentCulture.Name ?? "ru";
+    if (currentCultureName.Length > 2) { currentCultureName = currentCultureName.Substring(0, 2); }
+    var returnUrl = string.IsNullOrEmpty(Context.Request.Path) ? "/" : $"{Context.Request.Path.Value}{Context.Request.QueryString}";
+}
+
+@section LayoutStyles {
+    <link rel="stylesheet" href="~/css/dashboard-soft.css" asp-append-version="true" />
+    <link rel="stylesheet" href="@shell.CabinetCssPath" asp-append-version="true" />
+    @RenderSection("Styles", required: false)
+}
+
+@section LayoutScripts {
+    <script src="~/web/medclinic/js/medclinic-layout.js" asp-append-version="true"></script>
+    <script>
+        (function () {
+            var langBtn = document.getElementById('dashboardLangBtn');
+            var langDropdown = document.getElementById('dashboardLangDropdown');
+            if (langBtn && langDropdown) {
+                langBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    langDropdown.classList.toggle('is-open');
+                });
+                document.addEventListener('click', function () { langDropdown.classList.remove('is-open'); });
+            }
+        })();
+    </script>
+    @RenderSection("Scripts", required: false)
+}
+
+<div class="medclinic-shell__layout">
+    @await Html.PartialAsync("~/Views/Shared/CabinetLayouts/Partials/_MedclinicSidebar.cshtml")
+    <button type="button" class="app-shell-overlay" data-shell-overlay aria-hidden="true" aria-label="@Localizer["CloseNavigationMenu"]"></button>
+
+    <div class="medclinic-content">
+        <header class="medclinic-topbar">
+            <div class="medclinic-topbar__meta">
+                @if (ViewData["HideTopbarTitle"] as bool? != true)
+                {
+                    <div class="medclinic-topbar__title">@ViewData["Title"]</div>
+                }
+                @if (!string.IsNullOrEmpty(shell.OrganizationCaptionResourceKey))
+                {
+                    <div class="medclinic-topbar__subtitle">@Localizer[shell.OrganizationCaptionResourceKey].Value</div>
+                }
+            </div>
+            @await Html.PartialAsync(
+                "~/Views/Shared/CabinetLayouts/Partials/_MedclinicTopbarActions.cshtml",
+                viewData: new ViewDataDictionary(ViewData)
+                {
+                    ["CurrentCultureName"] = currentCultureName,
+                    ["ReturnUrl"] = returnUrl
+                })
+        </header>
+
+        <main class="medclinic-page">
+            @RenderBody()
+        </main>
+    </div>
+</div>
+
+
 

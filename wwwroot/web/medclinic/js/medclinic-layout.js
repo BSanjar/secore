@@ -12,5 +12,8 @@
     toggle.addEventListener("click", () => {
         const collapsed = body.classList.toggle("medclinic-shell--collapsed");
         window.localStorage.setItem(key, collapsed ? "1" : "0");
+        toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
     });
+
+    toggle.setAttribute("aria-expanded", body.classList.contains("medclinic-shell--collapsed") ? "false" : "true");
 })();

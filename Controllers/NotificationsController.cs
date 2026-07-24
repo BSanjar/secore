@@ -38,6 +38,9 @@ public class NotificationsController : Controller
 
     public async Task<IActionResult> Create(CancellationToken cancellationToken)
     {
+        if (!AuthorizationHelper.CanSendNotifications(HttpContext))
+            return RedirectToAction("AccessDenied", "Home", new { permissionCode = "notifications.send" });
+
         var featureGuard = EnsureNotificationsFeature();
         if (featureGuard != null)
             return featureGuard;
@@ -54,6 +57,9 @@ public class NotificationsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(NotificationCreateViewModel model, CancellationToken cancellationToken)
     {
+        if (!AuthorizationHelper.CanSendNotifications(HttpContext))
+            return RedirectToAction("AccessDenied", "Home", new { permissionCode = "notifications.send" });
+
         var featureGuard = EnsureNotificationsFeature();
         if (featureGuard != null)
             return featureGuard;
@@ -129,9 +135,10 @@ public class NotificationsController : Controller
                 $"Пропущено клиентов без подходящих контактов: {result.ClientsSkippedWithoutChannel}.";
         }
 
-        return RedirectToAction(nameof(Create));
+        return RedirectToAction(nameof(Index));
     }
 
+    [RequirePermission("notifications.view")]
     public async Task<IActionResult> Index(
         int page = 1,
         int pageSize = 20,
@@ -200,7 +207,7 @@ public class NotificationsController : Controller
         ViewBag.CreatedTo = createdTo ?? "";
         ViewBag.SentFrom = sentFrom ?? "";
         ViewBag.SentTo = sentTo ?? "";
-        ViewBag.IsAdmin = AuthorizationHelper.IsAdminRole(HttpContext);
+        ViewBag.CanSendNotifications = AuthorizationHelper.CanSendNotifications(HttpContext);
 
         return View(list);
     }

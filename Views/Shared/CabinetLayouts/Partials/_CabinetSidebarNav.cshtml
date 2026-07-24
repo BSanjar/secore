@@ -1,5 +1,6 @@
 @using Microsoft.AspNetCore.Mvc.Localization
-@model IReadOnlyList<WebApplication1.Services.Cabinets.Navigation.CabinetNavItem>
+@using WebApplication1.Services.Cabinets.Navigation
+@model IReadOnlyList<CabinetNavItem>
 @inject IHtmlLocalizer<WebApplication1.SharedResources> Localizer
 @{
     var variant = ViewData["Variant"]?.ToString()?.ToLowerInvariant() ?? "detsad";
@@ -12,10 +13,8 @@
     {
         if (item.HasChildren)
         {
-            var children = item.Children ?? Array.Empty<WebApplication1.Services.Cabinets.Navigation.CabinetNavItem>();
-            var groupOpen = children.Any(child =>
-                string.Equals(child.Controller, activeController, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(child.Action, activeAction, StringComparison.OrdinalIgnoreCase));
+            var children = item.Children ?? Array.Empty<CabinetNavItem>();
+            var groupOpen = CabinetNavActiveHelper.IsGroupOpen(children, activeController, activeAction);
             <details class="medclinic-nav__group @(groupOpen ? "medclinic-nav__group--active-child is-active-group" : "")" @(groupOpen ? "open" : null)>
                 <summary class="medclinic-nav__group-summary @(groupOpen ? "active" : "")" title="@Localizer[item.Title]">
                     <span class="medclinic-nav__icon">@Html.Raw(item.IconHtml)</span>
@@ -25,7 +24,8 @@
                 <div class="medclinic-nav__group-items">
                     @foreach (var child in children)
                     {
-                        <a class="medclinic-nav__link medclinic-nav__link--nested @((string.Equals(child.Controller, activeController, StringComparison.OrdinalIgnoreCase) && string.Equals(child.Action, activeAction, StringComparison.OrdinalIgnoreCase)) ? "active" : "")"
+                        var childActive = CabinetNavActiveHelper.IsItemActive(child, activeController, activeAction);
+                        <a class="medclinic-nav__link medclinic-nav__link--nested @(childActive ? "active" : "")"
                            asp-controller="@child.Controller"
                            asp-action="@child.Action"
                            title="@Localizer[child.Title]">
@@ -38,7 +38,8 @@
             continue;
         }
 
-        <a class="medclinic-nav__link @((string.Equals(item.Controller, activeController, StringComparison.OrdinalIgnoreCase) && string.Equals(item.Action, activeAction, StringComparison.OrdinalIgnoreCase)) ? "active" : "")"
+        var itemActive = CabinetNavActiveHelper.IsItemActive(item, activeController, activeAction);
+        <a class="medclinic-nav__link @(itemActive ? "active" : "")"
            asp-controller="@item.Controller"
            asp-action="@item.Action"
            title="@Localizer[item.Title]">
@@ -51,7 +52,8 @@ else
 {
     foreach (var item in Model)
     {
-        <a class="dashboard-nav-item @((string.Equals(item.Controller, activeController, StringComparison.OrdinalIgnoreCase) && string.Equals(item.Action, activeAction, StringComparison.OrdinalIgnoreCase)) ? "active" : "")"
+        var itemActive = CabinetNavActiveHelper.IsItemActive(item, activeController, activeAction);
+        <a class="dashboard-nav-item @(itemActive ? "active" : "")"
            asp-controller="@item.Controller"
            asp-action="@item.Action">
             <span class="dashboard-nav-item-icon">@Html.Raw(item.IconHtml)</span>

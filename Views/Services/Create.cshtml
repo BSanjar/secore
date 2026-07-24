@@ -2,63 +2,73 @@
 @using Microsoft.AspNetCore.Mvc.Rendering
 @{
     ViewData["Title"] = "Новая услуга";
+    ViewData["HideTopbarTitle"] = true;
     var specializations = ViewBag.Specializations as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
 }
 
-<div class="dashboard-page">
-    <div class="medclinic-surface p-4">
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+@section Styles {
+    <partial name="Partials/_MedclinicCatalogStyles" />
+}
+
+<div class="mc-staff dashboard-page">
+    <nav class="mc-staff-breadcrumb" aria-label="Навигация">
+        <a asp-action="Index">Услуги</a>
+        <span class="mc-staff-breadcrumb__sep">›</span>
+        <span>Новая услуга</span>
+    </nav>
+
+    <div class="mc-staff-hero">
+        <div class="mc-staff-hero__row">
             <div>
-                <h1 class="h3 mb-1">Новая услуга</h1>
-                <p class="text-muted mb-0">Создание услуги клиники для записей, счетов и платежей.</p>
+                <h1 class="mc-staff-hero__title">Новая услуга</h1>
+                <p class="mc-staff-hero__sub">Создание услуги клиники для записей, счетов и платежей.</p>
             </div>
-            <a class="btn btn-outline-secondary" asp-action="Index">Назад к списку</a>
+            <div class="mc-staff-hero__actions">
+                <a class="mc-staff-btn mc-staff-btn--ghost" asp-action="Index">Назад к списку</a>
+            </div>
         </div>
+    </div>
 
-        <form method="post" class="row g-4">
+    <div class="mc-staff-panel mc-staff-form">
+        <form method="post" class="mc-catalog-form">
             @Html.AntiForgeryToken()
-            <div asp-validation-summary="ModelOnly" class="text-danger small"></div>
-
-            <div class="col-md-6">
-                <label asp-for="Name" class="form-label">Название</label>
-                <input asp-for="Name" class="form-control" />
-                <span asp-validation-for="Name" class="text-danger small"></span>
-            </div>
-
-            <div class="col-md-6 d-flex align-items-end">
-                <div class="form-check form-switch">
-                    <input asp-for="IsFixed" class="form-check-input" id="isFixedSwitch" />
-                    <label asp-for="IsFixed" class="form-check-label">Фиксированная цена</label>
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger mc-staff-alert py-2 px-3 small mc-staff-validation-summary"></div>
+            <div class="mc-staff-form-grid">
+                <div>
+                    <label asp-for="Name" class="form-label">Название</label>
+                    <input asp-for="Name" class="form-control" />
+                    <span asp-validation-for="Name" class="text-danger small"></span>
+                </div>
+                <div class="d-flex align-items-end">
+                    <div class="form-check form-switch">
+                        <input asp-for="IsFixed" class="form-check-input" id="isFixedSwitch" />
+                        <label asp-for="IsFixed" class="form-check-label">Фиксированная цена</label>
+                    </div>
+                </div>
+                <div data-fixed-block>
+                    <label asp-for="FixedAmount" class="form-label">Цена</label>
+                    <input asp-for="FixedAmount" class="form-control" />
+                    <span asp-validation-for="FixedAmount" class="text-danger small"></span>
+                </div>
+                <div data-range-block>
+                    <label asp-for="MinAmount" class="form-label">Мин. сумма</label>
+                    <input asp-for="MinAmount" class="form-control" />
+                    <span asp-validation-for="MinAmount" class="text-danger small"></span>
+                </div>
+                <div data-range-block>
+                    <label asp-for="MaxAmount" class="form-label">Макс. сумма</label>
+                    <input asp-for="MaxAmount" class="form-control" />
+                    <span asp-validation-for="MaxAmount" class="text-danger small"></span>
+                </div>
+                <div style="grid-column:1/-1;">
+                    <label asp-for="SpecializationIds" class="form-label">Специализации</label>
+                    <select asp-for="SpecializationIds" asp-items="specializations" class="form-select" multiple size="8"></select>
+                    <div class="mc-staff-hint">Можно назначить услугу сразу нескольким специализациям.</div>
                 </div>
             </div>
-
-            <div class="col-md-4" data-fixed-block>
-                <label asp-for="FixedAmount" class="form-label">Цена</label>
-                <input asp-for="FixedAmount" class="form-control" />
-                <span asp-validation-for="FixedAmount" class="text-danger small"></span>
-            </div>
-
-            <div class="col-md-4" data-range-block>
-                <label asp-for="MinAmount" class="form-label">Мин. сумма</label>
-                <input asp-for="MinAmount" class="form-control" />
-                <span asp-validation-for="MinAmount" class="text-danger small"></span>
-            </div>
-
-            <div class="col-md-4" data-range-block>
-                <label asp-for="MaxAmount" class="form-label">Макс. сумма</label>
-                <input asp-for="MaxAmount" class="form-control" />
-                <span asp-validation-for="MaxAmount" class="text-danger small"></span>
-            </div>
-
-            <div class="col-12">
-                <label asp-for="SpecializationIds" class="form-label">Специализации</label>
-                <select asp-for="SpecializationIds" asp-items="specializations" class="form-select" multiple size="8"></select>
-                <div class="form-text">Можно назначить услугу сразу нескольким специализациям.</div>
-            </div>
-
-            <div class="col-12 d-flex gap-2">
-                <button type="submit" class="btn btn-primary">Сохранить</button>
-                <a class="btn btn-outline-secondary" asp-action="Index">Отмена</a>
+            <div class="d-flex gap-2 mt-3">
+                <button type="submit" class="mc-staff-btn mc-staff-btn--primary" data-loading-text="Сохранение...">Сохранить</button>
+                <a class="mc-staff-btn mc-staff-btn--ghost" asp-action="Index">Отмена</a>
             </div>
         </form>
     </div>
@@ -66,6 +76,7 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <partial name="Partials/_MedclinicCatalogScripts" />
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const toggle = document.getElementById('isFixedSwitch');

@@ -5,6 +5,7 @@
     var search = ViewBag.Search as string ?? "";
     var isDeletedFilter = ViewBag.IsDeletedFilter as string ?? "active";
     var totalCount = (int)(ViewBag.TotalCount ?? 0);
+    var canManageChildren = ViewBag.CanManageChildren as bool? ?? false;
 }
 
 @section Styles {
@@ -19,12 +20,15 @@
                 <h1 class="page-title">Группы</h1>
                 <p class="page-subtitle mb-0">Группы клиентов (детей) организации</p>
             </div>
-            <button type="button" class="action-btn action-btn--add" onclick="openAddGroupModal()" title="Добавить группу">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
-                </svg>
-                Добавить группу
-            </button>
+            @if (canManageChildren)
+            {
+                <button type="button" class="action-btn action-btn--add" onclick="openAddGroupModal()" title="Добавить группу">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
+                    </svg>
+                    Добавить группу
+                </button>
+            }
         </div>
     </div>
 
@@ -81,7 +85,7 @@
                 </div>
                 <h3 class="empty-state-title">Групп пока нет</h3>
                 <p class="empty-state-description">@(string.IsNullOrEmpty(search) ? "Создайте группу, чтобы распределять клиентов (детей) по группам" : "По вашему запросу ничего не найдено. Измените поиск.")</p>
-                @if (string.IsNullOrEmpty(search))
+                @if (string.IsNullOrEmpty(search) && canManageChildren)
                 {
                     <button type="button" class="action-btn action-btn--add mt-3" onclick="openAddGroupModal()" title="Добавить группу">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

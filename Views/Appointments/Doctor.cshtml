@@ -1,7 +1,8 @@
 ﻿@model WebApplication1.ViewModels.Appointments.AppointmentsIndexViewModel
 @using System.Text.Json
 @{
-    ViewData["Title"] = "Мое расписание";
+    ViewData["Title"] = "Мой график";
+    ViewData["HideTopbarTitle"] = true;
     var canManageAppointments = (bool?)ViewBag.CanManageAppointments == true;
     var canGenerateInvoice = (bool?)ViewBag.CanGenerateInvoice == true;
     var canMarkAsPaidManually = (bool?)ViewBag.CanMarkAsPaidManually == true;
@@ -14,68 +15,22 @@
     var weekEnd = weekStart.AddDays(7);
     var weekAppointments = Model.Events.Count(x => x.Start >= weekStart && x.Start < weekEnd);
 
-    var eventsJson = JsonSerializer.Serialize(Model.Events.Select(x => new
-    {
-        id = x.Id,
-        title = x.Title,
-        doctorId = x.DoctorId,
-        doctor = x.Doctor,
-        patientId = x.PatientId,
-        patientName = x.PatientName,
-        phone = x.Phone,
-        email = x.Email,
-        start = x.Start,
-        end = x.End,
-        status = x.Status,
-        notes = x.Notes,
-        referralSource = x.ReferralSource,
-        paymentType = x.PaymentType,
-        hasPaidInvoice = x.HasPaidInvoice,
-        isActive = x.IsActive,
-        createdAt = x.CreatedAt,
-        updatedAt = x.UpdatedAt,
-        services = x.Services
-    }));
+    var currentDoctor = Model.Doctors.FirstOrDefault();
+    var currentDoctorFilter = Model.DoctorFilters.FirstOrDefault(x => x.Value == currentDoctor?.Value)
+        ?? Model.DoctorFilters.FirstOrDefault();
+    var defaultDepartmentId = currentDoctorFilter?.DepartmentIds?.FirstOrDefault()
+        ?? Model.Departments.FirstOrDefault()?.Value
+        ?? "";
 
-    var patientsJson = JsonSerializer.Serialize(Model.Patients.Select(x => new
-    {
-        id = x.Id,
-        name = x.Name,
-        phone = x.Phone,
-        email = x.Email,
-        whatsApp = x.WhatsApp
-    }));
-
-    var serviceCatalogJson = JsonSerializer.Serialize(Model.ServiceCatalog.Select(x => new
-    {
-        id = x.Id,
-        name = x.Name,
-        priceTyiyn = x.PriceTyiyn
-    }));
-
+    var eventsJson = JsonSerializer.Serialize(Model.Events.Select(x => new { id = x.Id, title = x.Title, doctorId = x.DoctorId, doctor = x.Doctor, patientId = x.PatientId, patientName = x.PatientName, phone = x.Phone, email = x.Email, start = x.Start, end = x.End, status = x.Status, notes = x.Notes, referralSource = x.ReferralSource, paymentType = x.PaymentType, hasPaidInvoice = x.HasPaidInvoice, isActive = x.IsActive, createdAt = x.CreatedAt, updatedAt = x.UpdatedAt, services = x.Services }));
+    var patientsJson = JsonSerializer.Serialize(Model.Patients.Select(x => new { id = x.Id, name = x.Name, phone = x.Phone, email = x.Email, whatsApp = x.WhatsApp }));
+    var serviceCatalogJson = JsonSerializer.Serialize(Model.ServiceCatalog.Select(x => new { id = x.Id, name = x.Name, priceTyiyn = x.PriceTyiyn }));
     var doctorSchedulesJson = JsonSerializer.Serialize(Model.DoctorSchedules);
-    var doctorScheduleOverridesJson = JsonSerializer.Serialize(Model.DoctorScheduleOverrides.Select(x => new
-    {
-        userId = x.UserId,
-        workDate = x.WorkDate,
-        isWorking = x.IsWorking,
-        startTime = x.StartTime,
-        endTime = x.EndTime
-    }));
-    var appointmentDurationsJson = JsonSerializer.Serialize(Model.AppointmentDurations.Select(x => new
-    {
-        doctorId = x.UserId,
-        durationMinutes = x.DurationMinutes
-    }));
-
-    var medicalTemplatesJson = JsonSerializer.Serialize(Model.MedicalTemplates.Select(x => new
-    {
-        id = x.Id,
-        type = x.Type,
-        title = x.Title,
-        content = x.Content,
-        sortOrder = x.SortOrder
-    }));
+    var doctorScheduleOverridesJson = JsonSerializer.Serialize(Model.DoctorScheduleOverrides.Select(x => new { userId = x.UserId, workDate = x.WorkDate, isWorking = x.IsWorking, startTime = x.StartTime, endTime = x.EndTime }));
+    var appointmentDurationsJson = JsonSerializer.Serialize(Model.AppointmentDurations.Select(x => new { doctorId = x.UserId, durationMinutes = x.DurationMinutes }));
+    var departmentsJson = JsonSerializer.Serialize(Model.Departments.Select(x => new { value = x.Value, label = x.Label }));
+    var doctorFiltersJson = JsonSerializer.Serialize(Model.DoctorFilters.Select(x => new { value = x.Value, label = x.Label, departmentIds = x.DepartmentIds }));
+    var medicalTemplatesJson = JsonSerializer.Serialize(Model.MedicalTemplates.Select(x => new { id = x.Id, type = x.Type, title = x.Title, content = x.Content, sortOrder = x.SortOrder }));
 }
 
 @section Styles {
@@ -85,122 +40,99 @@
     <link rel="stylesheet" href="~/web/medclinic/css/medclinic-appointment-details.css" asp-append-version="true" />
 }
 
-<div class="dashboard-page appointments-page doctor-appointments-page">
+<div class="dashboard-page appointments-page doctor-appointments-page registry-appointments-page registry-v2-page registry-v2-page--own">
     @if (!string.IsNullOrWhiteSpace(Model.StorageMessage))
     {
-        <div class="alert alert-warning border-0 shadow-sm mb-4" role="alert">
-            @Model.StorageMessage
-        </div>
+        <div class="alert alert-warning border-0 shadow-sm mb-3" role="alert">@Model.StorageMessage</div>
     }
-
     @if (!string.IsNullOrWhiteSpace(Model.DoctorSchedulesMessage))
     {
-        <div class="alert alert-warning border-0 shadow-sm mb-4" role="alert">
-            @Model.DoctorSchedulesMessage
-        </div>
+        <div class="alert alert-warning border-0 shadow-sm mb-3" role="alert">@Model.DoctorSchedulesMessage</div>
     }
 
-    <div class="doctor-demo-shell">
-        <div class="doctor-demo-top-grid doctor-demo-top-grid--single">
-            <section class="doctor-demo-card doctor-demo-header-card">
-                <div class="doctor-demo-header-row">
-                    <div>
-                        <h1 class="doctor-demo-title">Мое расписание</h1>
-                        <p class="doctor-demo-subtitle">Здесь отображаются только ваши приемы. Оплаченные записи выделяются отдельным цветом.</p>
-                    </div>
-                    <div class="doctor-demo-mode-switch schedule-view-switcher" id="doctorModeSwitcher">
-                        <button class="doctor-demo-mode-btn mode-btn active btn btn-primary" data-view="day" type="button">День</button>
-                        <button class="doctor-demo-mode-btn mode-btn btn btn-outline-primary" data-view="week" type="button">Неделя</button>
-                        <button class="doctor-demo-mode-btn mode-btn btn btn-outline-primary" data-view="month" type="button">Месяц</button>
-                    </div>
-                </div>
-            </section>
-
-            <section class="doctor-demo-card doctor-period-nav-card">
-                <div class="doctor-period-nav">
-                    <div class="doctor-period-nav__left">
-                        <div class="btn-group" role="group">
-                            <button class="btn ghost-btn schedule-nav" data-direction="prev" type="button">← Назад</button>
-                            <button class="btn ghost-btn schedule-nav" data-direction="today" type="button">Сегодня</button>
-                            <button class="btn ghost-btn schedule-nav" data-direction="next" type="button">Вперед →</button>
+    <section class="registry-v2-toolbar" aria-label="Мой график">
+        <div class="registry-v2-toolbar__grid registry-v2-toolbar__grid--own">
+            <div class="registry-v2-period">
+                <div class="registry-v2-period__shell">
+                    <button type="button" class="registry-v2-period__icon-btn schedule-nav" data-direction="prev" title="Предыдущий день" aria-label="Предыдущий день">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                    <div class="registry-v2-month-popover-wrap">
+                        <button type="button" class="registry-v2-date-core" id="scheduleDateCore" aria-expanded="false" aria-controls="scheduleDatePanel" aria-haspopup="dialog" title="Выберите дату">
+                            <span class="registry-v2-date-core__weekday" id="registryFilterWeekday"></span>
+                            <span class="registry-v2-date-core__date" id="registryFilterDate"></span>
+                            <span class="registry-v2-date-core__month" id="scheduleMonthLabel"></span>
+                        </button>
+                        <div class="registry-v2-date-panel" id="scheduleDatePanel" hidden role="dialog" aria-label="Выбор даты">
+                            <div class="registry-v2-date-panel__year">
+                                <button type="button" class="registry-v2-month-panel__year-btn" id="scheduleYearPrev" aria-label="Предыдущий год">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </button>
+                                <span class="registry-v2-month-panel__year-value" id="scheduleYearLabel"></span>
+                                <button type="button" class="registry-v2-month-panel__year-btn" id="scheduleYearNext" aria-label="Следующий год">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </button>
+                            </div>
+                            <div class="registry-v2-month-panel__grid" id="scheduleMonthGrid" role="listbox" aria-label="Месяц"></div>
+                            <div class="registry-v2-date-panel__weekdays" aria-hidden="true">
+                                <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span>
+                            </div>
+                            <div class="registry-v2-date-panel__days" id="scheduleDayGrid" role="grid" aria-label="Число"></div>
                         </div>
                     </div>
-                    <div class="doctor-period-nav__right">
-                        <div id="schedulePeriodLabel" class="doctor-period-label"></div>
-                        <div class="doctor-date-input-wrap">
-                            <span class="doctor-date-input-icon" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="3" y="4" width="18" height="18" rx="2"></rect>
-                                    <line x1="8" y1="2.5" x2="8" y2="6"></line>
-                                    <line x1="16" y1="2.5" x2="16" y2="6"></line>
-                                    <line x1="3" y1="10" x2="21" y2="10"></line>
-                                </svg>
-                            </span>
-                            <input type="date" id="scheduleDatePicker" class="form-control doctor-period-picker" />
-                        </div>
-                        @if (canManageAppointments)
-                        {
-                            <button type="button" class="btn primary-btn" id="appointmentCreateButton">Создать запись</button>
-                        }
-                    </div>
+                    <button type="button" class="registry-v2-period__icon-btn schedule-nav" data-direction="next" title="Следующий день" aria-label="Следующий день">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                    <button type="button" class="registry-v2-period__today schedule-nav" data-direction="today">Сегодня</button>
                 </div>
-            </section>
-
-            <section class="doctor-demo-stats-grid doctor-demo-stats-grid--horizontal">
-                <article class="doctor-demo-stat-card">
-                    <div class="doctor-stat-icon doctor-stat-icon--blue" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="4" width="18" height="18" rx="2"></rect>
-                            <line x1="8" y1="2.5" x2="8" y2="6"></line>
-                            <line x1="16" y1="2.5" x2="16" y2="6"></line>
-                            <line x1="3" y1="10" x2="21" y2="10"></line>
-                        </svg>
-                    </div>
-                    <div>
-                        <div class="doctor-demo-stat-label">Всего приемов</div>
-                        <div class="doctor-demo-stat-value">@totalAppointments</div>
-                    </div>
-                </article>
-                <article class="doctor-demo-stat-card">
-                    <div class="doctor-stat-icon doctor-stat-icon--green" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M8 11.5l2.4 2.4L16.5 8"></path>
-                            <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
-                        </svg>
-                    </div>
-                    <div>
-                        <div class="doctor-demo-stat-label">Сегодня</div>
-                        <div class="doctor-demo-stat-value">@todayAppointments</div>
-                    </div>
-                </article>
-                <article class="doctor-demo-stat-card">
-                    <div class="doctor-stat-icon doctor-stat-icon--amber" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="9"></circle>
-                            <path d="M12 7v5l3 2"></path>
-                        </svg>
-                    </div>
-                    <div>
-                        <div class="doctor-demo-stat-label">На неделе</div>
-                        <div class="doctor-demo-stat-value">@weekAppointments</div>
-                    </div>
-                </article>
-            </section>
-
-            <section class="doctor-demo-card doctor-status-legend-card">
-                <div class="doctor-status-legend">
-                    <span class="doctor-status-pill doctor-status-pill--paid">Оплаченный прием</span>
-                    <span class="doctor-status-pill doctor-status-pill--unpaid">Неоплаченный прием</span>
-                </div>
-            </section>
+            </div>
         </div>
+
+        <div class="registry-v2-toolbar__foot">
+            <div class="registry-v2-stats registry-v2-stats--inline" aria-label="Сводка">
+                <span class="registry-v2-stat-inline"><strong>@totalAppointments</strong> всего</span>
+                <span class="registry-v2-stat-inline"><strong>@todayAppointments</strong> сегодня</span>
+                <span class="registry-v2-stat-inline"><strong>@weekAppointments</strong> на неделе</span>
+            </div>
+            <div class="registry-v2-legend registry-v2-legend--compact">
+                <span class="registry-v2-legend__item"><span class="dot dot-green"></span> Оплачено</span>
+                <span class="registry-v2-legend__item"><span class="dot dot-amber"></span> Не оплачено</span>
+                <span class="registry-v2-legend__item"><span class="registry-v2-legend__free"></span> Свободно</span>
+            </div>
+        </div>
+    </section>
+
+    <div class="visually-hidden" aria-hidden="true">
+        <select id="registryDepartmentSelect">
+            @foreach (var dept in Model.Departments)
+            {
+                if (dept.Value == defaultDepartmentId)
+                {
+                    <option value="@dept.Value" selected="selected">@dept.Label</option>
+                }
+                else
+                {
+                    <option value="@dept.Value">@dept.Label</option>
+                }
+            }
+        </select>
+        <select id="registryDoctorSelect">
+            @if (currentDoctor != null)
+            {
+                <option value="@currentDoctor.Value" selected="selected">@currentDoctor.Label</option>
+            }
+        </select>
     </div>
 
-    <div class="medclinic-surface schedule-board appointments-shared-board">
-        <div class="schedule-calendar px-4 pb-4 pt-3">
-            <div id="scheduleCalendarGrid" class="schedule-calendar__grid"></div>
+    <section class="registry-v2-schedule" aria-label="Расписание">
+        <div class="registry-v2-schedule__card">
+            <div class="registry-v2-schedule__head">
+                <p class="registry-v2-schedule__doctor" id="registryScheduleDoctorCaption"></p>
+                <span class="registry-v2-schedule__badge" id="registryScheduleDayCount" hidden></span>
+            </div>
+            <div id="gridView" class="registry-v2-grid"></div>
         </div>
-    </div>
+    </section>
 </div>
 
 <div class="modal fade" id="appointmentPeriodModal" tabindex="-1" aria-hidden="true">
@@ -208,8 +140,8 @@
         <div class="modal-content border-0 shadow-lg doctor-modal-content">
             <div class="modal-header">
                 <div>
-                    <h2 class="modal-title mb-1" id="appointmentPeriodModalTitle">Все записи за день</h2>
-                    <p class="text-muted mb-0" id="appointmentPeriodModalSubtitle">Список приемов по выбранной дате.</p>
+                    <h2 class="modal-title mb-1" id="appointmentPeriodModalTitle">Приемы за период</h2>
+                    <p class="text-muted mb-0" id="appointmentPeriodModalSubtitle">Все записи за выбранный период.</p>
                 </div>
                 <div class="doctor-modal-header-actions">
                     @if (canManageAppointments)
@@ -234,6 +166,9 @@
     <div class="modal-dialog modal-dialog-centered mc-confirm-dialog">
         <div class="modal-content border-0 shadow-lg mc-confirm-modal">
             <div class="modal-body mc-confirm-modal__body text-center">
+                <div class="mc-confirm-modal__icon" aria-hidden="true">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg>
+                </div>
                 <h2 class="mc-confirm-modal__title" id="mcConfirmModalTitle">Подтверждение</h2>
                 <p class="mc-confirm-modal__message" id="mcConfirmModalMessage"></p>
                 <div class="mc-confirm-modal__details" id="mcConfirmModalDetails"></div>
@@ -245,12 +180,14 @@
         </div>
     </div>
 </div>
+
 @await Html.PartialAsync("_McPaidCancelChoiceModal")
 
 @section Scripts {
     <script>
         window.medclinicSchedule = {
-            pageType: 'doctor',
+            pageType: 'registry',
+            isOwnSchedule: true,
             events: @Html.Raw(eventsJson),
             patients: @Html.Raw(patientsJson),
             serviceCatalog: @Html.Raw(serviceCatalogJson),
@@ -258,9 +195,9 @@
             doctorScheduleOverrides: @Html.Raw(doctorScheduleOverridesJson),
             appointmentDurations: @Html.Raw(appointmentDurationsJson),
             medicalTemplates: @Html.Raw(medicalTemplatesJson),
-            departments: [],
-            doctorFilters: @Html.Raw(JsonSerializer.Serialize(Model.Doctors.Select(x => new { value = x.Value, label = x.Label, departmentIds = Array.Empty<string>() }))),
-            currentDoctorId: '@Model.Doctors.FirstOrDefault()?.Value',
+            departments: @Html.Raw(departmentsJson),
+            doctorFilters: @Html.Raw(doctorFiltersJson),
+            currentDoctorId: '@(currentDoctor?.Value ?? "")',
             saveUrl: '@Url.Action("Save", "Appointments")',
             cancelUrl: '@Url.Action("Cancel", "Appointments")',
             markPaidUrl: '@Url.Action("MarkPaid", "Appointments")',

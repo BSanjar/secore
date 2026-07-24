@@ -80,10 +80,19 @@
     const token = () => document.querySelector('input[name="__RequestVerificationToken"]')?.value || "";
     const weekdays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
     const REGISTRY_FILTERS_KEY = "medclinicRegistryFiltersV1";
+    const OWN_SCHEDULE_FILTERS_KEY = "medclinicOwnScheduleFiltersV1";
+    const isOwnSchedule = p.isOwnSchedule === true;
 
     function saveRegistryFilters() {
         if (pageType !== "registry" || !$("registryDoctorSelect")) return;
         try {
+            if (isOwnSchedule) {
+                sessionStorage.setItem(
+                    OWN_SCHEDULE_FILTERS_KEY,
+                    JSON.stringify({ anchor: toIsoDate(state.anchor) })
+                );
+                return;
+            }
             sessionStorage.setItem(
                 REGISTRY_FILTERS_KEY,
                 JSON.stringify({
@@ -99,6 +108,22 @@
 
     function restoreRegistryFilters() {
         if (pageType !== "registry" || !$("registryDoctorSelect")) return;
+        if (isOwnSchedule) {
+            try {
+                const raw = sessionStorage.getItem(OWN_SCHEDULE_FILTERS_KEY);
+                if (raw) {
+                    const data = JSON.parse(raw);
+                    if (data.anchor) {
+                        const restored = new Date(`${data.anchor}T12:00:00`);
+                        if (!Number.isNaN(restored.getTime())) state.anchor = restored;
+                    }
+                }
+            } catch {
+                /* ignore corrupt storage */
+            }
+            ensureOwnScheduleDoctorSelect();
+            return;
+        }
         let preservedDoctor = "";
         try {
             const raw = sessionStorage.getItem(REGISTRY_FILTERS_KEY);
@@ -192,7 +217,7 @@
     function resolveDoctorIdForEditor() {
         const selected = $("appointmentDoctor")?.value || "";
         if (selected) return selected;
-        if (pageType === "doctor") return p.currentDoctorId || "";
+        if (pageType === "doctor" || isOwnSchedule) return p.currentDoctorId || getRegistryDoctorId() || "";
         return "";
     }
     function durationForDoctor(doctorId) {
@@ -208,7 +233,26 @@
         if (defaultReferral) referral.value = defaultReferral;
     }
     function getRegistryDoctorId() {
+        if (isOwnSchedule && p.currentDoctorId) return p.currentDoctorId;
         return $("registryDoctorSelect")?.value || "";
+    }
+    function ensureOwnScheduleDoctorSelect() {
+        const select = $("registryDoctorSelect");
+        const doctorId = p.currentDoctorId || "";
+        if (!select || !doctorId) return;
+        if (Array.from(select.options).some((option) => option.value === doctorId)) {
+            select.value = doctorId;
+            return;
+        }
+        const doc = state.doctorFilters.find((x) => x.value === doctorId);
+        if (!doc) return;
+        select.innerHTML = `<option value="${esc(doc.value)}">${esc(doc.label)}</option>`;
+        select.value = doc.value;
+        const deptSelect = $("registryDepartmentSelect");
+        const deptId = (doc.departmentIds || [])[0];
+        if (deptSelect && deptId && Array.from(deptSelect.options).some((option) => option.value === deptId)) {
+            deptSelect.value = deptId;
+        }
     }
     function registryDoctorsFiltered() {
         const deptId = ($("registryDepartmentSelect")?.value || "").trim();
@@ -254,6 +298,7 @@
     }
     function setupRegistryFilters() {
         restoreRegistryFilters();
+        if (isOwnSchedule) return;
         $("registryDepartmentSelect")?.addEventListener("change", () => {
             refreshRegistryDoctorSelect();
             saveRegistryFilters();

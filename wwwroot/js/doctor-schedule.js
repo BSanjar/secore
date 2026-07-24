@@ -273,29 +273,65 @@
     function updateSwitcherButtons() {
         document.querySelectorAll(".doctor-calendar-switcher [data-view]").forEach((button) => {
             const value = button.getAttribute("data-view") || "week";
-            const isActive = value === state.view;
-            button.classList.toggle("active", isActive);
-            button.classList.toggle("btn-primary", isActive);
-            button.classList.toggle("btn-outline-primary", !isActive);
+            button.classList.toggle("active", value === state.view);
         });
     }
 
-    function render() {
-        if (state.view === "month") {
-            renderMonth();
-        } else {
-            renderWeek();
+    function handleToolbarClick(event) {
+        const button = event.target.closest("button");
+        if (!button) return;
+
+        const view = button.getAttribute("data-view");
+        if (view === "week" || view === "month") {
+            state.view = view;
+            render();
+            return;
         }
-        updateSwitcherButtons();
-        renderToolbarDateControls();
+
+        const direction = button.getAttribute("data-direction");
+        if (direction) {
+            if (direction === "today") {
+                state.anchor = new Date();
+            } else if (direction === "prev") {
+                state.anchor = state.view === "month"
+                    ? shiftMonth(state.anchor, -1)
+                    : new Date(state.anchor.getFullYear(), state.anchor.getMonth(), state.anchor.getDate() - 7);
+            } else if (direction === "next") {
+                state.anchor = state.view === "month"
+                    ? shiftMonth(state.anchor, 1)
+                    : new Date(state.anchor.getFullYear(), state.anchor.getMonth(), state.anchor.getDate() + 7);
+            }
+            render();
+            return;
+        }
+
+        const anchorDate = button.getAttribute("data-anchor-date");
+        if (anchorDate) {
+            const nextAnchor = new Date(`${anchorDate}T00:00:00`);
+            if (!Number.isNaN(nextAnchor.getTime())) {
+                state.anchor = nextAnchor;
+                render();
+            }
+        }
+    }
+
+    function bindCalendarToolbar() {
+        const toolbar =
+            document.getElementById("doctorCalendarToolbar")
+            || document.querySelector(".mc-staff-calendar-toolbar")
+            || buildToolbar();
+        if (!toolbar) return null;
+
+        toolbar.addEventListener("click", handleToolbarClick);
+        return toolbar;
     }
 
     function buildToolbar() {
-        const toolbar = document.querySelector(".medclinic-surface.schedule-board .p-4.border-bottom");
-        if (!toolbar) return null;
+        const legacyToolbar = document.querySelector(".medclinic-surface.schedule-board .p-4.border-bottom");
+        if (!legacyToolbar) return null;
 
-        toolbar.classList.add("doctor-calendar-toolbar");
-        toolbar.innerHTML = `
+        legacyToolbar.classList.add("doctor-calendar-toolbar");
+        legacyToolbar.innerHTML = `
             <div class="doctor-calendar-toolbar__left">
                 <div>
                     <h2 class="h5 mb-1">Календарь врача</h2>
@@ -317,49 +353,20 @@
             </div>
         `;
 
-        return toolbar;
+        return legacyToolbar;
     }
 
-    const toolbar = buildToolbar();
-    if (toolbar) {
-        toolbar.addEventListener("click", (event) => {
-            const button = event.target.closest("button");
-            if (!button) return;
-
-            const view = button.getAttribute("data-view");
-            if (view === "week" || view === "month") {
-                state.view = view;
-                render();
-                return;
-            }
-
-            const direction = button.getAttribute("data-direction");
-            if (direction) {
-                if (direction === "today") {
-                    state.anchor = new Date();
-                } else if (direction === "prev") {
-                    state.anchor = state.view === "month"
-                        ? shiftMonth(state.anchor, -1)
-                        : new Date(state.anchor.getFullYear(), state.anchor.getMonth(), state.anchor.getDate() - 7);
-                } else if (direction === "next") {
-                    state.anchor = state.view === "month"
-                        ? shiftMonth(state.anchor, 1)
-                        : new Date(state.anchor.getFullYear(), state.anchor.getMonth(), state.anchor.getDate() + 7);
-                }
-                render();
-                return;
-            }
-
-            const anchorDate = button.getAttribute("data-anchor-date");
-            if (anchorDate) {
-                const nextAnchor = new Date(`${anchorDate}T00:00:00`);
-                if (!Number.isNaN(nextAnchor.getTime())) {
-                    state.anchor = nextAnchor;
-                    render();
-                }
-            }
-        });
+    function render() {
+        if (state.view === "month") {
+            renderMonth();
+        } else {
+            renderWeek();
+        }
+        updateSwitcherButtons();
+        renderToolbarDateControls();
     }
+
+    bindCalendarToolbar();
 
     const overrideForm = document.getElementById("doctorScheduleOverrideForm");
     if (overrideForm) {

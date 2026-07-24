@@ -2,57 +2,53 @@
 @model WebApplication1.ViewModels.Services.ServicesIndexViewModel
 @{
     ViewData["Title"] = "Услуги";
+    ViewData["HideTopbarTitle"] = true;
 }
 
-<div class="dashboard-page">
-    @if (TempData["Message"] != null)
-    {
-        <div class="alert alert-success border-0 shadow-sm mb-4">@TempData["Message"]</div>
-    }
-    @if (TempData["Error"] != null)
-    {
-        <div class="alert alert-danger border-0 shadow-sm mb-4">@TempData["Error"]</div>
-    }
+@section Styles {
+    <partial name="Partials/_MedclinicCatalogStyles" />
+}
 
-    <div class="medclinic-surface p-4 mb-4">
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+<div class="mc-staff dashboard-page">
+    <div class="mc-staff-hero">
+        <div class="mc-staff-hero__row">
             <div>
-                <h1 class="h3 mb-1">Услуги</h1>
-                <p class="text-muted mb-0">Каталог услуг клиники для записей, счетов и оплат.</p>
+                <h1 class="mc-staff-hero__title">Услуги</h1>
+                <p class="mc-staff-hero__sub">Каталог услуг клиники для записей, счетов и оплат.</p>
             </div>
-            <div class="d-flex flex-wrap gap-2">
-                <form asp-action="Import" method="post" enctype="multipart/form-data" class="d-flex flex-wrap gap-2">
-                    @Html.AntiForgeryToken()
-                    <input type="file" name="file" accept=".xlsx" class="form-control form-control-sm" />
-                    <button type="submit" class="btn btn-outline-success btn-sm">Загрузить Excel</button>
-                </form>
-                <a asp-action="Create" class="btn btn-primary">Добавить услугу</a>
+            <div class="mc-staff-hero__actions">
+                <a class="mc-staff-btn mc-staff-btn--primary" asp-action="Create">Добавить услугу</a>
             </div>
         </div>
-        <div class="text-muted small mt-3">Excel: название, фиксированная, цена, мин. сумма, макс. сумма, специализации через запятую.</div>
+        <form asp-action="Import" method="post" enctype="multipart/form-data" class="mc-staff-import mc-catalog-import-form mt-3">
+            @Html.AntiForgeryToken()
+            <input type="file" name="file" accept=".xlsx" class="form-control form-control-sm" />
+            <button type="submit" class="mc-staff-btn mc-staff-btn--ghost mc-staff-btn--sm">Загрузить Excel</button>
+            <div class="mc-staff-import__hint">Excel: название, фиксированная, цена, мин. сумма, макс. сумма, специализации через запятую.</div>
+        </form>
     </div>
 
-    <div class="medclinic-surface p-4">
-        <form method="get" class="row g-3 mb-4">
-            <div class="col-md-8">
-                <label class="form-label">Поиск</label>
-                <input name="search" value="@Model.Search" class="form-control" placeholder="По названию услуги" />
-            </div>
-            <div class="col-md-4 d-flex align-items-end gap-2">
-                <button type="submit" class="btn btn-outline-primary">Найти</button>
-                <a asp-action="Index" class="btn btn-outline-secondary">Сбросить</a>
+    <div class="mc-staff-panel">
+        <form method="get" class="mc-staff-filters">
+            <label class="mc-staff-field mc-staff-field--grow">
+                <span class="mc-staff-field__label">Поиск</span>
+                <input name="search" value="@Model.Search" class="mc-staff-input" placeholder="По названию услуги" />
+            </label>
+            <div class="d-flex gap-2">
+                <button type="submit" class="mc-staff-btn mc-staff-btn--primary">Найти</button>
+                <a asp-action="Index" class="mc-staff-btn mc-staff-btn--ghost">Сброс</a>
             </div>
         </form>
 
         @if (Model.Services.Count == 0)
         {
-            <div class="text-muted">Список услуг пока пуст.</div>
+            <div class="mc-staff-empty">Список услуг пока пуст.</div>
         }
         else
         {
-            <div class="table-responsive">
-                <table class="table align-middle mb-0">
-                    <thead class="table-light">
+            <div class="mc-staff-table-wrap">
+                <table class="mc-staff-table">
+                    <thead>
                         <tr>
                             <th>Название</th>
                             <th>Тип</th>
@@ -66,7 +62,9 @@
                         @foreach (var item in Model.Services)
                         {
                             <tr>
-                                <td class="fw-semibold">@item.Name</td>
+                                <td>
+                                    <div class="mc-staff-table__name">@item.Name</div>
+                                </td>
                                 <td>@(item.IsFixed ? "Фиксированная" : "Диапазон")</td>
                                 <td>@(item.IsFixed ? $"{item.FixedAmount:N2} сом" : "—")</td>
                                 <td>
@@ -80,10 +78,19 @@
                                     }
                                 </td>
                                 <td>
-                                    @(item.SpecializationNames.Count == 0 ? "—" : string.Join(", ", item.SpecializationNames))
+                                    @if (item.SpecializationNames.Count == 0)
+                                    {
+                                        <span class="mc-staff-table__muted">—</span>
+                                    }
+                                    else
+                                    {
+                                        @string.Join(", ", item.SpecializationNames)
+                                    }
                                 </td>
-                                <td class="text-end">
-                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Редактировать</a>
+                                <td>
+                                    <div class="mc-staff-table__actions">
+                                        <a class="mc-staff-btn mc-staff-btn--ghost mc-staff-btn--sm" asp-action="Edit" asp-route-id="@item.Id">Редактировать</a>
+                                    </div>
                                 </td>
                             </tr>
                         }
@@ -93,3 +100,7 @@
         }
     </div>
 </div>
+
+@section Scripts {
+    <partial name="Partials/_MedclinicCatalogScripts" />
+}

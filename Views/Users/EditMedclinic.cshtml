@@ -1,0 +1,325 @@
+@model WebApplication1.ViewModels.Doctors.StaffCardEditViewModel
+@using System.Text.Json
+@{
+    ViewData["Title"] = Model.StaffName + " — карточка";
+    ViewData["HideTopbarTitle"] = true;
+    var form = Model.Form;
+    var flashMessage = TempData["Message"]?.ToString();
+    var flashError = TempData["Error"]?.ToString();
+}
+
+@section Styles {
+    <partial name="Partials/_MedclinicStaffStyles" />
+    <link rel="stylesheet" href="~/css/doctor-schedule.css" asp-append-version="true" />
+}
+
+<div class="mc-staff dashboard-page">
+    <nav class="mc-staff-breadcrumb" aria-label="Навигация">
+        <a asp-controller="Doctors" asp-action="Index">Сотрудники</a>
+        <span class="mc-staff-breadcrumb__sep">›</span>
+        <span>@Model.StaffName</span>
+    </nav>
+
+    <div class="mc-staff-hero">
+        <div class="mc-staff-hero__row">
+            <div>
+                <h1 class="mc-staff-hero__title">@Model.StaffName</h1>
+                <p class="mc-staff-hero__sub">@(Model.CanEdit ? "Карточка сотрудника: контакты, роли, отделения, специализации и смены." : "Просмотр карточки сотрудника без права редактирования.")</p>
+            </div>
+            <div class="mc-staff-hero__actions">
+                <a asp-controller="Doctors" asp-action="Index" class="mc-staff-btn mc-staff-btn--ghost">Назад к списку</a>
+                @if (Model.CanEdit)
+                {
+                    <button type="button" class="mc-staff-btn mc-staff-btn--primary mc-staff-save-btn d-none" id="staffCardSaveBtn" data-loading-text="Сохранение...">Сохранить изменения</button>
+                }
+            </div>
+        </div>
+    </div>
+
+    <form asp-controller="Doctors" asp-action="SaveStaffCard" asp-route-id="@Model.StaffId" method="post" id="staffCardForm" class="mc-staff-card-form">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Form.Id" />
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div asp-validation-summary="All" class="alert alert-danger mc-staff-alert py-2 px-3 small mc-staff-validation-summary"></div>
+        }
+
+        <fieldset id="staffCardFields"@(!Model.CanEdit ? " disabled" : "")>
+            <div class="mc-staff-panel mc-staff-form mb-3">
+                <div class="mc-staff-panel__head">
+                    <h2 class="mc-staff-panel__title">Основные сведения</h2>
+                    <p class="mc-staff-panel__sub">Контактные данные, доступ в систему и роли сотрудника.</p>
+                </div>
+                <div class="mc-staff-form-grid">
+                    <div>
+                        <label asp-for="Form.Name" class="form-label">ФИО</label>
+                        <input asp-for="Form.Name" class="form-control" autocomplete="name" />
+                        <span asp-validation-for="Form.Name" class="text-danger small"></span>
+                    </div>
+                    <div>
+                        <label asp-for="Form.Email" class="form-label">Email</label>
+                        <input asp-for="Form.Email" type="email" class="form-control" autocomplete="email" />
+                        <span asp-validation-for="Form.Email" class="text-danger small"></span>
+                    </div>
+                    <div>
+                        <label asp-for="Form.Phone" class="form-label">Телефон</label>
+                        <input asp-for="Form.Phone" class="form-control" autocomplete="tel" />
+                        <span asp-validation-for="Form.Phone" class="text-danger small"></span>
+                    </div>
+                    <div>
+                        <label asp-for="Form.Password" class="form-label">Новый пароль</label>
+                        <input asp-for="Form.Password" type="password" class="form-control" autocomplete="new-password" placeholder="Оставьте пустым, чтобы не менять" />
+                        <span asp-validation-for="Form.Password" class="text-danger small"></span>
+                        <div class="mc-staff-hint">Пароль меняется только при заполнении этого поля.</div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <div class="mc-staff-panel__title" style="font-size:.92rem;margin-bottom:.45rem;">Роли в системе</div>
+                    @if (Model.AvailableRoles.Count == 0)
+                    {
+                        <div class="mc-staff-empty" style="padding:.75rem;">Роли для организации пока не созданы.</div>
+                    }
+                    else
+                    {
+                        <div class="mc-staff-checkgrid">
+                            @foreach (var role in Model.AvailableRoles)
+                            {
+                                var isChecked = form.SelectedRoleIds.Contains(role.Id);
+                                <label class="mc-staff-checkcard">
+                                    <span class="mc-staff-checkcard__main">
+                                        <input type="checkbox" name="SelectedRoleIds" value="@role.Id" class="form-check-input mt-1" checked="@isChecked" />
+                                        <span class="mc-staff-checkcard__title">@role.Name</span>
+                                    </span>
+                                </label>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="mc-staff-panel mc-staff-form mb-3">
+                <div class="mc-staff-panel__head">
+                    <h2 class="mc-staff-panel__title">Отделения</h2>
+                    <p class="mc-staff-panel__sub">Подразделения клиники, в которых работает сотрудник.</p>
+                </div>
+                @if (Model.Departments.Count == 0)
+                {
+                    <div class="alert alert-warning mb-0 py-2 px-3 small">Сначала добавьте отделение в справочнике.</div>
+                }
+                else
+                {
+                    <div class="mc-staff-checkgrid">
+                        @foreach (var department in Model.Departments)
+                        {
+                            var isChecked = form.SelectedDepartmentIds.Contains(department.Id);
+                            <label class="mc-staff-checkcard">
+                                <span class="mc-staff-checkcard__main">
+                                    <input type="checkbox" name="SelectedDepartmentIds" value="@department.Id" class="form-check-input mt-1" checked="@isChecked" />
+                                    <span class="mc-staff-checkcard__title">@department.Name</span>
+                                </span>
+                                <input type="radio" name="PrimaryDepartmentId" value="@department.Id" class="form-check-input" checked="@(form.PrimaryDepartmentId == department.Id)" title="Основное отделение" />
+                            </label>
+                        }
+                    </div>
+                    <div class="mc-staff-hint">Отметка справа — основное отделение.</div>
+                }
+            </div>
+
+            <div class="mc-staff-panel mc-staff-form mb-3">
+                <div class="mc-staff-panel__head">
+                    <h2 class="mc-staff-panel__title">Специализации</h2>
+                    <p class="mc-staff-panel__sub">Профильные направления, по которым сотрудник ведёт приём.</p>
+                </div>
+                @if (Model.Specializations.Count == 0)
+                {
+                    <div class="alert alert-warning mb-0 py-2 px-3 small">Сначала добавьте специализацию в справочнике.</div>
+                }
+                else
+                {
+                    <div class="mc-staff-checkgrid">
+                        @foreach (var specialization in Model.Specializations)
+                        {
+                            var isChecked = form.SelectedSpecializationIds.Contains(specialization.Id);
+                            <label class="mc-staff-checkcard">
+                                <span class="mc-staff-checkcard__main">
+                                    <input type="checkbox" name="SelectedSpecializationIds" value="@specialization.Id" class="form-check-input mt-1" checked="@isChecked" />
+                                    <span>
+                                        <span class="mc-staff-checkcard__title">@specialization.Name</span>
+                                        @if (!string.IsNullOrWhiteSpace(specialization.SecondaryText))
+                                        {
+                                            <span class="mc-staff-checkcard__sub d-block">@specialization.SecondaryText</span>
+                                        }
+                                    </span>
+                                </span>
+                                <input type="radio" name="PrimarySpecializationId" value="@specialization.Id" class="form-check-input" checked="@(form.PrimarySpecializationId == specialization.Id)" title="Основная специализация" />
+                            </label>
+                        }
+                    </div>
+                    <div class="mc-staff-hint">Отметка справа — основная специализация.</div>
+                }
+            </div>
+
+            <div class="mc-staff-panel mc-staff-form">
+                <div class="mc-staff-panel__head">
+                    <h2 class="mc-staff-panel__title">Рабочие смены</h2>
+                    <p class="mc-staff-panel__sub">Базовый график по дням недели и исключения на отдельные даты.</p>
+                </div>
+
+                @if (!Model.WorkSchedulesReady)
+                {
+                    <div class="alert alert-warning mb-0 py-2 px-3 small">@Model.WorkSchedulesMessage</div>
+                }
+                else
+                {
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Рабочие дни недели</label>
+                            <div class="d-flex flex-wrap gap-2">
+                                @for (var day = 1; day <= 7; day++)
+                                {
+                                    var label = day switch { 1 => "Пн", 2 => "Вт", 3 => "Ср", 4 => "Чт", 5 => "Пт", 6 => "Сб", _ => "Вс" };
+                                    <label class="schedule-radio">
+                                        <input type="checkbox" name="DaysOfWeek" value="@day" checked="@form.DaysOfWeek.Contains(day)" />
+                                        <span>@label</span>
+                                    </label>
+                                }
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Form.StartTime" class="form-label">Начало смены</label>
+                            <input asp-for="Form.StartTime" type="time" class="form-control" />
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Form.EndTime" class="form-label">Окончание смены</label>
+                            <input asp-for="Form.EndTime" type="time" class="form-control" />
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Form.AppointmentDurationMinutes" class="form-label">Длительность приёма</label>
+                            <select asp-for="Form.AppointmentDurationMinutes" class="form-select">
+                                @foreach (var duration in new[] { 10, 15, 20, 25, 30, 40, 45, 50, 60, 90, 120 })
+                                {
+                                    <option value="@duration">@duration мин</option>
+                                }
+                            </select>
+                            <span asp-validation-for="Form.AppointmentDurationMinutes" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    @if (Model.WorkSchedules.Count > 0)
+                    {
+                        <div class="mt-3">
+                            <div class="mc-staff-panel__title" style="font-size:.88rem;margin-bottom:.35rem;">Текущий базовый график</div>
+                            <div class="mc-staff-chips">
+                                @foreach (var schedule in Model.WorkSchedules)
+                                {
+                                    var dayLabel = schedule.DayOfWeek switch { 1 => "Пн", 2 => "Вт", 3 => "Ср", 4 => "Чт", 5 => "Пт", 6 => "Сб", _ => "Вс" };
+                                    <span class="mc-staff-chip mc-staff-chip--dept">@dayLabel @schedule.StartTime–@schedule.EndTime</span>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+
+                @if (Model.ScheduleOverridesReady)
+                {
+                    <div class="mt-4 pt-3 border-top">
+                        <div class="mc-staff-panel__title" style="font-size:.92rem;margin-bottom:.35rem;">Особые дни</div>
+                        @if (Model.ScheduleOverrides.Count == 0)
+                        {
+                            <p class="mc-staff-hint mb-2">Индивидуальные исключения пока не заданы.</p>
+                        }
+                        else
+                        {
+                            <div class="mc-staff-table-wrap mb-3">
+                                <table class="mc-staff-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Дата</th>
+                                            <th>Режим</th>
+                                            <th>Комментарий</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var item in Model.ScheduleOverrides)
+                                        {
+                                            <tr>
+                                                <td>@item.WorkDate</td>
+                                                <td>@(item.IsWorking ? $"{item.StartTime}–{item.EndTime}" : "Выходной")</td>
+                                                <td class="mc-staff-table__muted">@(item.Comment ?? "—")</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <label asp-for="Form.OverrideWorkDate" class="form-label">Дата исключения</label>
+                                <input asp-for="Form.OverrideWorkDate" type="date" class="form-control" />
+                            </div>
+                            <div class="col-md-8">
+                                <label asp-for="Form.OverrideMode" class="form-label d-block">Режим на дату</label>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <label class="schedule-radio"><input type="radio" asp-for="Form.OverrideMode" value="default" /><span>Как в базовом графике</span></label>
+                                    <label class="schedule-radio"><input type="radio" asp-for="Form.OverrideMode" value="off" /><span>Выходной</span></label>
+                                    <label class="schedule-radio"><input type="radio" asp-for="Form.OverrideMode" value="custom" /><span>Отдельная смена</span></label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Form.OverrideStartTime" class="form-label">Начало</label>
+                                <input asp-for="Form.OverrideStartTime" type="time" class="form-control" value="@(form.OverrideStartTime ?? "08:00")" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Form.OverrideEndTime" class="form-label">Окончание</label>
+                                <input asp-for="Form.OverrideEndTime" type="time" class="form-control" value="@(form.OverrideEndTime ?? "18:00")" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Form.OverrideComment" class="form-label">Комментарий</label>
+                                <input asp-for="Form.OverrideComment" type="text" class="form-control" placeholder="Дежурство, сокращённый день…" />
+                            </div>
+                        </div>
+                        <div class="mc-staff-hint mt-2">Заполните дату и режим, чтобы сохранить исключение вместе с карточкой.</div>
+                    </div>
+                }
+                else if (!string.IsNullOrWhiteSpace(Model.ScheduleOverridesMessage))
+                {
+                    <div class="alert alert-warning mt-3 mb-0 py-2 px-3 small">@Model.ScheduleOverridesMessage</div>
+                }
+            </div>
+        </fieldset>
+    </form>
+</div>
+
+<div class="modal fade" id="mcConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered mc-confirm-dialog">
+        <div class="modal-content border-0 shadow-lg mc-confirm-modal">
+            <div class="modal-body mc-confirm-modal__body text-center">
+                <div class="mc-confirm-modal__icon" aria-hidden="true">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg>
+                </div>
+                <h2 class="mc-confirm-modal__title" id="mcConfirmModalTitle">Подтверждение</h2>
+                <p class="mc-confirm-modal__message" id="mcConfirmModalMessage"></p>
+                <div class="mc-confirm-modal__details d-none" id="mcConfirmModalDetails"></div>
+            </div>
+            <div class="modal-footer border-0 mc-confirm-modal__footer justify-content-center gap-2 pb-4 pt-0">
+                <button type="button" class="btn mc-confirm-modal__cancel" data-bs-dismiss="modal" id="mcConfirmModalCancel">Отмена</button>
+                <button type="button" class="btn mc-confirm-modal__ok" id="mcConfirmModalOk">Подтвердить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/web/medclinic/js/medclinic-ui.js" asp-append-version="true"></script>
+    <script>
+        window.staffCardPage = {
+            staffName: @Html.Raw(JsonSerializer.Serialize(Model.StaffName)),
+            flashMessage: @Html.Raw(JsonSerializer.Serialize(flashMessage)),
+            flashError: @Html.Raw(JsonSerializer.Serialize(flashError)),
+            canEdit: @(Model.CanEdit ? "true" : "false")
+        };
+    </script>
+    <script src="~/web/medclinic/js/medclinic-staff-card.js" asp-append-version="true"></script>
+}

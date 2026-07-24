@@ -751,7 +751,7 @@
     <value>Loading invoices...</value>
   </data>
   <data name="MedicalCabinet" xml:space="preserve">
-    <value>Medical office</value>
+    <value>SECORE</value>
   </data>
   <data name="OrganizationProfileMedclinic" xml:space="preserve">
     <value>Organization profile: Medclinic</value>

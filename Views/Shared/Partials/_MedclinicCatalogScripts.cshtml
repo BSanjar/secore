@@ -1,0 +1,15 @@
+@using System.Text.Json
+@{
+    var flashMessage = TempData["Message"]?.ToString();
+    var flashError = TempData["Error"]?.ToString();
+    var flashWarning = TempData["Warning"]?.ToString();
+}
+<script>
+    window.mcCatalogPage = Object.assign(window.mcCatalogPage || {}, {
+        flashMessage: @Json.Serialize(flashMessage),
+        flashError: @Json.Serialize(flashError),
+        flashWarning: @Json.Serialize(flashWarning)
+    });
+</script>
+<script src="~/web/medclinic/js/medclinic-ui.js" asp-append-version="true"></script>
+<script src="~/web/medclinic/js/medclinic-catalog.js" asp-append-version="true"></script>

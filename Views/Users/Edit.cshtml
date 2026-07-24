@@ -1,67 +1,123 @@
 @model WebApplication1.Models.DBModels.User
+@using WebApplication1.Helpers
 @{
     ViewData["Title"] = Localizer["EditUser"].Value;
+    var isMedclinic = string.Equals(AuthorizationHelper.GetOrganizationType(Context), "medclinic", StringComparison.OrdinalIgnoreCase);
 }
 
-<div class="mb-4 d-flex justify-content-between align-items-start flex-wrap gap-2">
-    <div>
-        <h1 class="h2 mb-1">@Localizer["EditUser"]</h1>
-        <p class="text-muted small mb-0">
-            @Localizer["EditUserDescription"]
-        </p>
-    </div>
-    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
-        @Localizer["BackToUsers"]
-    </a>
-</div>
+@section Styles {
+    @if (isMedclinic)
+    {
+        <partial name="Partials/_MedclinicStaffStyles" />
+    }
+}
 
-<div class="alert alert-info mb-3">
-    @Localizer["LeavePasswordEmpty"]
-</div>
+@if (isMedclinic)
+{
+    <div class="mc-staff dashboard-page">
+        <nav class="mc-staff-breadcrumb" aria-label="?????????">
+            <a asp-controller="Doctors" asp-action="Index">??????????</a>
+            <span class="mc-staff-breadcrumb__sep">õ</span>
+            <span>@Model.Name</span>
+        </nav>
 
-<div class="card shadow-sm border-0">
-    <div class="card-body">
-        <form asp-action="Edit" method="post">
-            <input type="hidden" asp-for="Id" />
-            <div asp-validation-summary="All" class="text-danger mb-3"></div>
-
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label asp-for="Name" class="form-label">‘»Œ</label>
-                    <input asp-for="Name" class="form-control" />
-                    <span asp-validation-for="Name" class="text-danger"></span>
+        <div class="mc-staff-hero">
+            <div class="mc-staff-hero__row">
+                <div>
+                    <h1 class="mc-staff-hero__title">@Localizer["EditUser"]</h1>
+                    <p class="mc-staff-hero__sub">@Localizer["EditUserDescription"]</p>
                 </div>
-                <div class="col-md-6">
-                    <label asp-for="Email" class="form-label">Email</label>
-                    <input asp-for="Email" type="email" class="form-control" />
-                    <span asp-validation-for="Email" class="text-danger"></span>
-                </div>
-                <div class="col-md-6">
-                    <label asp-for="Phone" class="form-label">@Localizer["Phone"]</label>
-                    <input asp-for="Phone" class="form-control" />
-                    <span asp-validation-for="Phone" class="text-danger"></span>
-                </div>
-                <div class="col-md-6">
-                    <label asp-for="Password" class="form-label">@Localizer["NewPassword"]</label>
-                    <input asp-for="Password" type="password" class="form-control" placeholder="@Localizer["LeaveEmptyToKeepCurrent"]" />
-                    <span asp-validation-for="Password" class="text-danger"></span>
-                    <small class="form-text text-muted">@Localizer["LeaveEmptyToKeepCurrent"]</small>
+                <div class="mc-staff-hero__actions">
+                    <a asp-controller="Doctors" asp-action="Edit" asp-route-id="@Model.Id" class="mc-staff-btn mc-staff-btn--soft">??????????</a>
+                    <a asp-controller="Doctors" asp-action="Index" class="mc-staff-btn mc-staff-btn--ghost">? ??????</a>
                 </div>
             </div>
+        </div>
 
-            <div class="mt-4 d-flex flex-wrap gap-2">
-                <button type="submit" class="btn btn-primary">
-                    @Localizer["Save"]
-                </button>
-                <a asp-action="Index" class="btn btn-outline-secondary">
-                    @Localizer["Cancel"]
-                </a>
-            </div>
-        </form>
+        <div class="alert alert-info mc-staff-alert">@Localizer["LeavePasswordEmpty"]</div>
+
+        <div class="mc-staff-panel mc-staff-form">
+            <form asp-action="Edit" method="post">
+                <input type="hidden" asp-for="Id" />
+                <div asp-validation-summary="All" class="text-danger mb-2 small"></div>
+                <div class="mc-staff-form-grid">
+                    <div>
+                        <label asp-for="Name" class="form-label">???</label>
+                        <input asp-for="Name" class="form-control" />
+                        <span asp-validation-for="Name" class="text-danger small"></span>
+                    </div>
+                    <div>
+                        <label asp-for="Email" class="form-label">Email</label>
+                        <input asp-for="Email" type="email" class="form-control" />
+                        <span asp-validation-for="Email" class="text-danger small"></span>
+                    </div>
+                    <div>
+                        <label asp-for="Phone" class="form-label">@Localizer["Phone"]</label>
+                        <input asp-for="Phone" class="form-control" />
+                        <span asp-validation-for="Phone" class="text-danger small"></span>
+                    </div>
+                    <div>
+                        <label asp-for="Password" class="form-label">@Localizer["NewPassword"]</label>
+                        <input asp-for="Password" type="password" class="form-control" placeholder="@Localizer["LeaveEmptyToKeepCurrent"]" />
+                        <span asp-validation-for="Password" class="text-danger small"></span>
+                        <div class="mc-staff-hint">@Localizer["LeaveEmptyToKeepCurrent"]</div>
+                    </div>
+                </div>
+                <div class="mc-staff-form-actions">
+                    <button type="submit" class="mc-staff-btn mc-staff-btn--primary">@Localizer["Save"]</button>
+                    <a asp-controller="Doctors" asp-action="Index" class="mc-staff-btn mc-staff-btn--ghost">@Localizer["Cancel"]</a>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
+}
+else
+{
+    <div class="mb-4 d-flex justify-content-between align-items-start flex-wrap gap-2">
+        <div>
+            <h1 class="h2 mb-1">@Localizer["EditUser"]</h1>
+            <p class="text-muted small mb-0">@Localizer["EditUserDescription"]</p>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">@Localizer["BackToUsers"]</a>
+    </div>
+    <div class="alert alert-info mb-3">@Localizer["LeavePasswordEmpty"]</div>
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <form asp-action="Edit" method="post">
+                <input type="hidden" asp-for="Id" />
+                <div asp-validation-summary="All" class="text-danger mb-3"></div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="Name" class="form-label">???</label>
+                        <input asp-for="Name" class="form-control" />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Email" class="form-label">Email</label>
+                        <input asp-for="Email" type="email" class="form-control" />
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Phone" class="form-label">@Localizer["Phone"]</label>
+                        <input asp-for="Phone" class="form-control" />
+                        <span asp-validation-for="Phone" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Password" class="form-label">@Localizer["NewPassword"]</label>
+                        <input asp-for="Password" type="password" class="form-control" placeholder="@Localizer["LeaveEmptyToKeepCurrent"]" />
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                        <small class="form-text text-muted">@Localizer["LeaveEmptyToKeepCurrent"]</small>
+                    </div>
+                </div>
+                <div class="mt-4 d-flex flex-wrap gap-2">
+                    <button type="submit" class="btn btn-primary">@Localizer["Save"]</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">@Localizer["Cancel"]</a>
+                </div>
+            </form>
+        </div>
+    </div>
+}
 
 @section Scripts {
     @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
 }
-

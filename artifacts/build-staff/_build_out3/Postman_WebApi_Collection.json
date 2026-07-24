@@ -1,0 +1,550 @@
+{
+  "info": {
+    "name": "SECORE JsonWebApi Payment Tests",
+    "description": "Postman collection for JsonWebApiController payment scenarios: periodic, one-time, with positive balance, without balance, with debt, and overpayment.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      {
+        "key": "username",
+        "value": "{{login}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{password}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5099"
+    },
+    {
+      "key": "login",
+      "value": "YOUR_AGENT_LOGIN"
+    },
+    {
+      "key": "password",
+      "value": "YOUR_AGENT_PASSWORD"
+    },
+    {
+      "key": "serviceId",
+      "value": "12345"
+    },
+    {
+      "key": "txnDate",
+      "value": "20260417120000"
+    },
+    {
+      "key": "amount1000",
+      "value": "1000"
+    },
+    {
+      "key": "amount1200",
+      "value": "1200"
+    },
+    {
+      "key": "accountPeriodicNoBalance",
+      "value": "123450000000001"
+    },
+    {
+      "key": "accountPeriodicWithBalance",
+      "value": "123450000000002"
+    },
+    {
+      "key": "accountDebt",
+      "value": "123450000000003"
+    },
+    {
+      "key": "accountOverpay",
+      "value": "123450000000004"
+    },
+    {
+      "key": "accountOneTime",
+      "value": "123450000000005"
+    },
+    {
+      "key": "lastTxnId",
+      "value": ""
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.variables.get('generatedTxnId')) {",
+          "    pm.variables.set('generatedTxnId', 'txn-' + Date.now());",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Check Periodic Without Balance",
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{login}}",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{password}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"serviceId\": \"{{serviceId}}\",\n  \"account\": \"{{accountPeriodicNoBalance}}\"\n}"
+        },
+        "url": "{{baseUrl}}/WebApi/check"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.test('result exists', function () { pm.expect(json).to.have.property('result'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Pay Periodic Without Balance",
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{login}}",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{password}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"serviceId\": \"{{serviceId}}\",\n  \"txnId\": \"periodic-no-balance-{{$timestamp}}\",\n  \"txnDate\": \"{{txnDate}}\",\n  \"account\": \"{{accountPeriodicNoBalance}}\",\n  \"paySum\": {{amount1000}}\n}"
+        },
+        "url": "{{baseUrl}}/WebApi/pay"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('lastTxnId', json.txnId || '');",
+              "pm.test('success or explained business error', function () { pm.expect(json).to.have.property('result'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Check Account With Positive Balance 1000",
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{login}}",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{password}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"serviceId\": \"{{serviceId}}\",\n  \"account\": \"{{accountPeriodicWithBalance}}\"\n}"
+        },
+        "url": "{{baseUrl}}/WebApi/check"
+      }
+    },
+    {
+      "name": "04 Pay Account With Existing Balance",
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{login}}",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{password}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"serviceId\": \"{{serviceId}}\",\n  \"txnId\": \"with-balance-{{$timestamp}}\",\n  \"txnDate\": \"{{txnDate}}\",\n  \"account\": \"{{accountPeriodicWithBalance}}\",\n  \"paySum\": 1\n}"
+        },
+        "url": "{{baseUrl}}/WebApi/pay"
+      }
+    },
+    {
+      "name": "05 Check Debt Account",
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{login}}",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{password}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"serviceId\": \"{{serviceId}}\",\n  \"account\": \"{{accountDebt}}\"\n}"
+        },
+        "url": "{{baseUrl}}/WebApi/check"
+      }
+    },
+    {
+      "name": "06 Pay Debt Account Partial Amount",
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{login}}",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{password}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"serviceId\": \"{{serviceId}}\",\n  \"txnId\": \"debt-partial-{{$timestamp}}\",\n  \"txnDate\": \"{{txnDate}}\",\n  \"account\": \"{{accountDebt}}\",\n  \"paySum\": 500\n}"
+        },
+        "url": "{{baseUrl}}/WebApi/pay"
+      }
+    },
+    {
+      "name": "07 Pay Debt Or Due Invoice With Overpayment 1200",
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{login}}",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{password}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"serviceId\": \"{{serviceId}}\",\n  \"txnId\": \"overpay-{{$timestamp}}\",\n  \"txnDate\": \"{{txnDate}}\",\n  \"account\": \"{{accountOverpay}}\",\n  \"paySum\": {{amount1200}}\n}"
+        },
+        "url": "{{baseUrl}}/WebApi/pay"
+      }
+    },
+    {
+      "name": "08 Check One-Time Invoice",
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{login}}",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{password}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"serviceId\": \"{{serviceId}}\",\n  \"account\": \"{{accountOneTime}}\"\n}"
+        },
+        "url": "{{baseUrl}}/WebApi/check"
+      }
+    },
+    {
+      "name": "09 Pay One-Time Invoice",
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{login}}",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{password}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"serviceId\": \"{{serviceId}}\",\n  \"txnId\": \"one-time-{{$timestamp}}\",\n  \"txnDate\": \"{{txnDate}}\",\n  \"account\": \"{{accountOneTime}}\",\n  \"paySum\": {{amount1000}}\n}"
+        },
+        "url": "{{baseUrl}}/WebApi/pay"
+      }
+    },
+    {
+      "name": "10 PayInfo For Last Txn",
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{login}}",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{password}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"txnId\": \"{{lastTxnId}}\"\n}"
+        },
+        "url": "{{baseUrl}}/WebApi/payInfo"
+      }
+    },
+    {
+      "name": "11 Negative Duplicate TxnId",
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{login}}",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{password}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"serviceId\": \"{{serviceId}}\",\n  \"txnId\": \"duplicate-fixed-id\",\n  \"txnDate\": \"{{txnDate}}\",\n  \"account\": \"{{accountPeriodicNoBalance}}\",\n  \"paySum\": 10\n}"
+        },
+        "url": "{{baseUrl}}/WebApi/pay"
+      }
+    },
+    {
+      "name": "12 Negative Invalid TxnDate",
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{login}}",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{password}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"serviceId\": \"{{serviceId}}\",\n  \"txnId\": \"invalid-date-{{$timestamp}}\",\n  \"txnDate\": \"2026-04-17\",\n  \"account\": \"{{accountPeriodicNoBalance}}\",\n  \"paySum\": 10\n}"
+        },
+        "url": "{{baseUrl}}/WebApi/pay"
+      }
+    }
+  ]
+}

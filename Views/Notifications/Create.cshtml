@@ -1,190 +1,365 @@
 @model WebApplication1.ViewModels.Notifications.NotificationCreateViewModel
 @{
+    var isMedclinic = string.Equals(WebApplication1.Helpers.AuthorizationHelper.GetOrganizationType(Context), "medclinic", StringComparison.OrdinalIgnoreCase);
     ViewData["Title"] = "Новая рассылка";
+    if (isMedclinic)
+    {
+        ViewData["HideTopbarTitle"] = true;
+    }
 }
 
 @section Styles {
-    <link rel="stylesheet" href="~/css/dashboard-soft.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/web/kindergarten/css/detsad-clients.css" asp-append-version="true" />
-    <style>
-        .notify-create-grid { display:grid; grid-template-columns:1.4fr 1fr; gap:1.5rem; }
-        .notify-card { background:#fff; border:1px solid rgba(15,23,42,.08); border-radius:20px; box-shadow:0 12px 32px rgba(15,23,42,.06); padding:1.25rem; }
-        .notify-pickers { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
-        .notify-picker { border:1px solid rgba(148,163,184,.35); border-radius:16px; background:#f8fafc; overflow:hidden; }
-        .notify-picker__head { display:flex; justify-content:space-between; gap:.75rem; align-items:center; padding:.9rem 1rem; background:#fff; border-bottom:1px solid rgba(148,163,184,.25); }
-        .notify-picker__list { max-height:420px; overflow:auto; padding:.75rem; display:grid; gap:.65rem; }
-        .notify-option { display:block; border:1px solid rgba(148,163,184,.3); border-radius:14px; background:#fff; padding:.8rem .9rem; cursor:pointer; }
-        .notify-option__row { display:flex; align-items:flex-start; gap:.65rem; }
-        .notify-option__title { font-weight:700; color:#0f172a; }
-        .notify-option__meta, .notify-option__channels { color:#475569; font-size:.9rem; margin-top:.2rem; display:block; }
-        .notify-channel { display:flex; gap:.75rem; align-items:center; border:1px solid rgba(148,163,184,.35); border-radius:14px; padding:.9rem 1rem; background:#fff; margin-bottom:.75rem; }
-        .notify-summary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.75rem; margin-top:1rem; }
-        .notify-summary__item { border-radius:14px; padding:.85rem 1rem; background:#f8fafc; border:1px solid rgba(148,163,184,.25); }
-        .notify-summary__label { color:#64748b; font-size:.85rem; }
-        .notify-summary__value { display:block; margin-top:.2rem; font-size:1.2rem; font-weight:700; color:#0f172a; }
-        @@media (max-width: 1100px) { .notify-create-grid, .notify-pickers { grid-template-columns:1fr; } }
-    </style>
+    @if (isMedclinic)
+    {
+        <partial name="Partials/_MedclinicCatalogStyles" />
+    }
+    else
+    {
+        <link rel="stylesheet" href="~/css/dashboard-soft.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/web/kindergarten/css/detsad-clients.css" asp-append-version="true" />
+        <style>
+            .notify-create-grid { display:grid; grid-template-columns:1.4fr 1fr; gap:1.5rem; }
+            .notify-card { background:#fff; border:1px solid rgba(15,23,42,.08); border-radius:20px; box-shadow:0 12px 32px rgba(15,23,42,.06); padding:1.25rem; }
+            .notify-pickers { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
+            .notify-picker { border:1px solid rgba(148,163,184,.35); border-radius:16px; background:#f8fafc; overflow:hidden; }
+            .notify-picker__head { display:flex; justify-content:space-between; gap:.75rem; align-items:center; padding:.9rem 1rem; background:#fff; border-bottom:1px solid rgba(148,163,184,.25); }
+            .notify-picker__list { max-height:420px; overflow:auto; padding:.75rem; display:grid; gap:.65rem; }
+            .notify-option { display:block; border:1px solid rgba(148,163,184,.3); border-radius:14px; background:#fff; padding:.8rem .9rem; cursor:pointer; }
+            .notify-option__row { display:flex; align-items:flex-start; gap:.65rem; }
+            .notify-option__title { font-weight:700; color:#0f172a; }
+            .notify-option__meta, .notify-option__channels { color:#475569; font-size:.9rem; margin-top:.2rem; display:block; }
+            .notify-channel { display:flex; gap:.75rem; align-items:center; border:1px solid rgba(148,163,184,.35); border-radius:14px; padding:.9rem 1rem; background:#fff; margin-bottom:.75rem; }
+            .notify-summary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.75rem; margin-top:1rem; }
+            .notify-summary__item { border-radius:14px; padding:.85rem 1rem; background:#f8fafc; border:1px solid rgba(148,163,184,.25); }
+            .notify-summary__label { color:#64748b; font-size:.85rem; }
+            .notify-summary__value { display:block; margin-top:.2rem; font-size:1.2rem; font-weight:700; color:#0f172a; }
+            @@media (max-width: 1100px) { .notify-create-grid, .notify-pickers { grid-template-columns:1fr; } }
+        </style>
+    }
 }
 
-<div class="children-page settings-page settings-subpage">
-    <nav class="detsad-breadcrumb" aria-label="Навигация">
-        <a asp-controller="Settings" asp-action="Index">Настройки</a>
-        <span class="breadcrumb-sep">/</span>
-        <a asp-action="Index">Уведомления</a>
-        <span class="breadcrumb-sep">/</span>
-        <span>Новая рассылка</span>
-    </nav>
+@if (isMedclinic)
+{
+    <div class="mc-staff dashboard-page">
+        <nav class="mc-staff-breadcrumb" aria-label="Навигация">
+            <a asp-action="Index">Уведомления</a>
+            <span class="mc-staff-breadcrumb__sep">›</span>
+            <span>Новая рассылка</span>
+        </nav>
 
-    <div class="page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
-        <div>
-            <h1 class="page-title">Новая рассылка</h1>
-            <p class="page-subtitle mb-0">Выберите клиентов или группы, заполните сообщение и поставьте уведомления в очередь.</p>
+        <div class="mc-staff-hero">
+            <div class="mc-staff-hero__row">
+                <div>
+                    <h1 class="mc-staff-hero__title">Новая рассылка</h1>
+                    <p class="mc-staff-hero__sub">Выберите клиентов или группы, заполните сообщение и поставьте уведомления в очередь.</p>
+                </div>
+                <div class="mc-staff-hero__actions">
+                    <a asp-action="Index" class="mc-staff-btn mc-staff-btn--ghost">К журналу уведомлений</a>
+                </div>
+            </div>
         </div>
-        <a asp-action="Index" class="detsad-btn-secondary">К журналу уведомлений</a>
-    </div>
 
-    @if (TempData["Message"] != null)
-    {
-        <div class="alert alert-success">@TempData["Message"]</div>
-    }
-    @if (TempData["Warning"] != null)
-    {
-        <div class="alert alert-warning">@TempData["Warning"]</div>
-    }
+        <form method="post" asp-action="Create" class="mc-catalog-form">
+            @Html.AntiForgeryToken()
+            <div class="mc-staff-templates-grid">
+                <div class="mc-staff-panel">
+                    <div class="mc-staff-panel__head">
+                        <h2 class="mc-staff-panel__title">Получатели</h2>
+                        <p class="mc-staff-panel__sub">Можно выбрать отдельных клиентов и группы одновременно.</p>
+                    </div>
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger mc-staff-alert py-2 px-3 small mc-staff-validation-summary"></div>
 
-    <form method="post" asp-action="Create">
-        @Html.AntiForgeryToken()
-        <div class="notify-create-grid">
-            <div class="notify-card">
-                <h2 class="h5 mb-1">Получатели</h2>
-                <p class="text-muted mb-4">Можно выбрать отдельных клиентов и группы одновременно. </p>
-                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-
-                <div class="notify-pickers">
-                    <section class="notify-picker">
-                        <div class="notify-picker__head">
-                            <div>
-                                <div class="fw-semibold">Группы</div>
-                                <div class="text-muted small">Активные группы</div>
+                    <div class="mc-staff-form-grid">
+                        <section class="mc-staff-panel">
+                            <div class="mc-staff-panel__head d-flex flex-wrap justify-content-between align-items-start gap-2">
+                                <div>
+                                    <div class="mc-staff-panel__title">Группы</div>
+                                    <div class="mc-staff-panel__sub">Активные группы</div>
+                                </div>
+                                <input type="search" id="groupSearchInput" class="mc-staff-input" placeholder="Поиск группы" />
                             </div>
-                            <input type="search" id="groupSearchInput" class="form-control form-control-sm" placeholder="Поиск группы" />
-                        </div>
-                        <div class="notify-picker__list" id="groupOptionsList">
-                            @if (Model.AvailableGroups.Count == 0)
-                            {
-                                <div class="text-muted small">Активных групп пока нет.</div>
-                            }
-                            else
-                            {
-                                @foreach (var group in Model.AvailableGroups)
+                            <div class="notify-picker__list" id="groupOptionsList">
+                                @if (Model.AvailableGroups.Count == 0)
                                 {
-                                    <label class="notify-option" data-filter-item data-filter-text="@group.Name.ToLowerInvariant()">
-                                        <span class="notify-option__row">
-                                            <input type="checkbox" name="SelectedGroupIds" value="@group.Id" @(Model.SelectedGroupIds.Contains(group.Id) ? "checked" : null) />
-                                            <span>
-                                                <span class="notify-option__title">@group.Name</span>
-                                                <span class="notify-option__meta">Клиентов в группе: @group.ClientCount</span>
-                                            </span>
-                                        </span>
-                                    </label>
+                                    <div class="mc-staff-table__muted small">Активных групп пока нет.</div>
                                 }
-                            }
-                        </div>
-                    </section>
-
-                    <section class="notify-picker">
-                        <div class="notify-picker__head">
-                            <div>
-                                <div class="fw-semibold">Клиенты</div>
-                                <div class="text-muted small">Только активные</div>
-                            </div>
-                            <input type="search" id="clientSearchInput" class="form-control form-control-sm" placeholder="Поиск клиента" />
-                        </div>
-                        <div class="notify-picker__list" id="clientOptionsList">
-                            @if (Model.AvailableClients.Count == 0)
-                            {
-                                <div class="text-muted small">Активных клиентов пока нет.</div>
-                            }
-                            else
-                            {
-                                @foreach (var client in Model.AvailableClients)
+                                else
                                 {
-                                    var channels = string.Join(", ", new[]
+                                    @foreach (var group in Model.AvailableGroups)
                                     {
-                                        !string.IsNullOrWhiteSpace(client.Email) ? "email" : null,
-                                        !string.IsNullOrWhiteSpace(client.Telegram) ? "telegram" : null,
-                                        !string.IsNullOrWhiteSpace(client.WhatsApp) ? "whatsapp" : null
-                                    }.Where(x => x != null));
-                                    var filterText = $"{client.Name} {client.GroupName} {client.Email} {client.Telegram} {client.WhatsApp}".ToLowerInvariant();
-
-                                    <label class="notify-option" data-filter-item data-filter-text="@filterText">
-                                        <span class="notify-option__row">
-                                            <input type="checkbox" name="SelectedClientIds" value="@client.Id" @(Model.SelectedClientIds.Contains(client.Id) ? "checked" : null) />
-                                            <span>
-                                                <span class="notify-option__title">@client.Name</span>
-                                                <span class="notify-option__meta">@(string.IsNullOrWhiteSpace(client.GroupName) ? "Без группы" : client.GroupName) • @client.StatusLabel</span>
-                                                <span class="notify-option__channels">@(client.HasAnyChannel ? $"Каналы: {channels}" : "Нет контактных каналов")</span>
+                                        <label class="notify-option" data-filter-item data-filter-text="@group.Name.ToLowerInvariant()">
+                                            <span class="notify-option__row">
+                                                <input type="checkbox" name="SelectedGroupIds" value="@group.Id" @(Model.SelectedGroupIds.Contains(group.Id) ? "checked" : null) />
+                                                <span>
+                                                    <span class="notify-option__title">@group.Name</span>
+                                                    <span class="notify-option__meta">Клиентов в группе: @group.ClientCount</span>
+                                                </span>
                                             </span>
-                                        </span>
-                                    </label>
+                                        </label>
+                                    }
                                 }
-                            }
+                            </div>
+                        </section>
+
+                        <section class="mc-staff-panel">
+                            <div class="mc-staff-panel__head d-flex flex-wrap justify-content-between align-items-start gap-2">
+                                <div>
+                                    <div class="mc-staff-panel__title">Клиенты</div>
+                                    <div class="mc-staff-panel__sub">Только активные</div>
+                                </div>
+                                <input type="search" id="clientSearchInput" class="mc-staff-input" placeholder="Поиск клиента" />
+                            </div>
+                            <div class="notify-picker__list" id="clientOptionsList">
+                                @if (Model.AvailableClients.Count == 0)
+                                {
+                                    <div class="mc-staff-table__muted small">Активных клиентов пока нет.</div>
+                                }
+                                else
+                                {
+                                    @foreach (var client in Model.AvailableClients)
+                                    {
+                                        var channels = string.Join(", ", new[]
+                                        {
+                                            !string.IsNullOrWhiteSpace(client.Email) ? "email" : null,
+                                            !string.IsNullOrWhiteSpace(client.Telegram) ? "telegram" : null,
+                                            !string.IsNullOrWhiteSpace(client.WhatsApp) ? "whatsapp" : null
+                                        }.Where(x => x != null));
+                                        var filterText = $"{client.Name} {client.GroupName} {client.Email} {client.Telegram} {client.WhatsApp}".ToLowerInvariant();
+
+                                        <label class="notify-option" data-filter-item data-filter-text="@filterText">
+                                            <span class="notify-option__row">
+                                                <input type="checkbox" name="SelectedClientIds" value="@client.Id" @(Model.SelectedClientIds.Contains(client.Id) ? "checked" : null) />
+                                                <span>
+                                                    <span class="notify-option__title">@client.Name</span>
+                                                    <span class="notify-option__meta">@(string.IsNullOrWhiteSpace(client.GroupName) ? "Без группы" : client.GroupName) • @client.StatusLabel</span>
+                                                    <span class="notify-option__channels">@(client.HasAnyChannel ? $"Каналы: {channels}" : "Нет контактных каналов")</span>
+                                                </span>
+                                            </span>
+                                        </label>
+                                    }
+                                }
+                            </div>
+                        </section>
+                    </div>
+                </div>
+
+                <div class="mc-staff-panel mc-staff-form">
+                    <div class="mc-staff-panel__head">
+                        <h2 class="mc-staff-panel__title">Сообщение</h2>
+                        <p class="mc-staff-panel__sub">Отправка уведомлений по выбранным каналам</p>
+                    </div>
+
+                    <label class="notify-channel">
+                        <input asp-for="SendEmail" type="checkbox" />
+                        <span><strong>Email</strong><span class="d-block text-muted small">Канал из <code>ClientEmail</code></span></span>
+                    </label>
+                    <label class="notify-channel">
+                        <input asp-for="SendTelegram" type="checkbox" />
+                        <span><strong>Telegram</strong><span class="d-block text-muted small">Канал из <code>ClientTg</code></span></span>
+                    </label>
+                    <label class="notify-channel">
+                        <input asp-for="SendWhatsApp" type="checkbox" />
+                        <span><strong>WhatsApp</strong><span class="d-block text-muted small">Канал из <code>ClientWa</code></span></span>
+                    </label>
+
+                    <div class="mb-3">
+                        <label asp-for="Subject" class="form-label">Тема</label>
+                        <input asp-for="Subject" class="form-control" placeholder="Например: Напоминание об оплате" />
+                        <span asp-validation-for="Subject" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Message" class="form-label">Текст уведомления</label>
+                        <textarea asp-for="Message" class="form-control" rows="10" placeholder="Введите сообщение для выбранных клиентов"></textarea>
+                        <span asp-validation-for="Message" class="text-danger small"></span>
+                    </div>
+
+                    <div class="notify-summary">
+                        <div class="notify-summary__item">
+                            <span class="notify-summary__label">Групп выбрано</span>
+                            <span class="notify-summary__value" id="selectedGroupsCount">@Model.SelectedGroupIds.Count</span>
                         </div>
-                    </section>
-                </div>
-            </div>
-
-            <div class="notify-card">
-                <h2 class="h5 mb-1">Сообщение</h2>
-                <p class="text-muted mb-4">Отправка уведомлений по выбраным каналам</p>
-
-                <label class="notify-channel">
-                    <input asp-for="SendEmail" type="checkbox" />
-                    <span><strong>Email</strong><span class="d-block text-muted small">Канал из <code>ClientEmail</code></span></span>
-                </label>
-                <label class="notify-channel">
-                    <input asp-for="SendTelegram" type="checkbox" />
-                    <span><strong>Telegram</strong><span class="d-block text-muted small">Канал из <code>ClientTg</code></span></span>
-                </label>
-                <label class="notify-channel">
-                    <input asp-for="SendWhatsApp" type="checkbox" />
-                    <span><strong>WhatsApp</strong><span class="d-block text-muted small">Канал из <code>ClientWa</code></span></span>
-                </label>
-
-                <div class="mb-3">
-                    <label asp-for="Subject" class="form-label">Тема</label>
-                    <input asp-for="Subject" class="form-control" placeholder="Например: Напоминание об оплате" />
-                    <span asp-validation-for="Subject" class="text-danger small"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="Message" class="form-label">Текст уведомления</label>
-                    <textarea asp-for="Message" class="form-control" rows="10" placeholder="Введите сообщение для выбранных клиентов"></textarea>
-                    <span asp-validation-for="Message" class="text-danger small"></span>
-                </div>
-
-                <div class="notify-summary">
-                    <div class="notify-summary__item">
-                        <span class="notify-summary__label">Групп выбрано</span>
-                        <span class="notify-summary__value" id="selectedGroupsCount">@Model.SelectedGroupIds.Count</span>
+                        <div class="notify-summary__item">
+                            <span class="notify-summary__label">Клиентов выбрано</span>
+                            <span class="notify-summary__value" id="selectedClientsCount">@Model.SelectedClientIds.Count</span>
+                        </div>
                     </div>
-                    <div class="notify-summary__item">
-                        <span class="notify-summary__label">Клиентов выбрано</span>
-                        <span class="notify-summary__value" id="selectedClientsCount">@Model.SelectedClientIds.Count</span>
+
+                    <div class="mc-staff-form-actions">
+                        <button type="submit" class="mc-staff-btn mc-staff-btn--primary" data-loading-text="Отправка...">Поставить в очередь</button>
+                        <a asp-action="Index" class="mc-staff-btn mc-staff-btn--ghost">Отмена</a>
                     </div>
                 </div>
-
-                <div class="d-flex gap-2 flex-wrap mt-4">
-                    <button type="submit" class="detsad-btn-primary">Поставить в очередь</button>
-                    <a asp-action="Index" class="detsad-btn-secondary">Отмена</a>
-                </div>
             </div>
+        </form>
+    </div>
+}
+else
+{
+    <div class="children-page settings-page settings-subpage">
+        <nav class="detsad-breadcrumb" aria-label="Навигация">
+            <a asp-controller="Settings" asp-action="Index">Настройки</a>
+            <span class="breadcrumb-sep">/</span>
+            <a asp-action="Index">Уведомления</a>
+            <span class="breadcrumb-sep">/</span>
+            <span>Новая рассылка</span>
+        </nav>
+
+        <div class="page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
+            <div>
+                <h1 class="page-title">Новая рассылка</h1>
+                <p class="page-subtitle mb-0">Выберите клиентов или группы, заполните сообщение и поставьте уведомления в очередь.</p>
+            </div>
+            <a asp-action="Index" class="detsad-btn-secondary">К журналу уведомлений</a>
         </div>
-    </form>
-</div>
+
+        @if (TempData["Message"] != null)
+        {
+            <div class="alert alert-success">@TempData["Message"]</div>
+        }
+        @if (TempData["Warning"] != null)
+        {
+            <div class="alert alert-warning">@TempData["Warning"]</div>
+        }
+
+        <form method="post" asp-action="Create">
+            @Html.AntiForgeryToken()
+            <div class="notify-create-grid">
+                <div class="notify-card">
+                    <h2 class="h5 mb-1">Получатели</h2>
+                    <p class="text-muted mb-4">Можно выбрать отдельных клиентов и группы одновременно. </p>
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="notify-pickers">
+                        <section class="notify-picker">
+                            <div class="notify-picker__head">
+                                <div>
+                                    <div class="fw-semibold">Группы</div>
+                                    <div class="text-muted small">Активные группы</div>
+                                </div>
+                                <input type="search" id="groupSearchInput" class="form-control form-control-sm" placeholder="Поиск группы" />
+                            </div>
+                            <div class="notify-picker__list" id="groupOptionsList">
+                                @if (Model.AvailableGroups.Count == 0)
+                                {
+                                    <div class="text-muted small">Активных групп пока нет.</div>
+                                }
+                                else
+                                {
+                                    @foreach (var group in Model.AvailableGroups)
+                                    {
+                                        <label class="notify-option" data-filter-item data-filter-text="@group.Name.ToLowerInvariant()">
+                                            <span class="notify-option__row">
+                                                <input type="checkbox" name="SelectedGroupIds" value="@group.Id" @(Model.SelectedGroupIds.Contains(group.Id) ? "checked" : null) />
+                                                <span>
+                                                    <span class="notify-option__title">@group.Name</span>
+                                                    <span class="notify-option__meta">Клиентов в группе: @group.ClientCount</span>
+                                                </span>
+                                            </span>
+                                        </label>
+                                    }
+                                }
+                            </div>
+                        </section>
+
+                        <section class="notify-picker">
+                            <div class="notify-picker__head">
+                                <div>
+                                    <div class="fw-semibold">Клиенты</div>
+                                    <div class="text-muted small">Только активные</div>
+                                </div>
+                                <input type="search" id="clientSearchInput" class="form-control form-control-sm" placeholder="Поиск клиента" />
+                            </div>
+                            <div class="notify-picker__list" id="clientOptionsList">
+                                @if (Model.AvailableClients.Count == 0)
+                                {
+                                    <div class="text-muted small">Активных клиентов пока нет.</div>
+                                }
+                                else
+                                {
+                                    @foreach (var client in Model.AvailableClients)
+                                    {
+                                        var channels = string.Join(", ", new[]
+                                        {
+                                            !string.IsNullOrWhiteSpace(client.Email) ? "email" : null,
+                                            !string.IsNullOrWhiteSpace(client.Telegram) ? "telegram" : null,
+                                            !string.IsNullOrWhiteSpace(client.WhatsApp) ? "whatsapp" : null
+                                        }.Where(x => x != null));
+                                        var filterText = $"{client.Name} {client.GroupName} {client.Email} {client.Telegram} {client.WhatsApp}".ToLowerInvariant();
+
+                                        <label class="notify-option" data-filter-item data-filter-text="@filterText">
+                                            <span class="notify-option__row">
+                                                <input type="checkbox" name="SelectedClientIds" value="@client.Id" @(Model.SelectedClientIds.Contains(client.Id) ? "checked" : null) />
+                                                <span>
+                                                    <span class="notify-option__title">@client.Name</span>
+                                                    <span class="notify-option__meta">@(string.IsNullOrWhiteSpace(client.GroupName) ? "Без группы" : client.GroupName) • @client.StatusLabel</span>
+                                                    <span class="notify-option__channels">@(client.HasAnyChannel ? $"Каналы: {channels}" : "Нет контактных каналов")</span>
+                                                </span>
+                                            </span>
+                                        </label>
+                                    }
+                                }
+                            </div>
+                        </section>
+                    </div>
+                </div>
+
+                <div class="notify-card">
+                    <h2 class="h5 mb-1">Сообщение</h2>
+                    <p class="text-muted mb-4">Отправка уведомлений по выбраным каналам</p>
+
+                    <label class="notify-channel">
+                        <input asp-for="SendEmail" type="checkbox" />
+                        <span><strong>Email</strong><span class="d-block text-muted small">Канал из <code>ClientEmail</code></span></span>
+                    </label>
+                    <label class="notify-channel">
+                        <input asp-for="SendTelegram" type="checkbox" />
+                        <span><strong>Telegram</strong><span class="d-block text-muted small">Канал из <code>ClientTg</code></span></span>
+                    </label>
+                    <label class="notify-channel">
+                        <input asp-for="SendWhatsApp" type="checkbox" />
+                        <span><strong>WhatsApp</strong><span class="d-block text-muted small">Канал из <code>ClientWa</code></span></span>
+                    </label>
+
+                    <div class="mb-3">
+                        <label asp-for="Subject" class="form-label">Тема</label>
+                        <input asp-for="Subject" class="form-control" placeholder="Например: Напоминание об оплате" />
+                        <span asp-validation-for="Subject" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Message" class="form-label">Текст уведомления</label>
+                        <textarea asp-for="Message" class="form-control" rows="10" placeholder="Введите сообщение для выбранных клиентов"></textarea>
+                        <span asp-validation-for="Message" class="text-danger small"></span>
+                    </div>
+
+                    <div class="notify-summary">
+                        <div class="notify-summary__item">
+                            <span class="notify-summary__label">Групп выбрано</span>
+                            <span class="notify-summary__value" id="selectedGroupsCount">@Model.SelectedGroupIds.Count</span>
+                        </div>
+                        <div class="notify-summary__item">
+                            <span class="notify-summary__label">Клиентов выбрано</span>
+                            <span class="notify-summary__value" id="selectedClientsCount">@Model.SelectedClientIds.Count</span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 flex-wrap mt-4">
+                        <button type="submit" class="detsad-btn-primary">Поставить в очередь</button>
+                        <a asp-action="Index" class="detsad-btn-secondary">Отмена</a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+}
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    @if (isMedclinic)
+    {
+        <partial name="Partials/_MedclinicCatalogScripts" />
+    }
     <script>
         (function () {
             function wireFilter(inputId, listId) {
