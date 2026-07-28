@@ -18,6 +18,7 @@ RUN dotnet publish "WebApplication1.csproj" -c Release -o /app/publish /p:UseApp
 
 FROM base AS final
 WORKDIR /app
+ENV TZ=Asia/Bishkek
 # Chromium для PuppeteerSharp (PDF счетов/выписок). В aspnet-образе нет библиотек для скачанного Chrome.
 USER root
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -25,6 +26,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-liberation \
     fonts-dejavu-core \
     ca-certificates \
+    tzdata \
+    && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
+    && echo $TZ > /etc/timezone \
     && rm -rf /var/lib/apt/lists/*
 ENV CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
 COPY --from=publish /app/publish .

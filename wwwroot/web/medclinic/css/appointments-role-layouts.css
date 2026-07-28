@@ -1641,6 +1641,12 @@ body.org-medclinic .appointments-page {
     font-weight: 600;
 }
 
+.registry-v2-row--continued .registry-v2-blocked--continued {
+    color: #64748b;
+    font-weight: 500;
+    font-style: italic;
+}
+
 .registry-v2-row--busy .slot-card--panel {
     width: 100%;
     display: flex;

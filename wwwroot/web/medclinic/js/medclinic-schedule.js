@@ -1673,6 +1673,13 @@
         const b = ev.end.getHours() * 60 + ev.end.getMinutes();
         return startMin < b && startMin + duration > a;
     }
+    function eventStartMinutes(ev) {
+        return ev.start.getHours() * 60 + ev.start.getMinutes();
+    }
+    function isFirstSlotForEvent(ev, minute, duration) {
+        const evStart = eventStartMinutes(ev);
+        return minute <= evStart && evStart < minute + duration;
+    }
     function renderRegistrySingleDoctorSchedule() {
         registryGrid.className = "registry-v2-grid";
         const doctorId = getRegistryDoctorId();
@@ -1715,11 +1722,10 @@
             const isBlocked = unavailable.some((interval) => minute < interval.end && minute + duration > interval.start);
 
             if (overlappingEvent) {
-                const evStart = overlappingEvent.start.getHours() * 60 + overlappingEvent.start.getMinutes();
-                if (minute === evStart) {
+                if (isFirstSlotForEvent(overlappingEvent, minute, duration)) {
                     rows.push(`<div class="registry-v2-row registry-v2-row--busy"><div class="registry-v2-row__time">${esc(slotStart)}<span class="registry-v2-row__time-end">${esc(slotEnd)}</span></div><div class="registry-v2-row__body">${registryCard(overlappingEvent, meta)}</div></div>`);
                 } else {
-                    rows.push(`<div class="registry-v2-row registry-v2-row--busy"><div class="registry-v2-row__time">${esc(slotStart)}</div><div class="registry-v2-row__body"><span class="registry-v2-blocked">Занято</span></div></div>`);
+                    rows.push(`<div class="registry-v2-row registry-v2-row--busy registry-v2-row--continued"><div class="registry-v2-row__time">${esc(slotStart)}</div><div class="registry-v2-row__body"><span class="registry-v2-blocked registry-v2-blocked--continued">${esc(eventTitle(overlappingEvent))}</span></div></div>`);
                 }
             } else if (isBlocked) {
                 rows.push(`<div class="registry-v2-row registry-v2-row--blocked"><div class="registry-v2-row__time">${esc(slotStart)}</div><div class="registry-v2-row__body"><span class="registry-v2-blocked">Недоступно</span></div></div>`);
