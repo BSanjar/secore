@@ -10,6 +10,9 @@ public class AppointmentCalendarEventViewModel
     public string? PatientName { get; set; }
     public string? Phone { get; set; }
     public string? Email { get; set; }
+    public string? PatientGender { get; set; }
+    public string? PatientBirthDate { get; set; }
+    public int? PatientAge { get; set; }
     public DateTime Start { get; set; }
     public DateTime End { get; set; }
     public string Status { get; set; } = "busy";

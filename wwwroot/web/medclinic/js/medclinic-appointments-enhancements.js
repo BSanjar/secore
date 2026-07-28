@@ -8,10 +8,11 @@
     const patientIdInput = document.getElementById("appointmentPatientId");
     const legacySelect = document.getElementById("appointmentPatient");
     const phoneInput = document.getElementById("appointmentPhone");
-    const emailInput = document.getElementById("appointmentEmail");
     const usePhoneAsWhatsAppInput = document.getElementById("appointmentUsePhoneAsWhatsApp");
+    const newPatientFields = document.getElementById("appointmentNewPatientFields");
+    const genderInput = document.getElementById("appointmentPatientGender");
+    const birthDateInput = document.getElementById("appointmentPatientBirthDate");
     const suggestionsBox = document.getElementById("appointmentPatientSuggestions");
-    const stateLabel = document.getElementById("appointmentPatientLookupState");
     const saveButton = document.getElementById("appointmentSaveButton");
 
     if (!modalElement || !nameInput || !patientIdInput || !legacySelect || !saveButton) return;
@@ -85,13 +86,6 @@
         return usePhoneAsWhatsAppInput?.checked ?? true;
     }
 
-    function setStateLabel(message, kind) {
-        if (!stateLabel) return;
-        stateLabel.textContent = message;
-        stateLabel.classList.remove("text-muted", "text-warning", "text-success");
-        stateLabel.classList.add(kind === "success" ? "text-success" : kind === "warning" ? "text-warning" : "text-muted");
-    }
-
     function hideSuggestions() {
         if (!suggestionsBox) return;
         suggestionsBox.style.display = "none";
@@ -103,22 +97,36 @@
         patientIdInput.value = patientId || "";
     }
 
+    function clearNewPatientFields() {
+        if (genderInput) genderInput.value = "";
+        if (birthDateInput) birthDateInput.value = "";
+    }
+
+    function isNewPatientFlow() {
+        return !patientIdInput.value && !selectedPatient;
+    }
+
+    function updateNewPatientFieldsVisibility() {
+        if (!newPatientFields) return;
+        newPatientFields.classList.toggle("d-none", !isNewPatientFlow());
+    }
+
     function applyPatient(patient) {
         selectedPatient = patient;
         if (!patient) {
             syncLegacySelect("");
-            setStateLabel("Если пациент уже есть в базе, выберите его из подсказок. Иначе он будет создан при сохранении записи.", "muted");
             hideSuggestions();
+            updateNewPatientFieldsVisibility();
             return;
         }
 
         nameInput.value = patient.name || "";
         if (phoneInput) phoneInput.value = formatPhone(patient.phone || "");
-        if (emailInput) emailInput.value = patient.email || "";
         setWhatsAppCheckbox(Boolean(patient.phone) && normalizePhone(patient.phone) === normalizePhone(patient.whatsApp));
+        clearNewPatientFields();
         syncLegacySelect(patient.id);
-        setStateLabel("Выбран существующий пациент организации.", "success");
         hideSuggestions();
+        updateNewPatientFieldsVisibility();
     }
 
     function renderSuggestions() {
@@ -127,9 +135,7 @@
         const query = normalizeText(nameInput.value);
         if (query.length < 2) {
             hideSuggestions();
-            if (!selectedPatient) {
-                setStateLabel("Если пациент уже есть в базе, выберите его из подсказок. Иначе он будет создан при сохранении записи.", "muted");
-            }
+            updateNewPatientFieldsVisibility();
             return;
         }
 
@@ -140,7 +146,7 @@
         if (!matches.length) {
             suggestionsBox.style.display = "block";
             suggestionsBox.innerHTML = '<div class="list-group-item text-muted small">Совпадений нет. Новый пациент будет создан при сохранении записи.</div>';
-            setStateLabel("Пациент с таким ФИО не найден. Будет создан новый.", "warning");
+            updateNewPatientFieldsVisibility();
             return;
         }
 
@@ -148,7 +154,7 @@
         suggestionsBox.innerHTML = matches.map((patient) => `
             <button type="button" class="list-group-item list-group-item-action patient-suggestion" data-patient-id="${patient.id}">
                 <div class="fw-semibold">${patient.name}</div>
-                <div class="small text-muted">${patient.phone || "Телефон не указан"}${patient.email ? ` · ${patient.email}` : ""}</div>
+                <div class="small text-muted">${patient.phone || "Телефон не указан"}</div>
             </button>
         `).join("");
 
@@ -158,13 +164,14 @@
                 applyPatient(patient || null);
             });
         });
+        updateNewPatientFieldsVisibility();
     }
 
     function clearPatientSelectionIfNeeded() {
         if (selectedPatient && normalizeText(selectedPatient.name) !== normalizeText(nameInput.value)) {
             selectedPatient = null;
             syncLegacySelect("");
-            setStateLabel("Будет создан новый пациент, если вы не выберете существующего из списка.", "warning");
+            updateNewPatientFieldsVisibility();
         }
     }
 
@@ -174,8 +181,8 @@
             if (!nameInput.value.trim()) {
                 selectedPatient = null;
                 syncLegacySelect("");
-                setStateLabel("Если пациент уже есть в базе, выберите его из подсказок. Иначе он будет создан при сохранении записи.", "muted");
             }
+            updateNewPatientFieldsVisibility();
             return;
         }
 
@@ -186,17 +193,16 @@
         patientIdInput.value = patient.id;
         nameInput.value = patient.name || "";
         if (phoneInput && !phoneInput.value) phoneInput.value = formatPhone(patient.phone || "");
-        if (emailInput && !emailInput.value) emailInput.value = patient.email || "";
         setWhatsAppCheckbox(Boolean(patient.phone) && normalizePhone(patient.phone) === normalizePhone(patient.whatsApp));
-        setStateLabel("Выбран существующий пациент организации.", "success");
+        clearNewPatientFields();
+        updateNewPatientFieldsVisibility();
     }
 
     function buildCommentPayload() {
-        const plainComment = document.getElementById("appointmentComment")?.value?.trim() || "";
         const medicalSection = document.getElementById("appointmentMedicalSection");
         const medicalVisible = Boolean(medicalSection && medicalSection.offsetParent !== null);
         if (!medicalVisible) {
-            return plainComment;
+            return "";
         }
 
         const complaints = document.getElementById("appointmentComplaints")?.value?.trim() || "";
@@ -207,7 +213,7 @@
 
         const hasMedicalData = Boolean(complaints || diagnosis || recommendations || researchReferral || medicalComment);
         if (!hasMedicalData) {
-            return plainComment;
+            return "";
         }
 
         const medicalPayload = JSON.stringify({
@@ -215,7 +221,7 @@
             diagnosis,
             recommendations,
             researchReferral,
-            comment: medicalComment || plainComment
+            comment: medicalComment
         });
 
         return `__medjson__${medicalPayload}`;
@@ -259,10 +265,24 @@
         const isDraft = status === "draft";
         const services = collectSelectedServices();
         const isCreate = !document.getElementById("appointmentId")?.value;
+        const isNewPatient = isCreate && isNewPatientFlow();
 
         if (!patientName) {
             ui.showToast?.("Укажите ФИО пациента.", "danger");
             return;
+        }
+
+        if (isNewPatient) {
+            const gender = genderInput?.value?.trim() || "";
+            const birthDate = birthDateInput?.value?.trim() || "";
+            if (!gender) {
+                ui.showToast?.("Укажите пол пациента.", "danger");
+                return;
+            }
+            if (!birthDate) {
+                ui.showToast?.("Укажите дату рождения пациента.", "danger");
+                return;
+            }
         }
 
         if (!doctorId) {
@@ -272,6 +292,11 @@
 
         if (!appointmentDate || !startTime || !endTime) {
             ui.showToast?.("Не задан слот записи.", "danger");
+            return;
+        }
+
+        if (isCreate && window.medclinicIsPastAppointmentSlot?.(appointmentDate, startTime)) {
+            ui.showToast?.("Нельзя записать на прошедшее время.", "danger");
             return;
         }
 
@@ -298,7 +323,8 @@
             doctorId,
             phone: phoneInput?.value || null,
             usePhoneAsWhatsApp: getWhatsAppCheckboxValue(),
-            email: emailInput?.value || null,
+            patientGender: isNewPatient ? genderInput?.value?.trim() || null : null,
+            patientBirthDate: isNewPatient ? birthDateInput?.value?.trim() || null : null,
             comment: buildCommentPayload(),
             appointmentDate,
             startTime,
@@ -386,6 +412,7 @@
         if (phoneInput) {
             phoneInput.value = formatPhone(phoneInput.value);
         }
+        updateNewPatientFieldsVisibility();
         window.medclinicValidateAppointmentForm?.();
     });
 

@@ -4,6 +4,7 @@ public sealed record ShellViewModel(
     string BodyClass,
     string TitleSuffixResourceKey,
     string? OrganizationCaptionResourceKey,
+    string? OrganizationDisplayName,
     bool IncludeAntiforgery,
     string HeaderClass,
     string MainContainerClass,

@@ -51,7 +51,6 @@
                                     <label class="form-label">ФИО</label>
                                     <div class="patient-lookup">
                                         <input id="appointmentPatientName" class="form-control appointment-create-input" placeholder="Фамилия и имя" autocomplete="name" />
-                                        <div id="appointmentPatientLookupState" class="form-text">Начните ввод — подскажем существующих пациентов.</div>
                                         <div id="appointmentPatientSuggestions" class="patient-lookup__suggestions list-group" style="display:none;"></div>
                                     </div>
                                 </div>
@@ -63,13 +62,21 @@
                                         <label class="form-check-label" for="appointmentUsePhoneAsWhatsApp">WhatsApp = телефон</label>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Email</label>
-                                    <input id="appointmentEmail" class="form-control appointment-create-input" type="email" placeholder="email@example.com" autocomplete="email" />
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Комментарий</label>
-                                    <input id="appointmentComment" class="form-control appointment-create-input" placeholder="Необязательно" />
+                                <div class="col-12 d-none" id="appointmentNewPatientFields">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Пол <span class="text-danger">*</span></label>
+                                            <select id="appointmentPatientGender" class="form-select appointment-create-input">
+                                                <option value="">Выберите</option>
+                                                <option value="М">Мужской</option>
+                                                <option value="Ж">Женский</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Дата рождения <span class="text-danger">*</span></label>
+                                            <input id="appointmentPatientBirthDate" type="date" class="form-control appointment-create-input" />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -1,0 +1,20 @@
+@{
+    var href = ViewData["ExportHref"] as string ?? "#";
+    var btnClass = ViewData["ExportBtnClass"] as string ?? "mc-staff-btn mc-staff-btn--ghost mc-excel-export";
+    var successMessage = ViewData["ExportSuccessMessage"] as string ?? "Файл Excel сформирован и скачан.";
+    var label = ViewData["ExportLabel"] as string ?? "Выгрузить в Excel";
+}
+<a href="@href"
+   class="@btnClass"
+   data-mc-excel-export
+   data-success-message="@successMessage"
+   data-loading-text="Выгрузка…">
+    <span class="mc-excel-export__icon" aria-hidden="true">
+        <svg class="mc-excel-export__sheet" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" fill="currentColor" opacity="0.18"/>
+            <path d="M14 2v6h6M8 15.01l1.41 1.41L11 14.84V19h2v-4.16l1.59 1.59L16 15.01 12.01 11 8 15.01z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </svg>
+        <span class="mc-excel-export__badge">X</span>
+    </span>
+    <span class="mc-excel-export__label">@label</span>
+</a>

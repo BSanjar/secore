@@ -16,6 +16,7 @@
 
     <link rel="stylesheet" href="~/web/medclinic/css/medclinic-payments.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/web/medclinic/css/medclinic-payments-groups.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/web/medclinic/css/medclinic-ui.css" asp-append-version="true" />
 
 }
 
@@ -174,6 +175,19 @@
             <div class="mc-pay-filters__actions">
 
                 <button type="submit" class="mc-pay-btn mc-pay-btn--primary">Показать</button>
+
+                <partial name="Partials/_MedclinicExcelExportButton" view-data="@(new ViewDataDictionary(ViewData) {
+                    ["ExportHref"] = Url.Action("ExportExcel", "Payments", new {
+                        dateFrom = Model.DateFrom,
+                        dateTo = Model.DateTo,
+                        search = Model.Search,
+                        clientId = Model.ClientId,
+                        statusFilter = Model.StatusFilter,
+                        channelFilter = Model.ChannelFilter
+                    }),
+                    ["ExportBtnClass"] = "mc-pay-btn mc-pay-btn--ghost mc-excel-export",
+                    ["ExportSuccessMessage"] = "Платежи выгружены в Excel."
+                })" />
 
                 <a class="mc-pay-btn mc-pay-btn--ghost" asp-action="Index" asp-controller="Payments">Сброс</a>
 
@@ -339,4 +353,7 @@
 
 </div>
 
+@section Scripts {
+    <partial name="Partials/_MedclinicCatalogScripts" />
+}
 

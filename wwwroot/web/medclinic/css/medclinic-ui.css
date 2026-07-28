@@ -121,6 +121,26 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
+    pointer-events: none;
+    cursor: wait;
+    opacity: 0.92;
+}
+
+.mc-pay-btn.is-loading,
+.mc-excel-export.is-loading {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    pointer-events: none;
+    cursor: wait;
+    opacity: 0.92;
+}
+
+.mc-staff-btn--ghost.is-loading .mc-btn-spinner,
+.mc-pay-btn--ghost.is-loading .mc-btn-spinner,
+.mc-excel-export.is-loading .mc-btn-spinner {
+    border-color: rgba(15, 118, 110, 0.22);
+    border-top-color: #0f766e;
 }
 
 .mc-btn-spinner {
@@ -262,6 +282,66 @@
         opacity: 1;
         transform: translateY(0) scale(1);
     }
+}
+
+.mc-excel-export {
+    gap: 0.55rem;
+    border-color: rgba(22, 163, 74, 0.28) !important;
+    background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 100%);
+    color: #166534 !important;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.85) inset;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease;
+}
+
+.mc-excel-export:hover {
+    background: linear-gradient(180deg, #dcfce7 0%, #d1fae5 100%);
+    border-color: rgba(22, 163, 74, 0.42) !important;
+    color: #14532d !important;
+    box-shadow: 0 8px 20px rgba(22, 163, 74, 0.12);
+}
+
+.mc-excel-export:active:not(.is-loading) {
+    transform: translateY(1px) scale(0.99);
+}
+
+.mc-excel-export__icon {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.35rem;
+    height: 1.35rem;
+    flex-shrink: 0;
+    color: #15803d;
+}
+
+.mc-excel-export__sheet {
+    display: block;
+}
+
+.mc-excel-export__badge {
+    position: absolute;
+    right: -0.15rem;
+    bottom: -0.2rem;
+    width: 0.72rem;
+    height: 0.72rem;
+    border-radius: 0.2rem;
+    background: linear-gradient(145deg, #22c55e, #16a34a);
+    color: #fff;
+    font-size: 0.48rem;
+    font-weight: 900;
+    line-height: 0.72rem;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(22, 101, 52, 0.35);
+}
+
+.mc-excel-export__label {
+    white-space: nowrap;
+}
+
+.mc-excel-export.is-loading .mc-excel-export__icon,
+.mc-excel-export.is-loading .mc-excel-export__label {
+    display: none;
 }
 
 .mc-confirm-dialog {

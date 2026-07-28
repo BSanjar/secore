@@ -1,5 +1,7 @@
 namespace WebApplication1.Services.Cabinets;
 
+using Microsoft.EntityFrameworkCore;
+
 public interface IShellViewModelBuilder
 {
     ShellViewModel Build();
@@ -8,15 +10,20 @@ public interface IShellViewModelBuilder
 public sealed class ShellViewModelBuilder : IShellViewModelBuilder
 {
     private readonly ICurrentTenantService _currentTenantService;
+    private readonly WebApplication1.Models.DBModels.AppDbContext _db;
 
-    public ShellViewModelBuilder(ICurrentTenantService currentTenantService)
+    public ShellViewModelBuilder(
+        ICurrentTenantService currentTenantService,
+        WebApplication1.Models.DBModels.AppDbContext db)
     {
         _currentTenantService = currentTenantService;
+        _db = db;
     }
 
     public ShellViewModel Build()
     {
-        var profile = _currentTenantService.GetCurrent().Profile;
+        var tenant = _currentTenantService.GetCurrent();
+        var profile = tenant.Profile;
         var profileKey = (profile.Key ?? string.Empty).Trim().ToLowerInvariant();
         var isSimple = string.Equals(profileKey, "simple", StringComparison.OrdinalIgnoreCase);
 
@@ -51,10 +58,21 @@ public sealed class ShellViewModelBuilder : IShellViewModelBuilder
             _ => "~/web/kindergarten/css/cabinet.css"
         };
 
+        string? organizationDisplayName = null;
+        if (profileKey == "medclinic" && !string.IsNullOrWhiteSpace(tenant.OrganizationId))
+        {
+            organizationDisplayName = _db.Organizations
+                .AsNoTracking()
+                .Where(o => o.Id == tenant.OrganizationId)
+                .Select(o => o.Name)
+                .FirstOrDefault();
+        }
+
         return new ShellViewModel(
             BodyClass: bodyClass,
             TitleSuffixResourceKey: titleSuffixResourceKey,
             OrganizationCaptionResourceKey: organizationCaptionResourceKey,
+            OrganizationDisplayName: organizationDisplayName,
             IncludeAntiforgery: true,
             HeaderClass: headerClass,
             MainContainerClass: mainContainerClass,

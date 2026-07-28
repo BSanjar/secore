@@ -7,6 +7,45 @@ namespace WebApplication1.Helpers
         public static DateTime NowForTimestamp()
           => DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
 
+        /// <summary>
+        /// Timestamps in DB are UTC stored as Unspecified — convert for UI display in local time.
+        /// </summary>
+        public static DateTime? ToLocalDisplayTime(DateTime? value)
+        {
+            if (value == null)
+                return null;
+
+            var dt = value.Value;
+            return dt.Kind switch
+            {
+                DateTimeKind.Local => dt,
+                DateTimeKind.Utc => dt.ToLocalTime(),
+                _ => DateTime.SpecifyKind(dt, DateTimeKind.Utc).ToLocalTime()
+            };
+        }
+
+        public static string FormatTimestampForDisplay(DateTime? value, string format = "dd.MM.yyyy HH:mm")
+        {
+            var local = ToLocalDisplayTime(value);
+            return local?.ToString(format, CultureInfo.GetCultureInfo("ru-RU")) ?? "—";
+        }
+
+        public static (string DateLabel, string TimeLabel) FormatTimestampParts(DateTime? value, bool compactDate = false)
+        {
+            var local = ToLocalDisplayTime(value);
+            if (local == null)
+                return ("—", "—");
+
+            var culture = CultureInfo.GetCultureInfo("ru-RU");
+            var dateFormat = compactDate ? "d MMM yyyy" : "d MMMM yyyy";
+            return (
+                local.Value.ToString(dateFormat, culture),
+                local.Value.ToString("HH:mm", culture));
+        }
+
+        public static (string DateLabel, string TimeLabel) FormatNowParts(bool compactDate = false)
+            => FormatTimestampParts(NowForTimestamp(), compactDate);
+
         /// <summary>Сумма в БД (тыйын) → сом для UI и печати.</summary>
         public static decimal TyiynToSom(decimal tyiyn) => tyiyn / 100m;
 

@@ -13,7 +13,7 @@
     var weekStart = todayDate.AddDays(-mondayOffset);
     var weekEnd = weekStart.AddDays(7);
     var weekAppointments = Model.Events.Count(x => x.Start >= weekStart && x.Start < weekEnd);
-    var eventsJson = JsonSerializer.Serialize(Model.Events.Select(x => new { id = x.Id, title = x.Title, doctorId = x.DoctorId, doctor = x.Doctor, patientId = x.PatientId, patientName = x.PatientName, phone = x.Phone, email = x.Email, start = x.Start, end = x.End, status = x.Status, notes = x.Notes, referralSource = x.ReferralSource, paymentType = x.PaymentType, hasPaidInvoice = x.HasPaidInvoice, isActive = x.IsActive, createdAt = x.CreatedAt, updatedAt = x.UpdatedAt, services = x.Services }));
+    var eventsJson = JsonSerializer.Serialize(Model.Events.Select(x => new { id = x.Id, title = x.Title, doctorId = x.DoctorId, doctor = x.Doctor, patientId = x.PatientId, patientName = x.PatientName, phone = x.Phone, email = x.Email, patientGender = x.PatientGender, patientBirthDate = x.PatientBirthDate, patientAge = x.PatientAge, start = x.Start, end = x.End, status = x.Status, notes = x.Notes, referralSource = x.ReferralSource, paymentType = x.PaymentType, hasPaidInvoice = x.HasPaidInvoice, isActive = x.IsActive, createdAt = x.CreatedAt, updatedAt = x.UpdatedAt, services = x.Services }));
     var patientsJson = JsonSerializer.Serialize(Model.Patients.Select(x => new { id = x.Id, name = x.Name, phone = x.Phone, email = x.Email, whatsApp = x.WhatsApp }));
     var serviceCatalogJson = JsonSerializer.Serialize(Model.ServiceCatalog.Select(x => new { id = x.Id, name = x.Name, priceTyiyn = x.PriceTyiyn }));
     var doctorSchedulesJson = JsonSerializer.Serialize(Model.DoctorSchedules);
@@ -22,6 +22,7 @@
     var departmentsJson = JsonSerializer.Serialize(Model.Departments.Select(x => new { value = x.Value, label = x.Label }));
     var doctorFiltersJson = JsonSerializer.Serialize(Model.DoctorFilters.Select(x => new { value = x.Value, label = x.Label, departmentIds = x.DepartmentIds }));
     var medicalTemplatesJson = JsonSerializer.Serialize(Model.MedicalTemplates.Select(x => new { id = x.Id, type = x.Type, title = x.Title, content = x.Content, sortOrder = x.SortOrder }));
+    var initialPatientId = Context.Request.Query["patientId"].ToString();
 }
 
 @section Styles {
@@ -80,28 +81,35 @@
 
             <div class="registry-v2-filter-field">
                 <label class="registry-v2-filter-field__label" for="registryDepartmentSelect">Отделение</label>
-                <select id="registryDepartmentSelect" class="form-select registry-v2-select registry-v2-select--compact" required>
-                    @{
-                        var deptIdx = 0;
-                    }
+                <select id="registryDepartmentSelect" class="form-select registry-v2-select registry-v2-select--compact">
+                    <option value="" selected>Все отделения</option>
                     @foreach (var dept in Model.Departments)
                     {
-                        var isFirstDept = deptIdx++ == 0;
-                        if (isFirstDept)
-                        {
-                            <option value="@dept.Value" selected="selected">@dept.Label</option>
-                        }
-                        else
-                        {
-                            <option value="@dept.Value">@dept.Label</option>
-                        }
+                        <option value="@dept.Value">@dept.Label</option>
                     }
                 </select>
             </div>
 
             <div class="registry-v2-filter-field">
                 <label class="registry-v2-filter-field__label" for="registryDoctorSelect">Врач</label>
-                <select id="registryDoctorSelect" class="form-select registry-v2-select registry-v2-select--compact" required disabled></select>
+                <select id="registryDoctorSelect" class="form-select registry-v2-select registry-v2-select--compact"></select>
+            </div>
+
+            <div class="registry-v2-filter-field registry-v2-filter-field--patient">
+                <label class="registry-v2-filter-field__label" for="registryPatientFilterInput">Пациент</label>
+                <div class="registry-v2-patient-lookup" id="registryPatientFilter">
+                    <input type="text"
+                           id="registryPatientFilterInput"
+                           class="form-control registry-v2-select registry-v2-select--compact registry-v2-patient-lookup__input"
+                           placeholder="Все пациенты"
+                           autocomplete="off"
+                           aria-autocomplete="list"
+                           aria-controls="registryPatientFilterSuggestions"
+                           aria-expanded="false" />
+                    <input type="hidden" id="registryPatientFilterId" value="" />
+                    <button type="button" class="registry-v2-patient-lookup__clear" id="registryPatientFilterClear" hidden aria-label="Сбросить фильтр пациента">×</button>
+                    <div class="registry-v2-patient-suggestions" id="registryPatientFilterSuggestions" hidden role="listbox"></div>
+                </div>
             </div>
         </div>
 
@@ -203,7 +211,8 @@
             canManageAppointments: @Json.Serialize(canManageAppointments),
             canGenerateInvoice: @Json.Serialize(canGenerateInvoice),
             canMarkAsPaidManually: @Json.Serialize(canMarkAsPaidManually),
-            openAppointmentId: @Json.Serialize(Context.Request.Query["openAppointmentId"].ToString())
+            openAppointmentId: @Json.Serialize(Context.Request.Query["openAppointmentId"].ToString()),
+            initialPatientId: @Json.Serialize(initialPatientId)
         };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js" crossorigin="anonymous"></script>

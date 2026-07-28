@@ -12,15 +12,18 @@ public class DoctorsController : Controller
     private readonly ICurrentTenantService _currentTenantService;
     private readonly IDepartmentService _departmentService;
     private readonly IDoctorDirectoryService _doctorDirectoryService;
+    private readonly ExcelExportService _excelExportService;
 
     public DoctorsController(
         ICurrentTenantService currentTenantService,
         IDepartmentService departmentService,
-        IDoctorDirectoryService doctorDirectoryService)
+        IDoctorDirectoryService doctorDirectoryService,
+        ExcelExportService excelExportService)
     {
         _currentTenantService = currentTenantService;
         _departmentService = departmentService;
         _doctorDirectoryService = doctorDirectoryService;
+        _excelExportService = excelExportService;
     }
 
     [HttpGet]
@@ -39,6 +42,35 @@ public class DoctorsController : Controller
             CanManageStaff = AuthorizationHelper.CanManageStaff(HttpContext),
             Doctors = doctors
         });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ExportExcel(string? search)
+    {
+        var gate = await EnsureAccessAsync();
+        if (gate != null)
+            return gate;
+
+        var organizationId = _currentTenantService.GetCurrent().OrganizationId!;
+        var doctors = await _doctorDirectoryService.GetDoctorsAsync(organizationId, search);
+
+        var rows = doctors.Select(d => (IReadOnlyList<object?>)new List<object?>
+        {
+            d.Name,
+            d.Email ?? "—",
+            d.Phone ?? "—",
+            d.Roles.Count == 0 ? "—" : string.Join(", ", d.Roles),
+            d.Departments.Count == 0 ? "—" : string.Join(", ", d.Departments),
+            d.Specializations.Count == 0 ? "—" : string.Join(", ", d.Specializations)
+        }).ToList();
+
+        var bytes = _excelExportService.ExportTable(
+            "Сотрудники",
+            new[] { "Сотрудник", "Email", "Телефон", "Роли", "Отделения", "Специализации" },
+            rows);
+
+        return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            $"sotrudniki_{DateTime.Now:yyyy-MM-dd_HH-mm}.xlsx");
     }
 
     [HttpGet]

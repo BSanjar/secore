@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = "Пациенты";
     ViewData["HideTopbarTitle"] = true;
+    var canViewAppointmentRegistry = ViewBag.CanViewAppointmentRegistry as bool? == true;
 
     string PatientStatusBadgeClass(string label) => label switch
     {
@@ -22,6 +23,10 @@
                 <p class="mc-staff-hero__sub">Реестр пациентов клиники: контакты, идентификаторы и статус.</p>
             </div>
             <div class="mc-staff-hero__actions">
+                <partial name="Partials/_MedclinicExcelExportButton" view-data="@(new ViewDataDictionary(ViewData) {
+                    ["ExportHref"] = Url.Action("ExportExcel", "Patients", new { search = Model.Search }),
+                    ["ExportSuccessMessage"] = "Список пациентов выгружен в Excel."
+                })" />
                 <a asp-controller="Patients" asp-action="Create" class="mc-staff-btn mc-staff-btn--primary">Добавить пациента</a>
             </div>
         </div>
@@ -50,11 +55,15 @@
                     <thead>
                         <tr>
                             <th>Пациент</th>
+                            <th>Пол</th>
+                            <th>Дата рождения</th>
                             <th>ИИН/ИНН</th>
                             <th>Телефон</th>
                             <th>Email</th>
+                            <th>Записей</th>
                             <th>Статус</th>
                             <th>Создан</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -68,15 +77,49 @@
                                         <div class="mc-staff-table__muted">@patient.Address</div>
                                     }
                                 </td>
+                                <td>@(string.IsNullOrWhiteSpace(patient.Gender) ? "—" : patient.Gender)</td>
+                                <td>
+                                    @if (string.IsNullOrWhiteSpace(patient.BirthDate))
+                                    {
+                                        @:—
+                                    }
+                                    else if (DateTime.TryParse(patient.BirthDate, out var birthDate))
+                                    {
+                                        @(patient.Age is not null ? $"{birthDate:dd.MM.yyyy} ({patient.Age} лет)" : birthDate.ToString("dd.MM.yyyy"))
+                                    }
+                                    else
+                                    {
+                                        @patient.BirthDate
+                                    }
+                                </td>
                                 <td>@(string.IsNullOrWhiteSpace(patient.Identifier) ? "—" : patient.Identifier)</td>
                                 <td>@(string.IsNullOrWhiteSpace(patient.Phone) ? "—" : patient.Phone)</td>
                                 <td>@(string.IsNullOrWhiteSpace(patient.Email) ? "—" : patient.Email)</td>
+                                <td>@patient.AppointmentsCount</td>
                                 <td>
                                     <span class="mc-staff-badge @PatientStatusBadgeClass(patient.StatusLabel)">
                                         @patient.StatusLabel
                                     </span>
                                 </td>
                                 <td>@(patient.CreatedDate?.ToString("dd.MM.yyyy HH:mm") ?? "—")</td>
+                                <td>
+                                    <div class="mc-staff-table__actions">
+                                        @if (canViewAppointmentRegistry)
+                                        {
+                                            <a asp-controller="Appointments"
+                                               asp-action="Registry"
+                                               asp-route-patientId="@patient.Id"
+                                               class="mc-staff-btn mc-staff-btn--ghost mc-staff-btn--sm"
+                                               title="Открыть записи пациента в расписании">
+                                                Записи
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="mc-staff-table__muted">—</span>
+                                        }
+                                    </div>
+                                </td>
                             </tr>
                         }
                     </tbody>

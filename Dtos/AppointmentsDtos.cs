@@ -11,6 +11,8 @@ public class SaveAppointmentRequest
     public bool UsePhoneAsWhatsApp { get; set; }
     public string? Email { get; set; }
     public string? Comment { get; set; }
+    public string? PatientGender { get; set; }
+    public string? PatientBirthDate { get; set; }
     public string? ReferralSource { get; set; }
     public string? PaymentType { get; set; }
     public string? AppointmentStatus { get; set; }

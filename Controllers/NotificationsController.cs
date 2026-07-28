@@ -13,15 +13,18 @@ public class NotificationsController : Controller
 {
     private readonly AppDbContext _db;
     private readonly NotificationService _notificationService;
+    private readonly NotificationRecipientResolver _recipientResolver;
     private readonly ICurrentTenantService _currentTenantService;
 
     public NotificationsController(
         AppDbContext db,
         NotificationService notificationService,
+        NotificationRecipientResolver recipientResolver,
         ICurrentTenantService currentTenantService)
     {
         _db = db;
         _notificationService = notificationService;
+        _recipientResolver = recipientResolver;
         _currentTenantService = currentTenantService;
     }
 
@@ -49,9 +52,15 @@ public class NotificationsController : Controller
         if (string.IsNullOrEmpty(organizationId))
             return Unauthorized();
 
-        var model = await BuildCreateViewModelAsync(new NotificationCreateViewModel(), organizationId, cancellationToken);
+        var model = await BuildCreateViewModelAsync(new NotificationCreateViewModel(), organizationId, isMedclinic: IsMedclinicCabinet(), cancellationToken);
         return View(model);
     }
+
+    private bool IsMedclinicCabinet() =>
+        string.Equals(
+            AuthorizationHelper.GetOrganizationType(HttpContext),
+            "medclinic",
+            StringComparison.OrdinalIgnoreCase);
 
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -67,6 +76,11 @@ public class NotificationsController : Controller
         var organizationId = GetCurrentOrganizationId();
         if (string.IsNullOrEmpty(organizationId))
             return Unauthorized();
+
+        var isMedclinic = string.Equals(
+            AuthorizationHelper.GetOrganizationType(HttpContext),
+            "medclinic",
+            StringComparison.OrdinalIgnoreCase);
 
         var selectedChannels = GetSelectedChannels(model);
         if (selectedChannels.Count == 0)
@@ -84,29 +98,52 @@ public class NotificationsController : Controller
             .Distinct()
             .ToList();
 
-        if (model.SelectedClientIds.Count == 0 && model.SelectedGroupIds.Count == 0)
+        model.RecipientMode = string.IsNullOrWhiteSpace(model.RecipientMode)
+            ? NotificationRecipientModes.All
+            : model.RecipientMode.Trim();
+
+        model.GenderFilter = model.GenderFilter?.Trim() ?? "";
+        model.AgeFilter = model.AgeFilter?.Trim() ?? "";
+
+        if (NotificationRecipientModes.IsManual(model.RecipientMode))
         {
-            ModelState.AddModelError(string.Empty, "Выберите хотя бы одного клиента или одну группу.");
+            if (model.SelectedClientIds.Count == 0 &&
+                (!isMedclinic && model.SelectedGroupIds.Count == 0))
+            {
+                ModelState.AddModelError(string.Empty, isMedclinic
+                    ? "Выберите хотя бы одного пациента или используйте режим «Все пациенты»."
+                    : "Выберите хотя бы одного клиента или одну группу.");
+            }
         }
 
         if (!ModelState.IsValid)
         {
-            await BuildCreateViewModelAsync(model, organizationId, cancellationToken);
+            await BuildCreateViewModelAsync(model, organizationId, isMedclinic, cancellationToken);
             return View(model);
         }
 
-        var recipients = await _db.OrganizationClients
-            .AsNoTracking()
-            .Where(c => c.Organization == organizationId && c.ClientStatus == 1)
-            .Where(c =>
-                model.SelectedClientIds.Contains(c.Id) ||
-                (c.OrgClientGroupId != null && model.SelectedGroupIds.Contains(c.OrgClientGroupId)))
-            .ToListAsync(cancellationToken);
+        var recipients = await _recipientResolver.ResolveAsync(
+            organizationId,
+            model.RecipientMode,
+            model.GenderFilter,
+            model.AgeFilter,
+            model.SelectedClientIds,
+            model.SelectedGroupIds,
+            includeGroups: !isMedclinic,
+            cancellationToken);
 
         if (recipients.Count == 0)
         {
-            ModelState.AddModelError(string.Empty, "Не удалось найти активных клиентов по выбранным получателям.");
-            await BuildCreateViewModelAsync(model, organizationId, cancellationToken);
+            var hasDemographicFilters =
+                !string.IsNullOrWhiteSpace(model.GenderFilter) ||
+                !string.IsNullOrWhiteSpace(model.AgeFilter);
+
+            ModelState.AddModelError(string.Empty, hasDemographicFilters
+                ? "По выбранным фильтрам не найдено активных пациентов с заполненными полом и датой рождения."
+                : NotificationRecipientModes.IsManual(model.RecipientMode)
+                    ? "Не удалось найти активных пациентов среди выбранных."
+                    : "В организации нет активных пациентов.");
+            await BuildCreateViewModelAsync(model, organizationId, isMedclinic, cancellationToken);
             return View(model);
         }
 
@@ -121,7 +158,7 @@ public class NotificationsController : Controller
         if (result.CreatedNotifications == 0)
         {
             ModelState.AddModelError(string.Empty, "Для выбранных клиентов не найдено контактов по указанным каналам.");
-            await BuildCreateViewModelAsync(model, organizationId, cancellationToken);
+            await BuildCreateViewModelAsync(model, organizationId, isMedclinic, cancellationToken);
             return View(model);
         }
 
@@ -215,9 +252,10 @@ public class NotificationsController : Controller
     private async Task<NotificationCreateViewModel> BuildCreateViewModelAsync(
         NotificationCreateViewModel model,
         string organizationId,
+        bool isMedclinic,
         CancellationToken cancellationToken)
     {
-        model.AvailableClients = await _db.OrganizationClients
+        var clients = await _db.OrganizationClients
             .AsNoTracking()
             .Where(c => c.Organization == organizationId && c.ClientStatus == 1)
             .OrderBy(c => c.ClientName)
@@ -234,17 +272,41 @@ public class NotificationsController : Controller
             })
             .ToListAsync(cancellationToken);
 
-        model.AvailableGroups = await _db.OrgClientGroups
-            .AsNoTracking()
-            .Where(g => g.OrganizationId == organizationId && g.IsDeleted == 0)
-            .OrderBy(g => g.Name)
-            .Select(g => new NotificationGroupOptionViewModel
-            {
-                Id = g.Id,
-                Name = g.Name ?? g.Id,
-                ClientCount = g.OrganizationClients.Count(c => c.ClientStatus == 1)
-            })
-            .ToListAsync(cancellationToken);
+        var demographics = await _recipientResolver.LoadDemographicsAsync(
+            organizationId,
+            clients.Select(c => c.Id),
+            cancellationToken);
+
+        foreach (var client in clients)
+        {
+            if (!demographics.TryGetValue(client.Id, out var demo))
+                continue;
+
+            client.Gender = demo.Gender;
+            client.Age = demo.Age;
+        }
+
+        model.AvailableClients = clients;
+
+        if (!isMedclinic)
+        {
+            model.AvailableGroups = await _db.OrgClientGroups
+                .AsNoTracking()
+                .Where(g => g.OrganizationId == organizationId && g.IsDeleted == 0)
+                .OrderBy(g => g.Name)
+                .Select(g => new NotificationGroupOptionViewModel
+                {
+                    Id = g.Id,
+                    Name = g.Name ?? g.Id,
+                    ClientCount = g.OrganizationClients.Count(c => c.ClientStatus == 1)
+                })
+                .ToListAsync(cancellationToken);
+        }
+        else
+        {
+            model.AvailableGroups = Array.Empty<NotificationGroupOptionViewModel>();
+            model.SelectedGroupIds.Clear();
+        }
 
         return model;
     }

@@ -58,6 +58,8 @@
         selectedDepartmentIds: new Set((p.departments || []).map((x) => x.value)),
         selectedDoctorIds: new Set((p.doctorFilters || []).map((x) => x.value)),
         paymentFilter: "all",
+        selectedPatientId: null,
+        patientCatalog: p.patients || [],
         returnToDetails: false,
         detailsQrInvoiceId: null
     };
@@ -98,7 +100,8 @@
                 JSON.stringify({
                     anchor: toIsoDate(state.anchor),
                     departmentId: $("registryDepartmentSelect")?.value || "",
-                    doctorId: $("registryDoctorSelect")?.value || ""
+                    doctorId: $("registryDoctorSelect")?.value || "",
+                    patientId: state.selectedPatientId || ""
                 })
             );
         } catch {
@@ -125,6 +128,8 @@
             return;
         }
         let preservedDoctor = "";
+        let preservedPatientId = "";
+        let preservedDepartmentId = "";
         try {
             const raw = sessionStorage.getItem(REGISTRY_FILTERS_KEY);
             if (raw) {
@@ -133,18 +138,170 @@
                     const restored = new Date(`${data.anchor}T12:00:00`);
                     if (!Number.isNaN(restored.getTime())) state.anchor = restored;
                 }
-                const deptSelect = $("registryDepartmentSelect");
-                if (deptSelect && data.departmentId) {
-                    const hasDept = Array.from(deptSelect.options).some((o) => o.value === data.departmentId);
-                    if (hasDept) deptSelect.value = data.departmentId;
-                }
-                preservedDoctor = data.doctorId || "";
+                preservedDepartmentId = data.departmentId ?? "";
+                preservedDoctor = data.doctorId ?? "";
+                preservedPatientId = data.patientId || "";
             }
         } catch {
             /* ignore corrupt storage */
         }
+
+        const urlPatientId = (p.initialPatientId || "").trim();
+        if (urlPatientId) {
+            const deptSelect = $("registryDepartmentSelect");
+            if (deptSelect) deptSelect.value = "";
+            refreshRegistryDoctorSelect("");
+            setRegistryPatientFilter(urlPatientId, { save: false, render: false, adjustAnchor: true });
+            return;
+        }
+
+        const deptSelect = $("registryDepartmentSelect");
+        if (deptSelect) {
+            const hasDept = preservedDepartmentId && state.departments.some((d) => String(d.value) === String(preservedDepartmentId));
+            deptSelect.value = hasDept ? preservedDepartmentId : "";
+        }
         ensureRegistryDefaultDepartment();
         refreshRegistryDoctorSelect(preservedDoctor);
+        setRegistryPatientFilter(preservedPatientId, { save: false, render: false, adjustAnchor: false });
+    }
+
+    function resolveAnchorForPatient(patientId) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const patientEvents = state.events
+            .filter((ev) => String(ev.patientId || "") === String(patientId) && ev.isActive !== false)
+            .sort((a, b) => a.start - b.start);
+        if (!patientEvents.length) return new Date();
+
+        const upcoming = patientEvents.find((ev) => {
+            const day = new Date(ev.start);
+            day.setHours(0, 0, 0, 0);
+            return day >= today;
+        });
+        if (upcoming) return new Date(upcoming.start);
+
+        return new Date(patientEvents[patientEvents.length - 1].start);
+    }
+
+    function normalizePatientSearchText(value) {
+        return String(value ?? "").trim().toLowerCase();
+    }
+
+    function findPatientById(patientId) {
+        if (!patientId) return null;
+        return state.patientCatalog.find((item) => String(item.id) === String(patientId)) || null;
+    }
+
+    function applyRegistryPatientFilterUi(patient) {
+        const input = $("registryPatientFilterInput");
+        const hidden = $("registryPatientFilterId");
+        const clearBtn = $("registryPatientFilterClear");
+        if (!input || !hidden) return;
+        if (patient) {
+            input.value = patient.name || "";
+            hidden.value = patient.id || "";
+            if (clearBtn) clearBtn.hidden = false;
+        } else {
+            input.value = "";
+            hidden.value = "";
+            if (clearBtn) clearBtn.hidden = true;
+        }
+    }
+
+    function setRegistryPatientFilter(patientId, options = {}) {
+        const normalizedId = (patientId || "").trim();
+        const patient = findPatientById(normalizedId);
+        state.selectedPatientId = patient ? patient.id : null;
+        applyRegistryPatientFilterUi(patient);
+        hideRegistryPatientSuggestions();
+        if (patient && options.adjustAnchor !== false) {
+            state.anchor = resolveAnchorForPatient(patient.id);
+        }
+        if (options.save !== false) saveRegistryFilters();
+        if (options.render !== false) renderAll();
+    }
+
+    function hideRegistryPatientSuggestions() {
+        const box = $("registryPatientFilterSuggestions");
+        const input = $("registryPatientFilterInput");
+        if (box) box.hidden = true;
+        if (input) input.setAttribute("aria-expanded", "false");
+    }
+
+    function renderRegistryPatientSuggestions(query) {
+        const box = $("registryPatientFilterSuggestions");
+        const input = $("registryPatientFilterInput");
+        if (!box || !input) return;
+        const normalized = normalizePatientSearchText(query);
+        const matches = state.patientCatalog
+            .filter((patient) => {
+                if (!normalized) return true;
+                const haystack = normalizePatientSearchText(`${patient.name || ""} ${patient.phone || ""} ${patient.email || ""}`);
+                return haystack.includes(normalized);
+            })
+            .slice(0, 12);
+
+        if (!matches.length) {
+            box.hidden = true;
+            input.setAttribute("aria-expanded", "false");
+            return;
+        }
+
+        box.innerHTML = matches.map((patient) => `
+            <button type="button" class="registry-v2-patient-suggestion" role="option" data-patient-id="${esc(patient.id)}">
+                <span class="registry-v2-patient-suggestion__name">${esc(patient.name || "Без имени")}</span>
+                <span class="registry-v2-patient-suggestion__meta">${esc(patient.phone || "Телефон не указан")}${patient.email ? ` · ${esc(patient.email)}` : ""}</span>
+            </button>
+        `).join("");
+        box.hidden = false;
+        input.setAttribute("aria-expanded", "true");
+        box.querySelectorAll(".registry-v2-patient-suggestion").forEach((button) => {
+            button.addEventListener("mousedown", (event) => event.preventDefault());
+            button.addEventListener("click", () => setRegistryPatientFilter(button.dataset.patientId || ""));
+        });
+    }
+
+    function setupRegistryPatientFilter() {
+        const root = $("registryPatientFilter");
+        const input = $("registryPatientFilterInput");
+        const clearBtn = $("registryPatientFilterClear");
+        if (!root || !input) return;
+
+        input.addEventListener("focus", () => renderRegistryPatientSuggestions(input.value));
+        input.addEventListener("input", () => {
+            if ($("registryPatientFilterId")) $("registryPatientFilterId").value = "";
+            state.selectedPatientId = null;
+            if (clearBtn) clearBtn.hidden = !input.value.trim();
+            renderRegistryPatientSuggestions(input.value);
+        });
+        input.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                hideRegistryPatientSuggestions();
+                input.blur();
+            }
+        });
+        clearBtn?.addEventListener("click", () => setRegistryPatientFilter(""));
+        document.addEventListener("click", (event) => {
+            if (!event.target.closest("#registryPatientFilter")) hideRegistryPatientSuggestions();
+        });
+    }
+
+    function eventMatchesPatientFilter(ev) {
+        if (!state.selectedPatientId) return true;
+        return String(ev.patientId || "") === String(state.selectedPatientId);
+    }
+
+    function doctorDayEventsAll(doctorId, date = state.anchor) {
+        return state.events
+            .filter((ev) => ev.doctorId === doctorId && sameDay(ev.start, date) && ev.isActive !== false)
+            .sort((a, b) => a.start - b.start);
+    }
+
+    function slotOccupiedByOtherPatient(minute, duration, doctorId, date = state.anchor) {
+        if (!state.selectedPatientId) return false;
+        return doctorDayEventsAll(doctorId, date).some(
+            (ev) => String(ev.patientId || "") !== String(state.selectedPatientId) && appointmentOverlapsMinutes(ev, minute, duration)
+        );
     }
 
     function addDays(date, days) { const d = new Date(date); d.setDate(d.getDate() + days); return d; }
@@ -154,6 +311,33 @@
     function toIsoDate(value) { const d = new Date(value); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
     function timeToMin(v) { if (!v || !String(v).includes(":")) return null; const [h, m] = String(v).split(":").map(Number); return h * 60 + m; }
     function minutesToTime(v) { return `${String(Math.floor(v / 60)).padStart(2, "0")}:${String(v % 60).padStart(2, "0")}`; }
+    function combineDateAndMinutes(dateIso, minute) {
+        if (!dateIso || minute == null) return null;
+        const dt = new Date(`${dateIso}T00:00:00`);
+        dt.setHours(Math.floor(minute / 60), minute % 60, 0, 0);
+        return dt;
+    }
+    function combineDateAndTime(dateIso, timeValue) {
+        if (!dateIso || !timeValue) return null;
+        const minute = typeof timeValue === "number" ? timeValue : timeToMin(timeValue);
+        if (minute == null) return null;
+        return combineDateAndMinutes(dateIso, minute);
+    }
+    function isPastSlot(dateIso, timeValue) {
+        const dt = combineDateAndTime(dateIso, timeValue);
+        return dt ? dt.getTime() < Date.now() : false;
+    }
+    function clampToUpcomingSlot(date, doctorId) {
+        const now = new Date();
+        if (date.getTime() >= now.getTime()) return date;
+        const duration = Math.max(5, durationForDoctor(doctorId) || 30);
+        const next = new Date(now);
+        const remainder = next.getMinutes() % duration;
+        if (remainder !== 0) next.setMinutes(next.getMinutes() + (duration - remainder));
+        next.setSeconds(0, 0);
+        return next;
+    }
+    window.medclinicIsPastAppointmentSlot = isPastSlot;
     function paymentClass(ev) {
         if (ev.hasPaidInvoice) return "paid";
         const t = (ev.paymentType || "").toLowerCase();
@@ -264,40 +448,32 @@
     }
     function ensureRegistryDefaultDepartment() {
         const deptSelect = $("registryDepartmentSelect");
-        if (!deptSelect || !state.departments?.length) return;
+        if (!deptSelect) return;
         const val = (deptSelect.value || "").trim();
+        if (val === "") return;
         const ok = state.departments.some((d) => String(d.value) === String(val));
-        if (!ok) deptSelect.value = state.departments[0].value;
+        if (!ok) deptSelect.value = "";
     }
     function refreshRegistryDoctorSelect(preserveDoctorId) {
         const select = $("registryDoctorSelect");
-        const deptSelect = $("registryDepartmentSelect");
         if (!select) return;
-        const deptId = (deptSelect?.value || "").trim();
         const docs = registryDoctorsFiltered();
-        const current = preserveDoctorId || select.value;
-
-        if (!deptId) {
-            select.disabled = true;
-            select.innerHTML = "";
-            select.value = "";
-            return;
-        }
-
-        if (!docs.length) {
-            select.disabled = true;
-            select.innerHTML = '<option value="" disabled selected>Нет врачей</option>';
-            select.value = "";
-            return;
-        }
+        const current = preserveDoctorId !== undefined ? preserveDoctorId : select.value;
 
         select.disabled = false;
-        select.innerHTML = docs.map((doc) => `<option value="${esc(doc.value)}">${esc(doc.label)}</option>`).join("");
-        if (current && docs.some((doc) => String(doc.value) === String(current))) select.value = current;
-        else select.value = docs[0].value;
+        select.innerHTML = `<option value="">Все врачи</option>${docs.map((doc) => `<option value="${esc(doc.value)}">${esc(doc.label)}</option>`).join("")}`;
+
+        if (current === "" || current === "all") {
+            select.value = "";
+        } else if (docs.some((doc) => String(doc.value) === String(current))) {
+            select.value = current;
+        } else {
+            select.value = "";
+        }
     }
     function setupRegistryFilters() {
         restoreRegistryFilters();
+        setupRegistryPatientFilter();
         if (isOwnSchedule) return;
         $("registryDepartmentSelect")?.addEventListener("change", () => {
             refreshRegistryDoctorSelect();
@@ -315,19 +491,26 @@
         if (!cap) return;
         const doctorId = getRegistryDoctorId();
         const dateStr = fd(state.anchor, { weekday: "long", day: "numeric", month: "long" });
+        const patient = findPatientById(state.selectedPatientId);
+        const patientSuffix = patient ? ` · ${patient.name}` : "";
+        const dayItems = filteredEvents().filter((ev) => sameDay(ev.start, state.anchor));
+
         if (!doctorId) {
-            cap.textContent = dateStr;
-            if (countBadge) countBadge.hidden = true;
+            cap.textContent = `Все врачи · ${dateStr}${patientSuffix} · расписание и свободные слоты`;
+            if (countBadge) {
+                countBadge.hidden = false;
+                const count = dayItems.length;
+                countBadge.textContent = count ? `${count} ${count === 1 ? "запись" : count < 5 ? "записи" : "записей"}` : "Нет записей";
+            }
             return;
         }
+
         const meta = doctorMeta(doctorId);
         cap.textContent = meta.subtitle
-            ? `${dateStr} · ${meta.name} · ${meta.subtitle}`
-            : `${dateStr} · ${meta.name}`;
+            ? `${dateStr} · ${meta.name} · ${meta.subtitle}${patientSuffix}`
+            : `${dateStr} · ${meta.name}${patientSuffix}`;
         if (countBadge) {
-            const count = state.events.filter(
-                (ev) => ev.doctorId === doctorId && sameDay(ev.start, state.anchor) && ev.isActive !== false
-            ).length;
+            const count = doctorDayEventsAll(doctorId).filter(eventMatchesPatientFilter).length;
             countBadge.hidden = false;
             countBadge.textContent = count ? `${count} ${count === 1 ? "запись" : count < 5 ? "записи" : "записей"}` : "Нет записей";
         }
@@ -336,6 +519,7 @@
         if (pageType === "doctor") return state.doctorFilters;
         if ($("registryDoctorSelect")) {
             const doctorId = getRegistryDoctorId();
+            if (!doctorId) return registryDoctorsFiltered();
             const doc = state.doctorFilters.find((x) => x.value === doctorId);
             return doc ? [doc] : [];
         }
@@ -353,6 +537,7 @@
         if (pageType === "registry") {
             const doctorIds = new Set(selectedDoctors().map((x) => x.value));
             items = items.filter((x) => !x.doctorId || doctorIds.has(x.doctorId));
+            if (state.selectedPatientId) items = items.filter(eventMatchesPatientFilter);
             if (state.paymentFilter !== "all") items = items.filter((x) => paymentClass(x) === state.paymentFilter);
         }
         return items.sort((a, b) => a.start - b.start);
@@ -691,6 +876,7 @@
         for (let m = start; m + duration <= end; m += duration) {
             const overlapsBusy = unavailable.some((interval) => m < interval.end && (m + duration) > interval.start);
             if (overlapsBusy) continue;
+            if (isPastSlot(dateValue, m)) continue;
 
             const s = minutesToTime(m); const e = minutesToTime(m + duration);
             html.push(`<button type="button" class="btn btn-outline-secondary btn-sm slot-button" data-start="${s}" data-end="${e}">${s}</button>`);
@@ -796,6 +982,18 @@
         return status || "—";
     }
 
+    function formatPatientBirthLine(ev) {
+        const birthDate = ev?.patientBirthDate;
+        if (!birthDate) return "—";
+        const parts = String(birthDate).split("-");
+        if (parts.length === 3) {
+            const label = `${parts[2]}.${parts[1]}.${parts[0]}`;
+            const age = ev.patientAge;
+            return age != null && !Number.isNaN(Number(age)) ? `${label} (${age} лет)` : label;
+        }
+        return birthDate;
+    }
+
     function openDetails(eventItem) {
         showDetailsMainView();
         state.selectedEvent = eventItem;
@@ -822,7 +1020,8 @@
             avatar.textContent = letter;
         }
         set("appointmentDetailsPhone", eventItem.phone);
-        set("appointmentDetailsEmail", eventItem.email);
+        set("appointmentDetailsGender", eventItem.patientGender);
+        set("appointmentDetailsBirthDate", formatPatientBirthLine(eventItem));
         set("appointmentDetailsDoctor", eventItem.doctor || doctorMeta(eventItem.doctorId).name);
         set("appointmentDetailsDateTime", `${fd(eventItem.start, { day: "numeric", month: "long", year: "numeric" })}, ${ft(eventItem.start)} – ${ft(eventItem.end)}`);
         set("appointmentDetailsStatus", formatAppointmentStatus(eventItem.status));
@@ -1097,6 +1296,7 @@
         for (let m = start; m + duration <= end; m += duration) {
             const overlapsBusy = unavailable.some((interval) => m < interval.end && m + duration > interval.start);
             if (overlapsBusy) continue;
+            if (isPastSlot(dateValue, m)) continue;
             const s = minutesToTime(m);
             const e = minutesToTime(m + duration);
             const active = selectedStart === s ? " is-active" : "";
@@ -1127,7 +1327,9 @@
         const start = $("appointmentRescheduleStart")?.value || "";
         const end = $("appointmentRescheduleEnd")?.value || "";
         const hasServices = (state.selectedServices?.length || 0) > 0;
-        btn.disabled = !name || !dateValue || !start || !end || !hasServices;
+        const isPast = dateValue && start ? isPastSlot(dateValue, start) : false;
+        setRescheduleHint(isPast ? "Нельзя перенести запись на прошедшее время." : "");
+        btn.disabled = !name || !dateValue || !start || !end || !hasServices || isPast;
     }
     window.medclinicValidateRescheduleForm = validateRescheduleForm;
 
@@ -1144,7 +1346,10 @@
         if ($("appointmentReschedulePhone")) $("appointmentReschedulePhone").value = ev.phone || "";
         if ($("appointmentRescheduleEmail")) $("appointmentRescheduleEmail").value = ev.email || "";
         if ($("appointmentRescheduleComment")) $("appointmentRescheduleComment").value = notesModel.comment || (ev.notes && !String(ev.notes).startsWith("__medjson__") ? ev.notes : "") || "";
-        if ($("appointmentRescheduleDate")) $("appointmentRescheduleDate").value = toIsoDate(ev.start);
+        if ($("appointmentRescheduleDate")) {
+            $("appointmentRescheduleDate").min = toIsoDate(new Date());
+            $("appointmentRescheduleDate").value = toIsoDate(ev.start);
+        }
         if ($("appointmentRescheduleStart")) $("appointmentRescheduleStart").value = ft(ev.start);
         if ($("appointmentRescheduleEnd")) $("appointmentRescheduleEnd").value = ft(ev.end);
         const meta = doctorMeta(ev.doctorId);
@@ -1175,6 +1380,13 @@
     async function saveReschedule() {
         const btn = $("appointmentRescheduleSaveButton");
         if (btn?.disabled || !p.saveUrl) return;
+        const appointmentDate = $("appointmentRescheduleDate")?.value || "";
+        const startTime = $("appointmentRescheduleStart")?.value || "";
+        if (isPastSlot(appointmentDate, startTime)) {
+            setRescheduleHint("Нельзя перенести запись на прошедшее время.");
+            window.MedclinicUI?.showToast?.("Нельзя перенести запись на прошедшее время.", "danger");
+            return;
+        }
         const appointmentId = $("appointmentRescheduleId")?.value || "";
         const patientName = ($("appointmentReschedulePatientName")?.value || "").trim();
         const services = (state.selectedServices || []).map((s) => ({
@@ -1281,11 +1493,12 @@
             saveBtn.dataset.loadingText = isExistingEvent ? "Сохранение..." : "Регистрация...";
         }
         if (!ev || !ev.id) {
-            ["appointmentId", "appointmentPatientId", "appointmentPatientName", "appointmentPhone", "appointmentEmail", "appointmentComment"].forEach((id) => { if ($(id)) $(id).value = ""; });
+            ["appointmentId", "appointmentPatientId", "appointmentPatientName", "appointmentPhone", "appointmentPatientGender", "appointmentPatientBirthDate"].forEach((id) => { if ($(id)) $(id).value = ""; });
             if ($("appointmentReferral")) $("appointmentReferral").value = "";
             if ($("appointmentPatient")) $("appointmentPatient").selectedIndex = 0;
-            const date = slotDate || new Date();
             const doctorId = ev?.doctorId || (pageType === "registry" ? getRegistryDoctorId() : "") || p.currentDoctorId || "";
+            let date = slotDate || new Date();
+            date = clampToUpcomingSlot(date, doctorId);
             if ($("appointmentDoctor")) $("appointmentDoctor").value = doctorId;
             if ($("appointmentDate")) $("appointmentDate").value = toIsoDate(date);
             if ($("appointmentStart")) $("appointmentStart").value = `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
@@ -1310,7 +1523,6 @@
             if ($("appointmentPatientName")) $("appointmentPatientName").value = ev.patientName || "";
             if ($("appointmentDoctor")) $("appointmentDoctor").value = ev.doctorId || "";
             if ($("appointmentPhone")) $("appointmentPhone").value = ev.phone || "";
-            if ($("appointmentEmail")) $("appointmentEmail").value = ev.email || "";
             if ($("appointmentDate")) $("appointmentDate").value = toIsoDate(ev.start);
             if ($("appointmentStart")) $("appointmentStart").value = ft(ev.start);
             if ($("appointmentEnd")) $("appointmentEnd").value = ft(ev.end);
@@ -1318,8 +1530,6 @@
             if ($("appointmentVisitDateTime")) $("appointmentVisitDateTime").value = `${fd(ev.start, { day: "numeric", month: "long", year: "numeric" })} · ${ft(ev.start)} – ${ft(ev.end)}`;
             if ($("appointmentReferral")) $("appointmentReferral").value = ev.referralSource || "";
             if ($("appointmentPaymentType")) $("appointmentPaymentType").value = ev.paymentType || "unpaid";
-            const notesModel = parseMedicalNotes(ev.notes || "");
-            if ($("appointmentComment")) $("appointmentComment").value = notesModel.comment || ev.notes || "";
             fillMedicalFields(ev.notes || "");
             state.selectedServices = (ev.services || []).map((x) => ({ organizationServiceId: x.organizationServiceId || null, serviceName: x.name || "Услуга", priceTyiyn: Number(x.priceTyiyn || 0), quantity: Number(x.quantity || 1) }));
             renderServices();
@@ -1408,6 +1618,11 @@
             const endValue = $("appointmentEnd")?.value || "";
             if (!p.storageReady) {
                 setHint("Сначала примените SQL-скрипт appointments.");
+                $("appointmentSaveButton").disabled = true;
+                return;
+            }
+            if (dateValue && startValue && isPastSlot(dateValue, startValue)) {
+                setHint("Нельзя записать на прошедшее время.");
                 $("appointmentSaveButton").disabled = true;
                 return;
             }
@@ -1542,7 +1757,12 @@
         bindEventButtons(doctorGrid);
         doctorGrid.querySelectorAll(".day-table .row").forEach((row) => row.addEventListener("click", (e) => {
             if (!canManageAppointments || e.target.closest("[data-event-id]")) return;
-            const dt = new Date(state.anchor); dt.setHours(Number(row.dataset.hour), 0, 0, 0); openEditor(null, dt);
+            const dt = new Date(state.anchor); dt.setHours(Number(row.dataset.hour), 0, 0, 0);
+            if (dt.getTime() < Date.now()) {
+                window.MedclinicUI?.showToast?.("Нельзя записать на прошедшее время.", "warning");
+                return;
+            }
+            openEditor(null, dt);
         }));
     }
 
@@ -1662,11 +1882,43 @@
         return pageType === "registry" && canShowMarkPaid(ev);
     }
 
-    function registryCard(ev, meta) {
+    function registryCardServiceLine(ev) {
+        return (ev.services || []).map((x) => x.name).filter(Boolean).join(", ");
+    }
+
+    function registryCardMetaItems(ev, meta, options = {}) {
+        const hideTime = options.hideTime === true;
+        const hideDoctor = options.hideDoctor === true;
+        const doctorName = meta?.name || ev.doctor || "Врач не указан";
+        const deptLine = (meta?.subtitle || "").trim();
+        const phone = (ev.phone || "").trim();
+        const items = [];
+
+        if (!hideTime) {
+            items.push(`<span class="slot-card__meta-item slot-card__meta-item--time">${esc(ft(ev.start))}–${esc(ft(ev.end))}</span>`);
+        }
+        if (!hideDoctor) {
+            items.push(`<span class="slot-card__meta-item slot-card__meta-item--doctor">${esc(doctorName)}</span>`);
+        }
+        if (deptLine) items.push(`<span class="slot-card__meta-item">${esc(deptLine)}</span>`);
+        if (phone) items.push(`<span class="slot-card__meta-item slot-card__meta-item--phone">${esc(phone)}</span>`);
+
+        return items.join('<span class="slot-card__meta-sep" aria-hidden="true">·</span>');
+    }
+
+    function registryCardBody(ev, meta, options = {}) {
+        const patientName = eventTitle(ev);
+        const services = registryCardServiceLine(ev);
+        const serviceHtml = services ? `<div class="slot-card__service">${esc(services)}</div>` : "";
+
+        return `<div class="slot-card__head"><div class="slot-card__identity"><div class="slot-patient">${esc(patientName)}</div>${serviceHtml}</div><span class="status-tag status-${paymentClass(ev)}">${paymentText(ev)}</span></div><div class="slot-card__meta">${registryCardMetaItems(ev, meta, options)}</div>`;
+    }
+
+    function registryCard(ev, meta, options = {}) {
         const markBtn = canShowMarkPaidOnCard(ev)
             ? `<div class="slot-card__pay-action"><button type="button" class="registry-mark-paid-btn" data-mark-paid-id="${esc(ev.id)}">Отметить оплаченным</button></div>`
             : "";
-        return `<div class="slot-card slot-card--panel ${paymentClass(ev)}"><button type="button" class="slot-card__main" data-event-id="${esc(ev.id)}"><div class="slot-top"><div><div class="slot-patient">${esc(eventTitle(ev))}</div><div class="slot-service">${esc(serviceText(ev))}</div></div><span class="status-tag status-${paymentClass(ev)}">${paymentText(ev)}</span></div><div class="slot-meta"><span>${ft(ev.start)}-${ft(ev.end)}</span><span>${esc(meta.subtitle)}</span></div></button>${markBtn}</div>`;
+        return `<div class="slot-card slot-card--panel ${paymentClass(ev)}"><button type="button" class="slot-card__main" data-event-id="${esc(ev.id)}">${registryCardBody(ev, meta, options)}</button>${markBtn}</div>`;
     }
     function appointmentOverlapsMinutes(ev, startMin, duration) {
         const a = ev.start.getHours() * 60 + ev.start.getMinutes();
@@ -1690,47 +1942,35 @@
         }
         return null;
     }
-    function registryCardContinued(ev, meta) {
-        return `<button type="button" class="slot-card slot-card--panel slot-card--continued ${paymentClass(ev)}" data-event-id="${esc(ev.id)}"><div class="slot-top"><div><div class="slot-patient">${esc(eventTitle(ev))}</div><div class="slot-service">${esc(serviceText(ev))}</div></div><span class="status-tag status-${paymentClass(ev)}">${paymentText(ev)}</span></div><div class="slot-meta"><span>${ft(ev.start)}-${ft(ev.end)}</span><span>${esc(meta.subtitle)}</span></div></button>`;
+    function registryCardContinued(ev, meta, options = {}) {
+        return `<button type="button" class="slot-card slot-card--panel slot-card--continued ${paymentClass(ev)}" data-event-id="${esc(ev.id)}">${registryCardBody(ev, meta, options)}</button>`;
     }
-    function renderRegistrySingleDoctorSchedule() {
-        registryGrid.className = "registry-v2-grid";
-        const doctorId = getRegistryDoctorId();
+    function buildDoctorScheduleRowsHtml(doctorId) {
         const dateIso = toIsoDate(state.anchor);
         const meta = doctorMeta(doctorId);
-
-        if (!doctorId) {
-            registryGrid.innerHTML = '<div class="registry-v2-empty">Выберите врача в блоке «Запись пациента».</div>';
-            return;
-        }
-        if (!state.doctorSchedulesReady) {
-            registryGrid.innerHTML = '<div class="registry-v2-empty">Таблица смен врачей ещё не настроена.</div>';
-            return;
-        }
-
         const schedule = doctorSchedule(doctorId, dateIso);
         if (!schedule || !schedule.isWorking) {
-            registryGrid.innerHTML = `<div class="registry-v2-empty"><strong>${esc(meta.name)}</strong> не принимает в этот день.</div>`;
-            return;
+            return { status: "off", meta, rows: "" };
         }
 
         const duration = durationForDoctor(doctorId);
         const start = timeToMin(schedule.startTime);
         const end = timeToMin(schedule.endTime);
         if (start == null || end == null || end <= start) {
-            registryGrid.innerHTML = '<div class="registry-v2-empty">Смена врача на этот день не задана.</div>';
-            return;
+            return { status: "invalid", meta, rows: "" };
         }
 
         const unavailable = unavailableIntervalsForDoctorDate(doctorId, dateIso, "");
-        const dayEvents = state.events
-            .filter((ev) => ev.doctorId === doctorId && sameDay(ev.start, state.anchor) && ev.isActive !== false)
-            .sort((a, b) => a.start - b.start);
+        const allDayEvents = doctorDayEventsAll(doctorId);
+        const dayEvents = state.selectedPatientId
+            ? allDayEvents.filter(eventMatchesPatientFilter)
+            : allDayEvents;
         const displaySlotByEventId = new Map(
             dayEvents.map((ev) => [ev.id, displaySlotMinuteForEvent(ev, start, end, duration)])
         );
-
+        const cardOptions = { hideTime: true, hideDoctor: true };
         const rows = [];
+
         for (let minute = start; minute + duration <= end; minute += duration) {
             const slotStart = minutesToTime(minute);
             const slotEnd = minutesToTime(minute + duration);
@@ -1738,32 +1978,124 @@
             const overlappingEvents = dayEvents.filter((ev) => appointmentOverlapsMinutes(ev, minute, duration));
             const continuedEvents = overlappingEvents.filter((ev) => displaySlotByEventId.get(ev.id) !== minute);
             const isBlocked = unavailable.some((interval) => minute < interval.end && minute + duration > interval.start);
+            const occupiedByOtherPatient = slotOccupiedByOtherPatient(minute, duration, doctorId);
 
             if (primaryEvents.length > 0) {
-                const body = primaryEvents.map((ev) => registryCard(ev, meta)).join("");
+                const body = primaryEvents.map((ev) => registryCard(ev, meta, cardOptions)).join("");
                 rows.push(`<div class="registry-v2-row registry-v2-row--busy"><div class="registry-v2-row__time">${esc(slotStart)}<span class="registry-v2-row__time-end">${esc(slotEnd)}</span></div><div class="registry-v2-row__body registry-v2-row__body--stack">${body}</div></div>`);
             } else if (continuedEvents.length > 0) {
-                const body = continuedEvents.map((ev) => registryCardContinued(ev, meta)).join("");
+                const body = continuedEvents.map((ev) => registryCardContinued(ev, meta, cardOptions)).join("");
                 rows.push(`<div class="registry-v2-row registry-v2-row--busy registry-v2-row--continued"><div class="registry-v2-row__time">${esc(slotStart)}<span class="registry-v2-row__time-end">${esc(slotEnd)}</span></div><div class="registry-v2-row__body registry-v2-row__body--stack">${body}</div></div>`);
-            } else if (isBlocked) {
-                rows.push(`<div class="registry-v2-row registry-v2-row--blocked"><div class="registry-v2-row__time">${esc(slotStart)}</div><div class="registry-v2-row__body"><span class="registry-v2-blocked">Недоступно</span></div></div>`);
+            } else if (isBlocked || occupiedByOtherPatient) {
+                rows.push(`<div class="registry-v2-row registry-v2-row--blocked"><div class="registry-v2-row__time">${esc(slotStart)}</div><div class="registry-v2-row__body"><span class="registry-v2-blocked">${occupiedByOtherPatient ? "Занято" : "Недоступно"}</span></div></div>`);
+            } else if (isPastSlot(dateIso, minute)) {
+                rows.push(`<div class="registry-v2-row registry-v2-row--blocked registry-v2-row--past"><div class="registry-v2-row__time">${esc(slotStart)}<span class="registry-v2-row__time-end">${esc(slotEnd)}</span></div><div class="registry-v2-row__body"><span class="registry-v2-blocked">Прошло</span></div></div>`);
             } else {
-                rows.push(`<button type="button" class="registry-v2-row registry-v2-row--free" data-slot-minute="${minute}"><div class="registry-v2-row__time">${esc(slotStart)}<span class="registry-v2-row__time-end">${esc(slotEnd)}</span></div><div class="registry-v2-row__body"><span class="registry-v2-free-label">Свободно — записать</span></div></button>`);
+                rows.push(`<button type="button" class="registry-v2-row registry-v2-row--free" data-slot-minute="${minute}" data-doctor-id="${esc(doctorId)}"><div class="registry-v2-row__time">${esc(slotStart)}<span class="registry-v2-row__time-end">${esc(slotEnd)}</span></div><div class="registry-v2-row__body"><span class="registry-v2-free-label">Свободно — записать</span></div></button>`);
             }
         }
 
-        registryGrid.innerHTML = rows.length
-            ? `<div class="registry-v2-timeline"><div class="registry-v2-timeline__head"><div>Время</div><div>Приём</div></div>${rows.join("")}</div>`
-            : '<div class="registry-v2-empty">Нет слотов в рамках смены врача.</div>';
+        return { status: "ok", meta, rows: rows.join("") };
+    }
+    function wrapDoctorScheduleTimeline(rowsHtml, options = {}) {
+        if (!rowsHtml) return "";
+        const head = options.showHead !== false
+            ? '<div class="registry-v2-timeline__head"><div>Время</div><div>Приём</div></div>'
+            : "";
+        return `<div class="registry-v2-timeline">${head}${rowsHtml}</div>`;
+    }
+    function buildDoctorScheduleSectionHtml(doctorId, options = {}) {
+        const built = buildDoctorScheduleRowsHtml(doctorId);
+        const meta = built.meta;
+        if (built.status === "off") {
+            return `<section class="registry-v2-doctor-section registry-v2-doctor-section--off"><div class="registry-v2-doctor-section__head"><div><strong class="registry-v2-doctor-section__name">${esc(meta.name)}</strong>${meta.subtitle ? `<span class="registry-v2-doctor-section__sub">${esc(meta.subtitle)}</span>` : ""}</div><span class="registry-v2-doctor-section__badge">Не принимает</span></div></section>`;
+        }
+        if (built.status === "invalid") {
+            return `<section class="registry-v2-doctor-section registry-v2-doctor-section--off"><div class="registry-v2-doctor-section__head"><div><strong class="registry-v2-doctor-section__name">${esc(meta.name)}</strong>${meta.subtitle ? `<span class="registry-v2-doctor-section__sub">${esc(meta.subtitle)}</span>` : ""}</div><span class="registry-v2-doctor-section__badge">Смена не задана</span></div></section>`;
+        }
+        if (!built.rows) {
+            return `<section class="registry-v2-doctor-section registry-v2-doctor-section--off"><div class="registry-v2-doctor-section__head"><div><strong class="registry-v2-doctor-section__name">${esc(meta.name)}</strong>${meta.subtitle ? `<span class="registry-v2-doctor-section__sub">${esc(meta.subtitle)}</span>` : ""}</div><span class="registry-v2-doctor-section__badge">Нет слотов</span></div></section>`;
+        }
 
-        bindEventButtons(registryGrid);
-        registryGrid.querySelectorAll("[data-slot-minute]").forEach((btn) => btn.addEventListener("click", () => {
+        const headBlock = options.showDoctorHead
+            ? `<div class="registry-v2-doctor-section__head"><div><strong class="registry-v2-doctor-section__name">${esc(meta.name)}</strong>${meta.subtitle ? `<span class="registry-v2-doctor-section__sub">${esc(meta.subtitle)}</span>` : ""}</div></div>`
+            : "";
+        return `<section class="registry-v2-doctor-section">${headBlock}${wrapDoctorScheduleTimeline(built.rows)}</section>`;
+    }
+    function bindRegistryScheduleSlots(root) {
+        bindEventButtons(root);
+        root.querySelectorAll("[data-slot-minute]").forEach((btn) => btn.addEventListener("click", () => {
             if (!canManageAppointments) return;
             const minute = Number(btn.dataset.slotMinute);
+            const doctorId = btn.dataset.doctorId || getRegistryDoctorId();
+            if (!doctorId) return;
+            const dateIso = toIsoDate(state.anchor);
+            if (isPastSlot(dateIso, minute)) {
+                window.MedclinicUI?.showToast?.("Нельзя записать на прошедшее время.", "warning");
+                return;
+            }
             const dt = new Date(`${dateIso}T00:00:00`);
             dt.setHours(Math.floor(minute / 60), minute % 60, 0, 0);
             openEditor({ doctorId }, dt);
         }));
+    }
+    function renderRegistryAllDoctorsDay() {
+        registryGrid.className = "registry-v2-grid registry-v2-grid--multi";
+        const docs = registryDoctorsFiltered();
+
+        if (!docs.length) {
+            registryGrid.innerHTML = '<div class="registry-v2-empty">Нет врачей по текущим фильтрам.</div>';
+            return;
+        }
+        if (!state.doctorSchedulesReady) {
+            const items = filteredEvents()
+                .filter((ev) => sameDay(ev.start, state.anchor) && ev.isActive !== false)
+                .sort((a, b) => a.start - b.start);
+            if (!items.length) {
+                registryGrid.innerHTML = '<div class="registry-v2-empty">Таблица смен врачей ещё не настроена.</div>';
+                return;
+            }
+            const rows = items.map((ev) => {
+                const meta = doctorMeta(ev.doctorId);
+                return `<div class="registry-v2-row registry-v2-row--busy"><div class="registry-v2-row__time">${esc(ft(ev.start))}<span class="registry-v2-row__time-end">${esc(ft(ev.end))}</span></div><div class="registry-v2-row__body registry-v2-row__body--stack">${registryCard(ev, meta, { hideTime: true })}</div></div>`;
+            }).join("");
+            registryGrid.innerHTML = wrapDoctorScheduleTimeline(rows);
+            bindEventButtons(registryGrid);
+            return;
+        }
+
+        const sections = docs.map((doc) => buildDoctorScheduleSectionHtml(doc.value, { showDoctorHead: true }));
+        registryGrid.innerHTML = sections.join("") || '<div class="registry-v2-empty">Нет расписания на выбранный день.</div>';
+        bindRegistryScheduleSlots(registryGrid);
+    }
+    function renderRegistrySingleDoctorSchedule() {
+        registryGrid.className = "registry-v2-grid";
+        const doctorId = getRegistryDoctorId();
+
+        if (!doctorId) {
+            renderRegistryAllDoctorsDay();
+            return;
+        }
+        if (!state.doctorSchedulesReady) {
+            registryGrid.innerHTML = '<div class="registry-v2-empty">Таблица смен врачей ещё не настроена.</div>';
+            return;
+        }
+
+        const built = buildDoctorScheduleRowsHtml(doctorId);
+        const meta = built.meta;
+        if (built.status === "off") {
+            registryGrid.innerHTML = `<div class="registry-v2-empty"><strong>${esc(meta.name)}</strong> не принимает в этот день.</div>`;
+            return;
+        }
+        if (built.status === "invalid") {
+            registryGrid.innerHTML = '<div class="registry-v2-empty">Смена врача на этот день не задана.</div>';
+            return;
+        }
+
+        registryGrid.innerHTML = built.rows
+            ? wrapDoctorScheduleTimeline(built.rows)
+            : '<div class="registry-v2-empty">Нет слотов в рамках смены врача.</div>';
+        bindRegistryScheduleSlots(registryGrid);
     }
     function renderRegistryDay() {
         if ($("registryDoctorSelect")) {
@@ -1780,7 +2112,7 @@
             docs.forEach((doc) => {
                 const meta = doctorMeta(doc.value);
                 const items = filteredEvents().filter((ev) => ev.doctorId === doc.value && sameDay(ev.start, state.anchor) && ev.start.getHours() === h);
-                html += `<div class="slot-col">${items.length ? `<div class="slot-list">${items.map((ev) => registryCard(ev, meta)).join("")}</div>` : ""}</div>`;
+                html += `<div class="slot-col">${items.length ? `<div class="slot-list">${items.map((ev) => registryCard(ev, meta, { hideDoctor: true })).join("")}</div>` : ""}</div>`;
             });
         });
         registryGrid.innerHTML = `${html}</div></div>`;

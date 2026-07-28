@@ -369,7 +369,6 @@ public class PaymentsController : Controller
         }
     }
 
-    [RequirePermission("transactions.view")]
     [HttpGet]
     public async Task<IActionResult> ExportExcel(
         string dateFrom = "",
@@ -377,18 +376,61 @@ public class PaymentsController : Controller
         string search = "",
         string clientId = "",
         string statusFilter = "",
+        string channelFilter = "",
         List<string>? agentIds = null)
     {
         var organizationId = GetOrganizationIdOrNull();
         if (organizationId == null)
-                return RedirectToAction("Login", "Account");
-
-        var currentUserId = AuthorizationHelper.GetUserId(HttpContext);
-        var restrictToCurrentUser = IsDoctorRole() && IsMedclinicProfile() && !string.IsNullOrWhiteSpace(currentUserId);
+            return RedirectToAction("Login", "Account");
 
         var featureGuard = EnsurePaymentsFeature();
         if (featureGuard != null)
             return featureGuard;
+
+        if (IsMedclinicProfile())
+        {
+            var sumVisibility = DashboardSumPermissions.GetVisibility(HttpContext);
+            if (!sumVisibility.CanViewAny)
+            {
+                return RedirectToAction("AccessDenied", "Home", new { permissionCode = DashboardSumPermissions.QrSecore });
+            }
+
+            var composed = await LoadMedclinicPaymentsAsync(
+                organizationId,
+                dateFrom,
+                dateTo,
+                search,
+                clientId,
+                statusFilter,
+                channelFilter);
+
+            var excelRows = composed.Rows.Select(row => (IReadOnlyList<object?>)new List<object?>
+            {
+                row.PaymentSequence,
+                row.TransactionDate,
+                row.IsGroupedChild ? string.Empty : row.PatientName,
+                row.IsGroupedChild ? "Возврат по операции выше" : row.AppointmentLabel,
+                row.PaymentTypeLabel,
+                row.AmountSom,
+                row.StatusLabel
+            }).ToList();
+
+            var fileBytes = _excelExportService.ExportTable(
+                "Платежи",
+                new[] { "№", "Дата", "Пациент", "Запись", "Тип оплаты", "Сумма (сом)", "Статус" },
+                excelRows);
+
+            return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"platezhi_{DateTime.Now:yyyy-MM-dd_HH-mm}.xlsx");
+        }
+
+        if (!PermissionHelper.HasPermission(HttpContext, "transactions.view"))
+        {
+            return RedirectToAction("AccessDenied", "Home", new { permissionCode = "transactions.view" });
+        }
+
+        var currentUserId = AuthorizationHelper.GetUserId(HttpContext);
+        var restrictToCurrentUser = IsDoctorRole() && IsMedclinicProfile() && !string.IsNullOrWhiteSpace(currentUserId);
 
         var invoices = await _db.Invoices
             .Where(i => i.ClientNavigation != null && i.ClientNavigation.Organization == organizationId)
@@ -661,6 +703,124 @@ public class PaymentsController : Controller
         if (string.IsNullOrWhiteSpace(dateTo))
             dateTo = today.ToString("yyyy-MM-dd");
 
+        var composed = await LoadMedclinicPaymentsAsync(
+            organizationId,
+            dateFrom,
+            dateTo,
+            search,
+            clientId,
+            statusFilter,
+            channelFilter);
+
+        var transactions = composed.Transactions;
+
+        var successRows = transactions.Where(t => t.TransactionStatus == "success").ToList();
+        var periodTotalSom = successRows.Sum(t => (t.Summ ?? 0m) / 100m);
+        var refundRows = successRows
+            .Where(t => string.Equals(t.TransactionType, "credit", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        var channelOptions = MedclinicTransactionLabels.ChannelFilterOptions(sumVisibility);
+
+        var clientIdsInOrg = await _db.Invoices
+            .AsNoTracking()
+            .Where(i => i.Client != null && i.ClientNavigation != null && i.ClientNavigation.Organization == organizationId)
+            .Select(i => i.Client!)
+            .Distinct()
+            .ToListAsync();
+
+        var clientsList = await _db.OrganizationClients
+            .AsNoTracking()
+            .Where(c => clientIdsInOrg.Contains(c.Id))
+            .OrderBy(c => c.ClientName)
+            .Select(c => new { c.Id, c.ClientName })
+            .ToListAsync();
+
+        var selectedClientName = string.Empty;
+        if (!string.IsNullOrWhiteSpace(clientId))
+        {
+            selectedClientName = clientsList.FirstOrDefault(c => c.Id == clientId)?.ClientName ?? clientId;
+        }
+
+        var model = new MedclinicPaymentsIndexViewModel
+        {
+            DateFrom = dateFrom,
+            DateTo = dateTo,
+            Search = search ?? string.Empty,
+            ClientId = clientId ?? string.Empty,
+            SelectedClientName = selectedClientName,
+            StatusFilter = statusFilter ?? string.Empty,
+            ChannelFilter = channelFilter ?? string.Empty,
+            PeriodTotalSom = periodTotalSom,
+            SuccessCount = successRows.Count(x =>
+                !string.Equals(x.TransactionType, "credit", StringComparison.OrdinalIgnoreCase)),
+            RefundCount = refundRows.Count,
+            RefundsSom = refundRows.Sum(t => (t.Summ ?? 0m) / 100m),
+            GroupCount = composed.GroupCount,
+            ChannelStats = Array.Empty<MedclinicPaymentChannelStatViewModel>(),
+            Rows = composed.Rows,
+            Clients = clientsList.Select(c => (c.Id, c.ClientName ?? c.Id)).ToList(),
+            ChannelOptions = channelOptions
+        };
+
+        return View("~/Views/Payments/MedclinicIndex.cshtml", model);
+    }
+
+    private async Task<(IReadOnlyList<MedclinicPaymentRowViewModel> Rows, int GroupCount, List<Transaction> Transactions)> LoadMedclinicPaymentsAsync(
+        string organizationId,
+        string dateFrom,
+        string dateTo,
+        string search,
+        string clientId,
+        string statusFilter,
+        string channelFilter)
+    {
+        var transactions = await QueryMedclinicTransactionsAsync(
+            organizationId,
+            dateFrom,
+            dateTo,
+            search,
+            clientId,
+            statusFilter,
+            channelFilter);
+
+        var paymentInvoiceIds = await MedclinicPaymentsTableComposer.ExpandPaymentInvoiceIdsAsync(
+            _db,
+            transactions);
+
+        var appointmentLinks = await MedclinicPaymentsTableComposer.LoadAppointmentLinksAsync(
+            _db,
+            organizationId,
+            paymentInvoiceIds);
+
+        var registryUrlTemplate = (Url.Action("Registry", "Appointments") ?? string.Empty) + "?openAppointmentId={0}";
+
+        var composed = MedclinicPaymentsTableComposer.Compose(
+            transactions,
+            appointmentLinks,
+            registryUrlTemplate);
+
+        return (composed.Rows, composed.GroupCount, transactions);
+    }
+
+    private async Task<List<Transaction>> QueryMedclinicTransactionsAsync(
+        string organizationId,
+        string dateFrom,
+        string dateTo,
+        string search,
+        string clientId,
+        string statusFilter,
+        string channelFilter)
+    {
+        var sumVisibility = DashboardSumPermissions.GetVisibility(HttpContext);
+
+        var today = DateTime.Today;
+        var monthStart = new DateTime(today.Year, today.Month, 1);
+        if (string.IsNullOrWhiteSpace(dateFrom))
+            dateFrom = monthStart.ToString("yyyy-MM-dd");
+        if (string.IsNullOrWhiteSpace(dateTo))
+            dateTo = today.ToString("yyyy-MM-dd");
+
         var invoiceIds = await _db.Invoices
             .AsNoTracking()
             .Where(i => i.ClientNavigation != null && i.ClientNavigation.Organization == organizationId)
@@ -720,72 +880,7 @@ public class PaymentsController : Controller
                 .ToList();
         }
 
-        var successRows = transactions.Where(t => t.TransactionStatus == "success").ToList();
-        var periodTotalSom = successRows.Sum(t => (t.Summ ?? 0m) / 100m);
-        var refundRows = successRows
-            .Where(t => string.Equals(t.TransactionType, "credit", StringComparison.OrdinalIgnoreCase))
-            .ToList();
-
-        var channelOptions = MedclinicTransactionLabels.ChannelFilterOptions(sumVisibility);
-
-        var clientIdsInOrg = await _db.Invoices
-            .AsNoTracking()
-            .Where(i => i.Client != null && i.ClientNavigation != null && i.ClientNavigation.Organization == organizationId)
-            .Select(i => i.Client!)
-            .Distinct()
-            .ToListAsync();
-
-        var clientsList = await _db.OrganizationClients
-            .AsNoTracking()
-            .Where(c => clientIdsInOrg.Contains(c.Id))
-            .OrderBy(c => c.ClientName)
-            .Select(c => new { c.Id, c.ClientName })
-            .ToListAsync();
-
-        var selectedClientName = string.Empty;
-        if (!string.IsNullOrWhiteSpace(clientId))
-        {
-            selectedClientName = clientsList.FirstOrDefault(c => c.Id == clientId)?.ClientName ?? clientId;
-        }
-
-        var paymentInvoiceIds = await MedclinicPaymentsTableComposer.ExpandPaymentInvoiceIdsAsync(
-            _db,
-            transactions);
-
-        var appointmentLinks = await MedclinicPaymentsTableComposer.LoadAppointmentLinksAsync(
-            _db,
-            organizationId,
-            paymentInvoiceIds);
-
-        var registryUrlTemplate = (Url.Action("Registry", "Appointments") ?? string.Empty) + "?openAppointmentId={0}";
-
-        var composed = MedclinicPaymentsTableComposer.Compose(
-            transactions,
-            appointmentLinks,
-            registryUrlTemplate);
-
-        var model = new MedclinicPaymentsIndexViewModel
-        {
-            DateFrom = dateFrom,
-            DateTo = dateTo,
-            Search = search ?? string.Empty,
-            ClientId = clientId ?? string.Empty,
-            SelectedClientName = selectedClientName,
-            StatusFilter = statusFilter ?? string.Empty,
-            ChannelFilter = channelFilter ?? string.Empty,
-            PeriodTotalSom = periodTotalSom,
-            SuccessCount = successRows.Count(x =>
-                !string.Equals(x.TransactionType, "credit", StringComparison.OrdinalIgnoreCase)),
-            RefundCount = refundRows.Count,
-            RefundsSom = refundRows.Sum(t => (t.Summ ?? 0m) / 100m),
-            GroupCount = composed.GroupCount,
-            ChannelStats = Array.Empty<MedclinicPaymentChannelStatViewModel>(),
-            Rows = composed.Rows,
-            Clients = clientsList.Select(c => (c.Id, c.ClientName ?? c.Id)).ToList(),
-            ChannelOptions = channelOptions
-        };
-
-        return View("~/Views/Payments/MedclinicIndex.cshtml", model);
+        return transactions;
     }
 
     private string? GetOrganizationIdOrNull() => HttpContext.Session.GetString("OrganizationId");

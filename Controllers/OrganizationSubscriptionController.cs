@@ -6,8 +6,7 @@ using WebApplication1.Models.DBModels;
 namespace WebApplication1.Controllers;
 
 /// <summary>
-/// Настройка подписки организации, просмотр статуса доступа и истории оплат.
-/// organizationId передаётся в запросе или берётся из сессии (для входа из кабинета организации).
+/// Настройка подписки текущей организации, просмотр статуса доступа и истории оплат.
 /// </summary>
 [RequireAuth]
 public class OrganizationSubscriptionController : Controller
@@ -19,20 +18,33 @@ public class OrganizationSubscriptionController : Controller
         _db = db;
     }
 
-    private string? ResolveOrganizationId(string? organizationId)
+    private string? GetCurrentOrganizationId()
     {
-        if (!string.IsNullOrWhiteSpace(organizationId))
-            return organizationId.Trim();
-        return HttpContext.Session.GetString("OrganizationId");
+        return AuthorizationHelper.GetOrganizationId(HttpContext);
+    }
+
+    private string? RequireCurrentOrganizationId(string? organizationId)
+    {
+        var current = GetCurrentOrganizationId();
+        if (string.IsNullOrEmpty(current))
+            return null;
+
+        if (!string.IsNullOrWhiteSpace(organizationId)
+            && !string.Equals(current, organizationId.Trim(), StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        return current;
     }
 
     /// <summary>
     /// Страница подписки: настройки тарифа, текущий статус доступа, история оплат.
     /// </summary>
     [HttpGet]
-    public async Task<IActionResult> Index(string? organizationId = null)
+    public async Task<IActionResult> Index()
     {
-        var orgId = ResolveOrganizationId(organizationId);
+        var orgId = GetCurrentOrganizationId();
         if (string.IsNullOrEmpty(orgId))
             return RedirectToAction("Login", "Account");
 
@@ -68,7 +80,7 @@ public class OrganizationSubscriptionController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SaveSettings(string organizationId, decimal priceSom, string periodType)
     {
-        var orgId = ResolveOrganizationId(organizationId);
+        var orgId = RequireCurrentOrganizationId(organizationId);
         if (string.IsNullOrEmpty(orgId))
             return Unauthorized();
 
@@ -99,7 +111,7 @@ public class OrganizationSubscriptionController : Controller
         await _db.SaveChangesAsync();
 
         TempData["SubscriptionMessage"] = "Настройки подписки сохранены.";
-        return RedirectToAction(nameof(Index), new { organizationId = orgId });
+        return RedirectToAction(nameof(Index));
     }
 
     /// <summary>
@@ -109,14 +121,14 @@ public class OrganizationSubscriptionController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AddPayment(string organizationId, DateTime periodStart, DateTime periodEnd, decimal amountSom, string? note = null)
     {
-        var orgId = ResolveOrganizationId(organizationId);
+        var orgId = RequireCurrentOrganizationId(organizationId);
         if (string.IsNullOrEmpty(orgId))
             return Unauthorized();
 
         if (periodStart > periodEnd)
         {
             TempData["SubscriptionError"] = "Дата начала периода не может быть позже даты окончания.";
-            return RedirectToAction(nameof(Index), new { organizationId = orgId });
+            return RedirectToAction(nameof(Index));
         }
 
         var payment = new OrganizationSubscriptionPayment
@@ -138,6 +150,6 @@ public class OrganizationSubscriptionController : Controller
 
         await _db.SaveChangesAsync();
         TempData["SubscriptionMessage"] = "Оплата добавлена. Период доступа обновлён.";
-        return RedirectToAction(nameof(Index), new { organizationId = orgId });
+        return RedirectToAction(nameof(Index));
     }
 }

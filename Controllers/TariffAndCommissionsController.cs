@@ -16,23 +16,40 @@ public class TariffAndCommissionsController : Controller
         _db = db;
     }
 
-    /// <summary>
-    /// Страница «Тариф и комиссии». Сверху — выбор организации; настройки по выбранной организации.
-    /// При открытии не привязываемся к организации текущего пользователя.
-    /// </summary>
-    public async Task<IActionResult> Index(string? organizationId)
+    private string? GetCurrentOrganizationId()
     {
-        ViewBag.Organizations = await _db.Organizations.OrderBy(o => o.Name).ToListAsync();
-        ViewBag.SelectedOrganizationId = organizationId;
+        return AuthorizationHelper.GetOrganizationId(HttpContext);
+    }
 
-        if (string.IsNullOrEmpty(organizationId))
+    private string? RequireCurrentOrganizationId(string? organizationId)
+    {
+        var current = GetCurrentOrganizationId();
+        if (string.IsNullOrEmpty(current))
+            return null;
+
+        if (!string.IsNullOrWhiteSpace(organizationId)
+            && !string.Equals(current, organizationId.Trim(), StringComparison.Ordinal))
         {
-            ViewBag.Settings = null;
-            ViewBag.Commissions = await _db.Commissions.OrderBy(c => c.Name).ToListAsync();
-            ViewBag.Agents = await _db.Agents.OrderBy(a => a.Name).ToListAsync();
-            ViewBag.AgentCommissions = Array.Empty<AgentCommission>();
-            return View();
+            return null;
         }
+
+        return current;
+    }
+
+    /// <summary>
+    /// Тариф и комиссии текущей организации (из сессии).
+    /// </summary>
+    public async Task<IActionResult> Index()
+    {
+        var organizationId = GetCurrentOrganizationId();
+        if (string.IsNullOrEmpty(organizationId))
+            return Unauthorized();
+
+        var organization = await _db.Organizations
+            .AsNoTracking()
+            .FirstOrDefaultAsync(o => o.Id == organizationId);
+        if (organization == null)
+            return NotFound();
 
         var settings = await _db.OrganizationSettings
             .Include(s => s.Commission)
@@ -49,19 +66,14 @@ public class TariffAndCommissionsController : Controller
             };
         }
 
-        var subscription = await _db.OrganizationSubscriptions.FirstOrDefaultAsync(s => s.OrganizationId == organizationId);
+        var subscription = await _db.OrganizationSubscriptions
+            .FirstOrDefaultAsync(s => s.OrganizationId == organizationId);
 
+        ViewBag.Organization = organization;
+        ViewBag.OrganizationId = organizationId;
         ViewBag.Settings = settings;
         ViewBag.Subscription = subscription;
         ViewBag.Commissions = await _db.Commissions.OrderBy(c => c.Name).ToListAsync();
-        ViewBag.Agents = await _db.Agents.OrderBy(a => a.Name).ToListAsync();
-        ViewBag.AgentCommissions = await _db.AgentCommissions
-            .Include(ac => ac.Agent)
-            .Include(ac => ac.Commission)
-            .Include(ac => ac.LowerCommission)
-            .Where(ac => ac.OrganizationId == organizationId)
-            .OrderBy(ac => ac.Agent!.Name)
-            .ToListAsync();
 
         return View();
     }
@@ -69,49 +81,42 @@ public class TariffAndCommissionsController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SaveSettings(string organizationId, string? billingType, bool useLowerCommissionFromOrg,
-        string? commissionId, bool useUpperCommissionFromAgent, bool useLowerCommissionToAgent,
-        decimal? subscriptionPriceSom = null, string? subscriptionPeriodType = null)
+        string? commissionId, decimal? subscriptionPriceSom = null, string? subscriptionPeriodType = null)
     {
-        if (string.IsNullOrEmpty(organizationId))
-        {
-            TempData["Error"] = "Организация не выбрана.";
-            return RedirectToAction(nameof(Index));
-        }
+        var currentOrganizationId = RequireCurrentOrganizationId(organizationId);
+        if (string.IsNullOrEmpty(currentOrganizationId))
+            return Unauthorized();
 
         var isSubscription = string.Equals(billingType, "subscription", StringComparison.OrdinalIgnoreCase);
         var billingTypeToSave = string.IsNullOrWhiteSpace(billingType) ? null : (billingType == "commission" ? null : billingType);
 
-        var existing = await _db.OrganizationSettings.FirstOrDefaultAsync(s => s.OrganizationId == organizationId);
+        var existing = await _db.OrganizationSettings.FirstOrDefaultAsync(s => s.OrganizationId == currentOrganizationId);
         if (existing != null)
         {
             existing.BillingType = billingTypeToSave;
             existing.UseLowerCommissionFromOrg = useLowerCommissionFromOrg;
             existing.CommissionId = useLowerCommissionFromOrg && !string.IsNullOrWhiteSpace(commissionId) ? commissionId : null;
-            existing.UseUpperCommissionFromAgent = useUpperCommissionFromAgent;
-            existing.UseLowerCommissionToAgent = useLowerCommissionToAgent;
         }
         else
         {
             _db.OrganizationSettings.Add(new OrganizationSettings
             {
-                OrganizationId = organizationId,
+                OrganizationId = currentOrganizationId,
                 BillingType = billingTypeToSave,
                 UseLowerCommissionFromOrg = useLowerCommissionFromOrg,
-                CommissionId = useLowerCommissionFromOrg && !string.IsNullOrWhiteSpace(commissionId) ? commissionId : null,
-                UseUpperCommissionFromAgent = useUpperCommissionFromAgent,
-                UseLowerCommissionToAgent = useLowerCommissionToAgent
+                CommissionId = useLowerCommissionFromOrg && !string.IsNullOrWhiteSpace(commissionId) ? commissionId : null
             });
         }
 
         if (isSubscription && subscriptionPriceSom.HasValue && subscriptionPriceSom >= 0)
         {
-            var sub = await _db.OrganizationSubscriptions.FirstOrDefaultAsync(s => s.OrganizationId == organizationId);
+            var sub = await _db.OrganizationSubscriptions.FirstOrDefaultAsync(s => s.OrganizationId == currentOrganizationId);
             if (sub == null)
             {
                 sub = new OrganizationSubscription
                 {
                     Id = Guid.NewGuid().ToString(),
-                    OrganizationId = organizationId,
+                    OrganizationId = currentOrganizationId,
                     CreatedAt = DateTime.UtcNow
                 };
                 _db.OrganizationSubscriptions.Add(sub);
@@ -123,63 +128,6 @@ public class TariffAndCommissionsController : Controller
 
         await _db.SaveChangesAsync();
         TempData["Success"] = "Настройки тарифа и комиссий сохранены.";
-        return RedirectToAction(nameof(Index), new { organizationId });
-    }
-
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> AddAgentCommission(string organizationId, string agentId, string commissionId, string? lowerCommissionId)
-    {
-        if (string.IsNullOrEmpty(organizationId))
-        {
-            TempData["Error"] = "Организация не выбрана.";
-            return RedirectToAction(nameof(Index));
-        }
-        if (string.IsNullOrWhiteSpace(agentId) || string.IsNullOrWhiteSpace(commissionId))
-        {
-            TempData["Error"] = "Выберите агента и верхнюю комиссию.";
-            return RedirectToAction(nameof(Index), new { organizationId });
-        }
-        var existing = await _db.AgentCommissions
-            .FirstOrDefaultAsync(ac => ac.AgentId == agentId && ac.OrganizationId == organizationId);
-        if (existing != null)
-        {
-            existing.CommissionId = commissionId;
-            existing.LowerCommissionId = string.IsNullOrWhiteSpace(lowerCommissionId) ? null : lowerCommissionId;
-        }
-        else
-        {
-            _db.AgentCommissions.Add(new AgentCommission
-            {
-                Id = Guid.NewGuid().ToString(),
-                AgentId = agentId,
-                OrganizationId = organizationId,
-                CommissionId = commissionId,
-                LowerCommissionId = string.IsNullOrWhiteSpace(lowerCommissionId) ? null : lowerCommissionId
-            });
-        }
-        await _db.SaveChangesAsync();
-        TempData["Success"] = "Комиссия по агенту сохранена.";
-        return RedirectToAction(nameof(Index), new { organizationId });
-    }
-
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteAgentCommission(string organizationId, string id)
-    {
-        if (string.IsNullOrEmpty(organizationId))
-        {
-            TempData["Error"] = "Организация не выбрана.";
-            return RedirectToAction(nameof(Index));
-        }
-        var ac = await _db.AgentCommissions
-            .FirstOrDefaultAsync(x => x.Id == id && x.OrganizationId == organizationId);
-        if (ac != null)
-        {
-            _db.AgentCommissions.Remove(ac);
-            await _db.SaveChangesAsync();
-            TempData["Success"] = "Комиссия по агенту удалена.";
-        }
-        return RedirectToAction(nameof(Index), new { organizationId });
+        return RedirectToAction(nameof(Index));
     }
 }

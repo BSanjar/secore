@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 
+using WebApplication1.Services;
+
 namespace WebApplication1.ViewModels.Notifications;
 
 public sealed class NotificationCreateViewModel
@@ -21,6 +23,21 @@ public sealed class NotificationCreateViewModel
     public List<string> SelectedClientIds { get; set; } = new();
 
     public List<string> SelectedGroupIds { get; set; } = new();
+
+    /// <summary>
+    /// Режим получателей: all или manual.
+    /// </summary>
+    public string RecipientMode { get; set; } = NotificationRecipientModes.All;
+
+    /// <summary>
+    /// Фильтр по полу: пусто, male, female.
+    /// </summary>
+    public string GenderFilter { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Фильтр по возрасту (из даты рождения): under18, 18_30, under30, 30plus, 40plus.
+    /// </summary>
+    public string AgeFilter { get; set; } = string.Empty;
 
     public string ClientSearch { get; set; } = string.Empty;
 
@@ -53,6 +70,10 @@ public sealed class NotificationRecipientOptionViewModel
         !string.IsNullOrWhiteSpace(Email) ||
         !string.IsNullOrWhiteSpace(Telegram) ||
         !string.IsNullOrWhiteSpace(WhatsApp);
+
+    public string? Gender { get; set; }
+
+    public int? Age { get; set; }
 }
 
 public sealed class NotificationGroupOptionViewModel

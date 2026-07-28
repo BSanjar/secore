@@ -120,6 +120,7 @@ builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options 
 // Регистрация сервисов
 
 builder.Services.AddScoped<NotificationService>();
+builder.Services.AddScoped<NotificationRecipientResolver>();
 builder.Services.AddScoped<TransactionCommissionService>();
 builder.Services.AddScoped<ViewRenderService>();
 builder.Services.Configure<AbQrOptions>(builder.Configuration.GetSection(AbQrOptions.SectionName));

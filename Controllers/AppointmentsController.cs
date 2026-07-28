@@ -17,17 +17,20 @@ public class AppointmentsController : Controller
     private readonly OperationsByInvoices _operationsByInvoices;
     private readonly ICurrentTenantService _currentTenantService;
     private readonly NotificationService _notificationService;
+    private readonly NotificationRecipientResolver _recipientResolver;
 
     public AppointmentsController(
         AppDbContext db,
         OperationsByInvoices operationsByInvoices,
         ICurrentTenantService currentTenantService,
-        NotificationService notificationService)
+        NotificationService notificationService,
+        NotificationRecipientResolver recipientResolver)
     {
         _db = db;
         _operationsByInvoices = operationsByInvoices;
         _currentTenantService = currentTenantService;
         _notificationService = notificationService;
+        _recipientResolver = recipientResolver;
     }
 
     [HttpGet]
@@ -343,7 +346,7 @@ public class AppointmentsController : Controller
 
         var eventDoctorId = limitToCurrentDoctor ? currentUserId : null;
         var events = storageReady
-            ? await LoadEventsFromStorageAsync(organizationId, eventDoctorId)
+            ? await LoadEventsWithDemographicsAsync(organizationId, eventDoctorId)
             : BuildFallbackEvents(doctors, patients);
 
         ViewBag.CanManageAppointments = canManageAppointments;
@@ -430,7 +433,7 @@ public class AppointmentsController : Controller
         }
 
         var userId = currentUserId;
-        var patient = await ResolvePatientAsync(organizationId, userId, request);
+        var (patient, isNewPatient) = await ResolvePatientAsync(organizationId, userId, request);
         if (patient == null)
         {
             return BadRequest(new
@@ -438,6 +441,28 @@ public class AppointmentsController : Controller
                 success = false,
                 message = "Не удалось определить пациента для записи."
             });
+        }
+
+        if (isNewPatient)
+        {
+            var genderError = ValidateNewPatientGender(request.PatientGender);
+            if (genderError != null)
+            {
+                return BadRequest(new { success = false, message = genderError });
+            }
+
+            var birthError = ValidateNewPatientBirthDate(request.PatientBirthDate);
+            if (birthError != null)
+            {
+                return BadRequest(new { success = false, message = birthError });
+            }
+
+            await _recipientResolver.SaveClientDemographicsAsync(
+                organizationId,
+                patient.Id,
+                request.PatientGender!.Trim(),
+                request.PatientBirthDate!.Trim(),
+                CancellationToken.None);
         }
 
         User? doctor = null;
@@ -550,6 +575,16 @@ public class AppointmentsController : Controller
                     invoiceSlotEndsAt.Value);
                 linkedInvoiceId = linkedInvoice?.Id;
             }
+        }
+
+        var pastSlotValidation = ValidateAppointmentSlotNotInPast(startsAt, endsAt, appointment, isNewAppointment);
+        if (pastSlotValidation != null)
+        {
+            return BadRequest(new
+            {
+                success = false,
+                message = pastSlotValidation
+            });
         }
 
         try
@@ -716,6 +751,41 @@ public class AppointmentsController : Controller
 
         var hasPaidInvoice = await AppointmentHasPaidInvoiceAsync(organizationId, appointment, normalizedPaymentType);
 
+        var eventItem = new AppointmentCalendarEventViewModel
+        {
+            Id = appointment.Id,
+            Title = appointment.Title ?? "Приём",
+            DoctorId = appointment.DoctorId,
+            Doctor = doctor?.Name ?? "Не назначен",
+            PatientId = patient.Id,
+            PatientName = patient.ClientName,
+            Phone = appointment.Phone,
+            Email = appointment.Email,
+            Start = appointment.StartsAt,
+            End = appointment.EndsAt,
+            Status = appointment.IsActive ? "busy" : "available",
+            Notes = appointment.Notes ?? string.Empty,
+            ReferralSource = appointment.ReferralSource,
+            PaymentType = hasPaidInvoice && !IsPaidPaymentType(normalizedPaymentType)
+                ? "invoice_paid"
+                : appointment.PaymentType,
+            HasPaidInvoice = hasPaidInvoice,
+            IsActive = appointment.IsActive,
+            CreatedAt = appointment.CreatedAt,
+            UpdatedAt = appointment.UpdatedAt,
+            Services = appointment.AppointmentServices
+                .OrderBy(x => x.ServiceName)
+                .Select(x => new AppointmentServiceLineViewModel
+                {
+                    OrganizationServiceId = x.OrganizationServiceId,
+                    Name = x.ServiceName ?? "Услуга",
+                    PriceTyiyn = x.PriceTyiyn ?? 0,
+                    Quantity = x.Quantity
+                })
+                .ToList()
+        };
+        await EnrichEventsWithPatientDemographicsAsync(organizationId, new List<AppointmentCalendarEventViewModel> { eventItem });
+
         return Json(new
         {
             success = true,
@@ -723,39 +793,7 @@ public class AppointmentsController : Controller
                 ?? (createdInvoiceId != null ? "Запись и счёт созданы." : "Запись сохранена."),
             invoiceId = createdInvoiceId,
             invoiceUrl = createdInvoiceUrl,
-            eventItem = new AppointmentCalendarEventViewModel
-            {
-                Id = appointment.Id,
-                Title = appointment.Title ?? "Приём",
-                DoctorId = appointment.DoctorId,
-                Doctor = doctor?.Name ?? "Не назначен",
-                PatientId = patient.Id,
-                PatientName = patient.ClientName,
-                Phone = appointment.Phone,
-                Email = appointment.Email,
-                Start = appointment.StartsAt,
-                End = appointment.EndsAt,
-                Status = appointment.IsActive ? "busy" : "available",
-                Notes = appointment.Notes ?? string.Empty,
-                ReferralSource = appointment.ReferralSource,
-                PaymentType = hasPaidInvoice && !IsPaidPaymentType(normalizedPaymentType)
-                    ? "invoice_paid"
-                    : appointment.PaymentType,
-                HasPaidInvoice = hasPaidInvoice,
-                IsActive = appointment.IsActive,
-                CreatedAt = appointment.CreatedAt,
-                UpdatedAt = appointment.UpdatedAt,
-                Services = appointment.AppointmentServices
-                    .OrderBy(x => x.ServiceName)
-                    .Select(x => new AppointmentServiceLineViewModel
-                    {
-                        OrganizationServiceId = x.OrganizationServiceId,
-                        Name = x.ServiceName ?? "Услуга",
-                        PriceTyiyn = x.PriceTyiyn ?? 0,
-                        Quantity = x.Quantity
-                    })
-                    .ToList()
-            }
+            eventItem
         });
         }
         catch (Exception ex)
@@ -1128,41 +1166,44 @@ public class AppointmentsController : Controller
         var doctor = appointment.Doctor;
         var patient = appointment.Patient;
 
+        var eventItem = new AppointmentCalendarEventViewModel
+        {
+            Id = appointment.Id,
+            Title = appointment.Title ?? "Приём",
+            DoctorId = appointment.DoctorId,
+            Doctor = doctor != null ? (doctor.Name ?? "Не назначен") : "Не назначен",
+            PatientId = appointment.PatientId,
+            PatientName = patient?.ClientName,
+            Phone = appointment.Phone,
+            Email = appointment.Email,
+            Start = appointment.StartsAt,
+            End = appointment.EndsAt,
+            Status = appointment.IsActive ? "busy" : "available",
+            Notes = appointment.Notes ?? string.Empty,
+            ReferralSource = appointment.ReferralSource,
+            PaymentType = appointment.PaymentType,
+            HasPaidInvoice = true,
+            IsActive = appointment.IsActive,
+            CreatedAt = appointment.CreatedAt,
+            UpdatedAt = appointment.UpdatedAt,
+            Services = appointment.AppointmentServices
+                .OrderBy(x => x.ServiceName)
+                .Select(x => new AppointmentServiceLineViewModel
+                {
+                    OrganizationServiceId = x.OrganizationServiceId,
+                    Name = x.ServiceName ?? "Услуга",
+                    PriceTyiyn = x.PriceTyiyn ?? 0,
+                    Quantity = x.Quantity
+                })
+                .ToList()
+        };
+        await EnrichEventsWithPatientDemographicsAsync(organizationId, new List<AppointmentCalendarEventViewModel> { eventItem });
+
         return Json(new
         {
             success = true,
             message = "Запись и счёт отмечены как оплаченные.",
-            eventItem = new AppointmentCalendarEventViewModel
-            {
-                Id = appointment.Id,
-                Title = appointment.Title ?? "Приём",
-                DoctorId = appointment.DoctorId,
-                Doctor = doctor != null ? (doctor.Name ?? "Не назначен") : "Не назначен",
-                PatientId = appointment.PatientId,
-                PatientName = patient?.ClientName,
-                Phone = appointment.Phone,
-                Email = appointment.Email,
-                Start = appointment.StartsAt,
-                End = appointment.EndsAt,
-                Status = appointment.IsActive ? "busy" : "available",
-                Notes = appointment.Notes ?? string.Empty,
-                ReferralSource = appointment.ReferralSource,
-                PaymentType = appointment.PaymentType,
-                HasPaidInvoice = true,
-                IsActive = appointment.IsActive,
-                CreatedAt = appointment.CreatedAt,
-                UpdatedAt = appointment.UpdatedAt,
-                Services = appointment.AppointmentServices
-                    .OrderBy(x => x.ServiceName)
-                    .Select(x => new AppointmentServiceLineViewModel
-                    {
-                        OrganizationServiceId = x.OrganizationServiceId,
-                        Name = x.ServiceName ?? "Услуга",
-                        PriceTyiyn = x.PriceTyiyn ?? 0,
-                        Quantity = x.Quantity
-                    })
-                    .ToList()
-            }
+            eventItem
         });
     }
 
@@ -1512,7 +1553,34 @@ public class AppointmentsController : Controller
         return null;
     }
 
-    private async Task<OrganizationClient?> ResolvePatientAsync(string organizationId, string? userId, SaveAppointmentRequest request)
+    private static DateTime TruncateToMinute(DateTime value) =>
+        new(value.Year, value.Month, value.Day, value.Hour, value.Minute, 0, value.Kind);
+
+    private static bool IsSameAppointmentSlot(DateTime existingStart, DateTime existingEnd, DateTime newStart, DateTime newEnd) =>
+        TruncateToMinute(existingStart) == TruncateToMinute(newStart) &&
+        TruncateToMinute(existingEnd) == TruncateToMinute(newEnd);
+
+    private static string? ValidateAppointmentSlotNotInPast(
+        DateTime startsAt,
+        DateTime endsAt,
+        Appointment? existingAppointment,
+        bool isNewAppointment)
+    {
+        var now = DateTime.Now;
+        if (startsAt >= now)
+            return null;
+
+        if (!isNewAppointment &&
+            existingAppointment != null &&
+            IsSameAppointmentSlot(existingAppointment.StartsAt, existingAppointment.EndsAt, startsAt, endsAt))
+        {
+            return null;
+        }
+
+        return "Нельзя создать или перенести запись на прошедшее время.";
+    }
+
+    private async Task<(OrganizationClient? Patient, bool IsNew)> ResolvePatientAsync(string organizationId, string? userId, SaveAppointmentRequest request)
     {
         OrganizationClient? patient = null;
 
@@ -1534,10 +1602,10 @@ public class AppointmentsController : Controller
         }
 
         if (patient != null)
-            return patient;
+            return (patient, false);
 
         if (string.IsNullOrWhiteSpace(patientName))
-            return null;
+            return (null, false);
 
         patient = new OrganizationClient
         {
@@ -1546,7 +1614,6 @@ public class AppointmentsController : Controller
             ClientName = patientName,
             ClientPhone = request.Phone?.Trim(),
             ClientWa = request.UsePhoneAsWhatsApp ? request.Phone?.Trim() : null,
-            ClientEmail = request.Email?.Trim(),
             ClientType = "fiz",
             ClientStatus = 1,
             CreatedDate = DateTime.Now,
@@ -1555,7 +1622,30 @@ public class AppointmentsController : Controller
         };
 
         _db.OrganizationClients.Add(patient);
-        return patient;
+        return (patient, true);
+    }
+
+    private static string? ValidateNewPatientGender(string? gender)
+    {
+        if (string.IsNullOrWhiteSpace(gender))
+            return "Укажите пол пациента.";
+
+        var normalized = gender.Trim();
+        if (normalized is not ("М" or "Ж" or "M" or "F"))
+            return "Укажите корректный пол пациента (М или Ж).";
+
+        return null;
+    }
+
+    private static string? ValidateNewPatientBirthDate(string? birthDate)
+    {
+        if (string.IsNullOrWhiteSpace(birthDate))
+            return "Укажите дату рождения пациента.";
+
+        if (!DateTime.TryParse(birthDate, out var parsed) || parsed.Year <= 1900 || parsed.Date > DateTime.Today)
+            return "Укажите корректную дату рождения пациента.";
+
+        return null;
     }
 
     private static TimeSpan ParseTime(string value)
@@ -1799,6 +1889,47 @@ public class AppointmentsController : Controller
                     .ToList()
             };
         }).ToList();
+    }
+
+    private async Task EnrichEventsWithPatientDemographicsAsync(
+        string organizationId,
+        List<AppointmentCalendarEventViewModel> events,
+        CancellationToken cancellationToken = default)
+    {
+        var patientIds = events
+            .Where(e => !string.IsNullOrWhiteSpace(e.PatientId))
+            .Select(e => e.PatientId!)
+            .Distinct()
+            .ToList();
+
+        if (patientIds.Count == 0)
+            return;
+
+        var demographics = await _recipientResolver.LoadDemographicsAsync(
+            organizationId,
+            patientIds,
+            cancellationToken);
+
+        foreach (var ev in events)
+        {
+            if (string.IsNullOrWhiteSpace(ev.PatientId))
+                continue;
+            if (!demographics.TryGetValue(ev.PatientId, out var demo))
+                continue;
+
+            ev.PatientGender = NotificationRecipientResolver.FormatGenderDisplay(demo.Gender, demo.GenderRaw);
+            ev.PatientBirthDate = demo.BirthDate;
+            ev.PatientAge = demo.Age;
+        }
+    }
+
+    private async Task<List<AppointmentCalendarEventViewModel>> LoadEventsWithDemographicsAsync(
+        string organizationId,
+        string? doctorId)
+    {
+        var events = await LoadEventsFromStorageAsync(organizationId, doctorId);
+        await EnrichEventsWithPatientDemographicsAsync(organizationId, events);
+        return events;
     }
 
     private async Task<List<PaidAppointmentRange>> LoadPaidAppointmentRangesAsync(string organizationId)

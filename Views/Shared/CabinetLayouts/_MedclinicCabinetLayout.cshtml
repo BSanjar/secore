@@ -57,6 +57,17 @@
                 {
                     <div class="medclinic-topbar__subtitle">@Localizer[shell.OrganizationCaptionResourceKey].Value</div>
                 }
+                @if (!string.IsNullOrWhiteSpace(shell.OrganizationDisplayName))
+                {
+                    <div class="medclinic-topbar__org">@shell.OrganizationDisplayName</div>
+                }
+                @{
+                    var topbarNow = WebApplication1.Helpers.ParsersHelper.FormatNowParts();
+                }
+                <div class="medclinic-topbar__clock" data-medclinic-clock aria-live="polite">
+                    <span class="medclinic-topbar__clock-time" data-medclinic-clock-time>@topbarNow.TimeLabel</span>
+                    <span class="medclinic-topbar__clock-date" data-medclinic-clock-date>@topbarNow.DateLabel</span>
+                </div>
             </div>
             @await Html.PartialAsync(
                 "~/Views/Shared/CabinetLayouts/Partials/_MedclinicTopbarActions.cshtml",

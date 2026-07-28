@@ -1,4 +1,6 @@
 @model WebApplication1.ViewModels.Notifications.NotificationCreateViewModel
+@using WebApplication1.Services
+@using WebApplication1.Helpers
 @{
     var isMedclinic = string.Equals(WebApplication1.Helpers.AuthorizationHelper.GetOrganizationType(Context), "medclinic", StringComparison.OrdinalIgnoreCase);
     ViewData["Title"] = "Новая рассылка";
@@ -51,10 +53,12 @@
             <div class="mc-staff-hero__row">
                 <div>
                     <h1 class="mc-staff-hero__title">Новая рассылка</h1>
-                    <p class="mc-staff-hero__sub">Выберите клиентов или группы, заполните сообщение и поставьте уведомления в очередь.</p>
+                    <p class="mc-staff-hero__sub">Выберите аудиторию или отдельных пациентов, заполните сообщение и поставьте уведомления в очередь.</p>
                 </div>
-                <div class="mc-staff-hero__actions">
-                    <a asp-action="Index" class="mc-staff-btn mc-staff-btn--ghost">К журналу уведомлений</a>
+                <div class="mc-staff-hero__aside">
+                    <div class="mc-staff-hero__actions">
+                        <a asp-action="Index" class="mc-staff-btn mc-staff-btn--ghost">К журналу уведомлений</a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -65,82 +69,98 @@
                 <div class="mc-staff-panel">
                     <div class="mc-staff-panel__head">
                         <h2 class="mc-staff-panel__title">Получатели</h2>
-                        <p class="mc-staff-panel__sub">Можно выбрать отдельных клиентов и группы одновременно.</p>
+                        <p class="mc-staff-panel__sub">Фильтр по аудитории или ручной выбор пациентов.</p>
                     </div>
                     <div asp-validation-summary="ModelOnly" class="alert alert-danger mc-staff-alert py-2 px-3 small mc-staff-validation-summary"></div>
 
-                    <div class="mc-staff-form-grid">
-                        <section class="mc-staff-panel">
-                            <div class="mc-staff-panel__head d-flex flex-wrap justify-content-between align-items-start gap-2">
-                                <div>
-                                    <div class="mc-staff-panel__title">Группы</div>
-                                    <div class="mc-staff-panel__sub">Активные группы</div>
-                                </div>
-                                <input type="search" id="groupSearchInput" class="mc-staff-input" placeholder="Поиск группы" />
-                            </div>
-                            <div class="notify-picker__list" id="groupOptionsList">
-                                @if (Model.AvailableGroups.Count == 0)
-                                {
-                                    <div class="mc-staff-table__muted small">Активных групп пока нет.</div>
-                                }
-                                else
-                                {
-                                    @foreach (var group in Model.AvailableGroups)
-                                    {
-                                        <label class="notify-option" data-filter-item data-filter-text="@group.Name.ToLowerInvariant()">
-                                            <span class="notify-option__row">
-                                                <input type="checkbox" name="SelectedGroupIds" value="@group.Id" @(Model.SelectedGroupIds.Contains(group.Id) ? "checked" : null) />
-                                                <span>
-                                                    <span class="notify-option__title">@group.Name</span>
-                                                    <span class="notify-option__meta">Клиентов в группе: @group.ClientCount</span>
-                                                </span>
-                                            </span>
-                                        </label>
-                                    }
-                                }
-                            </div>
-                        </section>
-
-                        <section class="mc-staff-panel">
-                            <div class="mc-staff-panel__head d-flex flex-wrap justify-content-between align-items-start gap-2">
-                                <div>
-                                    <div class="mc-staff-panel__title">Клиенты</div>
-                                    <div class="mc-staff-panel__sub">Только активные</div>
-                                </div>
-                                <input type="search" id="clientSearchInput" class="mc-staff-input" placeholder="Поиск клиента" />
-                            </div>
-                            <div class="notify-picker__list" id="clientOptionsList">
-                                @if (Model.AvailableClients.Count == 0)
-                                {
-                                    <div class="mc-staff-table__muted small">Активных клиентов пока нет.</div>
-                                }
-                                else
-                                {
-                                    @foreach (var client in Model.AvailableClients)
-                                    {
-                                        var channels = string.Join(", ", new[]
-                                        {
-                                            !string.IsNullOrWhiteSpace(client.Email) ? "email" : null,
-                                            !string.IsNullOrWhiteSpace(client.Telegram) ? "telegram" : null,
-                                            !string.IsNullOrWhiteSpace(client.WhatsApp) ? "whatsapp" : null
-                                        }.Where(x => x != null));
-                                        var filterText = $"{client.Name} {client.GroupName} {client.Email} {client.Telegram} {client.WhatsApp}".ToLowerInvariant();
-
-                                        <label class="notify-option" data-filter-item data-filter-text="@filterText">
-                                            <span class="notify-option__row">
-                                                <input type="checkbox" name="SelectedClientIds" value="@client.Id" @(Model.SelectedClientIds.Contains(client.Id) ? "checked" : null) />
-                                                <span>
-                                                    <span class="notify-option__title">@client.Name</span>
-                                                    <span class="notify-option__meta">@(string.IsNullOrWhiteSpace(client.GroupName) ? "Без группы" : client.GroupName) • @client.StatusLabel</span>
-                                                    <span class="notify-option__channels">@(client.HasAnyChannel ? $"Каналы: {channels}" : "Нет контактных каналов")</span>
-                                                </span>
-                                            </span>
-                                        </label>
-                                    }
-                                }
-                            </div>
-                        </section>
+                    <div class="notify-audience">
+                        <div class="notify-audience__label">Кому отправить</div>
+                        <div class="notify-audience__chips" id="recipientModeChips">
+                            @foreach (var option in NotificationRecipientModes.MedclinicAudienceOptions)
+                            {
+                                var isChecked = string.Equals(Model.RecipientMode, option.Value, StringComparison.OrdinalIgnoreCase)
+                                    || (string.IsNullOrWhiteSpace(Model.RecipientMode) && option.Value == NotificationRecipientModes.All);
+                                <label class="notify-audience-chip">
+                                    <input type="radio" name="RecipientMode" value="@option.Value" @(isChecked ? "checked" : null) />
+                                    <span>@option.Label</span>
+                                </label>
+                            }
+                        </div>
                     </div>
+
+                    <div class="notify-audience mt-3">
+                        <div class="notify-audience__label">Пол</div>
+                        <div class="notify-audience__chips" id="genderFilterChips">
+                            @foreach (var option in NotificationGenderFilters.Options)
+                            {
+                                var isChecked = string.Equals(Model.GenderFilter ?? "", option.Value, StringComparison.OrdinalIgnoreCase);
+                                <label class="notify-audience-chip">
+                                    <input type="radio" name="GenderFilter" value="@option.Value" @(isChecked ? "checked" : null) />
+                                    <span>@option.Label</span>
+                                </label>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="notify-audience mt-3">
+                        <div class="notify-audience__label">Возраст</div>
+                        <div class="notify-audience__chips" id="ageFilterChips">
+                            @foreach (var option in NotificationAgeFilters.Options)
+                            {
+                                var isChecked = string.Equals(Model.AgeFilter ?? "", option.Value, StringComparison.OrdinalIgnoreCase);
+                                <label class="notify-audience-chip">
+                                    <input type="radio" name="AgeFilter" value="@option.Value" @(isChecked ? "checked" : null) />
+                                    <span>@option.Label</span>
+                                </label>
+                            }
+                        </div>
+                        <p class="notify-audience__hint">Возраст считается по дате рождения из карточки пациента. Фильтры по полу и возрасту можно комбинировать.</p>
+                    </div>
+
+                    <section class="mc-staff-panel notify-client-picker" id="clientPickerSection">
+                        <div class="mc-staff-panel__head d-flex flex-wrap justify-content-between align-items-start gap-2">
+                            <div>
+                                <div class="mc-staff-panel__title">Пациенты</div>
+                                <div class="mc-staff-panel__sub" id="clientPickerSubtitle">Предпросмотр аудитории по выбранным фильтрам</div>
+                            </div>
+                            <input type="search" id="clientSearchInput" class="mc-staff-input" placeholder="Поиск пациента" />
+                        </div>
+                        <div class="notify-picker__list" id="clientOptionsList">
+                            @if (Model.AvailableClients.Count == 0)
+                            {
+                                <div class="mc-staff-table__muted small">Активных пациентов пока нет.</div>
+                            }
+                            else
+                            {
+                                @foreach (var client in Model.AvailableClients)
+                                {
+                                    var channels = string.Join(", ", new[]
+                                    {
+                                        !string.IsNullOrWhiteSpace(client.Email) ? "email" : null,
+                                        !string.IsNullOrWhiteSpace(client.Telegram) ? "telegram" : null,
+                                        !string.IsNullOrWhiteSpace(client.WhatsApp) ? "whatsapp" : null
+                                    }.Where(x => x != null));
+                                    var filterText = $"{client.Name} {client.Email} {client.Telegram} {client.WhatsApp}".ToLowerInvariant();
+                                    var demoParts = new List<string>();
+                                    if (client.Age is not null) demoParts.Add($"{client.Age} лет");
+                                    if (!string.IsNullOrWhiteSpace(client.Gender))
+                                        demoParts.Add(client.Gender == "male" ? "Мужской" : client.Gender == "female" ? "Женский" : client.Gender);
+
+                                    <label class="notify-option" data-filter-item data-filter-text="@filterText" data-client-gender="@(client.Gender ?? "")" data-client-age="@(client.Age?.ToString() ?? "")">
+                                        <span class="notify-option__row">
+                                            <input type="checkbox" name="SelectedClientIds" value="@client.Id" @(Model.SelectedClientIds.Contains(client.Id) ? "checked" : null) />
+                                            <span>
+                                                <span class="notify-option__title">@client.Name</span>
+                                                <span class="notify-option__meta">@client.StatusLabel@(demoParts.Count > 0 ? $" · {string.Join(" · ", demoParts)}" : "")</span>
+                                                <span class="notify-option__channels">@(client.HasAnyChannel ? $"Каналы: {channels}" : "Нет контактных каналов")</span>
+                                            </span>
+                                        </span>
+                                    </label>
+                                }
+                            }
+                        </div>
+                        <div class="notify-picker__empty d-none" id="clientOptionsEmpty">По выбранным фильтрам пациентов не найдено.</div>
+                    </section>
                 </div>
 
                 <div class="mc-staff-panel mc-staff-form">
@@ -176,12 +196,12 @@
 
                     <div class="notify-summary">
                         <div class="notify-summary__item">
-                            <span class="notify-summary__label">Групп выбрано</span>
-                            <span class="notify-summary__value" id="selectedGroupsCount">@Model.SelectedGroupIds.Count</span>
+                            <span class="notify-summary__label">Получателей</span>
+                            <span class="notify-summary__value" id="selectedRecipientsCount">0</span>
                         </div>
                         <div class="notify-summary__item">
-                            <span class="notify-summary__label">Клиентов выбрано</span>
-                            <span class="notify-summary__value" id="selectedClientsCount">@Model.SelectedClientIds.Count</span>
+                            <span class="notify-summary__label">Режим</span>
+                            <span class="notify-summary__value notify-summary__value--text" id="selectedRecipientModeLabel">Все пациенты</span>
                         </div>
                     </div>
 
@@ -359,36 +379,229 @@ else
     @if (isMedclinic)
     {
         <partial name="Partials/_MedclinicCatalogScripts" />
-    }
-    <script>
-        (function () {
-            function wireFilter(inputId, listId) {
-                const input = document.getElementById(inputId);
-                const list = document.getElementById(listId);
-                if (!input || !list) return;
-                input.addEventListener('input', function () {
-                    const query = input.value.trim().toLowerCase();
-                    list.querySelectorAll('[data-filter-item]').forEach(function (item) {
-                        const text = item.getAttribute('data-filter-text') || '';
-                        item.style.display = !query || text.indexOf(query) >= 0 ? '' : 'none';
+        <script>
+            (function () {
+                const manualMode = '@NotificationRecipientModes.Manual';
+                const allMode = '@NotificationRecipientModes.All';
+
+                function getSelectedMode() {
+                    const checked = document.querySelector('input[name="RecipientMode"]:checked');
+                    return checked ? checked.value : allMode;
+                }
+
+                function getGenderFilter() {
+                    const checked = document.querySelector('input[name="GenderFilter"]:checked');
+                    return checked ? checked.value : '';
+                }
+
+                function getAgeFilter() {
+                    const checked = document.querySelector('input[name="AgeFilter"]:checked');
+                    return checked ? checked.value : '';
+                }
+
+                function matchesGender(item, genderFilter) {
+                    if (!genderFilter) return true;
+                    const gender = item.getAttribute('data-client-gender') || '';
+                    if (genderFilter === 'male') return gender === 'male';
+                    if (genderFilter === 'female') return gender === 'female';
+                    return true;
+                }
+
+                function matchesAge(item, ageFilter) {
+                    if (!ageFilter) return true;
+                    const ageRaw = item.getAttribute('data-client-age');
+                    const age = ageRaw === '' || ageRaw == null ? null : Number(ageRaw);
+                    if (age == null || Number.isNaN(age)) return false;
+
+                    switch (ageFilter) {
+                        case 'under18':
+                            return age < 18;
+                        case '18_30':
+                            return age >= 18 && age <= 30;
+                        case 'under30':
+                            return age < 30;
+                        case '30plus':
+                            return age >= 30;
+                        case '40plus':
+                            return age >= 40;
+                        default:
+                            return true;
+                    }
+                }
+
+                function matchesDemographicFilters(item) {
+                    return matchesGender(item, getGenderFilter()) && matchesAge(item, getAgeFilter());
+                }
+
+                function matchesSearch(item) {
+                    const input = document.getElementById('clientSearchInput');
+                    const query = (input?.value || '').trim().toLowerCase();
+                    if (!query) return true;
+                    const text = item.getAttribute('data-filter-text') || '';
+                    return text.indexOf(query) >= 0;
+                }
+
+                function applyClientListFilters() {
+                    const items = Array.from(document.querySelectorAll('#clientOptionsList [data-filter-item]'));
+                    let visibleCount = 0;
+
+                    items.forEach(function (item) {
+                        const visible = matchesSearch(item) && matchesDemographicFilters(item);
+                        item.style.display = visible ? '' : 'none';
+                        item.classList.toggle('notify-option--hidden', !visible);
+                        if (visible) visibleCount++;
                     });
-                });
-            }
 
-            function bindCounter(selector, targetId) {
-                const target = document.getElementById(targetId);
-                if (!target) return;
-                const update = function () {
-                    target.textContent = String(document.querySelectorAll(selector + ':checked').length);
-                };
-                document.querySelectorAll(selector).forEach(function (el) { el.addEventListener('change', update); });
-                update();
-            }
+                    const emptyEl = document.getElementById('clientOptionsEmpty');
+                    if (emptyEl) {
+                        emptyEl.classList.toggle('d-none', visibleCount > 0);
+                    }
 
-            wireFilter('groupSearchInput', 'groupOptionsList');
-            wireFilter('clientSearchInput', 'clientOptionsList');
-            bindCounter('input[name="SelectedGroupIds"]', 'selectedGroupsCount');
-            bindCounter('input[name="SelectedClientIds"]', 'selectedClientsCount');
-        })();
-    </script>
+                    return visibleCount;
+                }
+
+                function syncSelectionWithFilters() {
+                    document.querySelectorAll('#clientOptionsList [data-filter-item]').forEach(function (item) {
+                        const checkbox = item.querySelector('input[name="SelectedClientIds"]');
+                        if (!checkbox) return;
+                        const visible = item.style.display !== 'none';
+                        checkbox.checked = visible;
+                        item.classList.toggle('notify-option--selected', visible && checkbox.checked);
+                    });
+                }
+
+                function buildSummaryLabel() {
+                    const modeInput = document.querySelector('input[name="RecipientMode"]:checked');
+                    const modeLabel = modeInput
+                        ? modeInput.closest('.notify-audience-chip')?.querySelector('span')?.textContent?.trim()
+                        : '';
+
+                    const genderInput = document.querySelector('input[name="GenderFilter"]:checked');
+                    const genderLabel = genderInput && genderInput.value
+                        ? genderInput.closest('.notify-audience-chip')?.querySelector('span')?.textContent?.trim()
+                        : '';
+
+                    const ageInput = document.querySelector('input[name="AgeFilter"]:checked');
+                    const ageLabel = ageInput && ageInput.value
+                        ? ageInput.closest('.notify-audience-chip')?.querySelector('span')?.textContent?.trim()
+                        : '';
+
+                    const parts = [modeLabel || '—'];
+                    if (genderLabel) parts.push(genderLabel);
+                    if (ageLabel) parts.push(ageLabel);
+                    return parts.join(' · ');
+                }
+
+                function updateRecipientSummary(options) {
+                    const syncSelection = !options || options.syncSelection !== false;
+                    const mode = getSelectedMode();
+                    const picker = document.getElementById('clientPickerSection');
+                    const subtitle = document.getElementById('clientPickerSubtitle');
+                    const countEl = document.getElementById('selectedRecipientsCount');
+                    const modeLabelEl = document.getElementById('selectedRecipientModeLabel');
+
+                    if (picker) {
+                        picker.classList.toggle('notify-client-picker--manual', mode === manualMode);
+                        picker.classList.toggle('notify-client-picker--preview', mode !== manualMode);
+                    }
+
+                    if (subtitle) {
+                        subtitle.textContent = mode === manualMode
+                            ? 'Пациенты по фильтрам отмечены автоматически — снимите галочку, чтобы исключить'
+                            : 'Предпросмотр аудитории по выбранным фильтрам';
+                    }
+
+                    document.querySelectorAll('input[name="SelectedClientIds"]').forEach(function (el) {
+                        el.disabled = mode !== manualMode;
+                    });
+
+                    applyClientListFilters();
+                    if (syncSelection) {
+                        syncSelectionWithFilters();
+                    } else {
+                        document.querySelectorAll('#clientOptionsList [data-filter-item]').forEach(function (item) {
+                            const checkbox = item.querySelector('input[name="SelectedClientIds"]');
+                            if (!checkbox) return;
+                            item.classList.toggle('notify-option--selected', checkbox.checked && item.style.display !== 'none');
+                        });
+                    }
+
+                    if (modeLabelEl) {
+                        modeLabelEl.textContent = buildSummaryLabel();
+                    }
+
+                    if (!countEl) return;
+
+                    const items = Array.from(document.querySelectorAll('#clientOptionsList [data-filter-item]'))
+                        .filter(function (item) { return item.style.display !== 'none'; });
+
+                    countEl.textContent = String(
+                        items.filter(function (item) {
+                            const checkbox = item.querySelector('input[name="SelectedClientIds"]');
+                            return checkbox && checkbox.checked;
+                        }).length
+                    );
+                }
+
+                function wireFilter(inputId) {
+                    const input = document.getElementById(inputId);
+                    if (!input) return;
+                    input.addEventListener('input', function () {
+                        updateRecipientSummary({ syncSelection: true });
+                    });
+                }
+
+                function bindRecipientControls() {
+                    document.querySelectorAll('input[name="RecipientMode"], input[name="GenderFilter"], input[name="AgeFilter"]').forEach(function (el) {
+                        el.addEventListener('change', function () {
+                            updateRecipientSummary({ syncSelection: true });
+                        });
+                    });
+                    document.querySelectorAll('input[name="SelectedClientIds"]').forEach(function (el) {
+                        el.addEventListener('change', function () {
+                            updateRecipientSummary({ syncSelection: false });
+                        });
+                    });
+                    updateRecipientSummary({ syncSelection: true });
+                }
+
+                wireFilter('clientSearchInput');
+                bindRecipientControls();
+            })();
+        </script>
+    }
+    else
+    {
+        <script>
+            (function () {
+                function wireFilter(inputId, listId) {
+                    const input = document.getElementById(inputId);
+                    const list = document.getElementById(listId);
+                    if (!input || !list) return;
+                    input.addEventListener('input', function () {
+                        const query = input.value.trim().toLowerCase();
+                        list.querySelectorAll('[data-filter-item]').forEach(function (item) {
+                            const text = item.getAttribute('data-filter-text') || '';
+                            item.style.display = !query || text.indexOf(query) >= 0 ? '' : 'none';
+                        });
+                    });
+                }
+
+                function bindCounter(selector, targetId) {
+                    const target = document.getElementById(targetId);
+                    if (!target) return;
+                    const update = function () {
+                        target.textContent = String(document.querySelectorAll(selector + ':checked').length);
+                    };
+                    document.querySelectorAll(selector).forEach(function (el) { el.addEventListener('change', update); });
+                    update();
+                }
+
+                wireFilter('groupSearchInput', 'groupOptionsList');
+                wireFilter('clientSearchInput', 'clientOptionsList');
+                bindCounter('input[name="SelectedGroupIds"]', 'selectedGroupsCount');
+                bindCounter('input[name="SelectedClientIds"]', 'selectedClientsCount');
+            })();
+        </script>
+    }
 }

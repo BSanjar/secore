@@ -25,6 +25,10 @@
                 <p class="mc-staff-hero__sub">Пользователи клиники, роли, отделения и специализации.</p>
             </div>
             <div class="mc-staff-hero__actions">
+                <partial name="Partials/_MedclinicExcelExportButton" view-data="@(new ViewDataDictionary(ViewData) {
+                    ["ExportHref"] = Url.Action("ExportExcel", new { search = Model.Search }),
+                    ["ExportSuccessMessage"] = "Список сотрудников выгружен в Excel."
+                })" />
                 @if (Model.CanManageStaff)
                 {
                     <a asp-controller="Users" asp-action="Create" class="mc-staff-btn mc-staff-btn--primary">Добавить сотрудника</a>
@@ -131,3 +135,7 @@
         }
     </div>
 </div>
+
+@section Scripts {
+    <partial name="Partials/_MedclinicCatalogScripts" />
+}

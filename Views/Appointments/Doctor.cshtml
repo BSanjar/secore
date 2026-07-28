@@ -22,7 +22,7 @@
         ?? Model.Departments.FirstOrDefault()?.Value
         ?? "";
 
-    var eventsJson = JsonSerializer.Serialize(Model.Events.Select(x => new { id = x.Id, title = x.Title, doctorId = x.DoctorId, doctor = x.Doctor, patientId = x.PatientId, patientName = x.PatientName, phone = x.Phone, email = x.Email, start = x.Start, end = x.End, status = x.Status, notes = x.Notes, referralSource = x.ReferralSource, paymentType = x.PaymentType, hasPaidInvoice = x.HasPaidInvoice, isActive = x.IsActive, createdAt = x.CreatedAt, updatedAt = x.UpdatedAt, services = x.Services }));
+    var eventsJson = JsonSerializer.Serialize(Model.Events.Select(x => new { id = x.Id, title = x.Title, doctorId = x.DoctorId, doctor = x.Doctor, patientId = x.PatientId, patientName = x.PatientName, phone = x.Phone, email = x.Email, patientGender = x.PatientGender, patientBirthDate = x.PatientBirthDate, patientAge = x.PatientAge, start = x.Start, end = x.End, status = x.Status, notes = x.Notes, referralSource = x.ReferralSource, paymentType = x.PaymentType, hasPaidInvoice = x.HasPaidInvoice, isActive = x.IsActive, createdAt = x.CreatedAt, updatedAt = x.UpdatedAt, services = x.Services }));
     var patientsJson = JsonSerializer.Serialize(Model.Patients.Select(x => new { id = x.Id, name = x.Name, phone = x.Phone, email = x.Email, whatsApp = x.WhatsApp }));
     var serviceCatalogJson = JsonSerializer.Serialize(Model.ServiceCatalog.Select(x => new { id = x.Id, name = x.Name, priceTyiyn = x.PriceTyiyn }));
     var doctorSchedulesJson = JsonSerializer.Serialize(Model.DoctorSchedules);

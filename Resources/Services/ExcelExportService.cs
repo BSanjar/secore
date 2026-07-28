@@ -144,5 +144,82 @@ public class ExcelExportService
         workbook.SaveAs(stream, false);
         return stream.ToArray();
     }
+
+    /// <summary>Универсальная выгрузка таблицы — заголовки и строки как на экране.</summary>
+    public byte[] ExportTable(
+        string worksheetName,
+        IReadOnlyList<string> headers,
+        IEnumerable<IReadOnlyList<object?>> rows)
+    {
+        using var workbook = new XLWorkbook();
+        var ws = workbook.Worksheets.Add(string.IsNullOrWhiteSpace(worksheetName) ? "Данные" : worksheetName);
+
+        for (var c = 0; c < headers.Count; c++)
+            ws.Cell(1, c + 1).Value = headers[c];
+
+        if (headers.Count > 0)
+        {
+            var header = ws.Range(1, 1, 1, headers.Count);
+            header.Style.Font.Bold = true;
+            header.Style.Fill.BackgroundColor = XLColor.LightGray;
+        }
+
+        var rowIndex = 2;
+        foreach (var row in rows ?? Enumerable.Empty<IReadOnlyList<object?>>())
+        {
+            for (var c = 0; c < headers.Count; c++)
+            {
+                var value = c < row.Count ? row[c] : null;
+                WriteCell(ws.Cell(rowIndex, c + 1), value);
+            }
+            rowIndex++;
+        }
+
+        ws.Columns().AdjustToContents();
+        return Save(workbook);
+    }
+
+    private static void WriteCell(IXLCell cell, object? value)
+    {
+        if (value == null)
+        {
+            cell.Value = string.Empty;
+            return;
+        }
+
+        switch (value)
+        {
+            case DateTime dt:
+                cell.Value = dt;
+                cell.Style.DateFormat.Format = "dd.MM.yyyy HH:mm";
+                return;
+            case DateTimeOffset dto:
+                cell.Value = dto.LocalDateTime;
+                cell.Style.DateFormat.Format = "dd.MM.yyyy HH:mm";
+                return;
+            case decimal dec:
+                cell.Value = (double)dec;
+                cell.Style.NumberFormat.Format = "#,##0.00";
+                return;
+            case double d:
+                cell.Value = d;
+                return;
+            case float f:
+                cell.Value = f;
+                return;
+            case int i:
+                cell.Value = i;
+                return;
+            case long l:
+                cell.Value = l;
+                return;
+            case bool b:
+                cell.Value = b ? "Да" : "Нет";
+                return;
+            default:
+                cell.Value = value.ToString() ?? string.Empty;
+                return;
+        }
+    }
 }
 
