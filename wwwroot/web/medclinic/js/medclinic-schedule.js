@@ -1676,9 +1676,22 @@
     function eventStartMinutes(ev) {
         return ev.start.getHours() * 60 + ev.start.getMinutes();
     }
-    function isFirstSlotForEvent(ev, minute, duration) {
+    function displaySlotMinuteForEvent(ev, gridStart, gridEnd, slotDuration) {
         const evStart = eventStartMinutes(ev);
-        return minute <= evStart && evStart < minute + duration;
+        for (let minute = gridStart; minute + slotDuration <= gridEnd; minute += slotDuration) {
+            if (minute <= evStart && evStart < minute + slotDuration) {
+                return minute;
+            }
+        }
+        for (let minute = gridStart; minute + slotDuration <= gridEnd; minute += slotDuration) {
+            if (appointmentOverlapsMinutes(ev, minute, slotDuration)) {
+                return minute;
+            }
+        }
+        return null;
+    }
+    function registryCardContinued(ev, meta) {
+        return `<button type="button" class="slot-card slot-card--panel slot-card--continued ${paymentClass(ev)}" data-event-id="${esc(ev.id)}"><div class="slot-top"><div><div class="slot-patient">${esc(eventTitle(ev))}</div><div class="slot-service">${esc(serviceText(ev))}</div></div><span class="status-tag status-${paymentClass(ev)}">${paymentText(ev)}</span></div><div class="slot-meta"><span>${ft(ev.start)}-${ft(ev.end)}</span><span>${esc(meta.subtitle)}</span></div></button>`;
     }
     function renderRegistrySingleDoctorSchedule() {
         registryGrid.className = "registry-v2-grid";
@@ -1713,20 +1726,25 @@
         const dayEvents = state.events
             .filter((ev) => ev.doctorId === doctorId && sameDay(ev.start, state.anchor) && ev.isActive !== false)
             .sort((a, b) => a.start - b.start);
+        const displaySlotByEventId = new Map(
+            dayEvents.map((ev) => [ev.id, displaySlotMinuteForEvent(ev, start, end, duration)])
+        );
 
         const rows = [];
         for (let minute = start; minute + duration <= end; minute += duration) {
             const slotStart = minutesToTime(minute);
             const slotEnd = minutesToTime(minute + duration);
-            const overlappingEvent = dayEvents.find((ev) => appointmentOverlapsMinutes(ev, minute, duration));
+            const primaryEvents = dayEvents.filter((ev) => displaySlotByEventId.get(ev.id) === minute);
+            const overlappingEvents = dayEvents.filter((ev) => appointmentOverlapsMinutes(ev, minute, duration));
+            const continuedEvents = overlappingEvents.filter((ev) => displaySlotByEventId.get(ev.id) !== minute);
             const isBlocked = unavailable.some((interval) => minute < interval.end && minute + duration > interval.start);
 
-            if (overlappingEvent) {
-                if (isFirstSlotForEvent(overlappingEvent, minute, duration)) {
-                    rows.push(`<div class="registry-v2-row registry-v2-row--busy"><div class="registry-v2-row__time">${esc(slotStart)}<span class="registry-v2-row__time-end">${esc(slotEnd)}</span></div><div class="registry-v2-row__body">${registryCard(overlappingEvent, meta)}</div></div>`);
-                } else {
-                    rows.push(`<div class="registry-v2-row registry-v2-row--busy registry-v2-row--continued"><div class="registry-v2-row__time">${esc(slotStart)}</div><div class="registry-v2-row__body"><span class="registry-v2-blocked registry-v2-blocked--continued">${esc(eventTitle(overlappingEvent))}</span></div></div>`);
-                }
+            if (primaryEvents.length > 0) {
+                const body = primaryEvents.map((ev) => registryCard(ev, meta)).join("");
+                rows.push(`<div class="registry-v2-row registry-v2-row--busy"><div class="registry-v2-row__time">${esc(slotStart)}<span class="registry-v2-row__time-end">${esc(slotEnd)}</span></div><div class="registry-v2-row__body registry-v2-row__body--stack">${body}</div></div>`);
+            } else if (continuedEvents.length > 0) {
+                const body = continuedEvents.map((ev) => registryCardContinued(ev, meta)).join("");
+                rows.push(`<div class="registry-v2-row registry-v2-row--busy registry-v2-row--continued"><div class="registry-v2-row__time">${esc(slotStart)}<span class="registry-v2-row__time-end">${esc(slotEnd)}</span></div><div class="registry-v2-row__body registry-v2-row__body--stack">${body}</div></div>`);
             } else if (isBlocked) {
                 rows.push(`<div class="registry-v2-row registry-v2-row--blocked"><div class="registry-v2-row__time">${esc(slotStart)}</div><div class="registry-v2-row__body"><span class="registry-v2-blocked">Недоступно</span></div></div>`);
             } else {

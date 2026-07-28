@@ -1608,6 +1608,32 @@ body.org-medclinic .appointments-page {
     min-height: 52px;
 }
 
+.registry-v2-row__body--stack {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+}
+
+.registry-v2-row--continued .slot-card--continued {
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    border-style: dashed;
+    opacity: 0.96;
+    font: inherit;
+    color: inherit;
+}
+
+.registry-v2-row--continued .slot-card--continued:hover {
+    opacity: 1;
+    border-style: solid;
+}
+
+.registry-v2-row--continued .slot-card--continued:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--appt-primary) 50%, white);
+    outline-offset: 2px;
+}
+
 .registry-v2-row--free {
     cursor: pointer;
     transition: background 0.15s ease;
@@ -1639,12 +1665,6 @@ body.org-medclinic .appointments-page {
     font-size: 0.82rem;
     color: #94a3b8;
     font-weight: 600;
-}
-
-.registry-v2-row--continued .registry-v2-blocked--continued {
-    color: #64748b;
-    font-weight: 500;
-    font-style: italic;
 }
 
 .registry-v2-row--busy .slot-card--panel {
